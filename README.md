@@ -70,6 +70,9 @@ Danach: `http://localhost:8080`
 - MT700-Import und strukturierte Darstellung
 - MT707-Import, profilspezifische Feldzuordnung und Amendment-Historie
 - MT760-Erkennung mit Garantie-Feldprofil und bestätigten Trainingsdaten
+- JSON-/XML-Export bestätigter MT700-, MT707- und MT760-Trainingsdaten
+- Wiederöffnung und Original-PDF-Download aus der Trainingshistorie
+- OCR-Qualitätsstatistik je SWIFT-Profil und Feld
 - Dokumentenakte pro Akkreditiv
 - Upload und Download von PDF, XML, Bildern und Textdateien (max. 10 MB)
 - Dokumenttypen und optionale Prüfdaten: Datum, Betrag, Währung
