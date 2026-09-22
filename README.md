@@ -68,7 +68,8 @@ Danach: `http://localhost:8080`
 
 - Dashboard, Akkreditivübersicht, Suche und LC-Detailansicht
 - MT700-Import und strukturierte Darstellung
-- MT707-Import, Zuordnung und Amendment-Historie
+- MT707-Import, profilspezifische Feldzuordnung und Amendment-Historie
+- MT760-Erkennung mit Garantie-Feldprofil und bestätigten Trainingsdaten
 - Dokumentenakte pro Akkreditiv
 - Upload und Download von PDF, XML, Bildern und Textdateien (max. 10 MB)
 - Dokumenttypen und optionale Prüfdaten: Datum, Betrag, Währung
@@ -98,7 +99,7 @@ Die automatische Prüfung ist eine Vorprüfung und ersetzt keine fachliche Dokum
 - `GET /api/documents/{id}/content`
 - `GET /api/lcs/{id}/document-checks`
 
-Zum Testen liegen `example-mt700.txt` und `example-mt707.txt` bei.
+Zum Testen liegen `example-mt700.txt`, `example-mt707.txt` und `example-mt760.txt` bei.
 
 ## Produktion aktualisieren
 
