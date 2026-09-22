@@ -1,0 +1,2 @@
+create table training_session (id uuid primary key,filename varchar(255) not null,content_type varchar(255),original_pdf bytea not null,extracted_text text not null,corrected_text text,reviews_json text,status varchar(30) not null,username varchar(100) not null,extraction_status varchar(30),message_type varchar(20),lc_id uuid references letter_of_credit(id) on delete set null,created_at timestamp not null,confirmed_at timestamp);
+create index idx_training_created on training_session(created_at desc);

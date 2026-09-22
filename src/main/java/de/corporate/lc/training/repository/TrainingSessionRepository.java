@@ -1,0 +1,1 @@
+package de.corporate.lc.training.repository;import de.corporate.lc.training.domain.TrainingSession;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;public interface TrainingSessionRepository extends JpaRepository<TrainingSession,UUID>{List<TrainingSession> findTop100ByOrderByCreatedAtDesc();}

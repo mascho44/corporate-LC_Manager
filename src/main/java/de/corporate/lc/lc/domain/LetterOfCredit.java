@@ -1,0 +1,14 @@
+package de.corporate.lc.lc.domain;
+import jakarta.persistence.*; import java.math.BigDecimal; import java.time.LocalDate; import java.util.*;
+@Entity @Table(name="letter_of_credit")
+public class LetterOfCredit {
+ @Id @GeneratedValue(strategy=GenerationType.UUID) private UUID id;
+ @Column(nullable=false,unique=true) private String reference;
+ private String applicant; private String beneficiary; private String issuingBank; private String advisingBank;
+ @Column(precision=19,scale=2) private BigDecimal amount; private String currency; private LocalDate issueDate; private LocalDate expiryDate; private String expiryPlace; private LocalDate latestShipmentDate;
+ @Enumerated(EnumType.STRING) private LetterOfCreditStatus status=LetterOfCreditStatus.RECEIVED;
+ @ElementCollection @CollectionTable(name="lc_required_document",joinColumns=@JoinColumn(name="lc_id")) @Column(name="description",length=2000) private List<String> requiredDocuments=new ArrayList<>();
+ @ElementCollection @CollectionTable(name="lc_additional_field",joinColumns=@JoinColumn(name="lc_id")) @MapKeyColumn(name="field_name",length=255) @Column(name="field_value",length=4000) private Map<String,String> additionalFields=new LinkedHashMap<>();
+ @Column(columnDefinition="text") private String rawMessage;
+ public UUID getId(){return id;} public String getReference(){return reference;} public void setReference(String v){reference=v;} public String getApplicant(){return applicant;} public void setApplicant(String v){applicant=v;} public String getBeneficiary(){return beneficiary;} public void setBeneficiary(String v){beneficiary=v;} public String getIssuingBank(){return issuingBank;} public void setIssuingBank(String v){issuingBank=v;} public String getAdvisingBank(){return advisingBank;} public void setAdvisingBank(String v){advisingBank=v;} public BigDecimal getAmount(){return amount;} public void setAmount(BigDecimal v){amount=v;} public String getCurrency(){return currency;} public void setCurrency(String v){currency=v;} public LocalDate getIssueDate(){return issueDate;} public void setIssueDate(LocalDate v){issueDate=v;} public LocalDate getExpiryDate(){return expiryDate;} public void setExpiryDate(LocalDate v){expiryDate=v;} public String getExpiryPlace(){return expiryPlace;} public void setExpiryPlace(String v){expiryPlace=v;} public LocalDate getLatestShipmentDate(){return latestShipmentDate;} public void setLatestShipmentDate(LocalDate v){latestShipmentDate=v;} public LetterOfCreditStatus getStatus(){return status;} public void setStatus(LetterOfCreditStatus v){status=v;} public List<String> getRequiredDocuments(){return requiredDocuments;} public void setRequiredDocuments(List<String> v){requiredDocuments=v;} public Map<String,String> getAdditionalFields(){return additionalFields;} public void setAdditionalFields(Map<String,String> v){additionalFields=v;} public String getRawMessage(){return rawMessage;} public void setRawMessage(String v){rawMessage=v;}
+}

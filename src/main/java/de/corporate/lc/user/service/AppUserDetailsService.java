@@ -1,0 +1,3 @@
+package de.corporate.lc.user.service;
+import de.corporate.lc.user.repository.AppUserRepository; import org.springframework.security.core.userdetails.*; import org.springframework.stereotype.Service;
+@Service public class AppUserDetailsService implements UserDetailsService {private final AppUserRepository repo;public AppUserDetailsService(AppUserRepository r){repo=r;}@Override public UserDetails loadUserByUsername(String username){var u=repo.findByUsernameIgnoreCase(username).orElseThrow(()->new UsernameNotFoundException("Benutzer nicht gefunden"));return User.withUsername(u.getUsername()).password(u.getPasswordHash()).roles(u.getRole().name()).disabled(!u.isActive()).build();}}

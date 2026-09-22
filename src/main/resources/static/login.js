@@ -1,0 +1,2 @@
+const form=document.querySelector('#loginForm'),error=document.querySelector('#loginError');
+form.onsubmit=async event=>{event.preventDefault();error.textContent='';const values=Object.fromEntries(new FormData(form).entries());try{const response=await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(values)});if(!response.ok){const body=await response.json();throw new Error(body.error||'Anmeldung fehlgeschlagen.')}location.replace('/')}catch(e){error.textContent=e.message}};

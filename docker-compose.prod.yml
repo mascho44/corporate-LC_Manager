@@ -1,0 +1,52 @@
+name: corporate-lc-manager
+
+services:
+  app:
+    build:
+      context: .
+    image: corporate-lc-manager:0.5.0
+    restart: unless-stopped
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/lcmanager
+      DB_USER: lcmanager
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD muss gesetzt sein}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD muss gesetzt sein}
+      ADMIN_RESET_PASSWORD: ${ADMIN_RESET_PASSWORD:-false}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      default:
+      proxy:
+        aliases:
+          - lc-manager-app
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/api/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: lcmanager
+      POSTGRES_USER: lcmanager
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD muss gesetzt sein}
+    volumes:
+      - lc-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lcmanager -d lcmanager"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+networks:
+  proxy:
+    external: true
+    name: lc_proxy
+
+volumes:
+  lc-postgres:

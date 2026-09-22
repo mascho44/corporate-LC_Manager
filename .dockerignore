@@ -1,0 +1,8 @@
+target
+.git
+.idea
+.vscode
+data
+*.iml
+*.log
+*.command

@@ -1,0 +1,141 @@
+package de.corporate.lc.document.service;
+
+import de.corporate.lc.document.domain.LcDocument;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.text.PDFTextStripper;
+import org.springframework.stereotype.Service;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
+
+@Service
+public class DocumentExtractionService {
+    private static final int MAX_TEXT_LENGTH = 100_000;
+    private static final int MAX_OCR_PAGES = 20;
+    private static final Pattern DOCUMENT_NUMBER = Pattern.compile("(?im)^(?:invoice|commercial invoice|document)\\s*(?:no\\.?|number|#)?\\s*[:#-]?\\s*([A-Z0-9][A-Z0-9./_-]{2,})\\s*$");
+    private static final Pattern LC_REFERENCE = Pattern.compile("(?im)(?:letter of credit|documentary credit|lc|l/c)\\s*(?:no\\.?|number|reference|ref\\.?|#)?\\s*[:#-]?\\s*([A-Z0-9][A-Z0-9./_-]{3,})");
+    private static final Pattern AMOUNT = Pattern.compile("(?im)(?:total|invoice amount|grand total|amount due)\\s*[:]?\\s*(EUR|USD|GBP|CHF|JPY)?\\s*([0-9][0-9., ]{0,20})\\s*(EUR|USD|GBP|CHF|JPY)?");
+
+    public record TextExtraction(String text,String status) {}
+    public TextExtraction extractFile(byte[] content,String filename,String contentType) { LcDocument document=new LcDocument();document.setContent(content);document.setOriginalFilename(filename==null?"document":filename);document.setContentType(contentType==null?"application/octet-stream":contentType);extract(document);return new TextExtraction(document.getExtractedText(),document.getExtractionStatus()); }
+
+    public void extract(LcDocument document) {
+        try {
+            String text = readText(document);
+            if (text == null) {
+                document.setExtractionStatus("UNSUPPORTED");
+                return;
+            }
+            boolean ocrUsed = false;
+            text = normalize(text);
+            if (text.isBlank() && isPdf(document)) {
+                text = normalize(readPdfWithOcr(document));
+                ocrUsed = !text.isBlank();
+            }
+            document.setExtractedText(limit(text));
+            if (text.isBlank()) {
+                document.setExtractionStatus("NO_TEXT");
+                return;
+            }
+            match(DOCUMENT_NUMBER, text, 1).ifPresent(document::setExtractedDocumentNumber);
+            match(LC_REFERENCE, text, 1).ifPresent(document::setExtractedReference);
+            var amountMatcher = AMOUNT.matcher(text);
+            if (amountMatcher.find()) {
+                String currency = amountMatcher.group(1) != null ? amountMatcher.group(1) : amountMatcher.group(3);
+                document.setExtractedCurrency(currency == null ? null : currency.toUpperCase(Locale.ROOT));
+                parseAmount(amountMatcher.group(2)).ifPresent(document::setExtractedAmount);
+            }
+            document.setExtractionStatus(ocrUsed ? "OCR_EXTRACTED" : "EXTRACTED");
+        } catch (OcrUnavailableException exception) {
+            document.setExtractionStatus("OCR_UNAVAILABLE");
+        } catch (Exception exception) {
+            document.setExtractionStatus("FAILED");
+        }
+    }
+
+    private String readText(LcDocument document) throws Exception {
+        String type = document.getContentType().toLowerCase(Locale.ROOT);
+        String name = document.getOriginalFilename().toLowerCase(Locale.ROOT);
+        if (isPdf(document)) {
+            try (var pdf = Loader.loadPDF(document.getContent())) {
+                return new PDFTextStripper().getText(pdf);
+            }
+        }
+        if (type.startsWith("text/") || name.endsWith(".txt") || name.endsWith(".xml") || name.endsWith(".csv"))
+            return new String(document.getContent(), StandardCharsets.UTF_8);
+        return null;
+    }
+
+    private String readPdfWithOcr(LcDocument document) throws Exception {
+        Path directory = Files.createTempDirectory("lc-ocr-");
+        try {
+            Path input = directory.resolve("input.pdf");
+            Files.write(input, document.getContent(), StandardOpenOption.CREATE_NEW);
+            Process render = new ProcessBuilder("pdftoppm", "-png", "-r", "200", "-f", "1", "-l",
+                    String.valueOf(MAX_OCR_PAGES), input.toString(), directory.resolve("page").toString())
+                    .redirectErrorStream(true).start();
+            if (!render.waitFor(60, TimeUnit.SECONDS)) { render.destroyForcibly(); throw new IOException("PDF rendering timed out"); }
+            if (render.exitValue() != 0) throw new IOException("PDF rendering failed");
+            List<Path> pages;
+            try (var files = Files.list(directory)) {
+                pages = files.filter(p -> p.getFileName().toString().startsWith("page-") && p.toString().endsWith(".png"))
+                        .sorted().limit(MAX_OCR_PAGES).toList();
+            }
+            StringBuilder result = new StringBuilder();
+            for (int index = 0; index < pages.size() && result.length() < MAX_TEXT_LENGTH; index++) {
+                Path output = directory.resolve("ocr-" + index);
+                Process ocr;
+                try {
+                    ocr = new ProcessBuilder("tesseract", pages.get(index).toString(), output.toString(), "-l", "deu+eng", "txt")
+                            .redirectErrorStream(true).start();
+                } catch (IOException exception) {
+                    throw new OcrUnavailableException();
+                }
+                if (!ocr.waitFor(30, TimeUnit.SECONDS)) { ocr.destroyForcibly(); throw new IOException("OCR timed out"); }
+                if (ocr.exitValue() != 0) throw new IOException("OCR failed");
+                Path textFile = Path.of(output + ".txt");
+                if (Files.exists(textFile)) result.append(Files.readString(textFile, StandardCharsets.UTF_8)).append('\n');
+            }
+            return limit(result.toString());
+        } catch (NoSuchFileException exception) {
+            throw new OcrUnavailableException();
+        } finally {
+            deleteDirectory(directory);
+        }
+    }
+
+    private boolean isPdf(LcDocument document) {
+        String type = document.getContentType() == null ? "" : document.getContentType().toLowerCase(Locale.ROOT);
+        String name = document.getOriginalFilename() == null ? "" : document.getOriginalFilename().toLowerCase(Locale.ROOT);
+        return type.equals("application/pdf") || name.endsWith(".pdf");
+    }
+
+    private String normalize(String text) { return text == null ? "" : text.replace('\u0000', ' ').replaceAll("[ \\t]+", " ").trim(); }
+    private String limit(String text) { return text.length() > MAX_TEXT_LENGTH ? text.substring(0, MAX_TEXT_LENGTH) : text; }
+    private void deleteDirectory(Path directory) {
+        try (var paths = Files.walk(directory)) { paths.sorted(Comparator.reverseOrder()).forEach(path -> { try { Files.deleteIfExists(path); } catch (IOException ignored) {} }); }
+        catch (IOException ignored) {}
+    }
+    private static class OcrUnavailableException extends Exception {}
+
+    private java.util.Optional<String> match(Pattern pattern, String text, int group) {
+        var matcher = pattern.matcher(text);
+        return matcher.find() ? java.util.Optional.of(matcher.group(group).trim()) : java.util.Optional.empty();
+    }
+
+    private java.util.Optional<BigDecimal> parseAmount(String raw) {
+        String value = raw.replace(" ", "");
+        int comma = value.lastIndexOf(','); int dot = value.lastIndexOf('.');
+        if (comma > dot) value = value.replace(".", "").replace(',', '.');
+        else if (dot > comma && comma >= 0) value = value.replace(",", "");
+        else if (comma >= 0) value = value.replace(',', '.');
+        try { return java.util.Optional.of(new BigDecimal(value)); }
+        catch (NumberFormatException exception) { return java.util.Optional.empty(); }
+    }
+}

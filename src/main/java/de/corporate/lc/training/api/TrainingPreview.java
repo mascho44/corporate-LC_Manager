@@ -1,0 +1,1 @@
+package de.corporate.lc.training.api;import de.corporate.lc.imports.api.*;import java.util.UUID;public record TrainingPreview(UUID sessionId,SwiftImportRequest request,SwiftImportPreview preview,String extractionStatus){}
