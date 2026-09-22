@@ -99,3 +99,19 @@ Die automatische Prüfung ist eine Vorprüfung und ersetzt keine fachliche Dokum
 - `GET /api/lcs/{id}/document-checks`
 
 Zum Testen liegen `example-mt700.txt` und `example-mt707.txt` bei.
+
+## Produktion aktualisieren
+
+Die Produktionsinstallation wird aus dem Branch `main` aktualisiert. Vor jedem
+Deployment erstellt das Skript automatisch eine PostgreSQL-Sicherung im lokalen,
+nicht versionierten Verzeichnis `backups/`:
+
+```bash
+./scripts/deploy-prod.sh
+```
+
+Eine zusätzliche Sicherung ohne Deployment wird so erstellt:
+
+```bash
+./scripts/backup-prod.sh
+```
