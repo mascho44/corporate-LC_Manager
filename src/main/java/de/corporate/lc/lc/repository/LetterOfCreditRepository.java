@@ -14,10 +14,10 @@ public interface LetterOfCreditRepository extends JpaRepository<LetterOfCredit, 
     boolean existsByReferenceAndIdNot(String reference, UUID id);
 
     @Override
-    @EntityGraph(attributePaths = "requiredDocuments")
+    @EntityGraph(attributePaths = {"requiredDocuments", "additionalFields"})
     List<LetterOfCredit> findAll();
 
     @Override
-    @EntityGraph(attributePaths = "requiredDocuments")
+    @EntityGraph(attributePaths = {"requiredDocuments", "additionalFields"})
     Optional<LetterOfCredit> findById(UUID id);
 }
