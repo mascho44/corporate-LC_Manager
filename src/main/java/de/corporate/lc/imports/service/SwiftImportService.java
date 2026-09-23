@@ -28,6 +28,34 @@ public class SwiftImportService {
             Map.entry("57A", "Advise Through Bank"), Map.entry("59", "Beneficiary"),
             Map.entry("71B", "Charges"), Map.entry("72", "Sender to Receiver Information"),
             Map.entry("78", "Instructions to Bank"));
+    private static final Map<String,String> MT700_LABELS = Map.ofEntries(
+            Map.entry("27", "Sequenz / Gesamtzahl (Sequence of Total)"),
+            Map.entry("40A", "Form des Dokumentenakkreditivs (Form of Documentary Credit)"),
+            Map.entry("20", "Dokumentenakkreditivnummer (Documentary Credit Number)"),
+            Map.entry("31C", "Ausstellungsdatum (Date of Issue)"),
+            Map.entry("40E", "Anwendbare Regeln (Applicable Rules)"),
+            Map.entry("31D", "Ablaufdatum und -ort (Date and Place of Expiry)"),
+            Map.entry("50", "Auftraggeber / Antragsteller (Applicant)"),
+            Map.entry("59", "Begünstigter (Beneficiary)"),
+            Map.entry("32B", "Währung und Betrag (Currency Code, Amount)"),
+            Map.entry("41A", "Verfügbar bei / durch (Available With ... By ...)"),
+            Map.entry("41D", "Verfügbar bei / durch - Freitext (Available With ... By ...)"),
+            Map.entry("42A", "Bezogene Bank (Drawee)"), Map.entry("42C", "Trattenlaufzeit (Drafts at ...)"),
+            Map.entry("42M", "Details zur Mixed Payment"), Map.entry("42P", "Details zur hinausgeschobenen Zahlung"),
+            Map.entry("43P", "Teilsendungen (Partial Shipments)"), Map.entry("43T", "Umladung (Transhipment)"),
+            Map.entry("44A", "Übernahme-/Versandort (Place of Taking in Charge/Dispatch)"),
+            Map.entry("44B", "Endbestimmungsort (Place of Final Destination)"),
+            Map.entry("44C", "Spätestes Versanddatum (Latest Date of Shipment)"),
+            Map.entry("44E", "Ladehafen / Abgangsflughafen"), Map.entry("44F", "Löschhafen / Zielflughafen"),
+            Map.entry("45A", "Waren- oder Leistungsbeschreibung (Description of Goods/Services)"),
+            Map.entry("46A", "Erforderliche Dokumente (Documents Required)"),
+            Map.entry("47A", "Zusätzliche Bedingungen (Additional Conditions)"),
+            Map.entry("71D", "Gebühren (Charges)"), Map.entry("48", "Vorlagefrist in Tagen (Period for Presentation)"),
+            Map.entry("49", "Bestätigungsanweisung (Confirmation Instructions)"),
+            Map.entry("57A", "Avisierende Bank (Advise Through Bank)"),
+            Map.entry("78", "Anweisungen an die zahlende/akzeptierende Bank"),
+            Map.entry("72Z", "Informationen Sender an Empfänger")
+    );
     private static final Map<String,String> MT707_LABELS = Map.ofEntries(
             Map.entry("23", "Issuing Bank's Reference"), Map.entry("26E", "Amendment Number"),
             Map.entry("30", "Date of Amendment"), Map.entry("31E", "New Expiry Date and Place"),
@@ -178,7 +206,7 @@ public class SwiftImportService {
 
     private Map<String,String> parseFields(String raw){Map<String,String> values=new LinkedHashMap<>();var m=FIELD.matcher(raw.strip());while(m.find())values.put(m.group(1),m.group(2).trim());return values;}
     private Map<String,String> targets(String type){return type.equals("MT760")?MT760_TARGETS:type.equals("MT707")?MT707_TARGETS:MT700_TARGETS;}
-    private String label(String type,String code){String special=type.equals("MT760")?MT760_LABELS.get(code):type.equals("MT707")?MT707_LABELS.get(code):null;return special!=null?special:COMMON_LABELS.getOrDefault(code,"Weiteres SWIFT-Feld");}
+    private String label(String type,String code){String special=type.equals("MT760")?MT760_LABELS.get(code):type.equals("MT707")?MT707_LABELS.get(code):MT700_LABELS.get(code);return special!=null?special:COMMON_LABELS.getOrDefault(code,"Weiteres SWIFT-Feld");}
     private void require(Map<String,String> values,String code,String name,List<String> errors){if(blank(values.get(code)))errors.add("Pflichtfeld :"+code+": ("+name+") fehlt.");}
     private boolean blank(String value){return value==null||value.isBlank();}
     private String inferTarget(String value){String text=value==null?"":value.toLowerCase(Locale.ROOT);if(text.matches("(?s).*\\b(applicant|auftraggeber|antragsteller)\\b.*"))return "applicant";if(text.matches("(?s).*\\b(beneficiary|begünstigte[rrn]?)\\b.*"))return "beneficiary";if(text.matches("(?s).*\\b(expiry|expiration|ablaufdatum|valid until)\\b.*"))return "expiryDateAndPlace";if(text.matches("(?s).*\\b(latest shipment|späteste[rn]? versand)\\b.*"))return "latestShipmentDate";if(text.matches("(?s).*\\b(documents required|required documents|vorzulegende dokumente)\\b.*"))return "requiredDocuments";if(text.matches("(?s).*\\b(amount|betrag|total)\\b.*\\b(eur|usd|gbp|chf|jpy)\\b.*"))return "amountAndCurrency";return null;}

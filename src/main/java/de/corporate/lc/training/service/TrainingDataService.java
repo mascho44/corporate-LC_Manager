@@ -62,7 +62,7 @@ public class TrainingDataService {
             Map<String,long[]> byField=new TreeMap<>(); long correct=0,corrected=0;
             for(TrainingSession session:items) for(JsonNode field:fields(session)){
                 String review=text(field,"review"),code=value(text(field,"code"),"?"); long[] counts=byField.computeIfAbsent(code,x->new long[2]);
-                if("correct".equals(review)){counts[0]++;correct++;} else if("corrected".equals(review)){counts[1]++;corrected++;}
+                if("correct".equals(review)){counts[0]++;correct++;} else if(!review.isBlank()){counts[1]++;corrected++;}
             }
             List<FieldQuality> fieldQuality=byField.entrySet().stream().map(e->{long total=e.getValue()[0]+e.getValue()[1];return new FieldQuality(e.getKey(),total,e.getValue()[0],e.getValue()[1],percent(e.getValue()[0],total));}).toList();
             long total=correct+corrected; result.add(new ProfileQuality(type,items.size(),total,correct,corrected,percent(correct,total),fieldQuality));
