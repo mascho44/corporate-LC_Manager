@@ -1,5 +1,6 @@
 package de.corporate.lc.training.api;
 
+import de.corporate.lc.audit.service.AuditService;
 import de.corporate.lc.document.service.DocumentExtractionService;
 import de.corporate.lc.imports.api.*;
 import de.corporate.lc.imports.service.SwiftImportService;
@@ -28,11 +29,12 @@ public class TrainingController {
     private final SwiftImportService imports;
     private final TrainingDataService data;
     private final PdfFieldSnippetService snippets;
+    private final AuditService audit;
 
     public TrainingController(TrainingSessionRepository r, DocumentExtractionService e,
                               PrintedSwiftNormalizer n, SwiftImportService i, TrainingDataService d,
-                              PdfFieldSnippetService p) {
-        repo=r; extraction=e; normalizer=n; imports=i; data=d; snippets=p;
+                              PdfFieldSnippetService p,AuditService a) {
+        repo=r; extraction=e; normalizer=n; imports=i; data=d; snippets=p; audit=a;
     }
 
     @PostMapping("/preview")
@@ -49,6 +51,7 @@ public class TrainingController {
         s.setOriginalPdf(file.getBytes()); s.setExtractedText(text); s.setStatus("DRAFT");
         s.setUsername(auth.getName()); s.setExtractionStatus(x.status()); s.setMessageType(preview.messageType());
         repo.save(s);
+        audit.record(auth,"TRAINING_STARTED","TRAINING_SESSION",s.getId(),s.getFilename()+" · "+preview.messageType()+" · "+preview.rawFields().size()+" Felder erkannt");
         return new TrainingPreview(s.getId(),request,preview,x.status());
     }
 
@@ -66,6 +69,7 @@ public class TrainingController {
         s.setCorrectedText(request.correctedRawMessage()); s.setReviewsJson(request.reviewsJson());
         s.setStatus("CONFIRMED"); s.setMessageType(preview.messageType()); s.setConfirmedAt(LocalDateTime.now());
         if(result instanceof LetterOfCredit lc) s.setLcId(lc.getId());
+        audit.record(auth,"TRAINING_CONFIRMED","TRAINING_SESSION",s.getId(),s.getFilename()+" · "+preview.messageType()+" · Training abgeschlossen"+(s.getLcId()==null?"":" · LC angelegt"));
         return result;
     }
 
@@ -77,6 +81,7 @@ public class TrainingController {
         if("CONFIRMED".equals(s.getStatus())) throw new IllegalArgumentException("Ein bestätigter Trainingsdatensatz kann nicht mehr verändert werden.");
         s.setCorrectedText(request.correctedRawMessage());
         s.setReviewsJson(request.reviewsJson());
+        audit.record(auth,"TRAINING_PROGRESS_SAVED","TRAINING_SESSION",s.getId(),s.getFilename()+" · Bearbeitungsstand gespeichert");
         return Map.of("status","SAVED");
     }
 
