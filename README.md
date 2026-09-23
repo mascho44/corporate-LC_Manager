@@ -73,6 +73,7 @@ Danach: `http://localhost:8080`
 - JSON-/XML-Export bestätigter MT700-, MT707- und MT760-Trainingsdaten
 - Wiederöffnung und Original-PDF-Download aus der Trainingshistorie
 - OCR-Qualitätsstatistik je SWIFT-Profil und Feld
+- PDF-Originalausschnitt direkt neben jedem erkannten Trainingsfeld
 - Dokumentenakte pro Akkreditiv
 - Upload und Download von PDF, XML, Bildern und Textdateien (max. 10 MB)
 - Dokumenttypen und optionale Prüfdaten: Datum, Betrag, Währung

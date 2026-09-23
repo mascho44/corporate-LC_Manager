@@ -8,6 +8,7 @@ import de.corporate.lc.swift.PrintedSwiftNormalizer;
 import de.corporate.lc.training.domain.TrainingSession;
 import de.corporate.lc.training.repository.TrainingSessionRepository;
 import de.corporate.lc.training.service.TrainingDataService;
+import de.corporate.lc.training.service.PdfFieldSnippetService;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,10 +27,12 @@ public class TrainingController {
     private final PrintedSwiftNormalizer normalizer;
     private final SwiftImportService imports;
     private final TrainingDataService data;
+    private final PdfFieldSnippetService snippets;
 
     public TrainingController(TrainingSessionRepository r, DocumentExtractionService e,
-                              PrintedSwiftNormalizer n, SwiftImportService i, TrainingDataService d) {
-        repo=r; extraction=e; normalizer=n; imports=i; data=d;
+                              PrintedSwiftNormalizer n, SwiftImportService i, TrainingDataService d,
+                              PdfFieldSnippetService p) {
+        repo=r; extraction=e; normalizer=n; imports=i; data=d; snippets=p;
     }
 
     @PostMapping("/preview")
@@ -85,6 +88,9 @@ public class TrainingController {
                 .header(HttpHeaders.CONTENT_DISPOSITION,"inline; filename=\""+filename(s.getFilename(),"training.pdf")+"\"")
                 .body(s.getOriginalPdf());
     }
+
+    @GetMapping(value="/{id}/snippet/{index}",produces=MediaType.IMAGE_PNG_VALUE)
+    public byte[] snippet(@PathVariable UUID id,@PathVariable int index){return snippets.snippet(find(id),index);}
 
     @GetMapping("/{id}/export.json")
     public ResponseEntity<byte[]> json(@PathVariable UUID id){TrainingSession s=confirmed(id);return download(data.json(s),MediaType.APPLICATION_JSON,base(s)+".json");}
