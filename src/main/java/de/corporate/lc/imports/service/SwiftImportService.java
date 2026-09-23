@@ -128,7 +128,15 @@ public class SwiftImportService {
     }
 
     public SwiftImportPreview preview(SwiftImportRequest request) {
-        String raw=requireRaw(request), type=detect(raw);raw=learning.apply(type,raw);
+        return preview(request,true);
+    }
+
+    public SwiftImportPreview previewCorrected(SwiftImportRequest request) {
+        return preview(request,false);
+    }
+
+    private SwiftImportPreview preview(SwiftImportRequest request,boolean applyLearning) {
+        String raw=requireRaw(request), type=detect(raw);if(applyLearning)raw=learning.apply(type,raw);
         List<SwiftFieldView> fields=fields(raw,type);
         List<String> errors=new ArrayList<>(), warnings=new ArrayList<>();
         try {
@@ -171,14 +179,22 @@ public class SwiftImportService {
     public Object execute(SwiftImportRequest request) {
         String type=detect(request.rawMessage());
         SwiftImportRequest adapted=new SwiftImportRequest(request.filename(),learning.apply(type,request.rawMessage()));
-        SwiftImportPreview p=preview(adapted);
-        if(!p.valid()) { String msg=String.join(" ",p.errors()); history.record(request.filename(),p.messageType(),p.reference(),"REJECTED",msg); throw new IllegalArgumentException(msg); }
+        return executeAdapted(adapted);
+    }
+
+    public Object executeCorrected(SwiftImportRequest request) {
+        return executeAdapted(request);
+    }
+
+    private Object executeAdapted(SwiftImportRequest adapted) {
+        SwiftImportPreview p=previewCorrected(adapted);
+        if(!p.valid()) { String msg=String.join(" ",p.errors()); history.record(adapted.filename(),p.messageType(),p.reference(),"REJECTED",msg); throw new IllegalArgumentException(msg); }
         if(p.messageType().equals("MT760")) throw new IllegalArgumentException("MT760 wird im Trainingsmodul bestätigt und noch nicht als Akkreditiv importiert.");
         try {
             Object result=p.messageType().equals("MT707")?amendmentService.importMt707(adapted.rawMessage()):lcService.importMt700(adapted.rawMessage());
-            history.record(request.filename(),p.messageType(),p.reference(),"SUCCESS","Import erfolgreich"); return result;
+            history.record(adapted.filename(),p.messageType(),p.reference(),"SUCCESS","Import erfolgreich"); return result;
         } catch(RuntimeException ex) {
-            history.record(request.filename(),p.messageType(),p.reference(),"REJECTED",readable(ex)); throw ex;
+            history.record(adapted.filename(),p.messageType(),p.reference(),"REJECTED",readable(ex)); throw ex;
         }
     }
 

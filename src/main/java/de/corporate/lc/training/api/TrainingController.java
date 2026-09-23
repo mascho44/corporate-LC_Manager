@@ -63,7 +63,7 @@ public class TrainingController {
         TrainingSession s=find(id);
         if(!s.getUsername().equals(auth.getName())) throw new IllegalArgumentException("Trainingssitzung gehört einem anderen Benutzer.");
         var corrected=new SwiftImportRequest(s.getFilename(),request.correctedRawMessage());
-        var preview=imports.preview(corrected);
+        var preview=imports.previewCorrected(corrected);
         boolean existingMt700=preview.messageType().equals("MT700")&&preview.duplicate()&&preview.reference()!=null
                 &&preview.errors().stream().allMatch(error->error.contains("existiert bereits"));
         if(!preview.valid()&&!existingMt700) throw new IllegalArgumentException(String.join(" ",preview.errors()));
@@ -71,7 +71,7 @@ public class TrainingController {
                 ?lcs.findByReference(preview.reference()).orElseThrow(()->new IllegalArgumentException("Vorhandenes Akkreditiv wurde nicht gefunden."))
                 :preview.messageType().equals("MT760")
                 ? Map.of("status","CONFIRMED","messageType","MT760","trainingSessionId",id)
-                : imports.execute(corrected);
+                : imports.executeCorrected(corrected);
         s.setCorrectedText(request.correctedRawMessage()); s.setReviewsJson(request.reviewsJson());
         s.setStatus("CONFIRMED"); s.setMessageType(preview.messageType()); s.setConfirmedAt(LocalDateTime.now());
         if(result instanceof LetterOfCredit lc) s.setLcId(lc.getId());
