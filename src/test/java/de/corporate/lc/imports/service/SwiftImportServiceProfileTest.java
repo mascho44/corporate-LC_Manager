@@ -7,6 +7,7 @@ import de.corporate.lc.lc.service.AmendmentService;
 import de.corporate.lc.lc.service.LetterOfCreditService;
 import de.corporate.lc.swift.Mt700Parser;
 import de.corporate.lc.swift.Mt707Parser;
+import de.corporate.lc.training.service.TrainingLearningService;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -16,7 +17,9 @@ class SwiftImportServiceProfileTest {
     private final SwiftImportService service = new SwiftImportService(
             new Mt700Parser(), new Mt707Parser(), mock(LetterOfCreditRepository.class),
             mock(AmendmentRepository.class), mock(LetterOfCreditService.class),
-            mock(AmendmentService.class), mock(SwiftImportHistoryService.class));
+            mock(AmendmentService.class), mock(SwiftImportHistoryService.class),learning());
+
+    private TrainingLearningService learning(){TrainingLearningService service=mock(TrainingLearningService.class);org.mockito.Mockito.when(service.apply(org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString())).thenAnswer(invocation->invocation.getArgument(1));return service;}
 
     @Test void detectsMt707ByProfileFields() {
         assertThat(service.detect(":20:LC-1\n:26E:2\n:30:260922\n:46B:NEW DOCUMENTS"))

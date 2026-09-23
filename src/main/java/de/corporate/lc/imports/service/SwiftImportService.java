@@ -5,6 +5,7 @@ import de.corporate.lc.lc.domain.*;
 import de.corporate.lc.lc.repository.*;
 import de.corporate.lc.lc.service.*;
 import de.corporate.lc.swift.*;
+import de.corporate.lc.training.service.TrainingLearningService;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -118,15 +119,16 @@ public class SwiftImportService {
     private final LetterOfCreditService lcService;
     private final AmendmentService amendmentService;
     private final SwiftImportHistoryService history;
+    private final TrainingLearningService learning;
 
     public SwiftImportService(Mt700Parser p700, Mt707Parser p707, LetterOfCreditRepository l,
                               AmendmentRepository a, LetterOfCreditService ls,
-                              AmendmentService as, SwiftImportHistoryService h) {
-        mt700=p700; mt707=p707; lcs=l; amendments=a; lcService=ls; amendmentService=as; history=h;
+                              AmendmentService as, SwiftImportHistoryService h,TrainingLearningService learning) {
+        mt700=p700; mt707=p707; lcs=l; amendments=a; lcService=ls; amendmentService=as; history=h;this.learning=learning;
     }
 
     public SwiftImportPreview preview(SwiftImportRequest request) {
-        String raw=requireRaw(request), type=detect(raw);
+        String raw=requireRaw(request), type=detect(raw);raw=learning.apply(type,raw);
         List<SwiftFieldView> fields=fields(raw,type);
         List<String> errors=new ArrayList<>(), warnings=new ArrayList<>();
         try {
@@ -167,11 +169,13 @@ public class SwiftImportService {
     }
 
     public Object execute(SwiftImportRequest request) {
-        SwiftImportPreview p=preview(request);
+        String type=detect(request.rawMessage());
+        SwiftImportRequest adapted=new SwiftImportRequest(request.filename(),learning.apply(type,request.rawMessage()));
+        SwiftImportPreview p=preview(adapted);
         if(!p.valid()) { String msg=String.join(" ",p.errors()); history.record(request.filename(),p.messageType(),p.reference(),"REJECTED",msg); throw new IllegalArgumentException(msg); }
         if(p.messageType().equals("MT760")) throw new IllegalArgumentException("MT760 wird im Trainingsmodul bestätigt und noch nicht als Akkreditiv importiert.");
         try {
-            Object result=p.messageType().equals("MT707")?amendmentService.importMt707(request.rawMessage()):lcService.importMt700(request.rawMessage());
+            Object result=p.messageType().equals("MT707")?amendmentService.importMt707(adapted.rawMessage()):lcService.importMt700(adapted.rawMessage());
             history.record(request.filename(),p.messageType(),p.reference(),"SUCCESS","Import erfolgreich"); return result;
         } catch(RuntimeException ex) {
             history.record(request.filename(),p.messageType(),p.reference(),"REJECTED",readable(ex)); throw ex;
