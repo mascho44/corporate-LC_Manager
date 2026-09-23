@@ -10,7 +10,7 @@ public class TrainingSession {
     @Id @GeneratedValue(strategy=GenerationType.UUID) private UUID id;
     private String filename;
     private String contentType;
-    @Lob @Column(nullable=false,columnDefinition="bytea") private byte[] originalPdf;
+    @Basic(fetch=FetchType.LAZY) @Column(nullable=false,columnDefinition="bytea") private byte[] originalPdf;
     @Column(nullable=false,columnDefinition="text") private String extractedText;
     @Column(columnDefinition="text") private String correctedText;
     @Column(columnDefinition="text") private String reviewsJson;
