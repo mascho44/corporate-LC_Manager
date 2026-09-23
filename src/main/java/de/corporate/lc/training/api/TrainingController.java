@@ -82,7 +82,7 @@ public class TrainingController {
         s.setStatus("CONFIRMED"); s.setMessageType(preview.messageType()); s.setConfirmedAt(LocalDateTime.now());
         if(result instanceof LetterOfCredit lc) s.setLcId(lc.getId());
         audit.record(auth,"TRAINING_CONFIRMED","TRAINING_SESSION",s.getId(),s.getFilename()+" · "+preview.messageType()+" · Training abgeschlossen"+(s.getLcId()==null?"":existingMt700?" · mit bestehendem LC verknüpft":" · LC angelegt"));
-        return result;
+        Map<String,Object> response=new LinkedHashMap<>();response.put("status","CONFIRMED");response.put("messageType",preview.messageType());response.put("trainingSessionId",id);if(s.getLcId()!=null)response.put("lcId",s.getLcId());return response;
     }
 
     @PutMapping("/{id}/draft")
