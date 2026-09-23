@@ -10,6 +10,7 @@ import de.corporate.lc.swift.PrintedSwiftNormalizer;
 import de.corporate.lc.training.domain.TrainingSession;
 import de.corporate.lc.training.repository.TrainingSessionRepository;
 import de.corporate.lc.training.service.TrainingDataService;
+import de.corporate.lc.training.service.TrainingLearningService;
 import de.corporate.lc.training.service.PdfFieldSnippetService;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
@@ -32,11 +33,12 @@ public class TrainingController {
     private final PdfFieldSnippetService snippets;
     private final AuditService audit;
     private final LetterOfCreditRepository lcs;
+    private final TrainingLearningService learning;
 
     public TrainingController(TrainingSessionRepository r, DocumentExtractionService e,
                               PrintedSwiftNormalizer n, SwiftImportService i, TrainingDataService d,
-                              PdfFieldSnippetService p,AuditService a,LetterOfCreditRepository lcs) {
-        repo=r; extraction=e; normalizer=n; imports=i; data=d; snippets=p; audit=a;this.lcs=lcs;
+                              PdfFieldSnippetService p,AuditService a,LetterOfCreditRepository lcs,TrainingLearningService learning) {
+        repo=r; extraction=e; normalizer=n; imports=i; data=d; snippets=p; audit=a;this.lcs=lcs;this.learning=learning;
     }
 
     @PostMapping("/preview")
@@ -99,6 +101,17 @@ public class TrainingController {
 
     @GetMapping("/quality")
     public List<TrainingDataService.ProfileQuality> quality(){return data.quality(repo.findAll());}
+
+    @GetMapping("/learning-rules")
+    public List<TrainingLearningService.LearningRule> learningRules(){return learning.rules();}
+
+    @PutMapping("/learning-rules/{id}")
+    public TrainingLearningService.LearningRule setLearningRule(@PathVariable String id,@RequestBody Map<String,Boolean> request,Authentication auth){
+        boolean active=Boolean.TRUE.equals(request.get("active"));
+        var rule=learning.setActive(id,active,auth.getName());
+        audit.record(auth,active?"TRAINING_RULE_ACTIVATED":"TRAINING_RULE_DEACTIVATED","TRAINING_RULE",id,rule.messageType()+" · :"+rule.sourceCode()+": · "+rule.kind());
+        return rule;
+    }
 
     @GetMapping("/{id}")
     public TrainingDataService.Detail detail(@PathVariable UUID id){return data.detail(find(id));}
