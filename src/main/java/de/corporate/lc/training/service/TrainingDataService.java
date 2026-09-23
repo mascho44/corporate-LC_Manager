@@ -56,7 +56,7 @@ public class TrainingDataService {
 
     public List<ProfileQuality> quality(List<TrainingSession> sessions){
         Map<String,List<TrainingSession>> profiles=new TreeMap<>();
-        sessions.stream().filter(s->"CONFIRMED".equals(s.getStatus())).forEach(s->profiles.computeIfAbsent(value(s.getMessageType(),"Unbekannt"),x->new ArrayList<>()).add(s));
+        sessions.stream().filter(s->fields(s).size()>0).forEach(s->profiles.computeIfAbsent(value(s.getMessageType(),"Unbekannt"),x->new ArrayList<>()).add(s));
         List<ProfileQuality> result=new ArrayList<>();
         profiles.forEach((type,items)->{
             Map<String,long[]> byField=new TreeMap<>(); long correct=0,corrected=0;

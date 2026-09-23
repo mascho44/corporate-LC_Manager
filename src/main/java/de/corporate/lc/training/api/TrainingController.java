@@ -69,6 +69,17 @@ public class TrainingController {
         return result;
     }
 
+    @PutMapping("/{id}/draft")
+    @Transactional
+    public Map<String,String> saveDraft(@PathVariable UUID id,@RequestBody TrainingConfirm request,Authentication auth) {
+        TrainingSession s=find(id);
+        if(!s.getUsername().equals(auth.getName())) throw new IllegalArgumentException("Trainingssitzung gehört einem anderen Benutzer.");
+        if("CONFIRMED".equals(s.getStatus())) throw new IllegalArgumentException("Ein bestätigter Trainingsdatensatz kann nicht mehr verändert werden.");
+        s.setCorrectedText(request.correctedRawMessage());
+        s.setReviewsJson(request.reviewsJson());
+        return Map.of("status","SAVED");
+    }
+
     @GetMapping
     public List<TrainingView> history() {
         return repo.findTop100ByOrderByCreatedAtDesc().stream()
