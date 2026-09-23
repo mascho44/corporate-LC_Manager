@@ -5,6 +5,7 @@ import de.corporate.lc.document.service.DocumentExtractionService;
 import de.corporate.lc.imports.api.*;
 import de.corporate.lc.imports.service.SwiftImportService;
 import de.corporate.lc.lc.domain.LetterOfCredit;
+import de.corporate.lc.lc.repository.LetterOfCreditRepository;
 import de.corporate.lc.swift.PrintedSwiftNormalizer;
 import de.corporate.lc.training.domain.TrainingSession;
 import de.corporate.lc.training.repository.TrainingSessionRepository;
@@ -30,11 +31,12 @@ public class TrainingController {
     private final TrainingDataService data;
     private final PdfFieldSnippetService snippets;
     private final AuditService audit;
+    private final LetterOfCreditRepository lcs;
 
     public TrainingController(TrainingSessionRepository r, DocumentExtractionService e,
                               PrintedSwiftNormalizer n, SwiftImportService i, TrainingDataService d,
-                              PdfFieldSnippetService p,AuditService a) {
-        repo=r; extraction=e; normalizer=n; imports=i; data=d; snippets=p; audit=a;
+                              PdfFieldSnippetService p,AuditService a,LetterOfCreditRepository lcs) {
+        repo=r; extraction=e; normalizer=n; imports=i; data=d; snippets=p; audit=a;this.lcs=lcs;
     }
 
     @PostMapping("/preview")
@@ -62,14 +64,18 @@ public class TrainingController {
         if(!s.getUsername().equals(auth.getName())) throw new IllegalArgumentException("Trainingssitzung gehört einem anderen Benutzer.");
         var corrected=new SwiftImportRequest(s.getFilename(),request.correctedRawMessage());
         var preview=imports.preview(corrected);
-        if(!preview.valid()) throw new IllegalArgumentException(String.join(" ",preview.errors()));
-        Object result=preview.messageType().equals("MT760")
+        boolean existingMt700=preview.messageType().equals("MT700")&&preview.duplicate()&&preview.reference()!=null
+                &&preview.errors().stream().allMatch(error->error.contains("existiert bereits"));
+        if(!preview.valid()&&!existingMt700) throw new IllegalArgumentException(String.join(" ",preview.errors()));
+        Object result=existingMt700
+                ?lcs.findByReference(preview.reference()).orElseThrow(()->new IllegalArgumentException("Vorhandenes Akkreditiv wurde nicht gefunden."))
+                :preview.messageType().equals("MT760")
                 ? Map.of("status","CONFIRMED","messageType","MT760","trainingSessionId",id)
                 : imports.execute(corrected);
         s.setCorrectedText(request.correctedRawMessage()); s.setReviewsJson(request.reviewsJson());
         s.setStatus("CONFIRMED"); s.setMessageType(preview.messageType()); s.setConfirmedAt(LocalDateTime.now());
         if(result instanceof LetterOfCredit lc) s.setLcId(lc.getId());
-        audit.record(auth,"TRAINING_CONFIRMED","TRAINING_SESSION",s.getId(),s.getFilename()+" · "+preview.messageType()+" · Training abgeschlossen"+(s.getLcId()==null?"":" · LC angelegt"));
+        audit.record(auth,"TRAINING_CONFIRMED","TRAINING_SESSION",s.getId(),s.getFilename()+" · "+preview.messageType()+" · Training abgeschlossen"+(s.getLcId()==null?"":existingMt700?" · mit bestehendem LC verknüpft":" · LC angelegt"));
         return result;
     }
 
