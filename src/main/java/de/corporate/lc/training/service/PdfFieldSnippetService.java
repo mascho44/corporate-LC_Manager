@@ -1,6 +1,11 @@
 package de.corporate.lc.training.service;
 
 import de.corporate.lc.training.domain.TrainingSession;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.rendering.PDFRenderer;
+import org.apache.pdfbox.text.PDFTextStripper;
+import org.apache.pdfbox.text.TextPosition;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
@@ -34,16 +39,32 @@ public class PdfFieldSnippetService {
         if(codes.isEmpty())return List.of(placeholder("Keine SWIFT-Felder erkannt"));
         Path directory=null;
         try{
+            List<PageData> pageData=digitalPages(session.getOriginalPdf());
+            if(!pageData.isEmpty())return cropFields(codes,pageData);
             directory=Files.createTempDirectory("lc-snippets-"); Path pdf=directory.resolve("source.pdf");Files.write(pdf,session.getOriginalPdf());
             Process render=new ProcessBuilder("pdftoppm","-png","-r","150","-f","1","-l","20",pdf.toString(),directory.resolve("page").toString()).redirectErrorStream(true).start();
             if(!render.waitFor(90,TimeUnit.SECONDS)||render.exitValue()!=0)throw new IOException("PDF rendering failed");
             List<Path> pages;try(var files=Files.list(directory)){pages=files.filter(p->p.getFileName().toString().matches("page-\\d+\\.png")).sorted(Comparator.comparingInt(this::pageNumber)).toList();}
-            List<PageData> pageData=new ArrayList<>();for(Path page:pages)pageData.add(new PageData(ImageIO.read(page.toFile()),ocr(page)));
-            List<byte[]> result=new ArrayList<>();int pageCursor=0,lineCursor=0;
-            for(String code:codes){Match match=find(pageData,code,pageCursor,lineCursor);if(match==null)match=find(pageData,code,0,0);if(match==null){result.add(placeholder(":"+code+": nicht lokalisiert"));continue;}result.add(crop(match));pageCursor=match.page;lineCursor=match.line+1;}
-            return result;
+            pageData=new ArrayList<>();for(Path page:pages)pageData.add(new PageData(ImageIO.read(page.toFile()),ocr(page)));
+            return cropFields(codes,pageData);
         }catch(Exception e){return codes.stream().map(code->placeholder(":"+code+": Ausschnitt nicht verfügbar")).toList();}
         finally{if(directory!=null)delete(directory);}
+    }
+
+    private List<PageData> digitalPages(byte[] content)throws IOException{
+        try(PDDocument document=Loader.loadPDF(content)){
+            PositionStripper stripper=new PositionStripper();stripper.setSortByPosition(true);stripper.getText(document);
+            if(stripper.lines.isEmpty())return List.of();
+            PDFRenderer renderer=new PDFRenderer(document);List<PageData> pages=new ArrayList<>();
+            for(int page=0;page<Math.min(document.getNumberOfPages(),20);page++)pages.add(new PageData(renderer.renderImageWithDPI(page,150),stripper.lines.getOrDefault(page,List.of()).stream().map(line->line.scaled(150f/72f)).toList()));
+            return pages;
+        }
+    }
+
+    private List<byte[]> cropFields(List<String> codes,List<PageData> pages)throws IOException{
+        List<byte[]> result=new ArrayList<>();int pageCursor=0,lineCursor=0;
+        for(String code:codes){Match match=find(pages,code,pageCursor,lineCursor);if(match==null)match=find(pages,code,0,0);if(match==null){result.add(placeholder(":"+code+": nicht lokalisiert"));continue;}result.add(crop(match));pageCursor=match.page;lineCursor=match.line+1;}
+        return result;
     }
 
     private List<Line> ocr(Path image)throws Exception{
@@ -56,11 +77,11 @@ public class PdfFieldSnippetService {
     }
 
     private Match find(List<PageData> pages,String code,int startPage,int startLine){
-        String marker=code.toUpperCase(Locale.ROOT);for(int p=startPage;p<pages.size();p++){List<Line> lines=pages.get(p).lines;for(int l=p==startPage?startLine:0;l<lines.size();l++){String text=lines.get(l).text.toUpperCase(Locale.ROOT).replace(" ","");if(text.contains(":"+marker+":")||text.matches(".*(?:^|[^A-Z0-9])"+Pattern.quote(marker)+"[:.].*"))return new Match(p,l,pages.get(p),lines.get(l));}}return null;
+        String marker=code.toUpperCase(Locale.ROOT);for(int p=startPage;p<pages.size();p++){List<Line> lines=pages.get(p).lines;for(int l=p==startPage?startLine:0;l<lines.size();l++){String text=lines.get(l).text.toUpperCase(Locale.ROOT).trim();if(text.contains(":"+marker+":")||text.matches("^(?:FIELDTAG\\s+)?"+Pattern.quote(marker)+"(?:[:.]|\\s+).*$"))return new Match(p,l,pages.get(p),lines.get(l));}}return null;
     }
 
     private byte[] crop(Match match)throws IOException{
-        BufferedImage page=match.data.image;int y=Math.max(0,match.value.top-28);int nextTop=match.line+1<match.data.lines.size()?match.data.lines.get(match.line+1).top:y+300;int height=Math.max(150,Math.min(360,nextTop-y+120));height=Math.min(height,page.getHeight()-y);BufferedImage excerpt=page.getSubimage(0,y,page.getWidth(),height);ByteArrayOutputStream out=new ByteArrayOutputStream();ImageIO.write(excerpt,"png",out);return out.toByteArray();
+        BufferedImage page=match.data.image;int y=Math.max(0,match.value.top-24);int height=Math.min(260,page.getHeight()-y);BufferedImage excerpt=page.getSubimage(0,y,page.getWidth(),height);ByteArrayOutputStream out=new ByteArrayOutputStream();ImageIO.write(excerpt,"png",out);return out.toByteArray();
     }
 
     private byte[] placeholder(String message){try{BufferedImage image=new BufferedImage(900,170,BufferedImage.TYPE_INT_RGB);Graphics2D g=image.createGraphics();g.setColor(new Color(248,250,252));g.fillRect(0,0,900,170);g.setColor(new Color(102,112,133));g.setFont(new Font(Font.SANS_SERIF,Font.PLAIN,20));g.drawString(message,28,88);g.dispose();ByteArrayOutputStream out=new ByteArrayOutputStream();ImageIO.write(image,"png",out);return out.toByteArray();}catch(IOException e){return new byte[0];}}
@@ -68,8 +89,13 @@ public class PdfFieldSnippetService {
     private int pageNumber(Path path){Matcher m=Pattern.compile("(\\d+)").matcher(path.getFileName().toString());return m.find()?Integer.parseInt(m.group(1)):0;}
     private int number(String value){try{return Integer.parseInt(value);}catch(NumberFormatException e){return 0;}}
     private void delete(Path directory){try(var paths=Files.walk(directory)){paths.sorted(Comparator.reverseOrder()).forEach(p->{try{Files.deleteIfExists(p);}catch(IOException ignored){}});}catch(IOException ignored){}}
-    private record Line(String text,int left,int top,int width,int height){}
+    private record Line(String text,int left,int top,int width,int height){Line scaled(float factor){return new Line(text,Math.round(left*factor),Math.round(top*factor),Math.round(width*factor),Math.round(height*factor));}}
     private record PageData(BufferedImage image,List<Line> lines){}
     private record Match(int page,int line,PageData data,Line value){}
     private static class LineBuilder{StringBuilder text=new StringBuilder();int left=Integer.MAX_VALUE,top=Integer.MAX_VALUE,right,bottom;void add(String word,int x,int y,int w,int h){if(!text.isEmpty())text.append(' ');text.append(word);left=Math.min(left,x);top=Math.min(top,y);right=Math.max(right,x+w);bottom=Math.max(bottom,y+h);}Line build(){return new Line(text.toString(),left,top,right-left,bottom-top);}}
+    private static class PositionStripper extends PDFTextStripper{
+        final Map<Integer,List<Line>> lines=new HashMap<>();
+        PositionStripper()throws IOException{}
+        @Override protected void writeString(String text,List<TextPosition> positions){if(text==null||text.isBlank()||positions.isEmpty())return;float left=Float.MAX_VALUE,top=Float.MAX_VALUE,right=0,bottom=0;for(TextPosition p:positions){left=Math.min(left,p.getXDirAdj());top=Math.min(top,p.getYDirAdj()-p.getHeightDir());right=Math.max(right,p.getXDirAdj()+p.getWidthDirAdj());bottom=Math.max(bottom,p.getYDirAdj());}lines.computeIfAbsent(getCurrentPageNo()-1,k->new ArrayList<>()).add(new Line(text.strip(),Math.round(left),Math.round(top),Math.round(right-left),Math.round(bottom-top)));}
+    }
 }
