@@ -11,6 +11,7 @@ import de.corporate.lc.training.domain.TrainingSession;
 import de.corporate.lc.training.repository.TrainingSessionRepository;
 import de.corporate.lc.training.service.TrainingDataService;
 import de.corporate.lc.training.service.TrainingLearningService;
+import de.corporate.lc.training.service.TrainingQualityService;
 import de.corporate.lc.training.service.PdfFieldSnippetService;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
@@ -34,11 +35,12 @@ public class TrainingController {
     private final AuditService audit;
     private final LetterOfCreditRepository lcs;
     private final TrainingLearningService learning;
+    private final TrainingQualityService quality;
 
     public TrainingController(TrainingSessionRepository r, DocumentExtractionService e,
                               PrintedSwiftNormalizer n, SwiftImportService i, TrainingDataService d,
-                              PdfFieldSnippetService p,AuditService a,LetterOfCreditRepository lcs,TrainingLearningService learning) {
-        repo=r; extraction=e; normalizer=n; imports=i; data=d; snippets=p; audit=a;this.lcs=lcs;this.learning=learning;
+                              PdfFieldSnippetService p,AuditService a,LetterOfCreditRepository lcs,TrainingLearningService learning,TrainingQualityService quality) {
+        repo=r; extraction=e; normalizer=n; imports=i; data=d; snippets=p; audit=a;this.lcs=lcs;this.learning=learning;this.quality=quality;
     }
 
     @PostMapping("/preview")
@@ -65,6 +67,8 @@ public class TrainingController {
         TrainingSession s=find(id);
         if(!s.getUsername().equals(auth.getName())) throw new IllegalArgumentException("Trainingssitzung gehört einem anderen Benutzer.");
         var corrected=new SwiftImportRequest(s.getFilename(),request.correctedRawMessage());
+        var qualityResult=quality.validate(s.getFilename(),request);
+        if("RED".equals(qualityResult.status()))throw new IllegalArgumentException(String.join(" ",qualityResult.blockers()));
         var preview=imports.previewCorrected(corrected);
         boolean existingMt700=preview.messageType().equals("MT700")&&preview.duplicate()&&preview.reference()!=null
                 &&preview.errors().stream().allMatch(error->error.contains("existiert bereits"));
@@ -92,6 +96,9 @@ public class TrainingController {
         audit.record(auth,"TRAINING_PROGRESS_SAVED","TRAINING_SESSION",s.getId(),s.getFilename()+" · Bearbeitungsstand gespeichert");
         return Map.of("status","SAVED");
     }
+
+    @PostMapping("/{id}/validate")
+    public TrainingQualityService.Result validate(@PathVariable UUID id,@RequestBody TrainingConfirm request,Authentication auth){TrainingSession s=find(id);if(!s.getUsername().equals(auth.getName()))throw new IllegalArgumentException("Trainingssitzung gehört einem anderen Benutzer.");return quality.validate(s.getFilename(),request);}
 
     @GetMapping
     public List<TrainingView> history() {
