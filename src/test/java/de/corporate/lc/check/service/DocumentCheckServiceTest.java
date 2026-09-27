@@ -84,6 +84,12 @@ class DocumentCheckServiceTest {
         assertThat(result.results()).extracting("code").contains("ORIGIN_CERTIFICATE_REFERENCE_OK","ORIGIN_CERTIFICATE_GOODS_OK","CHAMBER_ISSUER_EVIDENCED");
     }
 
+    @Test void detectsInsufficientInsuranceCoverage() {
+        UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-INS-1");lc.setAmount(new BigDecimal("1000"));lc.setCurrency("EUR");lc.setRequiredDocuments(List.of("INSURANCE CERTIFICATE FOR 110 PERCENT OF LC VALUE"));LcDocument insurance=document(DocumentType.INSURANCE_CERTIFICATE,"insurance.pdf","LC Reference: LC-INS-1\nSum insured EUR 1050");insurance.setExtractedReference("LC-INS-1");insurance.setAmount(new BigDecimal("1050"));insurance.setCurrency("EUR");
+        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(insurance));var result=service(lcs,docs).check(id);
+        assertThat(result.results()).extracting("code").contains("INSURANCE_REFERENCE_OK","INSURANCE_COVERAGE_INSUFFICIENT");
+    }
+
     @Test void reportsContradictingPackingListDescription() {
         UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-4711");lc.setRawMessage(":20:LC-4711\n:45A:100 INDUSTRIAL PUMPS TYPE PX");
         LcDocument invoice=document(DocumentType.COMMERCIAL_INVOICE,"invoice.pdf","Description: 100 industrial pumps type PX");
