@@ -2,6 +2,7 @@ package de.corporate.lc.check.service;
 
 import de.corporate.lc.document.domain.*;
 import de.corporate.lc.document.repository.LcDocumentRepository;
+import de.corporate.lc.check.repository.DocumentCheckDecisionRepository;
 import de.corporate.lc.lc.domain.LetterOfCredit;
 import de.corporate.lc.lc.repository.LetterOfCreditRepository;
 import org.junit.jupiter.api.Test;
@@ -24,7 +25,7 @@ class DocumentCheckServiceTest {
         var lcs = mock(LetterOfCreditRepository.class); var docs = mock(LcDocumentRepository.class);
         when(lcs.findById(id)).thenReturn(Optional.of(lc));
         when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(invoice));
-        var result = new DocumentCheckService(lcs, docs).check(id);
+        var result = service(lcs, docs).check(id);
         assertThat(result.discrepancies()).isEqualTo(2);
         assertThat(result.results()).extracting("code").contains("MISSING_DOCUMENT", "INVOICE_AMOUNT_EXCEEDED");
     }
@@ -34,7 +35,7 @@ class DocumentCheckServiceTest {
         LcDocument invoice=document(DocumentType.COMMERCIAL_INVOICE,"invoice.pdf","Description: 100 industrial pumps type PX\nQuantity: 100 pcs\nLC Reference: LC-4711");
         LcDocument packing=document(DocumentType.PACKING_LIST,"packing.pdf","Description: 100 industrial pumps type PX\nQuantity: 100 pieces\nPackages: 10\nNet weight: 500 kg\nGross weight: 550 kg\nLC Reference: LC-4711");
         var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(invoice,packing));
-        var result=new DocumentCheckService(lcs,docs).check(id);
+        var result=service(lcs,docs).check(id);
         assertThat(result.results()).filteredOn(item->item.code().equals("GOODS_DESCRIPTION_OK")).hasSize(2);
         assertThat(result.results()).extracting("code").contains("INVOICE_PACKING_DESCRIPTION_CONSISTENCY","INVOICE_PACKING_QUANTITY_CONSISTENCY","PACKING_WEIGHT_OK","PACKAGES_OK");
     }
@@ -44,7 +45,7 @@ class DocumentCheckServiceTest {
         LcDocument invoice=document(DocumentType.COMMERCIAL_INVOICE,"invoice.pdf","Quantity: 100 pcs");
         LcDocument packing=document(DocumentType.PACKING_LIST,"packing.pdf","Quantity: 90 pcs\nPackages: 5\nNet weight: 600 kg\nGross weight: 550 kg");
         var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(invoice,packing));
-        var result=new DocumentCheckService(lcs,docs).check(id);
+        var result=service(lcs,docs).check(id);
         assertThat(result.results()).filteredOn(item->item.code().equals("INVOICE_PACKING_QUANTITY_CONSISTENCY")||item.code().equals("PACKING_WEIGHT_IMPLAUSIBLE")).allMatch(item->item.severity()==de.corporate.lc.check.api.CheckResult.Severity.DISCREPANCY);
     }
 
@@ -52,7 +53,7 @@ class DocumentCheckServiceTest {
         UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-12");lc.setRequiredDocuments(List.of("SIGNED COMMERCIAL INVOICE IN 3 ORIGINALS AND 2 COPIES"));
         LcDocument invoice=document(DocumentType.COMMERCIAL_INVOICE,"invoice.pdf","Authorized signature: Jane Doe");
         var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(invoice));
-        var result=new DocumentCheckService(lcs,docs).check(id);
+        var result=service(lcs,docs).check(id);
         assertThat(result.results()).extracting("code").contains("SIGNATURE_REQUIREMENT_EVIDENCED","DOCUMENT_COPIES_MANUAL_REVIEW");
     }
 
@@ -61,9 +62,10 @@ class DocumentCheckServiceTest {
         LcDocument invoice=document(DocumentType.COMMERCIAL_INVOICE,"invoice.pdf","Description: 100 industrial pumps type PX");
         LcDocument packing=document(DocumentType.PACKING_LIST,"packing.pdf","Description: 50 wooden chairs");
         var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(invoice,packing));
-        var result=new DocumentCheckService(lcs,docs).check(id);
+        var result=service(lcs,docs).check(id);
         assertThat(result.results()).filteredOn(item->item.code().equals("GOODS_DESCRIPTION_MISMATCH")||item.code().equals("INVOICE_PACKING_DESCRIPTION_CONSISTENCY")).allMatch(item->item.severity()==de.corporate.lc.check.api.CheckResult.Severity.DISCREPANCY);
     }
 
     private LcDocument document(DocumentType type,String name,String text){LcDocument document=new LcDocument();document.setDocumentType(type);document.setOriginalFilename(name);document.setExtractionStatus("GENERATED");document.setExtractedText(text);document.setDocumentDate(LocalDate.now());return document;}
+    private DocumentCheckService service(LetterOfCreditRepository lcs,LcDocumentRepository docs){DocumentCheckDecisionRepository decisions=mock(DocumentCheckDecisionRepository.class);when(decisions.findByLcId(any())).thenReturn(List.of());return new DocumentCheckService(lcs,docs,decisions);}
 }

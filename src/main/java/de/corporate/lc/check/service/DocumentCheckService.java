@@ -2,6 +2,7 @@ package de.corporate.lc.check.service;
 
 import de.corporate.lc.check.api.CheckResult;
 import de.corporate.lc.check.api.ReviewSummary;
+import de.corporate.lc.check.api.CheckDecisionRequest;import de.corporate.lc.check.domain.DocumentCheckDecision;import de.corporate.lc.check.repository.DocumentCheckDecisionRepository;
 import de.corporate.lc.document.domain.DocumentType;
 import de.corporate.lc.document.repository.LcDocumentRepository;
 import de.corporate.lc.lc.domain.LetterOfCredit;
@@ -15,11 +16,10 @@ import static de.corporate.lc.check.api.CheckResult.Severity.*;
 @Service
 public class DocumentCheckService {
     private final LetterOfCreditRepository lcs;
-    private final LcDocumentRepository documents;
+    private final LcDocumentRepository documents;private final DocumentCheckDecisionRepository decisions;
 
-    public DocumentCheckService(LetterOfCreditRepository lcs, LcDocumentRepository documents) {
-        this.lcs = lcs;
-        this.documents = documents;
+    public DocumentCheckService(LetterOfCreditRepository lcs, LcDocumentRepository documents,DocumentCheckDecisionRepository decisions) {
+        this.lcs = lcs;this.documents = documents;this.decisions=decisions;
     }
 
     @Transactional(readOnly = true)
@@ -126,8 +126,13 @@ public class DocumentCheckService {
             results.add(new CheckResult(WARNING, "LC_EXPIRED", "The LC has expired."));
         if (results.isEmpty()) results.add(new CheckResult(WARNING, "NO_RULES_APPLIED", "No automated rule could be applied."));
 
-        return new ReviewSummary(count(results, DISCREPANCY), count(results, WARNING), count(results, OK), results);
+        Map<String,DocumentCheckDecision> reviewed=new HashMap<>();decisions.findByLcId(lcId).forEach(d->reviewed.put(decisionKey(d.getFindingCode(),d.getDocumentName()),d));
+        List<CheckResult> reviewedResults=results.stream().map(result->{var d=reviewed.get(decisionKey(result.code(),result.documentName()));return d==null?result:new CheckResult(result.severity(),result.code(),result.message(),result.lcCondition(),result.documentName(),result.documentEvidence(),d.getDecision(),d.getReviewedBy(),d.getReviewedAt());}).toList();
+        return new ReviewSummary(count(reviewedResults, DISCREPANCY), count(reviewedResults, WARNING), count(reviewedResults, OK), reviewedResults);
     }
+
+    @Transactional public void decide(UUID lcId,CheckDecisionRequest request,String username){lcs.findById(lcId).orElseThrow();String name=request.documentName()==null?"":request.documentName();DocumentCheckDecision decision=decisions.findByLcIdAndFindingCodeAndDocumentName(lcId,request.findingCode(),name).orElseGet(DocumentCheckDecision::new);decision.setLcId(lcId);decision.setFindingCode(request.findingCode());decision.setDocumentName(name);decision.setDecision(request.decision());decision.setComment(request.comment());decision.setReviewedBy(username);decision.setReviewedAt(java.time.LocalDateTime.now());decisions.save(decision);}
+    private String decisionKey(String code,String document){return code+"\u0000"+(document==null?"":document);}
 
     private long count(List<CheckResult> results, CheckResult.Severity severity) {
         return results.stream().filter(result -> result.severity() == severity).count();
