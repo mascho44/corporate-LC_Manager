@@ -139,7 +139,7 @@ public class DocumentCheckService {
         return !tokens.isEmpty() && tokens.stream().allMatch(haystack::contains);
     }
 
-    private boolean readable(de.corporate.lc.document.domain.LcDocument document){return "EXTRACTED".equals(document.getExtractionStatus())||"OCR_EXTRACTED".equals(document.getExtractionStatus());}
+    private boolean readable(de.corporate.lc.document.domain.LcDocument document){return "EXTRACTED".equals(document.getExtractionStatus())||"OCR_EXTRACTED".equals(document.getExtractionStatus())||"GENERATED".equals(document.getExtractionStatus());}
     private CheckResult finding(CheckResult.Severity severity,String code,String message,String condition,String document,String proof){return new CheckResult(severity,code,message,condition,document,proof);}
     private String evidence(String text,String value){if(text==null||value==null)return "Keine Fundstelle verfügbar";String compact=value.replaceAll("[^A-Za-z0-9]","");for(String line:text.split("\\R")){String normalized=line.replaceAll("[^A-Za-z0-9]","");if(!compact.isBlank()&&(normalized.toLowerCase(Locale.ROOT).contains(compact.toLowerCase(Locale.ROOT))||compact.toLowerCase(Locale.ROOT).contains(normalized.toLowerCase(Locale.ROOT))))return excerpt(line);}return "Erkannter Wert: "+value;}
     private String partyEvidence(String text,String party){if(text==null)return "Keine Fundstelle verfügbar";for(String token:normalize(party).split(" "))if(token.length()>3)for(String line:text.split("\\R"))if(normalize(line).contains(token))return excerpt(line);return "Partei im Dokumenttext erkannt";}

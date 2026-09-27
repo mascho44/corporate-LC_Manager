@@ -4,6 +4,8 @@ import de.corporate.lc.audit.service.AuditService;
 import de.corporate.lc.document.domain.DocumentType;
 import de.corporate.lc.document.domain.LcDocument;
 import de.corporate.lc.document.service.DocumentService;
+import de.corporate.lc.document.service.GeneratedDocumentService;
+import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
@@ -20,7 +22,11 @@ import java.util.UUID;
 public class DocumentController {
     private final DocumentService service;
     private final AuditService audit;
-    public DocumentController(DocumentService service, AuditService audit) { this.service = service; this.audit = audit; }
+    private final GeneratedDocumentService generated;
+    public DocumentController(DocumentService service, AuditService audit,GeneratedDocumentService generated) { this.service = service; this.audit = audit;this.generated=generated; }
+
+    @PostMapping(value="/lcs/{lcId}/generated-documents",consumes=MediaType.APPLICATION_JSON_VALUE)
+    public DocumentView generate(@PathVariable UUID lcId,@Valid @RequestBody GeneratedDocumentRequest request,Authentication authentication)throws IOException{DocumentView result=generated.create(lcId,request);audit.record(authentication,"DOCUMENT_GENERATED","LETTER_OF_CREDIT",lcId,result.originalFilename()+" · "+request.type());return result;}
 
     @PostMapping(value = "/lcs/{lcId}/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public DocumentView upload(@PathVariable UUID lcId, @RequestPart("file") MultipartFile file,
