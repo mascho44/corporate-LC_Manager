@@ -4,6 +4,7 @@ public enum DocumentType {
     COMMERCIAL_INVOICE("Commercial Invoice"),
     PACKING_LIST("Packing List"),
     BILL_OF_LADING("Bill of Lading"),
+    AIR_WAYBILL("Air Waybill"),
     CERTIFICATE_OF_ORIGIN("Certificate of Origin"),
     INSURANCE_CERTIFICATE("Insurance Certificate"),
     OTHER("Other");

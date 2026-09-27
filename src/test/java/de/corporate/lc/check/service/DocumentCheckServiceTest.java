@@ -96,6 +96,18 @@ class DocumentCheckServiceTest {
         assertThat(result.results()).extracting("code").contains("PRESENTATION_PERIOD_EXCEEDED","PRESENTATION_BEFORE_EXPIRY_OK");
     }
 
+    @Test void checksAirWaybillReferenceShipmentDateAndClauses() {
+        UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-AWB-1");lc.setLatestShipmentDate(LocalDate.of(2026,9,20));lc.setRequiredDocuments(List.of("AIR WAYBILL SHOWING FREIGHT PREPAID, AIRPORT OF DEPARTURE AND AIRPORT OF DESTINATION"));LcDocument awb=document(DocumentType.AIR_WAYBILL,"awb.pdf","LC Reference: LC-AWB-1\nFreight charges prepaid\nAirport of departure: Frankfurt\nAirport of destination: Cairo");awb.setExtractedReference("LC-AWB-1");awb.setDocumentDate(LocalDate.of(2026,9,19));
+        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(awb));var result=service(lcs,docs).check(id);
+        assertThat(result.results()).extracting("code").contains("AIR_WAYBILL_REFERENCE_OK","AIR_SHIPMENT_DATE_OK","AWB_FREIGHT_PREPAID_EVIDENCED","AWB_DEPARTURE_AIRPORT_EVIDENCED","AWB_DESTINATION_AIRPORT_EVIDENCED");
+    }
+
+    @Test void usesAirWaybillForPresentationPeriod() {
+        UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-AWB-48");lc.setRawMessage(":20:LC-AWB-48\n:48:21 DAYS AFTER DATE OF SHIPMENT");lc.setExpiryDate(LocalDate.now().plusDays(30));LcDocument awb=document(DocumentType.AIR_WAYBILL,"awb.pdf","LC Reference: LC-AWB-48");awb.setExtractedReference("LC-AWB-48");awb.setDocumentDate(LocalDate.now().minusDays(30));
+        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(awb));var result=service(lcs,docs).check(id);
+        assertThat(result.results()).extracting("code").contains("PRESENTATION_PERIOD_EXCEEDED");
+    }
+
     @Test void reportsContradictingPackingListDescription() {
         UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-4711");lc.setRawMessage(":20:LC-4711\n:45A:100 INDUSTRIAL PUMPS TYPE PX");
         LcDocument invoice=document(DocumentType.COMMERCIAL_INVOICE,"invoice.pdf","Description: 100 industrial pumps type PX");
