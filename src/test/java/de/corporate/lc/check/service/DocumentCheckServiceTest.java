@@ -31,12 +31,21 @@ class DocumentCheckServiceTest {
 
     @Test void checksGoodsDescriptionAgainstLcAndBetweenDocuments() {
         UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-4711");lc.setRawMessage(":20:LC-4711\n:45A:100 INDUSTRIAL PUMPS TYPE PX\n:46A:SIGNED COMMERCIAL INVOICE");
-        LcDocument invoice=document(DocumentType.COMMERCIAL_INVOICE,"invoice.pdf","Description: 100 industrial pumps type PX\nLC Reference: LC-4711");
-        LcDocument packing=document(DocumentType.PACKING_LIST,"packing.pdf","Description: 100 industrial pumps type PX\nLC Reference: LC-4711");
+        LcDocument invoice=document(DocumentType.COMMERCIAL_INVOICE,"invoice.pdf","Description: 100 industrial pumps type PX\nQuantity: 100 pcs\nLC Reference: LC-4711");
+        LcDocument packing=document(DocumentType.PACKING_LIST,"packing.pdf","Description: 100 industrial pumps type PX\nQuantity: 100 pieces\nPackages: 10\nNet weight: 500 kg\nGross weight: 550 kg\nLC Reference: LC-4711");
         var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(invoice,packing));
         var result=new DocumentCheckService(lcs,docs).check(id);
         assertThat(result.results()).filteredOn(item->item.code().equals("GOODS_DESCRIPTION_OK")).hasSize(2);
-        assertThat(result.results()).extracting("code").contains("INVOICE_PACKING_DESCRIPTION_CONSISTENCY");
+        assertThat(result.results()).extracting("code").contains("INVOICE_PACKING_DESCRIPTION_CONSISTENCY","INVOICE_PACKING_QUANTITY_CONSISTENCY","PACKING_WEIGHT_OK","PACKAGES_OK");
+    }
+
+    @Test void detectsQuantityAndWeightContradictions() {
+        UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-99");
+        LcDocument invoice=document(DocumentType.COMMERCIAL_INVOICE,"invoice.pdf","Quantity: 100 pcs");
+        LcDocument packing=document(DocumentType.PACKING_LIST,"packing.pdf","Quantity: 90 pcs\nPackages: 5\nNet weight: 600 kg\nGross weight: 550 kg");
+        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(invoice,packing));
+        var result=new DocumentCheckService(lcs,docs).check(id);
+        assertThat(result.results()).filteredOn(item->item.code().equals("INVOICE_PACKING_QUANTITY_CONSISTENCY")||item.code().equals("PACKING_WEIGHT_IMPLAUSIBLE")).allMatch(item->item.severity()==de.corporate.lc.check.api.CheckResult.Severity.DISCREPANCY);
     }
 
     @Test void reportsContradictingPackingListDescription() {
