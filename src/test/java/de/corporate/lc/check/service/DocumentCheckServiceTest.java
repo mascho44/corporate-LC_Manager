@@ -120,6 +120,12 @@ class DocumentCheckServiceTest {
         assertThat(result.results()).extracting("code").contains("DRAFT_REFERENCE_OK","DRAFT_DRAWER_OK","DRAFT_AMOUNT_OK","DRAFT_TENOR_OK");
     }
 
+    @Test void checksCmrReferenceShipmentDateSignatureAndPlaces() {
+        UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-CMR-1");lc.setLatestShipmentDate(LocalDate.of(2026,9,20));lc.setRequiredDocuments(List.of("SIGNED CMR ROAD CONSIGNMENT NOTE SHOWING PLACE OF TAKING OVER AND PLACE OF DELIVERY"));LcDocument cmr=document(DocumentType.ROAD_CONSIGNMENT_NOTE,"cmr.pdf","LC Reference: LC-CMR-1\nCarrier signature\nPlace of taking over: Stuttgart\nPlace of delivery: Paris");cmr.setExtractedReference("LC-CMR-1");cmr.setDocumentDate(LocalDate.of(2026,9,19));
+        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(cmr));var result=service(lcs,docs).check(id);
+        assertThat(result.results()).extracting("code").contains("CMR_REFERENCE_OK","CMR_SHIPMENT_DATE_OK","CMR_CARRIER_SIGNATURE_EVIDENCED","CMR_PLACE_OF_TAKING_EVIDENCED","CMR_PLACE_OF_DELIVERY_EVIDENCED");
+    }
+
     @Test void reportsContradictingPackingListDescription() {
         UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-4711");lc.setRawMessage(":20:LC-4711\n:45A:100 INDUSTRIAL PUMPS TYPE PX");
         LcDocument invoice=document(DocumentType.COMMERCIAL_INVOICE,"invoice.pdf","Description: 100 industrial pumps type PX");

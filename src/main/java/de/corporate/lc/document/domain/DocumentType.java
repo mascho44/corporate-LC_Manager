@@ -5,6 +5,7 @@ public enum DocumentType {
     PACKING_LIST("Packing List"),
     BILL_OF_LADING("Bill of Lading"),
     AIR_WAYBILL("Air Waybill"),
+    ROAD_CONSIGNMENT_NOTE("CMR / Road Consignment Note"),
     CERTIFICATE_OF_ORIGIN("Certificate of Origin"),
     INSURANCE_CERTIFICATE("Insurance Certificate"),
     INSPECTION_CERTIFICATE("Inspection Certificate"),
