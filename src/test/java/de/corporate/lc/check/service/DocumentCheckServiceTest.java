@@ -108,6 +108,12 @@ class DocumentCheckServiceTest {
         assertThat(result.results()).extracting("code").contains("PRESENTATION_PERIOD_EXCEEDED");
     }
 
+    @Test void checksInspectionCertificateReferenceGoodsAndIssuer() {
+        UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-INSP-1");lc.setBeneficiary("Exporter GmbH");lc.setRawMessage(":20:LC-INSP-1\n:45A:INDUSTRIAL PUMPS TYPE PX");lc.setRequiredDocuments(List.of("INSPECTION CERTIFICATE ISSUED BY SGS"));LcDocument certificate=document(DocumentType.INSPECTION_CERTIFICATE,"inspection.pdf","LC Reference: LC-INSP-1\nExporter GmbH\nDescription: Industrial pumps type PX\nIssued by SGS");certificate.setExtractedReference("LC-INSP-1");
+        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(certificate));var result=service(lcs,docs).check(id);
+        assertThat(result.results()).extracting("code").contains("INSPECTION_REFERENCE_OK","INSPECTION_BENEFICIARY_OK","INSPECTION_GOODS_OK","INSPECTION_ISSUER_EVIDENCED");
+    }
+
     @Test void reportsContradictingPackingListDescription() {
         UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-4711");lc.setRawMessage(":20:LC-4711\n:45A:100 INDUSTRIAL PUMPS TYPE PX");
         LcDocument invoice=document(DocumentType.COMMERCIAL_INVOICE,"invoice.pdf","Description: 100 industrial pumps type PX");

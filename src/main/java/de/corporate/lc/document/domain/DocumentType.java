@@ -7,6 +7,7 @@ public enum DocumentType {
     AIR_WAYBILL("Air Waybill"),
     CERTIFICATE_OF_ORIGIN("Certificate of Origin"),
     INSURANCE_CERTIFICATE("Insurance Certificate"),
+    INSPECTION_CERTIFICATE("Inspection Certificate"),
     OTHER("Other");
 
     private final String displayName;
