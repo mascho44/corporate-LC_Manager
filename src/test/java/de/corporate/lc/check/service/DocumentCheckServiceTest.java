@@ -72,6 +72,12 @@ class DocumentCheckServiceTest {
         assertThat(result.results()).filteredOn(item->item.code().equals("ADDITIONAL_CONDITIONS_REVIEW")).singleElement().satisfies(item->{assertThat(item.lcCondition()).contains("INSPECTION CERTIFICATE REQUIRED");assertThat(item.lcCondition()).doesNotContain("OLD CONDITION");});
     }
 
+    @Test void checksBillOfLadingShipmentDateAndClauses() {
+        UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-BL-1");lc.setLatestShipmentDate(LocalDate.of(2026,9,20));lc.setRequiredDocuments(List.of("FULL SET CLEAN ON BOARD BILL OF LADING"));LcDocument bill=document(DocumentType.BILL_OF_LADING,"bl.pdf","LC Reference: LC-BL-1\nClean shipped on board\nFull set");bill.setExtractedReference("LC-BL-1");bill.setDocumentDate(LocalDate.of(2026,9,21));
+        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(bill));var result=service(lcs,docs).check(id);
+        assertThat(result.results()).extracting("code").contains("BILL_OF_LADING_REFERENCE_OK","SHIPMENT_DATE_EXCEEDED","CLEAN_ON_BOARD_EVIDENCED","FULL_SET_BILL_OF_LADING_EVIDENCED");
+    }
+
     @Test void reportsContradictingPackingListDescription() {
         UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-4711");lc.setRawMessage(":20:LC-4711\n:45A:100 INDUSTRIAL PUMPS TYPE PX");
         LcDocument invoice=document(DocumentType.COMMERCIAL_INVOICE,"invoice.pdf","Description: 100 industrial pumps type PX");
