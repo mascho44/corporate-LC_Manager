@@ -96,7 +96,7 @@ public class DocumentCheckService {
 
         var invoices=uploaded.stream().filter(d->d.getDocumentType()==DocumentType.COMMERCIAL_INVOICE).toList();
         var packingLists=uploaded.stream().filter(d->d.getDocumentType()==DocumentType.PACKING_LIST).toList();
-        String goodsDescription=swiftField(lc.getRawMessage(),"45A").orElseGet(()->additionalField(lc,"45A").orElse(null));
+        String goodsDescription=additionalField(lc,"45A").orElseGet(()->swiftField(lc.getRawMessage(),"45A").orElse(null));
         if(goodsDescription!=null){
             uploaded.stream().filter(d->(d.getDocumentType()==DocumentType.COMMERCIAL_INVOICE||d.getDocumentType()==DocumentType.PACKING_LIST)&&readable(d)).forEach(document->{
                 String documentDescription=labeledValue(document.getExtractedText(),"Description").orElse(null);
