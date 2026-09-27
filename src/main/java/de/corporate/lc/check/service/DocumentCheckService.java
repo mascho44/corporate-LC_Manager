@@ -37,6 +37,7 @@ public class DocumentCheckService {
             } else {
                 var present=uploaded.stream().filter(d->d.getDocumentType()==expected.get()).findFirst().orElseThrow();
                 results.add(finding(OK, "DOCUMENT_PRESENT", expected.get().getDisplayName() + " wurde vorgelegt.", requirement, present.getOriginalFilename(), "Dokumenttyp: "+expected.get().getDisplayName()));
+                checkFormalRequirement(requirement,present,results);
             }
         }
 
@@ -87,6 +88,8 @@ public class DocumentCheckService {
                 if(document.getExtractedReference()==null)results.add(finding(WARNING,"PACKING_LIST_REFERENCE_NOT_FOUND","LC-Referenz konnte in der Packliste nicht gefunden werden.",condition,document.getOriginalFilename(),"Keine passende Referenz im ausgelesenen Text"));
                 else if(!sameReference(document.getExtractedReference(),lc.getReference()))results.add(finding(DISCREPANCY,"PACKING_LIST_REFERENCE_MISMATCH","Die Referenz der Packliste weicht vom LC ab.",condition,document.getOriginalFilename(),evidence(document.getExtractedText(),document.getExtractedReference())));
                 else results.add(finding(OK,"PACKING_LIST_REFERENCE_OK","Die Packliste nennt die richtige LC-Referenz.",condition,document.getOriginalFilename(),evidence(document.getExtractedText(),document.getExtractedReference())));
+                checkParty(document,lc.getBeneficiary(),"Begünstigter :59:","PACKING_BENEFICIARY",true,results);
+                checkParty(document,lc.getApplicant(),"Antragsteller :50:","PACKING_APPLICANT",false,results);
                 checkPackingDetails(document,results);
             }
         });
@@ -164,6 +167,16 @@ public class DocumentCheckService {
     private Optional<String> swiftField(String raw,String code){if(raw==null)return Optional.empty();var matcher=java.util.regex.Pattern.compile("(?ms)^:"+java.util.regex.Pattern.quote(code)+":\\s*(.*?)(?=^:[0-9]{2}[A-Z]?:|\\z)").matcher(raw);return matcher.find()?Optional.of(matcher.group(1).trim()):Optional.empty();}
     private Optional<String> additionalField(LetterOfCredit lc,String code){return lc.getAdditionalFields().entrySet().stream().filter(e->e.getKey().toUpperCase(Locale.ROOT).contains(code)).map(Map.Entry::getValue).filter(v->v!=null&&!v.isBlank()).findFirst();}
     private Optional<String> labeledValue(String text,String label){if(text==null)return Optional.empty();String prefix=label.toLowerCase(Locale.ROOT)+":";return Arrays.stream(text.split("\\R")).map(String::trim).filter(line->line.toLowerCase(Locale.ROOT).startsWith(prefix)).map(line->line.substring(line.indexOf(':')+1).trim()).filter(value->!value.isBlank()&&!"-".equals(value)).findFirst();}
+    private void checkFormalRequirement(String requirement,de.corporate.lc.document.domain.LcDocument document,List<CheckResult> results){
+        String lower=requirement.toLowerCase(Locale.ROOT);String text=normalize(document.getExtractedText()==null?"":document.getExtractedText());
+        if(lower.matches("(?s).*(signed|signature|duly signed|unterzeichnet|unterschrift).*")&&readable(document)){
+            boolean found=text.matches("(?s).*(signed|signature|signatory|authorized signature|unterzeichnet|unterschrift).*" );
+            results.add(finding(found?OK:WARNING,"SIGNATURE_REQUIREMENT_"+(found?"EVIDENCED":"REVIEW"),found?"Ein Unterschriftenvermerk wurde im Dokument erkannt.":"Geforderte Unterschrift konnte nicht automatisch belegt werden und muss visuell geprüft werden.",requirement,document.getOriginalFilename(),found?textEvidence(document.getExtractedText(),Set.of("signed","signature","signatory","unterzeichnet","unterschrift")):"Kein eindeutiger Unterschriftenvermerk im ausgelesenen Text"));
+        }
+        if(lower.matches("(?s).*(original|copy|copies|duplicate|triplicate|kopie|kopien|ausfertigung).*") )
+            results.add(finding(WARNING,"DOCUMENT_COPIES_MANUAL_REVIEW","Geforderte Anzahl von Originalen oder Kopien muss manuell geprüft werden.",requirement,document.getOriginalFilename(),"Die Anzahl körperlicher Originale/Kopien lässt sich aus einer einzelnen Datei nicht zuverlässig ableiten."));
+    }
+    private void checkParty(de.corporate.lc.document.domain.LcDocument document,String party,String label,String code,boolean discrepancy,List<CheckResult> results){if(party==null||party.isBlank())return;boolean found=mentionsParty(document.getExtractedText(),party);results.add(finding(found?OK:(discrepancy?DISCREPANCY:WARNING),code+(found?"_OK":"_NOT_FOUND"),found?(label.startsWith("Begünstigter")?"Begünstigter":"Antragsteller")+" ist in der Packliste enthalten.":(label.startsWith("Begünstigter")?"Begünstigter":"Antragsteller")+" konnte in der Packliste nicht sicher zugeordnet werden.",label+" "+party,document.getOriginalFilename(),found?partyEvidence(document.getExtractedText(),party):"Keine belastbare Fundstelle im Dokumenttext"));}
     private void checkPackingDetails(de.corporate.lc.document.domain.LcDocument document,List<CheckResult> results){
         String condition="Packliste muss Packstückzahl sowie plausibles Netto- und Bruttogewicht ausweisen.";String name=document.getOriginalFilename();
         Optional<java.math.BigDecimal> packages=number(labeledValue(document.getExtractedText(),"Packages").orElse(null));Optional<java.math.BigDecimal> net=number(labeledValue(document.getExtractedText(),"Net weight").orElse(null));Optional<java.math.BigDecimal> gross=number(labeledValue(document.getExtractedText(),"Gross weight").orElse(null));
@@ -175,6 +188,7 @@ public class DocumentCheckService {
     }
     private Optional<java.math.BigDecimal> number(String value){if(value==null)return Optional.empty();var matcher=java.util.regex.Pattern.compile("[-+]?[0-9]+(?:[.,][0-9]+)?").matcher(value);if(!matcher.find())return Optional.empty();try{return Optional.of(new java.math.BigDecimal(matcher.group().replace(',','.')));}catch(NumberFormatException ignored){return Optional.empty();}}
     private String normalizeMeasure(String value){return normalize(value).replaceAll("\\b(pcs|pieces|piece|stueck|stk)\\b","stück").replaceAll("\\s+","").trim();}
+    private String textEvidence(String text,Set<String> needles){if(text==null)return "Keine Fundstelle verfügbar";for(String line:text.split("\\R")){String normalized=normalize(line);if(needles.stream().anyMatch(normalized::contains))return excerpt(line);}return "Vermerk im Dokumenttext erkannt";}
     private boolean similarDescription(String expected,String actual){Set<String> left=meaningfulTokens(expected),right=meaningfulTokens(actual);if(left.isEmpty()||right.isEmpty())return false;long overlap=left.stream().filter(right::contains).count();return overlap>=Math.min(2,Math.min(left.size(),right.size()))||overlap/(double)Math.min(left.size(),right.size())>=0.6;}
     private Set<String> meaningfulTokens(String value){Set<String> ignored=Set.of("and","the","for","of","with","und","der","die","das","mit","von","goods","description");Set<String> result=new LinkedHashSet<>();for(String token:normalize(value).split(" "))if(token.length()>2&&!ignored.contains(token))result.add(token);return result;}
 
