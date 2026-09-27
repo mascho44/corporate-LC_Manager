@@ -8,6 +8,7 @@ public enum DocumentType {
     CERTIFICATE_OF_ORIGIN("Certificate of Origin"),
     INSURANCE_CERTIFICATE("Insurance Certificate"),
     INSPECTION_CERTIFICATE("Inspection Certificate"),
+    BILL_OF_EXCHANGE("Bill of Exchange / Draft"),
     OTHER("Other");
 
     private final String displayName;
