@@ -136,7 +136,8 @@ public class DocumentCheckService {
 
         Map<String,DocumentCheckDecision> reviewed=new HashMap<>();decisions.findByLcId(lcId).forEach(d->reviewed.put(decisionKey(d.getFindingCode(),d.getDocumentName()),d));
         List<CheckResult> reviewedResults=results.stream().map(result->{var d=reviewed.get(decisionKey(result.code(),result.documentName()));if(d==null)return result;CheckResult.Severity effective="ACCEPTED".equals(d.getDecision())?OK:DISCREPANCY;return new CheckResult(effective,result.code(),result.message(),result.lcCondition(),result.documentName(),result.documentEvidence(),d.getDecision(),d.getComment(),d.getReviewedBy(),d.getReviewedAt());}).toList();
-        return new ReviewSummary(count(reviewedResults, DISCREPANCY), count(reviewedResults, WARNING), count(reviewedResults, OK), reviewedResults);
+        long discrepancies=count(reviewedResults,DISCREPANCY),warnings=count(reviewedResults,WARNING);String status=discrepancies>0?"RED":warnings>0?"YELLOW":"GREEN";
+        return new ReviewSummary(status,discrepancies,warnings,count(reviewedResults,OK),reviewedResults);
     }
 
     @Transactional public void decide(UUID lcId,CheckDecisionRequest request,String username){lcs.findById(lcId).orElseThrow();String name=request.documentName()==null?"":request.documentName();DocumentCheckDecision decision=decisions.findByLcIdAndFindingCodeAndDocumentName(lcId,request.findingCode(),name).orElseGet(DocumentCheckDecision::new);decision.setLcId(lcId);decision.setFindingCode(request.findingCode());decision.setDocumentName(name);decision.setDecision(request.decision());decision.setComment(request.comment());decision.setReviewedBy(username);decision.setReviewedAt(java.time.LocalDateTime.now());decisions.save(decision);}
