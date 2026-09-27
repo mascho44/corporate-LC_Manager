@@ -31,11 +31,12 @@ public class DocumentCheckService {
         for (String requirement : lc.getRequiredDocuments()) {
             Optional<DocumentType> expected = classify(requirement);
             if (expected.isEmpty()) {
-                results.add(new CheckResult(WARNING, "UNCLASSIFIED_REQUIREMENT", "Manual review required: " + requirement));
+                results.add(finding(WARNING, "UNCLASSIFIED_REQUIREMENT", "Dokumentenbedingung muss manuell geprüft werden.", requirement, null, null));
             } else if (uploaded.stream().noneMatch(d -> d.getDocumentType() == expected.get())) {
-                results.add(new CheckResult(DISCREPANCY, "MISSING_DOCUMENT", expected.get().getDisplayName() + " is required but missing."));
+                results.add(finding(DISCREPANCY, "MISSING_DOCUMENT", expected.get().getDisplayName() + " ist gefordert, wurde aber nicht vorgelegt.", requirement, null, "Kein entsprechendes Dokument hochgeladen"));
             } else {
-                results.add(new CheckResult(OK, "DOCUMENT_PRESENT", expected.get().getDisplayName() + " is present."));
+                var present=uploaded.stream().filter(d->d.getDocumentType()==expected.get()).findFirst().orElseThrow();
+                results.add(finding(OK, "DOCUMENT_PRESENT", expected.get().getDisplayName() + " wurde vorgelegt.", requirement, present.getOriginalFilename(), "Dokumenttyp: "+expected.get().getDisplayName()));
             }
         }
 
@@ -58,30 +59,43 @@ public class DocumentCheckService {
                 if (document.getExtractedCurrency() != null && document.getCurrency() != null && !document.getCurrency().equalsIgnoreCase(document.getExtractedCurrency()))
                     results.add(new CheckResult(DISCREPANCY, "CAPTURED_CURRENCY_MISMATCH", "Captured invoice currency differs from the currency extracted from the document."));
                 if (document.getCurrency() != null && lc.getCurrency() != null && !document.getCurrency().equalsIgnoreCase(lc.getCurrency())) {
-                    results.add(new CheckResult(DISCREPANCY, "CURRENCY_MISMATCH", "Invoice currency differs from the LC currency."));
+                    results.add(finding(DISCREPANCY, "CURRENCY_MISMATCH", "Währung der Handelsrechnung weicht vom LC ab.", "LC-Betrag :32B: "+lc.getCurrency()+" "+lc.getAmount(), document.getOriginalFilename(), amountEvidence(document.getExtractedText(),document.getCurrency(),document.getAmount())));
                 } else if (lc.getAmount() != null && document.getAmount().compareTo(lc.getAmount()) > 0) {
-                    results.add(new CheckResult(DISCREPANCY, "INVOICE_AMOUNT_EXCEEDED", "Invoice amount exceeds the LC amount."));
+                    results.add(finding(DISCREPANCY, "INVOICE_AMOUNT_EXCEEDED", "Rechnungsbetrag überschreitet den LC-Betrag.", "LC-Betrag :32B: "+lc.getCurrency()+" "+lc.getAmount(), document.getOriginalFilename(), amountEvidence(document.getExtractedText(),document.getCurrency(),document.getAmount())));
                 } else {
-                    results.add(new CheckResult(OK, "INVOICE_AMOUNT_OK", "Invoice amount is within the LC amount."));
+                    results.add(finding(OK, "INVOICE_AMOUNT_OK", "Rechnungsbetrag liegt innerhalb des LC-Betrags.", "LC-Betrag :32B: "+lc.getCurrency()+" "+lc.getAmount(), document.getOriginalFilename(), amountEvidence(document.getExtractedText(),document.getCurrency(),document.getAmount())));
                 }
             }
-            if (document.getDocumentType() == DocumentType.COMMERCIAL_INVOICE && "EXTRACTED".equals(document.getExtractionStatus())) {
+            if (document.getDocumentType() == DocumentType.COMMERCIAL_INVOICE && readable(document)) {
                 if (document.getExtractedReference() == null)
-                    results.add(new CheckResult(WARNING, "LC_REFERENCE_NOT_FOUND", document.getOriginalFilename() + ": no LC reference could be extracted."));
+                    results.add(finding(WARNING, "LC_REFERENCE_NOT_FOUND", "LC-Referenz konnte in der Handelsrechnung nicht gefunden werden.", "LC-Referenz :20: "+lc.getReference(), document.getOriginalFilename(), "Keine passende Referenz im ausgelesenen Text"));
                 else if (!sameReference(document.getExtractedReference(), lc.getReference()))
-                    results.add(new CheckResult(DISCREPANCY, "LC_REFERENCE_MISMATCH", document.getOriginalFilename() + ": extracted LC reference differs from the LC."));
-                else results.add(new CheckResult(OK, "LC_REFERENCE_OK", "Invoice references the correct LC."));
+                    results.add(finding(DISCREPANCY, "LC_REFERENCE_MISMATCH", "Die Referenz der Handelsrechnung weicht vom LC ab.", "LC-Referenz :20: "+lc.getReference(), document.getOriginalFilename(), evidence(document.getExtractedText(),document.getExtractedReference())));
+                else results.add(finding(OK, "LC_REFERENCE_OK", "Die Handelsrechnung nennt die richtige LC-Referenz.", "LC-Referenz :20: "+lc.getReference(), document.getOriginalFilename(), evidence(document.getExtractedText(),document.getExtractedReference())));
 
                 if (lc.getBeneficiary() != null && !mentionsParty(document.getExtractedText(), lc.getBeneficiary()))
-                    results.add(new CheckResult(DISCREPANCY, "BENEFICIARY_NOT_FOUND", "Beneficiary could not be matched in the invoice text."));
+                    results.add(finding(DISCREPANCY, "BENEFICIARY_NOT_FOUND", "Begünstigter konnte in der Handelsrechnung nicht zugeordnet werden.", "Begünstigter :59: "+lc.getBeneficiary(), document.getOriginalFilename(), "Keine belastbare Fundstelle im Dokumenttext"));
                 else if (lc.getBeneficiary() != null)
-                    results.add(new CheckResult(OK, "BENEFICIARY_OK", "Beneficiary is present in the invoice text."));
+                    results.add(finding(OK, "BENEFICIARY_OK", "Begünstigter ist in der Handelsrechnung enthalten.", "Begünstigter :59: "+lc.getBeneficiary(), document.getOriginalFilename(), partyEvidence(document.getExtractedText(),lc.getBeneficiary())));
                 if (lc.getApplicant() != null && !mentionsParty(document.getExtractedText(), lc.getApplicant()))
-                    results.add(new CheckResult(WARNING, "APPLICANT_NOT_FOUND", "Applicant could not be matched in the invoice text."));
+                    results.add(finding(WARNING, "APPLICANT_NOT_FOUND", "Antragsteller konnte in der Handelsrechnung nicht sicher zugeordnet werden.", "Antragsteller :50: "+lc.getApplicant(), document.getOriginalFilename(), "Keine belastbare Fundstelle im Dokumenttext"));
                 else if (lc.getApplicant() != null)
-                    results.add(new CheckResult(OK, "APPLICANT_OK", "Applicant is present in the invoice text."));
+                    results.add(finding(OK, "APPLICANT_OK", "Antragsteller ist in der Handelsrechnung enthalten.", "Antragsteller :50: "+lc.getApplicant(), document.getOriginalFilename(), partyEvidence(document.getExtractedText(),lc.getApplicant())));
+            }
+            if(document.getDocumentType()==DocumentType.PACKING_LIST&&readable(document)){
+                String condition="LC-Referenz :20: "+lc.getReference();
+                if(document.getExtractedReference()==null)results.add(finding(WARNING,"PACKING_LIST_REFERENCE_NOT_FOUND","LC-Referenz konnte in der Packliste nicht gefunden werden.",condition,document.getOriginalFilename(),"Keine passende Referenz im ausgelesenen Text"));
+                else if(!sameReference(document.getExtractedReference(),lc.getReference()))results.add(finding(DISCREPANCY,"PACKING_LIST_REFERENCE_MISMATCH","Die Referenz der Packliste weicht vom LC ab.",condition,document.getOriginalFilename(),evidence(document.getExtractedText(),document.getExtractedReference())));
+                else results.add(finding(OK,"PACKING_LIST_REFERENCE_OK","Die Packliste nennt die richtige LC-Referenz.",condition,document.getOriginalFilename(),evidence(document.getExtractedText(),document.getExtractedReference())));
             }
         });
+
+        var invoices=uploaded.stream().filter(d->d.getDocumentType()==DocumentType.COMMERCIAL_INVOICE).toList();
+        var packingLists=uploaded.stream().filter(d->d.getDocumentType()==DocumentType.PACKING_LIST).toList();
+        if(!invoices.isEmpty()&&!packingLists.isEmpty()){
+            var invoice=invoices.get(0);var packing=packingLists.get(0);
+            if(invoice.getExtractedReference()!=null&&packing.getExtractedReference()!=null){boolean same=sameReference(invoice.getExtractedReference(),packing.getExtractedReference());results.add(finding(same?OK:DISCREPANCY,"INVOICE_PACKING_REFERENCE_CONSISTENCY",same?"Handelsrechnung und Packliste verwenden dieselbe LC-Referenz.":"Handelsrechnung und Packliste verwenden unterschiedliche LC-Referenzen.","Dokumente müssen sich auf dieselbe gültige LC-Fassung beziehen.",packing.getOriginalFilename(),"Packliste: "+packing.getExtractedReference()+" · Handelsrechnung: "+invoice.getExtractedReference()));}
+        }
 
         uploaded.stream().filter(d -> d.getExtractedDocumentNumber() != null)
                 .collect(java.util.stream.Collectors.groupingBy(d -> d.getExtractedDocumentNumber().toUpperCase(Locale.ROOT)))
@@ -124,6 +138,13 @@ public class DocumentCheckService {
                 .limit(2).toList();
         return !tokens.isEmpty() && tokens.stream().allMatch(haystack::contains);
     }
+
+    private boolean readable(de.corporate.lc.document.domain.LcDocument document){return "EXTRACTED".equals(document.getExtractionStatus())||"OCR_EXTRACTED".equals(document.getExtractionStatus());}
+    private CheckResult finding(CheckResult.Severity severity,String code,String message,String condition,String document,String proof){return new CheckResult(severity,code,message,condition,document,proof);}
+    private String evidence(String text,String value){if(text==null||value==null)return "Keine Fundstelle verfügbar";String compact=value.replaceAll("[^A-Za-z0-9]","");for(String line:text.split("\\R")){String normalized=line.replaceAll("[^A-Za-z0-9]","");if(!compact.isBlank()&&(normalized.toLowerCase(Locale.ROOT).contains(compact.toLowerCase(Locale.ROOT))||compact.toLowerCase(Locale.ROOT).contains(normalized.toLowerCase(Locale.ROOT))))return excerpt(line);}return "Erkannter Wert: "+value;}
+    private String partyEvidence(String text,String party){if(text==null)return "Keine Fundstelle verfügbar";for(String token:normalize(party).split(" "))if(token.length()>3)for(String line:text.split("\\R"))if(normalize(line).contains(token))return excerpt(line);return "Partei im Dokumenttext erkannt";}
+    private String amountEvidence(String text,String currency,java.math.BigDecimal amount){if(text!=null){String digits=amount.toPlainString().replaceAll("[^0-9]","");for(String line:text.split("\\R")){String normalized=line.replaceAll("[^0-9]","");if((currency!=null&&line.toUpperCase(Locale.ROOT).contains(currency.toUpperCase(Locale.ROOT)))||(!digits.isBlank()&&normalized.contains(digits)))return excerpt(line);}}return (currency==null?"":currency+" ")+amount;}
+    private String excerpt(String line){String value=line.replaceAll("\\s+"," ").trim();return value.length()<=240?value:value.substring(0,237)+"…";}
 
     private String normalize(String value) {
         return value.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", " ").trim();
