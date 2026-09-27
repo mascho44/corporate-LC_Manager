@@ -132,6 +132,7 @@ public class DocumentCheckService {
     }
 
     @Transactional public void decide(UUID lcId,CheckDecisionRequest request,String username){lcs.findById(lcId).orElseThrow();String name=request.documentName()==null?"":request.documentName();DocumentCheckDecision decision=decisions.findByLcIdAndFindingCodeAndDocumentName(lcId,request.findingCode(),name).orElseGet(DocumentCheckDecision::new);decision.setLcId(lcId);decision.setFindingCode(request.findingCode());decision.setDocumentName(name);decision.setDecision(request.decision());decision.setComment(request.comment());decision.setReviewedBy(username);decision.setReviewedAt(java.time.LocalDateTime.now());decisions.save(decision);}
+    @Transactional public long invalidateDecisions(UUID lcId){return decisions.deleteByLcId(lcId);}
     private String decisionKey(String code,String document){return code+"\u0000"+(document==null?"":document);}
 
     private long count(List<CheckResult> results, CheckResult.Severity severity) {

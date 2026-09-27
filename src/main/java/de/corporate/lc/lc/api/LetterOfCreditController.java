@@ -3,6 +3,7 @@ package de.corporate.lc.lc.api;
 import de.corporate.lc.audit.service.AuditService;
 import de.corporate.lc.lc.domain.LetterOfCredit;
 import de.corporate.lc.lc.service.LetterOfCreditService;
+import de.corporate.lc.check.service.DocumentCheckService;
 import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -17,10 +18,12 @@ import java.util.UUID;
 public class LetterOfCreditController {
     private final LetterOfCreditService service;
     private final AuditService audit;
+    private final DocumentCheckService checks;
 
-    public LetterOfCreditController(LetterOfCreditService service, AuditService audit) {
+    public LetterOfCreditController(LetterOfCreditService service, AuditService audit,DocumentCheckService checks) {
         this.service = service;
         this.audit = audit;
+        this.checks = checks;
     }
 
     @PostMapping(value = "/import/mt700", consumes = MediaType.TEXT_PLAIN_VALUE)
@@ -43,7 +46,9 @@ public class LetterOfCreditController {
     @PutMapping("/{id}")
     public LetterOfCredit update(@PathVariable UUID id, @Valid @RequestBody LetterOfCreditUpdateRequest request, Authentication authentication) {
         LetterOfCredit lc = service.update(id, request);
+        long reset=checks.invalidateDecisions(id);
         audit.record(authentication, "LC_UPDATED", "LETTER_OF_CREDIT", id, lc.getReference());
+        if(reset>0)audit.record(authentication,"DOCUMENT_CHECK_DECISIONS_RESET","LETTER_OF_CREDIT",id,reset+" Entscheidungen wegen LC-Änderung zurückgesetzt");
         return lc;
     }
 
