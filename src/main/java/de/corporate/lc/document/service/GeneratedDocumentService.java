@@ -28,6 +28,14 @@ public class GeneratedDocumentService {
     private float field(PDPageContentStream c,PDFont bold,PDFont regular,float y,String label,String value)throws IOException{line(c,bold,9,50,y,label.toUpperCase(Locale.ROOT));return line(c,regular,10,180,y,value==null?"-":value)-10;}
     private float line(PDPageContentStream c,PDFont font,float size,float x,float y,String text)throws IOException{String clean=(text==null?"-":text).replaceAll("[\\r\\n]+"," ");for(String part:wrap(clean,85)){c.beginText();c.setFont(font,size);c.newLineAtOffset(x,y);c.showText(part.replaceAll("[^\\x20-\\x7E]","?"));c.endText();y-=14;}return y;}
     private List<String> wrap(String text,int width){List<String> lines=new ArrayList<>();StringBuilder line=new StringBuilder();for(String word:text.split("\\s+")){if(line.length()+word.length()+1>width){lines.add(line.toString());line.setLength(0);}if(!line.isEmpty())line.append(' ');line.append(word);}if(!line.isEmpty())lines.add(line.toString());return lines.isEmpty()?List.of("-"):lines;}
-    private String text(de.corporate.lc.lc.domain.LetterOfCredit lc,GeneratedDocumentRequest r){return "Document No: "+r.documentNumber()+"\nDate: "+r.documentDate()+"\nLC Reference: "+lc.getReference()+"\nSeller: "+value(lc.getBeneficiary())+"\nBuyer: "+value(lc.getApplicant())+"\nDescription: "+value(r.description())+"\nQuantity: "+value(r.quantity())+"\nAmount: "+value(lc.getCurrency())+" "+lc.getAmount();}
+    private String text(de.corporate.lc.lc.domain.LetterOfCredit lc,GeneratedDocumentRequest r){
+        StringBuilder text=new StringBuilder("Document No: ").append(r.documentNumber())
+                .append("\nDate: ").append(r.documentDate()).append("\nLC Reference: ").append(lc.getReference())
+                .append("\nSeller: ").append(value(lc.getBeneficiary())).append("\nBuyer: ").append(value(lc.getApplicant()))
+                .append("\nDescription: ").append(value(r.description())).append("\nQuantity: ").append(value(r.quantity()));
+        if(r.type()==DocumentType.COMMERCIAL_INVOICE)text.append("\nAmount: ").append(value(lc.getCurrency())).append(' ').append(lc.getAmount());
+        else text.append("\nPackages: ").append(r.packages()==null?0:r.packages()).append("\nNet weight: ").append(weight(r.netWeight())).append("\nGross weight: ").append(weight(r.grossWeight()));
+        return text.append("\nNotes: ").append(value(r.notes())).toString();
+    }
     private String weight(BigDecimal value){return value==null?"-":value+" kg";}private String value(String value){return value==null||value.isBlank()?"-":value.trim();}private String safe(String name){return name.replaceAll("[^A-Za-z0-9._-]","_");}
 }

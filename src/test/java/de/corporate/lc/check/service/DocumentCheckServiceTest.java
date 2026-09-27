@@ -28,4 +28,25 @@ class DocumentCheckServiceTest {
         assertThat(result.discrepancies()).isEqualTo(2);
         assertThat(result.results()).extracting("code").contains("MISSING_DOCUMENT", "INVOICE_AMOUNT_EXCEEDED");
     }
+
+    @Test void checksGoodsDescriptionAgainstLcAndBetweenDocuments() {
+        UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-4711");lc.setRawMessage(":20:LC-4711\n:45A:100 INDUSTRIAL PUMPS TYPE PX\n:46A:SIGNED COMMERCIAL INVOICE");
+        LcDocument invoice=document(DocumentType.COMMERCIAL_INVOICE,"invoice.pdf","Description: 100 industrial pumps type PX\nLC Reference: LC-4711");
+        LcDocument packing=document(DocumentType.PACKING_LIST,"packing.pdf","Description: 100 industrial pumps type PX\nLC Reference: LC-4711");
+        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(invoice,packing));
+        var result=new DocumentCheckService(lcs,docs).check(id);
+        assertThat(result.results()).filteredOn(item->item.code().equals("GOODS_DESCRIPTION_OK")).hasSize(2);
+        assertThat(result.results()).extracting("code").contains("INVOICE_PACKING_DESCRIPTION_CONSISTENCY");
+    }
+
+    @Test void reportsContradictingPackingListDescription() {
+        UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-4711");lc.setRawMessage(":20:LC-4711\n:45A:100 INDUSTRIAL PUMPS TYPE PX");
+        LcDocument invoice=document(DocumentType.COMMERCIAL_INVOICE,"invoice.pdf","Description: 100 industrial pumps type PX");
+        LcDocument packing=document(DocumentType.PACKING_LIST,"packing.pdf","Description: 50 wooden chairs");
+        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(invoice,packing));
+        var result=new DocumentCheckService(lcs,docs).check(id);
+        assertThat(result.results()).filteredOn(item->item.code().equals("GOODS_DESCRIPTION_MISMATCH")||item.code().equals("INVOICE_PACKING_DESCRIPTION_CONSISTENCY")).allMatch(item->item.severity()==de.corporate.lc.check.api.CheckResult.Severity.DISCREPANCY);
+    }
+
+    private LcDocument document(DocumentType type,String name,String text){LcDocument document=new LcDocument();document.setDocumentType(type);document.setOriginalFilename(name);document.setExtractionStatus("GENERATED");document.setExtractedText(text);document.setDocumentDate(LocalDate.now());return document;}
 }

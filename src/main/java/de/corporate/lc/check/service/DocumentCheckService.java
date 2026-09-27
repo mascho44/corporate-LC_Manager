@@ -92,9 +92,21 @@ public class DocumentCheckService {
 
         var invoices=uploaded.stream().filter(d->d.getDocumentType()==DocumentType.COMMERCIAL_INVOICE).toList();
         var packingLists=uploaded.stream().filter(d->d.getDocumentType()==DocumentType.PACKING_LIST).toList();
+        String goodsDescription=swiftField(lc.getRawMessage(),"45A").orElseGet(()->additionalField(lc,"45A").orElse(null));
+        if(goodsDescription!=null){
+            uploaded.stream().filter(d->(d.getDocumentType()==DocumentType.COMMERCIAL_INVOICE||d.getDocumentType()==DocumentType.PACKING_LIST)&&readable(d)).forEach(document->{
+                String documentDescription=labeledValue(document.getExtractedText(),"Description").orElse(null);
+                String condition="Warenbeschreibung :45A: "+excerpt(goodsDescription);
+                if(documentDescription==null)results.add(finding(WARNING,"GOODS_DESCRIPTION_NOT_FOUND","Warenbeschreibung konnte im Dokument nicht gefunden werden.",condition,document.getOriginalFilename(),"Keine Zeile 'Description' im ausgelesenen Dokumenttext"));
+                else if(!similarDescription(goodsDescription,documentDescription))results.add(finding(DISCREPANCY,"GOODS_DESCRIPTION_MISMATCH","Warenbeschreibung weicht von der gültigen LC-Fassung ab.",condition,document.getOriginalFilename(),"Description: "+excerpt(documentDescription)));
+                else results.add(finding(OK,"GOODS_DESCRIPTION_OK","Warenbeschreibung stimmt mit der gültigen LC-Fassung überein.",condition,document.getOriginalFilename(),"Description: "+excerpt(documentDescription)));
+            });
+        }
         if(!invoices.isEmpty()&&!packingLists.isEmpty()){
             var invoice=invoices.get(0);var packing=packingLists.get(0);
             if(invoice.getExtractedReference()!=null&&packing.getExtractedReference()!=null){boolean same=sameReference(invoice.getExtractedReference(),packing.getExtractedReference());results.add(finding(same?OK:DISCREPANCY,"INVOICE_PACKING_REFERENCE_CONSISTENCY",same?"Handelsrechnung und Packliste verwenden dieselbe LC-Referenz.":"Handelsrechnung und Packliste verwenden unterschiedliche LC-Referenzen.","Dokumente müssen sich auf dieselbe gültige LC-Fassung beziehen.",packing.getOriginalFilename(),"Packliste: "+packing.getExtractedReference()+" · Handelsrechnung: "+invoice.getExtractedReference()));}
+            var invoiceDescription=labeledValue(invoice.getExtractedText(),"Description");var packingDescription=labeledValue(packing.getExtractedText(),"Description");
+            if(invoiceDescription.isPresent()&&packingDescription.isPresent()){boolean same=similarDescription(invoiceDescription.get(),packingDescription.get());results.add(finding(same?OK:DISCREPANCY,"INVOICE_PACKING_DESCRIPTION_CONSISTENCY",same?"Handelsrechnung und Packliste enthalten eine übereinstimmende Warenbeschreibung.":"Warenbeschreibungen in Handelsrechnung und Packliste widersprechen sich.","Handelsrechnung und Packliste müssen dieselben Waren betreffen.",packing.getOriginalFilename(),"Packliste: "+excerpt(packingDescription.get())+" · Handelsrechnung: "+excerpt(invoiceDescription.get())));}
         }
 
         uploaded.stream().filter(d -> d.getExtractedDocumentNumber() != null)
@@ -145,6 +157,11 @@ public class DocumentCheckService {
     private String partyEvidence(String text,String party){if(text==null)return "Keine Fundstelle verfügbar";for(String token:normalize(party).split(" "))if(token.length()>3)for(String line:text.split("\\R"))if(normalize(line).contains(token))return excerpt(line);return "Partei im Dokumenttext erkannt";}
     private String amountEvidence(String text,String currency,java.math.BigDecimal amount){if(text!=null){String digits=amount.toPlainString().replaceAll("[^0-9]","");for(String line:text.split("\\R")){String normalized=line.replaceAll("[^0-9]","");if((currency!=null&&line.toUpperCase(Locale.ROOT).contains(currency.toUpperCase(Locale.ROOT)))||(!digits.isBlank()&&normalized.contains(digits)))return excerpt(line);}}return (currency==null?"":currency+" ")+amount;}
     private String excerpt(String line){String value=line.replaceAll("\\s+"," ").trim();return value.length()<=240?value:value.substring(0,237)+"…";}
+    private Optional<String> swiftField(String raw,String code){if(raw==null)return Optional.empty();var matcher=java.util.regex.Pattern.compile("(?ms)^:"+java.util.regex.Pattern.quote(code)+":\\s*(.*?)(?=^:[0-9]{2}[A-Z]?:|\\z)").matcher(raw);return matcher.find()?Optional.of(matcher.group(1).trim()):Optional.empty();}
+    private Optional<String> additionalField(LetterOfCredit lc,String code){return lc.getAdditionalFields().entrySet().stream().filter(e->e.getKey().toUpperCase(Locale.ROOT).contains(code)).map(Map.Entry::getValue).filter(v->v!=null&&!v.isBlank()).findFirst();}
+    private Optional<String> labeledValue(String text,String label){if(text==null)return Optional.empty();String prefix=label.toLowerCase(Locale.ROOT)+":";return Arrays.stream(text.split("\\R")).map(String::trim).filter(line->line.toLowerCase(Locale.ROOT).startsWith(prefix)).map(line->line.substring(line.indexOf(':')+1).trim()).filter(value->!value.isBlank()&&!"-".equals(value)).findFirst();}
+    private boolean similarDescription(String expected,String actual){Set<String> left=meaningfulTokens(expected),right=meaningfulTokens(actual);if(left.isEmpty()||right.isEmpty())return false;long overlap=left.stream().filter(right::contains).count();return overlap>=Math.min(2,Math.min(left.size(),right.size()))||overlap/(double)Math.min(left.size(),right.size())>=0.6;}
+    private Set<String> meaningfulTokens(String value){Set<String> ignored=Set.of("and","the","for","of","with","und","der","die","das","mit","von","goods","description");Set<String> result=new LinkedHashSet<>();for(String token:normalize(value).split(" "))if(token.length()>2&&!ignored.contains(token))result.add(token);return result;}
 
     private String normalize(String value) {
         return value.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", " ").trim();
