@@ -116,6 +116,9 @@ public class DocumentCheckService {
             else{boolean same=normalizeMeasure(invoiceQuantity.get()).equals(normalizeMeasure(packingQuantity.get()));results.add(finding(same?OK:DISCREPANCY,"INVOICE_PACKING_QUANTITY_CONSISTENCY",same?"Handelsrechnung und Packliste weisen dieselbe Menge aus.":"Mengenangaben in Handelsrechnung und Packliste widersprechen sich.","Handelsrechnung und Packliste müssen dieselbe Warenmenge ausweisen.",packing.getOriginalFilename(),"Packliste: "+excerpt(packingQuantity.get())+" · Handelsrechnung: "+excerpt(invoiceQuantity.get())));}
         }
 
+        String additionalConditions=additionalField(lc,"47A").orElseGet(()->swiftField(lc.getRawMessage(),"47A").orElse(null));
+        if(additionalConditions!=null&&!additionalConditions.isBlank())results.add(finding(WARNING,"ADDITIONAL_CONDITIONS_REVIEW","Zusatzbedingungen müssen fachlich gegen den vollständigen Dokumentensatz geprüft werden.","Zusatzbedingungen :47A: "+excerpt(additionalConditions),null,"Automatische Einzelzuordnung zu einem bestimmten Dokument ist nicht zuverlässig möglich."));
+
         uploaded.stream().filter(d -> d.getExtractedDocumentNumber() != null)
                 .collect(java.util.stream.Collectors.groupingBy(d -> d.getExtractedDocumentNumber().toUpperCase(Locale.ROOT)))
                 .forEach((number, matches) -> {

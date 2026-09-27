@@ -65,6 +65,13 @@ class DocumentCheckServiceTest {
         assertThat(result.results()).filteredOn(item->item.code().equals("DOCUMENT_COPIES_MANUAL_REVIEW")).allMatch(item->item.severity()==de.corporate.lc.check.api.CheckResult.Severity.OK&&"ACCEPTED".equals(item.reviewDecision()));
     }
 
+    @Test void exposesEffectiveAdditionalConditionsForManualReview() {
+        UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-47");lc.setRawMessage(":20:LC-47\n:47A:OLD CONDITION");lc.getAdditionalFields().put("47A - gültige Zusatzbedingungen","INSPECTION CERTIFICATE REQUIRED");
+        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of());
+        var result=service(lcs,docs).check(id);
+        assertThat(result.results()).filteredOn(item->item.code().equals("ADDITIONAL_CONDITIONS_REVIEW")).singleElement().satisfies(item->{assertThat(item.lcCondition()).contains("INSPECTION CERTIFICATE REQUIRED");assertThat(item.lcCondition()).doesNotContain("OLD CONDITION");});
+    }
+
     @Test void reportsContradictingPackingListDescription() {
         UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-4711");lc.setRawMessage(":20:LC-4711\n:45A:100 INDUSTRIAL PUMPS TYPE PX");
         LcDocument invoice=document(DocumentType.COMMERCIAL_INVOICE,"invoice.pdf","Description: 100 industrial pumps type PX");
