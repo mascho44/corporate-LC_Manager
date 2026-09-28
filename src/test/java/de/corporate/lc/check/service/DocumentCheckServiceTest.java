@@ -144,6 +144,12 @@ class DocumentCheckServiceTest {
         assertThat(result.results()).extracting("code").contains("TRANSPORT_PORT_OF_LOADING_OK","TRANSPORT_PORT_OF_DISCHARGE_OK","TRANSSHIPMENT_PROHIBITION_VIOLATED");
     }
 
+    @Test void flagsMultipleTransportDocumentsWhenPartialShipmentsAreProhibited() {
+        UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-PART-1");lc.setRawMessage(":20:LC-PART-1\n:43P:NOT ALLOWED");LcDocument first=document(DocumentType.BILL_OF_LADING,"bl-1.pdf","LC Reference: LC-PART-1");first.setExtractedReference("LC-PART-1");LcDocument second=document(DocumentType.BILL_OF_LADING,"bl-2.pdf","LC Reference: LC-PART-1");second.setExtractedReference("LC-PART-1");
+        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(first,second));var result=service(lcs,docs).check(id);
+        assertThat(result.results()).filteredOn(item->item.code().equals("PARTIAL_SHIPMENT_MANUAL_REVIEW")).singleElement().satisfies(item->{assertThat(item.severity()).isEqualTo(de.corporate.lc.check.api.CheckResult.Severity.WARNING);assertThat(item.documentEvidence()).contains("bl-1.pdf","bl-2.pdf");});
+    }
+
     @Test void reportsContradictingPackingListDescription() {
         UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-4711");lc.setRawMessage(":20:LC-4711\n:45A:100 INDUSTRIAL PUMPS TYPE PX");
         LcDocument invoice=document(DocumentType.COMMERCIAL_INVOICE,"invoice.pdf","Description: 100 industrial pumps type PX");
