@@ -4,6 +4,7 @@ import de.corporate.lc.audit.service.AuditService;
 import de.corporate.lc.lc.domain.LetterOfCredit;
 import de.corporate.lc.lc.service.LetterOfCreditService;
 import de.corporate.lc.check.service.DocumentCheckService;
+import de.corporate.lc.document.repository.LcDocumentRepository;
 import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -19,11 +20,13 @@ public class LetterOfCreditController {
     private final LetterOfCreditService service;
     private final AuditService audit;
     private final DocumentCheckService checks;
+    private final LcDocumentRepository documents;
 
-    public LetterOfCreditController(LetterOfCreditService service, AuditService audit,DocumentCheckService checks) {
+    public LetterOfCreditController(LetterOfCreditService service, AuditService audit,DocumentCheckService checks,LcDocumentRepository documents) {
         this.service = service;
         this.audit = audit;
         this.checks = checks;
+        this.documents=documents;
     }
 
     @PostMapping(value = "/import/mt700", consumes = MediaType.TEXT_PLAIN_VALUE)
@@ -37,6 +40,9 @@ public class LetterOfCreditController {
     public List<LetterOfCredit> all() {
         return service.all();
     }
+
+    @GetMapping("/dossier-status")
+    public List<LcDossierStatus> dossierStatus(){return service.all().stream().map(lc->{var review=checks.check(lc.getId());return new LcDossierStatus(lc.getId(),review.status(),documents.countByLetterOfCreditId(lc.getId()),review.discrepancies(),review.warnings(),review.passed());}).toList();}
 
     @GetMapping("/{id}")
     public LetterOfCredit one(@PathVariable UUID id) {

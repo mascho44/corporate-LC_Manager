@@ -7,4 +7,5 @@ import java.util.UUID;
 
 public interface LcDocumentRepository extends JpaRepository<LcDocument, UUID> {
     List<LcDocument> findByLetterOfCreditIdOrderByUploadedAtDesc(UUID lcId);
+    long countByLetterOfCreditId(UUID lcId);
 }
