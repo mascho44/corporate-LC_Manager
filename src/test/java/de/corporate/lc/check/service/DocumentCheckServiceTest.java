@@ -96,6 +96,12 @@ class DocumentCheckServiceTest {
         assertThat(result.results()).extracting("code").contains("ORIGIN_CERTIFICATE_REFERENCE_OK","ORIGIN_CERTIFICATE_GOODS_OK","CHAMBER_ISSUER_EVIDENCED");
     }
 
+    @Test void checksRequiredOriginCountryAndNamedIssuer() {
+        UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-COO-2");lc.setRequiredDocuments(List.of("CERTIFICATE OF ORIGIN SHOWING COUNTRY OF ORIGIN GERMANY, ISSUED BY SGS"));LcDocument certificate=document(DocumentType.CERTIFICATE_OF_ORIGIN,"origin-country.pdf","LC Reference: LC-COO-2\nCountry of origin: Germany\nIssued by SGS");certificate.setExtractedReference("LC-COO-2");
+        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(certificate));var result=service(lcs,docs).check(id);
+        assertThat(result.results()).extracting("code").contains("ORIGIN_COUNTRY_OK","ORIGIN_CERTIFICATE_ISSUER_EVIDENCED");
+    }
+
     @Test void detectsInsufficientInsuranceCoverage() {
         UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-INS-1");lc.setAmount(new BigDecimal("1000"));lc.setCurrency("EUR");lc.setRequiredDocuments(List.of("INSURANCE CERTIFICATE FOR 110 PERCENT OF LC VALUE"));LcDocument insurance=document(DocumentType.INSURANCE_CERTIFICATE,"insurance.pdf","LC Reference: LC-INS-1\nSum insured EUR 1050");insurance.setExtractedReference("LC-INS-1");insurance.setAmount(new BigDecimal("1050"));insurance.setCurrency("EUR");
         var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(insurance));var result=service(lcs,docs).check(id);
