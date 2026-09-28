@@ -96,6 +96,12 @@ class DocumentCheckServiceTest {
         assertThat(result.results()).extracting("code").contains("INSURANCE_REFERENCE_OK","INSURANCE_COVERAGE_INSUFFICIENT");
     }
 
+    @Test void calculatesInsuranceCoverageFromInvoiceValueWhenRequired() {
+        UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-INS-INV");lc.setAmount(new BigDecimal("1000"));lc.setCurrency("EUR");lc.setRequiredDocuments(List.of("INSURANCE CERTIFICATE FOR 110 PERCENT OF INVOICE VALUE"));LcDocument invoice=document(DocumentType.COMMERCIAL_INVOICE,"invoice.pdf","Amount: EUR 800");invoice.setAmount(new BigDecimal("800"));invoice.setCurrency("EUR");LcDocument insurance=document(DocumentType.INSURANCE_CERTIFICATE,"insurance.pdf","LC Reference: LC-INS-INV\nSum insured EUR 880");insurance.setExtractedReference("LC-INS-INV");insurance.setAmount(new BigDecimal("880"));insurance.setCurrency("EUR");
+        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(invoice,insurance));var result=service(lcs,docs).check(id);
+        assertThat(result.results()).filteredOn(item->item.code().equals("INSURANCE_COVERAGE_OK")).singleElement().satisfies(item->assertThat(item.lcCondition()).contains("Rechnungssumme: EUR 800","Mindestdeckung: EUR 880"));
+    }
+
     @Test void detectsExceededPresentationPeriodFromField48() {
         UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-48");lc.setRawMessage(":20:LC-48\n:48:21 DAYS AFTER DATE OF SHIPMENT");lc.setExpiryDate(LocalDate.now().plusDays(30));LcDocument bill=document(DocumentType.BILL_OF_LADING,"bl.pdf","LC Reference: LC-48");bill.setExtractedReference("LC-48");bill.setDocumentDate(LocalDate.now().minusDays(30));
         var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(bill));var result=service(lcs,docs).check(id);
