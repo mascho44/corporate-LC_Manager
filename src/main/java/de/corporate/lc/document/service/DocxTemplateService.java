@@ -4,6 +4,8 @@ import com.deepoove.poi.XWPFTemplate;
 import de.corporate.lc.document.api.GeneratedDocumentRequest;
 import de.corporate.lc.document.domain.DocumentType;
 import de.corporate.lc.lc.domain.LetterOfCredit;
+import de.corporate.lc.company.service.CompanyProfileService;
+import com.deepoove.poi.data.Pictures;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.springframework.stereotype.Service;
@@ -17,7 +19,8 @@ import java.util.Map;
 @Service
 public class DocxTemplateService {
     private final DocumentTemplateService templates;
-    public DocxTemplateService(DocumentTemplateService templates){this.templates=templates;}
+    private final CompanyProfileService companies;
+    public DocxTemplateService(DocumentTemplateService templates,CompanyProfileService companies){this.templates=templates;this.companies=companies;}
     public byte[] render(LetterOfCredit lc, GeneratedDocumentRequest request) throws IOException {
         var customTemplate = templates.content(request.type());
         byte[] template = customTemplate.isPresent() ? customTemplate.get() : template(request.type());
@@ -35,6 +38,7 @@ public class DocxTemplateService {
         data.put("netWeight", request.netWeight() == null ? "-" : request.netWeight() + " kg");
         data.put("grossWeight", request.grossWeight() == null ? "-" : request.grossWeight() + " kg");
         data.put("notes", value(request.notes()));
+        var company=companies.profile();data.put("companyName",value(company.getLegalName()));data.put("companyAddress",value(company.getAddressLine()));data.put("companyPostalCode",value(company.getPostalCode()));data.put("companyCity",value(company.getCity()));data.put("companyCountry",value(company.getCountry()));data.put("companyEmail",value(company.getEmail()));data.put("companyPhone",value(company.getPhone()));data.put("companyTaxId",value(company.getTaxId()));data.put("companyRegistrationNumber",value(company.getRegistrationNumber()));data.put("companyBankName",value(company.getBankName()));data.put("companyIban",value(company.getIban()));data.put("companyBic",value(company.getBic()));data.put("companyContactPerson",value(company.getContactPerson()));if(company.getLogo()!=null)data.put("companyLogo",Pictures.ofBytes(company.getLogo()).size(160,60).create());
         try (XWPFTemplate compiled = XWPFTemplate.compile(new ByteArrayInputStream(template)).render(data);
              ByteArrayOutputStream output = new ByteArrayOutputStream()) {
             compiled.write(output);

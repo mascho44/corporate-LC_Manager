@@ -27,7 +27,8 @@ class DocxTemplateServiceTest {
 
         DocumentTemplateService templates=mock(DocumentTemplateService.class);
         org.mockito.Mockito.when(templates.content(DocumentType.COMMERCIAL_INVOICE)).thenReturn(java.util.Optional.empty());
-        byte[] result = new DocxTemplateService(templates).render(lc, request);
+        var companies=mock(de.corporate.lc.company.service.CompanyProfileService.class);org.mockito.Mockito.when(companies.profile()).thenReturn(new de.corporate.lc.company.domain.CompanyProfile());
+        byte[] result = new DocxTemplateService(templates,companies).render(lc, request);
 
         try (XWPFDocument document = new XWPFDocument(new ByteArrayInputStream(result))) {
             String text = document.getParagraphs().stream().map(paragraph -> paragraph.getText()).reduce("", (a, b) -> a + "\n" + b);

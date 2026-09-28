@@ -2,7 +2,7 @@
 
 ## Als Nächstes
 
-- Dokumentvorlagen um strukturierte Tabellen und Firmenstammdaten erweitern
+- Dokumentvorlagen um strukturierte Positions- und Packtabellen erweitern
 
 ## Erledigt
 
@@ -10,6 +10,7 @@
 - Handelsrechnung und Packliste gegen die gültige LC-Fassung einschließlich MT707-Änderungen prüfen
 - Audit-Protokoll mit Vorher-/Nachher-Werten, Exportereignissen und Aktenchronik
 - Dokumentenerstellung für Ursprungszeugnis, Begünstigtenzertifikat und Qualitäts-/Analysezertifikat
+- Zentrale Firmenstammdaten einschließlich Logo, Register-, Steuer- und Bankdaten
 
 ## Später
 

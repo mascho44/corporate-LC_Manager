@@ -1,0 +1,1 @@
+package de.corporate.lc.company.repository;import de.corporate.lc.company.domain.CompanyProfile;import org.springframework.data.jpa.repository.JpaRepository;public interface CompanyProfileRepository extends JpaRepository<CompanyProfile,Integer>{}
