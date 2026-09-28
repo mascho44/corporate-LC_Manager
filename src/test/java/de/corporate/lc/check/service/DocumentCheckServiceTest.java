@@ -84,6 +84,12 @@ class DocumentCheckServiceTest {
         assertThat(result.results()).extracting("code").contains("BILL_OF_LADING_REFERENCE_OK","SHIPMENT_DATE_EXCEEDED","CLEAN_ON_BOARD_EVIDENCED","FULL_SET_BILL_OF_LADING_EVIDENCED");
     }
 
+    @Test void checksBillOfLadingConsignmentEndorsementFreightAndNotifyParty() {
+        UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-BL-2");lc.setApplicant("Importer AG");lc.setRequiredDocuments(List.of("FULL SET BILL OF LADING CONSIGNED TO ORDER, BLANK ENDORSED, FREIGHT PREPAID, NOTIFY APPLICANT"));LcDocument bill=document(DocumentType.BILL_OF_LADING,"bl-terms.pdf","LC Reference: LC-BL-2\nConsignee: To order of issuing bank\nBlank endorsement\nFreight charges prepaid\nNotify party: Importer AG");bill.setExtractedReference("LC-BL-2");
+        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(bill));var result=service(lcs,docs).check(id);
+        assertThat(result.results()).extracting("code").contains("BILL_OF_LADING_TO_ORDER_EVIDENCED","BILL_OF_LADING_BLANK_ENDORSEMENT_EVIDENCED","BILL_OF_LADING_FREIGHT_PREPAID_EVIDENCED","BILL_OF_LADING_NOTIFY_APPLICANT_EVIDENCED");
+    }
+
     @Test void checksCertificateOfOriginReferenceGoodsAndIssuer() {
         UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-COO-1");lc.setBeneficiary("Exporter GmbH");lc.setRawMessage(":20:LC-COO-1\n:45A:INDUSTRIAL PUMPS TYPE PX");lc.setRequiredDocuments(List.of("CERTIFICATE OF ORIGIN ISSUED BY CHAMBER OF COMMERCE"));LcDocument certificate=document(DocumentType.CERTIFICATE_OF_ORIGIN,"origin.pdf","LC Reference: LC-COO-1\nExporter GmbH\nDescription: Industrial pumps type PX\nChamber of Commerce");certificate.setExtractedReference("LC-COO-1");
         var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(certificate));var result=service(lcs,docs).check(id);
