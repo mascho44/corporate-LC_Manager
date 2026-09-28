@@ -162,6 +162,18 @@ class DocumentCheckServiceTest {
         assertThat(result.results()).extracting("code").contains("INVOICE_AMOUNT_EXCEEDED");
     }
 
+    @Test void rejectsCumulativeInvoiceAmountAboveCreditLimit() {
+        UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setAmount(new BigDecimal("1000"));lc.setCurrency("EUR");LcDocument first=document(DocumentType.COMMERCIAL_INVOICE,"invoice-1.pdf","Amount: EUR 600");first.setAmount(new BigDecimal("600"));first.setCurrency("EUR");LcDocument second=document(DocumentType.COMMERCIAL_INVOICE,"invoice-2.pdf","Amount: EUR 500");second.setAmount(new BigDecimal("500"));second.setCurrency("EUR");
+        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(first,second));var result=service(lcs,docs).check(id);
+        assertThat(result.results()).filteredOn(item->item.code().equals("CUMULATIVE_INVOICE_AMOUNT_EXCEEDED")).singleElement().satisfies(item->{assertThat(item.severity()).isEqualTo(de.corporate.lc.check.api.CheckResult.Severity.DISCREPANCY);assertThat(item.documentEvidence()).contains("EUR 1100","invoice-1.pdf","invoice-2.pdf");});
+    }
+
+    @Test void acceptsCumulativeInvoicesWithinAmountTolerance() {
+        UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setAmount(new BigDecimal("1000"));lc.setCurrency("EUR");lc.setRawMessage(":39A:10/05");LcDocument first=document(DocumentType.COMMERCIAL_INVOICE,"invoice-a.pdf","Amount: EUR 600");first.setAmount(new BigDecimal("600"));first.setCurrency("EUR");LcDocument second=document(DocumentType.COMMERCIAL_INVOICE,"invoice-b.pdf","Amount: EUR 500");second.setAmount(new BigDecimal("500"));second.setCurrency("EUR");
+        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(first,second));var result=service(lcs,docs).check(id);
+        assertThat(result.results()).extracting("code").contains("CUMULATIVE_INVOICE_AMOUNT_OK");
+    }
+
     @Test void reportsContradictingPackingListDescription() {
         UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-4711");lc.setRawMessage(":20:LC-4711\n:45A:100 INDUSTRIAL PUMPS TYPE PX");
         LcDocument invoice=document(DocumentType.COMMERCIAL_INVOICE,"invoice.pdf","Description: 100 industrial pumps type PX");
