@@ -9,6 +9,7 @@ import de.corporate.lc.user.service.AppUserDetailsService; import jakarta.servle
    .requestMatchers("/actuator/**").hasRole("ADMIN")
    .requestMatchers("/api/audit/**").hasRole("ADMIN")
    .requestMatchers("/api/document-templates/**").hasRole("ADMIN")
+   .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/training/**").authenticated()
    .requestMatchers("/api/training/**").hasAnyRole("ADMIN","EDITOR")
    .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/users/assignable").authenticated()
    .requestMatchers("/api/users/**").hasRole("ADMIN")
