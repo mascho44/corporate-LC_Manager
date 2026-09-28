@@ -156,6 +156,12 @@ class DocumentCheckServiceTest {
         assertThat(result.results()).extracting("code").contains("INSPECTION_REFERENCE_OK","INSPECTION_BENEFICIARY_OK","INSPECTION_GOODS_OK","INSPECTION_ISSUER_EVIDENCED");
     }
 
+    @Test void checksInspectionStatementsAndPreShipmentDate() {
+        UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-INSP-2");lc.setRequiredDocuments(List.of("PRE-SHIPMENT INSPECTION CERTIFICATE CERTIFYING QUALITY, QUANTITY AND PACKING"));LcDocument inspection=document(DocumentType.INSPECTION_CERTIFICATE,"inspection-details.pdf","LC Reference: LC-INSP-2\nPre-shipment inspection\nQuality and quantity satisfactory\nPacking inspected");inspection.setExtractedReference("LC-INSP-2");inspection.setDocumentDate(LocalDate.of(2026,9,9));LcDocument bill=document(DocumentType.BILL_OF_LADING,"bl.pdf","LC Reference: LC-INSP-2");bill.setExtractedReference("LC-INSP-2");bill.setDocumentDate(LocalDate.of(2026,9,10));
+        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(inspection,bill));var result=service(lcs,docs).check(id);
+        assertThat(result.results()).extracting("code").contains("INSPECTION_QUALITY_EVIDENCED","INSPECTION_QUANTITY_EVIDENCED","INSPECTION_PACKING_EVIDENCED","INSPECTION_PRE_SHIPMENT_EVIDENCED","INSPECTION_DATE_OK");
+    }
+
     @Test void checksBillOfExchangeAmountCurrencyDrawerAndTenor() {
         UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-DRAFT-1");lc.setBeneficiary("Exporter GmbH");lc.setAmount(new BigDecimal("1000"));lc.setCurrency("EUR");lc.setRequiredDocuments(List.of("BILL OF EXCHANGE AT SIGHT DRAWN BY BENEFICIARY"));LcDocument draft=document(DocumentType.BILL_OF_EXCHANGE,"draft.pdf","LC Reference: LC-DRAFT-1\nExporter GmbH\nAt sight\nAmount EUR 900");draft.setExtractedReference("LC-DRAFT-1");draft.setExtractedAmount(new BigDecimal("900"));draft.setExtractedCurrency("EUR");
         var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(draft));var result=service(lcs,docs).check(id);
