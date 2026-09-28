@@ -150,6 +150,18 @@ class DocumentCheckServiceTest {
         assertThat(result.results()).filteredOn(item->item.code().equals("PARTIAL_SHIPMENT_MANUAL_REVIEW")).singleElement().satisfies(item->{assertThat(item.severity()).isEqualTo(de.corporate.lc.check.api.CheckResult.Severity.WARNING);assertThat(item.documentEvidence()).contains("bl-1.pdf","bl-2.pdf");});
     }
 
+    @Test void appliesPositiveAmountToleranceFromField39A() {
+        UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setAmount(new BigDecimal("1000"));lc.setCurrency("EUR");lc.setRawMessage(":20:LC-TOL-1\n:32B:EUR1000,00\n:39A:10/05");LcDocument invoice=document(DocumentType.COMMERCIAL_INVOICE,"invoice-tolerance.pdf","Amount: EUR 1050");invoice.setAmount(new BigDecimal("1050"));invoice.setCurrency("EUR");
+        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(invoice));var result=service(lcs,docs).check(id);
+        assertThat(result.results()).filteredOn(item->item.code().equals("INVOICE_AMOUNT_OK")).singleElement().satisfies(item->assertThat(item.lcCondition()).contains("10/05","Höchstbetrag: EUR 1100"));
+    }
+
+    @Test void rejectsInvoiceAbovePositiveAmountTolerance() {
+        UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setAmount(new BigDecimal("1000"));lc.setCurrency("EUR");lc.setRawMessage(":20:LC-TOL-2\n:39A:10/05");LcDocument invoice=document(DocumentType.COMMERCIAL_INVOICE,"invoice-too-high.pdf","Amount: EUR 1150");invoice.setAmount(new BigDecimal("1150"));invoice.setCurrency("EUR");
+        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(invoice));var result=service(lcs,docs).check(id);
+        assertThat(result.results()).extracting("code").contains("INVOICE_AMOUNT_EXCEEDED");
+    }
+
     @Test void reportsContradictingPackingListDescription() {
         UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-4711");lc.setRawMessage(":20:LC-4711\n:45A:100 INDUSTRIAL PUMPS TYPE PX");
         LcDocument invoice=document(DocumentType.COMMERCIAL_INVOICE,"invoice.pdf","Description: 100 industrial pumps type PX");
