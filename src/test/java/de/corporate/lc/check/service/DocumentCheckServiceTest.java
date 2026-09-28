@@ -102,6 +102,12 @@ class DocumentCheckServiceTest {
         assertThat(result.results()).filteredOn(item->item.code().equals("INSURANCE_COVERAGE_OK")).singleElement().satisfies(item->assertThat(item.lcCondition()).contains("Rechnungssumme: EUR 800","Mindestdeckung: EUR 880"));
     }
 
+    @Test void checksRequiredInsuranceClauses() {
+        UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-INS-CLAUSE");lc.setAmount(new BigDecimal("1000"));lc.setCurrency("EUR");lc.setRequiredDocuments(List.of("INSURANCE CERTIFICATE FOR 110 PERCENT OF LC VALUE COVERING ALL RISKS, INSTITUTE CARGO CLAUSES A, WAREHOUSE TO WAREHOUSE, CLAIMS PAYABLE IN GERMANY"));LcDocument insurance=document(DocumentType.INSURANCE_CERTIFICATE,"insurance-clauses.pdf","LC Reference: LC-INS-CLAUSE\nSum insured EUR 1100\nAgainst all risks\nInstitute Cargo Clauses A\nWarehouse to warehouse\nClaims payable in Germany");insurance.setExtractedReference("LC-INS-CLAUSE");insurance.setAmount(new BigDecimal("1100"));insurance.setCurrency("EUR");
+        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(insurance));var result=service(lcs,docs).check(id);
+        assertThat(result.results()).extracting("code").contains("INSURANCE_ALL_RISKS_EVIDENCED","INSURANCE_ICC_A_EVIDENCED","INSURANCE_WAREHOUSE_TO_WAREHOUSE_EVIDENCED","INSURANCE_CLAIMS_PAYABLE_EVIDENCED");
+    }
+
     @Test void detectsExceededPresentationPeriodFromField48() {
         UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-48");lc.setRawMessage(":20:LC-48\n:48:21 DAYS AFTER DATE OF SHIPMENT");lc.setExpiryDate(LocalDate.now().plusDays(30));LcDocument bill=document(DocumentType.BILL_OF_LADING,"bl.pdf","LC Reference: LC-48");bill.setExtractedReference("LC-48");bill.setDocumentDate(LocalDate.now().minusDays(30));
         var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(bill));var result=service(lcs,docs).check(id);
