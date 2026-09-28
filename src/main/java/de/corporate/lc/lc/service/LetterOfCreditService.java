@@ -79,6 +79,13 @@ public class LetterOfCreditService {
         repo.delete(lc);
     }
 
+    @Transactional
+    public LetterOfCredit completeFollowUp(UUID id) {
+        LetterOfCredit lc = one(id);
+        lc.setFollowUpDate(null);
+        return lc;
+    }
+
     private String clean(String value) {
         return value == null || value.isBlank() ? null : value.trim();
     }
