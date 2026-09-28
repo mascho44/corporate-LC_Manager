@@ -9,5 +9,6 @@
 ## Später
 
 - EBICS-Anbindung für den sicheren Bankaustausch
+- Multiple Entities: mehrere Gesellschaften oder Mandanten mit getrennten Akten, Benutzern, Rollen und Einstellungen
 - Weitere SWIFT-Profile, insbesondere MT767
 - Freigabe- und Vier-Augen-Workflows
