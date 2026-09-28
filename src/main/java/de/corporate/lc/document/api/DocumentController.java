@@ -64,9 +64,11 @@ public class DocumentController {
 
     @PutMapping("/lcs/{lcId}/documents/{id}")
     public DocumentView update(@PathVariable UUID lcId,@PathVariable UUID id,@Valid @RequestBody DocumentUpdateRequest request,Authentication authentication){
-        DocumentView document=service.update(lcId,id,request);resetChecks(lcId,authentication,"Dokumentdaten geändert");
-        audit.record(authentication,"DOCUMENT_UPDATED","LETTER_OF_CREDIT",lcId,document.originalFilename()+" · "+document.documentType()+" · "+document.documentDate());return document;
+        String previous=documentAuditState(DocumentView.from(service.one(id)));DocumentView document=service.update(lcId,id,request);resetChecks(lcId,authentication,"Dokumentdaten geändert");
+        audit.recordChange(authentication,"DOCUMENT_UPDATED","LETTER_OF_CREDIT",lcId,document.originalFilename()+" · "+document.documentType(),previous,documentAuditState(document));return document;
     }
+
+    private String documentAuditState(DocumentView document){return "Datei="+document.originalFilename()+" | Typ="+document.documentType()+" | Datum="+(document.documentDate()==null?"-":document.documentDate())+" | Betrag="+(document.currency()==null?"-":document.currency())+" "+(document.amount()==null?"-":document.amount());}
 
     @GetMapping("/documents/{id}/content")
     public ResponseEntity<byte[]> download(@PathVariable UUID id) {

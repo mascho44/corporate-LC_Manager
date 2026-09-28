@@ -25,9 +25,11 @@ public class LcTimelineService {
                 new LcTimelineEntry(note.getId(), "NOTE", "LC_NOTE_ADDED", note.getUsername(), note.getContent(), note.getCreatedAt())));
         audit.findTop100ByEntityIdOrderByOccurredAtDesc(lcId.toString()).stream()
                 .filter(event -> !"LC_NOTE_ADDED".equals(event.getAction()))
-                .forEach(event -> entries.add(new LcTimelineEntry(event.getId(), "EVENT", event.getAction(), event.getUsername(), event.getDetails(), event.getOccurredAt())));
+                .forEach(event -> entries.add(new LcTimelineEntry(event.getId(), "EVENT", event.getAction(), event.getUsername(), timelineDetails(event), event.getOccurredAt())));
         return entries.stream().sorted(Comparator.comparing(LcTimelineEntry::occurredAt).reversed()).limit(100).toList();
     }
+
+    private String timelineDetails(de.corporate.lc.audit.domain.AuditEvent event){String details=event.getDetails()==null?"":event.getDetails();if(event.getPreviousValue()!=null||event.getNewValue()!=null)details+=(details.isBlank()?"":"\n")+"Vorher: "+Objects.toString(event.getPreviousValue(),"-")+"\nNachher: "+Objects.toString(event.getNewValue(),"-");return details;}
 
     @Transactional
     public LcNote addNote(UUID lcId, String username, String content) {

@@ -9,6 +9,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 class AuditServiceTest {
+    @Test void recordsPreviousAndNewValuesForChanges(){
+        AuditEventRepository repository=mock(AuditEventRepository.class);AuditService service=new AuditService(repository);
+        service.recordChange(null,"LC_UPDATED","LETTER_OF_CREDIT","LC-1","Fachliche Änderung","Betrag=1000","Betrag=1200");
+        var captor=org.mockito.ArgumentCaptor.forClass(AuditEvent.class);verify(repository).save(captor.capture());
+        assertThat(captor.getValue().getPreviousValue()).isEqualTo("Betrag=1000");assertThat(captor.getValue().getNewValue()).isEqualTo("Betrag=1200");
+    }
     @Test void exportsRecentEventsAsExcelCompatibleCsv(){
         AuditEvent event=new AuditEvent();event.setUsername("administrator");event.setAction("DOCUMENT_UPDATED");event.setEntityType("LETTER_OF_CREDIT");event.setEntityId("LC-1");event.setDetails("Rechnung; geändert");event.setSuccessful(true);
         AuditEventRepository repository=mock(AuditEventRepository.class);when(repository.findTop200ByOrderByOccurredAtDesc()).thenReturn(List.of(event));

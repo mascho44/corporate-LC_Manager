@@ -51,11 +51,12 @@ public class LetterOfCreditController {
 
     @PutMapping("/{id}")
     public LetterOfCredit update(@PathVariable UUID id, @Valid @RequestBody LetterOfCreditUpdateRequest request, Authentication authentication) {
+        String previous=auditState(service.one(id));
         LetterOfCredit lc = service.update(id, request);
         long reset=checks.invalidateDecisions(id);
         String assignment = lc.getAssignedTo() == null ? "nicht zugewiesen" : lc.getAssignedTo();
         String followUp = lc.getFollowUpDate() == null ? "keine Wiedervorlage" : "Wiedervorlage " + lc.getFollowUpDate();
-        audit.record(authentication, "LC_UPDATED", "LETTER_OF_CREDIT", id, lc.getReference() + " · " + assignment + " · " + followUp);
+        audit.recordChange(authentication, "LC_UPDATED", "LETTER_OF_CREDIT", id, lc.getReference() + " · " + assignment + " · " + followUp,previous,auditState(lc));
         if(reset>0)audit.record(authentication,"DOCUMENT_CHECK_DECISIONS_RESET","LETTER_OF_CREDIT",id,reset+" Entscheidungen wegen LC-Änderung zurückgesetzt");
         return lc;
     }
@@ -67,4 +68,7 @@ public class LetterOfCreditController {
         audit.record(authentication, "LC_DELETED", "LETTER_OF_CREDIT", id, reference);
         return ResponseEntity.noContent().build();
     }
+
+    private String auditState(LetterOfCredit lc){return "Referenz="+value(lc.getReference())+" | Status="+value(lc.getStatus())+" | Applicant="+value(lc.getApplicant())+" | Beneficiary="+value(lc.getBeneficiary())+" | Betrag="+value(lc.getCurrency())+" "+value(lc.getAmount())+" | Ablauf="+value(lc.getExpiryDate())+" | Versand="+value(lc.getLatestShipmentDate())+" | Bearbeiter="+value(lc.getAssignedTo())+" | Wiedervorlage="+value(lc.getFollowUpDate())+" | Dokumentenanforderungen="+lc.getRequiredDocuments().size();}
+    private String value(Object value){return value==null?"-":String.valueOf(value);}
 }
