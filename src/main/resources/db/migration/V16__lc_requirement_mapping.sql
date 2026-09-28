@@ -1,0 +1,1 @@
+CREATE TABLE lc_requirement_mapping (id UUID PRIMARY KEY, letter_of_credit_id UUID NOT NULL REFERENCES letter_of_credit(id) ON DELETE CASCADE, requirement VARCHAR(2000) NOT NULL, document_type VARCHAR(60) NOT NULL, mapped_by VARCHAR(100) NOT NULL, mapped_at TIMESTAMP NOT NULL, CONSTRAINT uq_lc_requirement_mapping UNIQUE (letter_of_credit_id, requirement));

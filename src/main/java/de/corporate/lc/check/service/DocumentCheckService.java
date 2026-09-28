@@ -2,7 +2,7 @@ package de.corporate.lc.check.service;
 
 import de.corporate.lc.check.api.CheckResult;
 import de.corporate.lc.check.api.ReviewSummary;
-import de.corporate.lc.check.api.CheckDecisionRequest;import de.corporate.lc.check.domain.DocumentCheckDecision;import de.corporate.lc.check.repository.DocumentCheckDecisionRepository;
+import de.corporate.lc.check.api.CheckDecisionRequest;import de.corporate.lc.check.domain.DocumentCheckDecision;import de.corporate.lc.check.domain.LcRequirementMapping;import de.corporate.lc.check.repository.DocumentCheckDecisionRepository;import de.corporate.lc.check.repository.LcRequirementMappingRepository;import org.springframework.beans.factory.annotation.Autowired;
 import de.corporate.lc.document.domain.DocumentType;
 import de.corporate.lc.document.repository.LcDocumentRepository;
 import de.corporate.lc.lc.domain.LetterOfCredit;
@@ -16,11 +16,12 @@ import static de.corporate.lc.check.api.CheckResult.Severity.*;
 @Service
 public class DocumentCheckService {
     private final LetterOfCreditRepository lcs;
-    private final LcDocumentRepository documents;private final DocumentCheckDecisionRepository decisions;
+    private final LcDocumentRepository documents;private final DocumentCheckDecisionRepository decisions;private final LcRequirementMappingRepository mappings;
 
     public DocumentCheckService(LetterOfCreditRepository lcs, LcDocumentRepository documents,DocumentCheckDecisionRepository decisions) {
-        this.lcs = lcs;this.documents = documents;this.decisions=decisions;
+        this(lcs,documents,decisions,null);
     }
+    @Autowired public DocumentCheckService(LetterOfCreditRepository lcs,LcDocumentRepository documents,DocumentCheckDecisionRepository decisions,LcRequirementMappingRepository mappings){this.lcs=lcs;this.documents=documents;this.decisions=decisions;this.mappings=mappings;}
 
     @Transactional(readOnly = true)
     public ReviewSummary check(UUID lcId) {
@@ -29,7 +30,7 @@ public class DocumentCheckService {
         List<CheckResult> results = new ArrayList<>();
 
         for (String requirement : lc.getRequiredDocuments()) {
-            Optional<DocumentType> expected = classify(requirement);
+            Optional<DocumentType> expected = mappedType(lcId,requirement).or(()->classify(requirement));
             if (expected.isEmpty()) {
                 results.add(finding(WARNING, "UNCLASSIFIED_REQUIREMENT", "Dokumentenbedingung muss manuell geprüft werden.", requirement, null, null));
             } else if (uploaded.stream().noneMatch(d -> d.getDocumentType() == expected.get())) {
@@ -158,6 +159,8 @@ public class DocumentCheckService {
     }
 
     @Transactional public void decide(UUID lcId,CheckDecisionRequest request,String username){lcs.findById(lcId).orElseThrow();String name=request.documentName()==null?"":request.documentName();DocumentCheckDecision decision=decisions.findByLcIdAndFindingCodeAndDocumentName(lcId,request.findingCode(),name).orElseGet(DocumentCheckDecision::new);decision.setLcId(lcId);decision.setFindingCode(request.findingCode());decision.setDocumentName(name);decision.setDecision(request.decision());decision.setComment(request.comment());decision.setReviewedBy(username);decision.setReviewedAt(java.time.LocalDateTime.now());decisions.save(decision);}
+    @Transactional public void mapRequirement(UUID lcId,String requirement,DocumentType type,String username){LetterOfCredit lc=lcs.findById(lcId).orElseThrow();if(!lc.getRequiredDocuments().contains(requirement))throw new IllegalArgumentException("Dokumentenanforderung gehört nicht zu dieser LC-Akte.");if(mappings==null)throw new IllegalStateException("Zuordnung ist nicht verfügbar.");LcRequirementMapping mapping=mappings.findByLcIdAndRequirement(lcId,requirement).orElseGet(LcRequirementMapping::new);mapping.setLcId(lcId);mapping.setRequirement(requirement);mapping.setDocumentType(type);mapping.setMappedBy(username);mapping.setMappedAt(java.time.LocalDateTime.now());mappings.save(mapping);}
+    private Optional<DocumentType> mappedType(UUID lcId,String requirement){return mappings==null?Optional.empty():mappings.findByLcIdAndRequirement(lcId,requirement).map(LcRequirementMapping::getDocumentType);}
     @Transactional public long invalidateDecisions(UUID lcId){long count=decisions.findByLcId(lcId).size();decisions.deleteAllByLcId(lcId);return count;}
     private String decisionKey(String code,String document){return code+"\u0000"+(document==null?"":document);}
 
