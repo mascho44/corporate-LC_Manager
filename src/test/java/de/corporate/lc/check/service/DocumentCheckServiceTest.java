@@ -108,6 +108,12 @@ class DocumentCheckServiceTest {
         assertThat(result.results()).extracting("code").contains("INSURANCE_ALL_RISKS_EVIDENCED","INSURANCE_ICC_A_EVIDENCED","INSURANCE_WAREHOUSE_TO_WAREHOUSE_EVIDENCED","INSURANCE_CLAIMS_PAYABLE_EVIDENCED");
     }
 
+    @Test void flagsInsuranceDocumentIssuedAfterShipment() {
+        UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-INS-DATE");LcDocument bill=document(DocumentType.BILL_OF_LADING,"bl.pdf","LC Reference: LC-INS-DATE");bill.setDocumentDate(LocalDate.of(2026,9,10));bill.setExtractedReference("LC-INS-DATE");LcDocument insurance=document(DocumentType.INSURANCE_CERTIFICATE,"insurance.pdf","LC Reference: LC-INS-DATE");insurance.setDocumentDate(LocalDate.of(2026,9,12));insurance.setExtractedReference("LC-INS-DATE");
+        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(bill,insurance));var result=service(lcs,docs).check(id);
+        assertThat(result.results()).filteredOn(item->item.code().equals("INSURANCE_DATE_AFTER_SHIPMENT_REVIEW")).singleElement().satisfies(item->{assertThat(item.severity()).isEqualTo(de.corporate.lc.check.api.CheckResult.Severity.WARNING);assertThat(item.documentEvidence()).contains("2026-09-12","2026-09-10","bl.pdf");});
+    }
+
     @Test void detectsExceededPresentationPeriodFromField48() {
         UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-48");lc.setRawMessage(":20:LC-48\n:48:21 DAYS AFTER DATE OF SHIPMENT");lc.setExpiryDate(LocalDate.now().plusDays(30));LcDocument bill=document(DocumentType.BILL_OF_LADING,"bl.pdf","LC Reference: LC-48");bill.setExtractedReference("LC-48");bill.setDocumentDate(LocalDate.now().minusDays(30));
         var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(bill));var result=service(lcs,docs).check(id);
