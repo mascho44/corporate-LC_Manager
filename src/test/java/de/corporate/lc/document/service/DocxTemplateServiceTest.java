@@ -11,6 +11,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 class DocxTemplateServiceTest {
     @Test
@@ -24,7 +25,9 @@ class DocxTemplateServiceTest {
         GeneratedDocumentRequest request = new GeneratedDocumentRequest(DocumentType.COMMERCIAL_INVOICE,
                 "INV-4711", LocalDate.of(2026, 9, 28), "Goods", "10", null, null, null, "Test note");
 
-        byte[] result = new DocxTemplateService().render(lc, request);
+        DocumentTemplateService templates=mock(DocumentTemplateService.class);
+        org.mockito.Mockito.when(templates.content(DocumentType.COMMERCIAL_INVOICE)).thenReturn(java.util.Optional.empty());
+        byte[] result = new DocxTemplateService(templates).render(lc, request);
 
         try (XWPFDocument document = new XWPFDocument(new ByteArrayInputStream(result))) {
             String text = document.getParagraphs().stream().map(paragraph -> paragraph.getText()).reduce("", (a, b) -> a + "\n" + b);

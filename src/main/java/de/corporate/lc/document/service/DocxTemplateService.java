@@ -16,8 +16,11 @@ import java.util.Map;
 
 @Service
 public class DocxTemplateService {
+    private final DocumentTemplateService templates;
+    public DocxTemplateService(DocumentTemplateService templates){this.templates=templates;}
     public byte[] render(LetterOfCredit lc, GeneratedDocumentRequest request) throws IOException {
-        byte[] template = template(request.type());
+        var customTemplate = templates.content(request.type());
+        byte[] template = customTemplate.isPresent() ? customTemplate.get() : template(request.type());
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("title", request.type() == DocumentType.COMMERCIAL_INVOICE ? "COMMERCIAL INVOICE" : "PACKING LIST");
         data.put("documentNumber", value(request.documentNumber()));
