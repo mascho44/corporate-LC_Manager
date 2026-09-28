@@ -132,6 +132,12 @@ class DocumentCheckServiceTest {
         assertThat(result.results()).extracting("code").contains("AIR_WAYBILL_REFERENCE_OK","AIR_SHIPMENT_DATE_OK","AWB_FREIGHT_PREPAID_EVIDENCED","AWB_DEPARTURE_AIRPORT_EVIDENCED","AWB_DESTINATION_AIRPORT_EVIDENCED");
     }
 
+    @Test void checksAirWaybillConsigneeNotifyPartyAndOriginal() {
+        UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-AWB-2");lc.setIssuingBank("Example Bank AG");lc.setApplicant("Importer GmbH");lc.setRequiredDocuments(List.of("AIR WAYBILL CONSIGNED TO ISSUING BANK, NOTIFY APPLICANT, ORIGINAL 3 FOR SHIPPER, FREIGHT COLLECT"));LcDocument awb=document(DocumentType.AIR_WAYBILL,"awb-parties.pdf","LC Reference: LC-AWB-2\nConsignee: Example Bank AG\nNotify party: Importer GmbH\nOriginal No. 3 for shipper\nFreight charges collect");awb.setExtractedReference("LC-AWB-2");
+        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(awb));var result=service(lcs,docs).check(id);
+        assertThat(result.results()).extracting("code").contains("AWB_CONSIGNEE_ISSUING_BANK_EVIDENCED","AWB_NOTIFY_APPLICANT_EVIDENCED","AWB_ORIGINAL_FOR_SHIPPER_EVIDENCED","AWB_FREIGHT_COLLECT_EVIDENCED");
+    }
+
     @Test void usesAirWaybillForPresentationPeriod() {
         UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-AWB-48");lc.setRawMessage(":20:LC-AWB-48\n:48:21 DAYS AFTER DATE OF SHIPMENT");lc.setExpiryDate(LocalDate.now().plusDays(30));LcDocument awb=document(DocumentType.AIR_WAYBILL,"awb.pdf","LC Reference: LC-AWB-48");awb.setExtractedReference("LC-AWB-48");awb.setDocumentDate(LocalDate.now().minusDays(30));
         var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(awb));var result=service(lcs,docs).check(id);
