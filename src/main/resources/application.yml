@@ -21,6 +21,21 @@ server:
       cookie:
         http-only: true
         same-site: lax
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState,db
 app:
   initial-admin:
     username: ${ADMIN_USERNAME:admin}

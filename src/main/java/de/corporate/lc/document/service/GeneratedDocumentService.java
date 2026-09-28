@@ -15,12 +15,19 @@ import java.util.*;
 
 @Service
 public class GeneratedDocumentService {
-    private final LetterOfCreditRepository lcs;private final LcDocumentRepository documents;
-    public GeneratedDocumentService(LetterOfCreditRepository lcs,LcDocumentRepository documents){this.lcs=lcs;this.documents=documents;}
+    private final LetterOfCreditRepository lcs;private final LcDocumentRepository documents;private final DocxTemplateService docxTemplates;
+    public GeneratedDocumentService(LetterOfCreditRepository lcs,LcDocumentRepository documents,DocxTemplateService docxTemplates){this.lcs=lcs;this.documents=documents;this.docxTemplates=docxTemplates;}
     @Transactional public DocumentView create(UUID lcId,GeneratedDocumentRequest request)throws IOException{
         if(request.type()!=DocumentType.COMMERCIAL_INVOICE&&request.type()!=DocumentType.PACKING_LIST)throw new IllegalArgumentException("Nur Handelsrechnung und Packliste können erstellt werden.");
         var lc=lcs.findById(lcId).orElseThrow();byte[] pdf=pdf(lc,request);String prefix=request.type()==DocumentType.COMMERCIAL_INVOICE?"Handelsrechnung":"Packliste";String filename=safe(prefix+"-"+request.documentNumber()+".pdf");
         LcDocument document=new LcDocument();document.setLetterOfCredit(lc);document.setDocumentType(request.type());document.setOriginalFilename(filename);document.setContentType("application/pdf");document.setFileSize(pdf.length);document.setDocumentDate(request.documentDate());document.setContent(pdf);document.setExtractionStatus("GENERATED");document.setExtractedReference(lc.getReference());document.setExtractedDocumentNumber(request.documentNumber());document.setExtractedText(text(lc,request));
+        if(request.type()==DocumentType.COMMERCIAL_INVOICE){document.setAmount(lc.getAmount());document.setCurrency(lc.getCurrency());document.setExtractedAmount(lc.getAmount());document.setExtractedCurrency(lc.getCurrency());}
+        return DocumentView.from(documents.save(document));
+    }
+    @Transactional public DocumentView createDocx(UUID lcId,GeneratedDocumentRequest request)throws IOException{
+        if(request.type()!=DocumentType.COMMERCIAL_INVOICE&&request.type()!=DocumentType.PACKING_LIST)throw new IllegalArgumentException("Nur Handelsrechnung und Packliste können erstellt werden.");
+        var lc=lcs.findById(lcId).orElseThrow();byte[] content=docxTemplates.render(lc,request);String prefix=request.type()==DocumentType.COMMERCIAL_INVOICE?"Handelsrechnung":"Packliste";String filename=safe(prefix+"-"+request.documentNumber()+".docx");
+        LcDocument document=new LcDocument();document.setLetterOfCredit(lc);document.setDocumentType(request.type());document.setOriginalFilename(filename);document.setContentType("application/vnd.openxmlformats-officedocument.wordprocessingml.document");document.setFileSize(content.length);document.setDocumentDate(request.documentDate());document.setContent(content);document.setExtractionStatus("GENERATED");document.setExtractedReference(lc.getReference());document.setExtractedDocumentNumber(request.documentNumber());document.setExtractedText(text(lc,request));
         if(request.type()==DocumentType.COMMERCIAL_INVOICE){document.setAmount(lc.getAmount());document.setCurrency(lc.getCurrency());document.setExtractedAmount(lc.getAmount());document.setExtractedCurrency(lc.getCurrency());}
         return DocumentView.from(documents.save(document));
     }

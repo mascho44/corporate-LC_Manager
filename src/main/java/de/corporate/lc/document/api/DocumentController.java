@@ -30,6 +30,9 @@ public class DocumentController {
     @PostMapping(value="/lcs/{lcId}/generated-documents",consumes=MediaType.APPLICATION_JSON_VALUE)
     public DocumentView generate(@PathVariable UUID lcId,@Valid @RequestBody GeneratedDocumentRequest request,Authentication authentication)throws IOException{DocumentView result=generated.create(lcId,request);resetChecks(lcId,authentication,"Dokument erstellt");audit.record(authentication,"DOCUMENT_GENERATED","LETTER_OF_CREDIT",lcId,result.originalFilename()+" · "+request.type());return result;}
 
+    @PostMapping(value="/lcs/{lcId}/generated-documents/docx",consumes=MediaType.APPLICATION_JSON_VALUE)
+    public DocumentView generateDocx(@PathVariable UUID lcId,@Valid @RequestBody GeneratedDocumentRequest request,Authentication authentication)throws IOException{DocumentView result=generated.createDocx(lcId,request);resetChecks(lcId,authentication,"Word-Dokument erstellt");audit.record(authentication,"DOCUMENT_GENERATED","LETTER_OF_CREDIT",lcId,result.originalFilename()+" · DOCX · "+request.type());return result;}
+
     @PostMapping(value = "/lcs/{lcId}/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public DocumentView upload(@PathVariable UUID lcId, @RequestPart("file") MultipartFile file,
             @RequestParam DocumentType type,
