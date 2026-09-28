@@ -162,6 +162,12 @@ class DocumentCheckServiceTest {
         assertThat(result.results()).extracting("code").contains("INSPECTION_QUALITY_EVIDENCED","INSPECTION_QUANTITY_EVIDENCED","INSPECTION_PACKING_EVIDENCED","INSPECTION_PRE_SHIPMENT_EVIDENCED","INSPECTION_DATE_OK");
     }
 
+    @Test void checksQualityCertificateGoodsIssuerAndResult() {
+        UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-QA-1");lc.setRawMessage(":20:LC-QA-1\n:45A:INDUSTRIAL PUMPS TYPE PX");lc.setRequiredDocuments(List.of("CERTIFICATE OF ANALYSIS ISSUED BY SGS"));LcDocument quality=document(DocumentType.QUALITY_CERTIFICATE,"analysis.pdf","LC Reference: LC-QA-1\nIssued by SGS\nDescription: Industrial pumps type PX\nTest passed - conforms to specification");quality.setExtractedReference("LC-QA-1");
+        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(quality));var result=service(lcs,docs).check(id);
+        assertThat(result.results()).extracting("code").contains("QUALITY_CERTIFICATE_REFERENCE_OK","QUALITY_CERTIFICATE_GOODS_OK","QUALITY_CERTIFICATE_ISSUER_EVIDENCED","QUALITY_RESULT_EVIDENCED");
+    }
+
     @Test void checksBillOfExchangeAmountCurrencyDrawerAndTenor() {
         UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-DRAFT-1");lc.setBeneficiary("Exporter GmbH");lc.setAmount(new BigDecimal("1000"));lc.setCurrency("EUR");lc.setRequiredDocuments(List.of("BILL OF EXCHANGE AT SIGHT DRAWN BY BENEFICIARY"));LcDocument draft=document(DocumentType.BILL_OF_EXCHANGE,"draft.pdf","LC Reference: LC-DRAFT-1\nExporter GmbH\nAt sight\nAmount EUR 900");draft.setExtractedReference("LC-DRAFT-1");draft.setExtractedAmount(new BigDecimal("900"));draft.setExtractedCurrency("EUR");
         var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(draft));var result=service(lcs,docs).check(id);

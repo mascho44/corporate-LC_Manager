@@ -11,6 +11,7 @@ public enum DocumentType {
     INSPECTION_CERTIFICATE("Inspection Certificate"),
     BILL_OF_EXCHANGE("Bill of Exchange / Draft"),
     BENEFICIARY_CERTIFICATE("Beneficiary's Certificate"),
+    QUALITY_CERTIFICATE("Quality / Analysis Certificate"),
     OTHER("Other");
 
     private final String displayName;
