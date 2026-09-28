@@ -14,6 +14,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 class DocumentCheckServiceTest {
+    @Test void invalidatesDecisionsWithoutPrimitiveDeleteResult() {
+        UUID id=UUID.randomUUID();var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);var decisions=mock(DocumentCheckDecisionRepository.class);when(decisions.findByLcId(id)).thenReturn(List.of(new DocumentCheckDecision(),new DocumentCheckDecision()));
+        long count=new DocumentCheckService(lcs,docs,decisions).invalidateDecisions(id);
+        assertThat(count).isEqualTo(2);verify(decisions).deleteAllByLcId(id);
+    }
+
     @Test void detectsMissingDocumentAndExcessInvoiceAmount() {
         UUID id = UUID.randomUUID();
         LetterOfCredit lc = new LetterOfCredit();
@@ -130,6 +136,12 @@ class DocumentCheckServiceTest {
         UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-BC-1");lc.setBeneficiary("Exporter GmbH");lc.setRequiredDocuments(List.of("BENEFICIARY'S CERTIFICATE CERTIFYING THAT ONE SET OF NON-NEGOTIABLE DOCUMENTS WAS SENT TO APPLICANT"));LcDocument certificate=document(DocumentType.BENEFICIARY_CERTIFICATE,"beneficiary-certificate.pdf","LC Reference: LC-BC-1\nExporter GmbH hereby certifies that one set of non-negotiable documents was sent to applicant");certificate.setExtractedReference("LC-BC-1");
         var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(certificate));var result=service(lcs,docs).check(id);
         assertThat(result.results()).extracting("code").contains("BENEFICIARY_CERTIFICATE_REFERENCE_OK","BENEFICIARY_CERTIFICATE_ISSUER_OK","BENEFICIARY_STATEMENT_EVIDENCED");
+    }
+
+    @Test void checksTransportRouteAndTransshipmentProhibition() {
+        UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-ROUTE-1");lc.setRawMessage(":20:LC-ROUTE-1\n:43T:NOT ALLOWED\n:44E:HAMBURG PORT\n:44F:ALEXANDRIA PORT");LcDocument bill=document(DocumentType.BILL_OF_LADING,"bl-route.pdf","LC Reference: LC-ROUTE-1\nPort of loading: Hamburg Port\nPort of discharge: Alexandria Port\nTransshipment allowed");bill.setExtractedReference("LC-ROUTE-1");
+        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(bill));var result=service(lcs,docs).check(id);
+        assertThat(result.results()).extracting("code").contains("TRANSPORT_PORT_OF_LOADING_OK","TRANSPORT_PORT_OF_DISCHARGE_OK","TRANSSHIPMENT_PROHIBITION_VIOLATED");
     }
 
     @Test void reportsContradictingPackingListDescription() {
