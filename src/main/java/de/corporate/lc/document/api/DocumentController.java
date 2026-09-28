@@ -72,15 +72,28 @@ public class DocumentController {
 
     @GetMapping("/documents/{id}/content")
     public ResponseEntity<byte[]> download(@PathVariable UUID id) {
+        return content(id, false);
+    }
+
+    @GetMapping("/documents/{id}/preview")
+    public ResponseEntity<byte[]> preview(@PathVariable UUID id) {
+        return content(id, true);
+    }
+
+    private ResponseEntity<byte[]> content(UUID id, boolean inline) {
         LcDocument document = service.one(id);
         MediaType mediaType;
         try { mediaType = MediaType.parseMediaType(document.getContentType()); }
         catch (InvalidMediaTypeException exception) { mediaType = MediaType.APPLICATION_OCTET_STREAM; }
+        boolean previewable = mediaType.equals(MediaType.APPLICATION_PDF)
+                || mediaType.equals(MediaType.IMAGE_PNG) || mediaType.equals(MediaType.IMAGE_JPEG);
         return ResponseEntity.ok()
                 .contentType(mediaType)
                 .contentLength(document.getFileSize())
                 .header(HttpHeaders.CONTENT_DISPOSITION,
-                        ContentDisposition.attachment().filename(document.getOriginalFilename()).build().toString())
+                        (inline && previewable ? ContentDisposition.inline() : ContentDisposition.attachment())
+                                .filename(document.getOriginalFilename()).build().toString())
+                .header("X-Content-Type-Options", "nosniff")
                 .body(document.getContent());
     }
 }

@@ -23,7 +23,8 @@ class DocxTemplateServiceTest {
         lc.setCurrency("EUR");
         lc.setAmount(new BigDecimal("1250.00"));
         GeneratedDocumentRequest request = new GeneratedDocumentRequest(DocumentType.COMMERCIAL_INVOICE,
-                "INV-4711", LocalDate.of(2026, 9, 28), "Goods", "10", null, null, null, "Test note");
+                "INV-4711", LocalDate.of(2026, 9, 28), "Goods", "10", null, null, null, "Test note",
+                java.util.List.of(new de.corporate.lc.document.api.GeneratedDocumentItemRequest("1", "Product A", new BigDecimal("10"), "pcs", new BigDecimal("125"), new BigDecimal("1250"), null, null, null)));
 
         DocumentTemplateService templates=mock(DocumentTemplateService.class);
         org.mockito.Mockito.when(templates.content(DocumentType.COMMERCIAL_INVOICE)).thenReturn(java.util.Optional.empty());
@@ -33,6 +34,8 @@ class DocxTemplateServiceTest {
         try (XWPFDocument document = new XWPFDocument(new ByteArrayInputStream(result))) {
             String text = document.getParagraphs().stream().map(paragraph -> paragraph.getText()).reduce("", (a, b) -> a + "\n" + b);
             assertThat(text).contains("COMMERCIAL INVOICE", "LC-4711", "Seller GmbH", "EUR 1250.00");
+            assertThat(document.getTables()).isNotEmpty();
+            assertThat(document.getTables().get(0).getText()).contains("Product A", "1250");
         }
     }
 }

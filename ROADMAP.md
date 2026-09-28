@@ -2,7 +2,7 @@
 
 ## Als Nächstes
 
-- Dokumentvorlagen um strukturierte Positions- und Packtabellen erweitern
+- Dokumententwürfe speichern und später weiterbearbeiten
 
 ## Erledigt
 
@@ -11,6 +11,7 @@
 - Audit-Protokoll mit Vorher-/Nachher-Werten, Exportereignissen und Aktenchronik
 - Dokumentenerstellung für Ursprungszeugnis, Begünstigtenzertifikat und Qualitäts-/Analysezertifikat
 - Zentrale Firmenstammdaten einschließlich Logo, Register-, Steuer- und Bankdaten
+- Strukturierte Positions- und Packtabellen für Handelsrechnung und Packliste
 
 ## Später
 
