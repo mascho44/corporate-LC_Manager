@@ -162,6 +162,12 @@ class DocumentCheckServiceTest {
         assertThat(result.results()).extracting("code").contains("CMR_REFERENCE_OK","CMR_SHIPMENT_DATE_OK","CMR_CARRIER_SIGNATURE_EVIDENCED","CMR_PLACE_OF_TAKING_EVIDENCED","CMR_PLACE_OF_DELIVERY_EVIDENCED");
     }
 
+    @Test void checksCmrSenderConsigneeAndFreightTerm() {
+        UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-CMR-2");lc.setBeneficiary("Exporter GmbH");lc.setApplicant("Importer AG");lc.setRequiredDocuments(List.of("SIGNED CMR SHOWING SENDER BENEFICIARY, CONSIGNEE APPLICANT AND FREIGHT PREPAID"));LcDocument cmr=document(DocumentType.ROAD_CONSIGNMENT_NOTE,"cmr-parties.pdf","LC Reference: LC-CMR-2\nSender: Exporter GmbH\nConsignee: Importer AG\nCarriage paid\nCarrier signature");cmr.setExtractedReference("LC-CMR-2");
+        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(cmr));var result=service(lcs,docs).check(id);
+        assertThat(result.results()).extracting("code").contains("CMR_SENDER_BENEFICIARY_EVIDENCED","CMR_CONSIGNEE_APPLICANT_EVIDENCED","CMR_FREIGHT_PREPAID_EVIDENCED");
+    }
+
     @Test void checksBeneficiaryCertificateReferenceIssuerAndStatement() {
         UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-BC-1");lc.setBeneficiary("Exporter GmbH");lc.setRequiredDocuments(List.of("BENEFICIARY'S CERTIFICATE CERTIFYING THAT ONE SET OF NON-NEGOTIABLE DOCUMENTS WAS SENT TO APPLICANT"));LcDocument certificate=document(DocumentType.BENEFICIARY_CERTIFICATE,"beneficiary-certificate.pdf","LC Reference: LC-BC-1\nExporter GmbH hereby certifies that one set of non-negotiable documents was sent to applicant");certificate.setExtractedReference("LC-BC-1");
         var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(certificate));var result=service(lcs,docs).check(id);
