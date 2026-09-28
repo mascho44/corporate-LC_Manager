@@ -6,6 +6,7 @@ import de.corporate.lc.check.api.CheckDecisionRequest;import de.corporate.lc.che
 import de.corporate.lc.document.domain.DocumentType;
 import de.corporate.lc.document.repository.LcDocumentRepository;
 import de.corporate.lc.lc.domain.LetterOfCredit;
+import de.corporate.lc.lc.repository.AmendmentRepository;
 import de.corporate.lc.lc.repository.LetterOfCreditRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,18 +17,19 @@ import static de.corporate.lc.check.api.CheckResult.Severity.*;
 @Service
 public class DocumentCheckService {
     private final LetterOfCreditRepository lcs;
-    private final LcDocumentRepository documents;private final DocumentCheckDecisionRepository decisions;private final LcRequirementMappingRepository mappings;
+    private final LcDocumentRepository documents;private final DocumentCheckDecisionRepository decisions;private final LcRequirementMappingRepository mappings;private final AmendmentRepository amendments;
 
     public DocumentCheckService(LetterOfCreditRepository lcs, LcDocumentRepository documents,DocumentCheckDecisionRepository decisions) {
-        this(lcs,documents,decisions,null);
+        this(lcs,documents,decisions,null,null);
     }
-    @Autowired public DocumentCheckService(LetterOfCreditRepository lcs,LcDocumentRepository documents,DocumentCheckDecisionRepository decisions,LcRequirementMappingRepository mappings){this.lcs=lcs;this.documents=documents;this.decisions=decisions;this.mappings=mappings;}
+    @Autowired public DocumentCheckService(LetterOfCreditRepository lcs,LcDocumentRepository documents,DocumentCheckDecisionRepository decisions,LcRequirementMappingRepository mappings,AmendmentRepository amendments){this.lcs=lcs;this.documents=documents;this.decisions=decisions;this.mappings=mappings;this.amendments=amendments;}
 
     @Transactional(readOnly = true)
     public ReviewSummary check(UUID lcId) {
         LetterOfCredit lc = lcs.findById(lcId).orElseThrow();
         var uploaded = documents.findByLetterOfCreditIdOrderByUploadedAtDesc(lcId);
         List<CheckResult> results = new ArrayList<>();
+        addEffectiveVersionContext(lc,results);
 
         for (String requirement : lc.getRequiredDocuments()) {
             Optional<DocumentType> expected = mappedType(lcId,requirement).or(()->classify(requirement));
@@ -169,6 +171,15 @@ public class DocumentCheckService {
     private long count(List<CheckResult> results, CheckResult.Severity severity) {
         return results.stream().filter(result -> result.severity() == severity).count();
     }
+
+    private void addEffectiveVersionContext(LetterOfCredit lc,List<CheckResult> results){
+        if(amendments==null)return;var history=amendments.findByLetterOfCreditIdOrderByImportedAtDesc(lc.getId());
+        String version=history.isEmpty()?"Ursprüngliche MT700-Fassung":"MT700 einschließlich "+history.size()+" übernommener MT707-Änderung"+(history.size()==1?"":"en");
+        String latest=history.isEmpty()?"Keine Änderung übernommen":"Letzte Änderung: "+display(history.get(0).getAmendmentNumber())+(history.get(0).getAmendmentDate()==null?"":" vom "+history.get(0).getAmendmentDate());
+        String effective="Betrag: "+display(lc.getCurrency())+" "+(lc.getAmount()==null?"-":lc.getAmount())+" · Ablauf: "+(lc.getExpiryDate()==null?"-":lc.getExpiryDate())+" · Versand: "+(lc.getLatestShipmentDate()==null?"-":lc.getLatestShipmentDate());
+        results.add(finding(OK,"LC_EFFECTIVE_VERSION","Prüfgrundlage: "+version,latest,null,effective));
+    }
+    private String display(String value){return value==null||value.isBlank()?"-":value.trim();}
 
     private Optional<DocumentType> classify(String requirement) {
         String text = requirement.toLowerCase(Locale.ROOT);

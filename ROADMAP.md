@@ -2,9 +2,13 @@
 
 ## Als Nächstes
 
-- Vorlagenverwaltung für Word-Dokumente und weitere LC-Dokumenttypen
-- Handelsrechnung und Packliste gegen die gültige LC-Fassung prüfen
 - Audit-Protokoll um fachliche Änderungen und Exporte erweitern
+- Weitere LC-Dokumenttypen in der Dokumentenerstellung ergänzen
+
+## Erledigt
+
+- Vorlagenverwaltung für Word-Dokumente
+- Handelsrechnung und Packliste gegen die gültige LC-Fassung einschließlich MT707-Änderungen prüfen
 
 ## Später
 

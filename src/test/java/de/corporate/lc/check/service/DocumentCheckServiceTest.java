@@ -5,6 +5,8 @@ import de.corporate.lc.document.repository.LcDocumentRepository;
 import de.corporate.lc.check.repository.DocumentCheckDecisionRepository;
 import de.corporate.lc.check.domain.DocumentCheckDecision;
 import de.corporate.lc.lc.domain.LetterOfCredit;
+import de.corporate.lc.lc.domain.Amendment;
+import de.corporate.lc.lc.repository.AmendmentRepository;
 import de.corporate.lc.lc.repository.LetterOfCreditRepository;
 import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
@@ -14,6 +16,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 class DocumentCheckServiceTest {
+    @Test void identifiesEffectiveLcVersionIncludingAmendments(){
+        UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-VERSION");lc.setCurrency("EUR");lc.setAmount(new BigDecimal("1250"));lc.setExpiryDate(LocalDate.of(2026,12,31));lc.setRequiredDocuments(List.of());
+        Amendment amendment=new Amendment();amendment.setAmendmentNumber("2");amendment.setAmendmentDate(LocalDate.of(2026,9,28));
+        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);var decisions=mock(DocumentCheckDecisionRepository.class);var mappings=mock(de.corporate.lc.check.repository.LcRequirementMappingRepository.class);var amendments=mock(AmendmentRepository.class);
+        when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of());when(decisions.findByLcId(id)).thenReturn(List.of());when(amendments.findByLetterOfCreditIdOrderByImportedAtDesc(null)).thenReturn(List.of(amendment));
+        var result=new DocumentCheckService(lcs,docs,decisions,mappings,amendments).check(id);
+        assertThat(result.results()).filteredOn(item->item.code().equals("LC_EFFECTIVE_VERSION")).singleElement().satisfies(item->{assertThat(item.message()).contains("MT707");assertThat(item.lcCondition()).contains("2","2026-09-28");assertThat(item.documentEvidence()).contains("EUR 1250","2026-12-31");});
+    }
     @Test void invalidatesDecisionsWithoutPrimitiveDeleteResult() {
         UUID id=UUID.randomUUID();var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);var decisions=mock(DocumentCheckDecisionRepository.class);when(decisions.findByLcId(id)).thenReturn(List.of(new DocumentCheckDecision(),new DocumentCheckDecision()));
         long count=new DocumentCheckService(lcs,docs,decisions).invalidateDecisions(id);
