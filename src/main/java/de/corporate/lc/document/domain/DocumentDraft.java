@@ -1,0 +1,22 @@
+package de.corporate.lc.document.domain;
+
+import jakarta.persistence.*;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Entity
+@Table(name = "document_draft")
+public class DocumentDraft {
+    @Id @GeneratedValue(strategy = GenerationType.UUID) private UUID id;
+    @Column(name = "lc_id", nullable = false) private UUID lcId;
+    @Enumerated(EnumType.STRING) @Column(nullable = false) private DocumentType documentType;
+    @Column(nullable = false, length = 100) private String documentNumber;
+    @Enumerated(EnumType.STRING) @Column(nullable = false) private DocumentDraftStatus status = DocumentDraftStatus.DRAFT;
+    @Column(nullable = false, columnDefinition = "text") private String dataJson;
+    @Version private long version;
+    @Column(nullable = false, length = 100) private String createdBy;
+    @Column(nullable = false, length = 100) private String updatedBy;
+    @Column(nullable = false) private LocalDateTime createdAt = LocalDateTime.now();
+    @Column(nullable = false) private LocalDateTime updatedAt = LocalDateTime.now();
+    public UUID getId(){return id;} public UUID getLcId(){return lcId;} public void setLcId(UUID v){lcId=v;} public DocumentType getDocumentType(){return documentType;} public void setDocumentType(DocumentType v){documentType=v;} public String getDocumentNumber(){return documentNumber;} public void setDocumentNumber(String v){documentNumber=v;} public DocumentDraftStatus getStatus(){return status;} public void setStatus(DocumentDraftStatus v){status=v;} public String getDataJson(){return dataJson;} public void setDataJson(String v){dataJson=v;} public long getVersion(){return version;} public String getCreatedBy(){return createdBy;} public void setCreatedBy(String v){createdBy=v;} public String getUpdatedBy(){return updatedBy;} public void setUpdatedBy(String v){updatedBy=v;} public LocalDateTime getCreatedAt(){return createdAt;} public LocalDateTime getUpdatedAt(){return updatedAt;} public void setUpdatedAt(LocalDateTime v){updatedAt=v;}
+}

@@ -9,7 +9,7 @@ import java.util.NoSuchElementException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
-    @ExceptionHandler({IllegalArgumentException.class, MaxUploadSizeExceededException.class})
+    @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class, MaxUploadSizeExceededException.class})
     ResponseEntity<Map<String, String>> badRequest(Exception exception) {
         return ResponseEntity.badRequest().body(Map.of("error", exception.getMessage()));
     }
