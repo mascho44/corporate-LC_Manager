@@ -123,6 +123,19 @@ public class TrainingController {
     @GetMapping("/{id}")
     public TrainingDataService.Detail detail(@PathVariable UUID id){return data.detail(find(id));}
 
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Transactional
+    public void delete(@PathVariable UUID id,Authentication auth){
+        TrainingSession session=find(id);
+        boolean admin=auth.getAuthorities().stream().anyMatch(authority->"ROLE_ADMIN".equals(authority.getAuthority()));
+        if(!admin&&!Objects.equals(session.getUsername(),auth.getName()))
+            throw new IllegalArgumentException("Trainingsdatensatz gehört einem anderen Benutzer.");
+        String details=session.getFilename()+" · "+session.getStatus()+" · zugehörige Lernerfahrungen entfernt";
+        repo.delete(session);
+        audit.record(auth,"TRAINING_DELETED","TRAINING_SESSION",id,details);
+    }
+
     @GetMapping("/{id}/document")
     public ResponseEntity<byte[]> document(@PathVariable UUID id){
         TrainingSession s=find(id); String type=s.getContentType()==null?MediaType.APPLICATION_PDF_VALUE:s.getContentType();

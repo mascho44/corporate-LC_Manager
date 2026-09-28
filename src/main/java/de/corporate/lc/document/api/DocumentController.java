@@ -46,6 +46,14 @@ public class DocumentController {
     @GetMapping("/lcs/{lcId}/documents")
     public List<DocumentView> list(@PathVariable UUID lcId) { return service.forLc(lcId); }
 
+    @DeleteMapping("/lcs/{lcId}/documents/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable UUID lcId,@PathVariable UUID id,Authentication authentication) {
+        LcDocument document=service.delete(lcId,id);
+        resetChecks(lcId,authentication,"Dokument gelöscht");
+        audit.record(authentication,"DOCUMENT_DELETED","LETTER_OF_CREDIT",lcId,document.getOriginalFilename()+" · "+document.getDocumentType());
+    }
+
     @GetMapping("/documents/{id}/content")
     public ResponseEntity<byte[]> download(@PathVariable UUID id) {
         LcDocument document = service.one(id);

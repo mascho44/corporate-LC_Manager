@@ -63,4 +63,13 @@ public class DocumentService {
     public LcDocument one(UUID id) {
         return documents.findById(id).orElseThrow(() -> new NoSuchElementException("Document not found: " + id));
     }
+
+    @Transactional
+    public LcDocument delete(UUID lcId, UUID id) {
+        LcDocument document = one(id);
+        if (document.getLetterOfCredit() == null || !lcId.equals(document.getLetterOfCredit().getId()))
+            throw new IllegalArgumentException("Dokument gehört nicht zu diesem Akkreditiv.");
+        documents.delete(document);
+        return document;
+    }
 }

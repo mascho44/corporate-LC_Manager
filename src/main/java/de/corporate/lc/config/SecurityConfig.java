@@ -10,6 +10,7 @@ import de.corporate.lc.user.service.AppUserDetailsService; import jakarta.servle
    .requestMatchers("/api/training/**").hasAnyRole("ADMIN","EDITOR")
    .requestMatchers("/api/users/**").hasRole("ADMIN")
    .requestMatchers(org.springframework.http.HttpMethod.DELETE,"/api/lcs/*").hasRole("ADMIN")
+   .requestMatchers(org.springframework.http.HttpMethod.DELETE,"/api/lcs/*/documents/*").hasAnyRole("ADMIN","EDITOR")
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/imports","/api/imports/preview","/api/imports/file-preview","/api/lcs/import/**","/api/lcs/*/documents","/api/lcs/*/generated-documents").hasAnyRole("ADMIN","EDITOR")
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/lcs/*/document-checks/decisions").hasAnyRole("ADMIN","EDITOR")
    .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/lcs/*").hasAnyRole("ADMIN","EDITOR")
