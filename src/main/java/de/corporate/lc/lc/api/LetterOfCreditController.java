@@ -53,7 +53,9 @@ public class LetterOfCreditController {
     public LetterOfCredit update(@PathVariable UUID id, @Valid @RequestBody LetterOfCreditUpdateRequest request, Authentication authentication) {
         LetterOfCredit lc = service.update(id, request);
         long reset=checks.invalidateDecisions(id);
-        audit.record(authentication, "LC_UPDATED", "LETTER_OF_CREDIT", id, lc.getReference());
+        String assignment = lc.getAssignedTo() == null ? "nicht zugewiesen" : lc.getAssignedTo();
+        String followUp = lc.getFollowUpDate() == null ? "keine Wiedervorlage" : "Wiedervorlage " + lc.getFollowUpDate();
+        audit.record(authentication, "LC_UPDATED", "LETTER_OF_CREDIT", id, lc.getReference() + " · " + assignment + " · " + followUp);
         if(reset>0)audit.record(authentication,"DOCUMENT_CHECK_DECISIONS_RESET","LETTER_OF_CREDIT",id,reset+" Entscheidungen wegen LC-Änderung zurückgesetzt");
         return lc;
     }

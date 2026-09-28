@@ -57,6 +57,8 @@ public class LetterOfCreditService {
         lc.setExpiryDate(request.expiryDate());
         lc.setExpiryPlace(clean(request.expiryPlace()));
         lc.setLatestShipmentDate(request.latestShipmentDate());
+        lc.setAssignedTo(clean(request.assignedTo()));
+        lc.setFollowUpDate(request.followUpDate());
         lc.setStatus(request.status());
         if (request.requiredDocuments() != null)
             lc.setRequiredDocuments(request.requiredDocuments().stream().map(this::clean).filter(java.util.Objects::nonNull).toList());
