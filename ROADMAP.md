@@ -2,13 +2,14 @@
 
 ## Als Nächstes
 
-- Weitere LC-Dokumenttypen in der Dokumentenerstellung ergänzen
+- Dokumentvorlagen um strukturierte Tabellen und Firmenstammdaten erweitern
 
 ## Erledigt
 
 - Vorlagenverwaltung für Word-Dokumente
 - Handelsrechnung und Packliste gegen die gültige LC-Fassung einschließlich MT707-Änderungen prüfen
 - Audit-Protokoll mit Vorher-/Nachher-Werten, Exportereignissen und Aktenchronik
+- Dokumentenerstellung für Ursprungszeugnis, Begünstigtenzertifikat und Qualitäts-/Analysezertifikat
 
 ## Später
 

@@ -22,7 +22,7 @@ public class DocxTemplateService {
         var customTemplate = templates.content(request.type());
         byte[] template = customTemplate.isPresent() ? customTemplate.get() : template(request.type());
         Map<String, Object> data = new LinkedHashMap<>();
-        data.put("title", request.type() == DocumentType.COMMERCIAL_INVOICE ? "COMMERCIAL INVOICE" : "PACKING LIST");
+        data.put("title", title(request.type()));
         data.put("documentNumber", value(request.documentNumber()));
         data.put("documentDate", request.documentDate().toString());
         data.put("lcReference", value(lc.getReference()));
@@ -55,7 +55,7 @@ public class DocxTemplateService {
             field(document, "Description", "description");
             field(document, "Quantity", "quantity");
             if (type == DocumentType.COMMERCIAL_INVOICE) field(document, "Amount", "amount");
-            else {
+            else if(type == DocumentType.PACKING_LIST) {
                 field(document, "Packages", "packages");
                 field(document, "Net weight", "netWeight");
                 field(document, "Gross weight", "grossWeight");
@@ -75,4 +75,5 @@ public class DocxTemplateService {
     }
 
     private String value(String value) { return value == null || value.isBlank() ? "-" : value.trim(); }
+    private String title(DocumentType type){return switch(type){case COMMERCIAL_INVOICE->"COMMERCIAL INVOICE";case PACKING_LIST->"PACKING LIST";case CERTIFICATE_OF_ORIGIN->"CERTIFICATE OF ORIGIN";case BENEFICIARY_CERTIFICATE->"BENEFICIARY'S CERTIFICATE";case QUALITY_CERTIFICATE->"QUALITY / ANALYSIS CERTIFICATE";default->type.getDisplayName().toUpperCase(java.util.Locale.ROOT);};}
 }
