@@ -86,6 +86,13 @@ public class LetterOfCreditService {
         return lc;
     }
 
+    @Transactional
+    public LetterOfCredit assignTo(UUID id, String username) {
+        LetterOfCredit lc = one(id);
+        lc.setAssignedTo(clean(username));
+        return lc;
+    }
+
     private String clean(String value) {
         return value == null || value.isBlank() ? null : value.trim();
     }
