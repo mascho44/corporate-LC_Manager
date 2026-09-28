@@ -1,6 +1,7 @@
 package de.corporate.lc.document.service;
 
 import de.corporate.lc.document.api.DocumentView;
+import de.corporate.lc.document.api.DocumentUpdateRequest;
 import de.corporate.lc.document.domain.DocumentType;
 import de.corporate.lc.document.domain.LcDocument;
 import de.corporate.lc.document.repository.LcDocumentRepository;
@@ -103,5 +104,15 @@ public class DocumentService {
             throw new IllegalArgumentException("Dokument gehört nicht zu diesem Akkreditiv.");
         documents.delete(document);
         return document;
+    }
+
+    @Transactional
+    public DocumentView update(UUID lcId,UUID id,DocumentUpdateRequest request){
+        LcDocument document=one(id);
+        if(document.getLetterOfCredit()==null||!lcId.equals(document.getLetterOfCredit().getId()))throw new IllegalArgumentException("Dokument gehört nicht zu diesem Akkreditiv.");
+        if(request.amount()!=null&&request.amount().signum()<0)throw new IllegalArgumentException("Betrag darf nicht negativ sein.");
+        document.setDocumentType(request.type());document.setDocumentDate(request.documentDate());document.setAmount(request.amount());
+        document.setCurrency(request.currency()==null||request.currency().isBlank()?null:request.currency().trim().toUpperCase(Locale.ROOT));
+        return DocumentView.from(document);
     }
 }

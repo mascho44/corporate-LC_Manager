@@ -59,6 +59,12 @@ public class DocumentController {
         audit.record(authentication,"DOCUMENT_DELETED","LETTER_OF_CREDIT",lcId,document.getOriginalFilename()+" · "+document.getDocumentType());
     }
 
+    @PutMapping("/lcs/{lcId}/documents/{id}")
+    public DocumentView update(@PathVariable UUID lcId,@PathVariable UUID id,@Valid @RequestBody DocumentUpdateRequest request,Authentication authentication){
+        DocumentView document=service.update(lcId,id,request);resetChecks(lcId,authentication,"Dokumentdaten geändert");
+        audit.record(authentication,"DOCUMENT_UPDATED","LETTER_OF_CREDIT",lcId,document.originalFilename()+" · "+document.documentType()+" · "+document.documentDate());return document;
+    }
+
     @GetMapping("/documents/{id}/content")
     public ResponseEntity<byte[]> download(@PathVariable UUID id) {
         LcDocument document = service.one(id);
