@@ -174,6 +174,18 @@ class DocumentCheckServiceTest {
         assertThat(result.results()).extracting("code").contains("CUMULATIVE_INVOICE_AMOUNT_OK");
     }
 
+    @Test void detectsInvoiceAndDraftAmountMismatch() {
+        UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setAmount(new BigDecimal("1000"));lc.setCurrency("EUR");LcDocument invoice=document(DocumentType.COMMERCIAL_INVOICE,"invoice.pdf","Amount: EUR 900");invoice.setAmount(new BigDecimal("900"));invoice.setCurrency("EUR");LcDocument draft=document(DocumentType.BILL_OF_EXCHANGE,"draft.pdf","Amount: EUR 850");draft.setAmount(new BigDecimal("850"));draft.setCurrency("EUR");
+        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(invoice,draft));var result=service(lcs,docs).check(id);
+        assertThat(result.results()).filteredOn(item->item.code().equals("INVOICE_DRAFT_AMOUNT_MISMATCH")).singleElement().satisfies(item->{assertThat(item.severity()).isEqualTo(de.corporate.lc.check.api.CheckResult.Severity.DISCREPANCY);assertThat(item.documentEvidence()).contains("Rechnungen: EUR 900","Wechsel: EUR 850");});
+    }
+
+    @Test void acceptsMatchingInvoiceAndDraftTotals() {
+        UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setAmount(new BigDecimal("1000"));lc.setCurrency("EUR");LcDocument invoice=document(DocumentType.COMMERCIAL_INVOICE,"invoice.pdf","Amount: EUR 900");invoice.setAmount(new BigDecimal("900"));invoice.setCurrency("EUR");LcDocument draft=document(DocumentType.BILL_OF_EXCHANGE,"draft.pdf","Amount: EUR 900");draft.setAmount(new BigDecimal("900"));draft.setCurrency("EUR");
+        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(invoice,draft));var result=service(lcs,docs).check(id);
+        assertThat(result.results()).extracting("code").contains("INVOICE_DRAFT_AMOUNT_OK");
+    }
+
     @Test void reportsContradictingPackingListDescription() {
         UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-4711");lc.setRawMessage(":20:LC-4711\n:45A:100 INDUSTRIAL PUMPS TYPE PX");
         LcDocument invoice=document(DocumentType.COMMERCIAL_INVOICE,"invoice.pdf","Description: 100 industrial pumps type PX");
