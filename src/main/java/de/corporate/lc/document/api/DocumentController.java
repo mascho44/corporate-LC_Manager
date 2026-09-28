@@ -41,6 +41,11 @@ public class DocumentController {
         audit.record(authentication, "DOCUMENT_UPLOADED", "LETTER_OF_CREDIT", lcId, file.getOriginalFilename()+" · "+type);
         return document;
     }
+    @PostMapping(value="/lcs/{lcId}/documents/archive",consumes=MediaType.MULTIPART_FORM_DATA_VALUE)
+    public List<DocumentView> uploadArchive(@PathVariable UUID lcId,@RequestPart("file") MultipartFile file,Authentication authentication)throws IOException{
+        List<DocumentView> imported=service.uploadArchive(lcId,file);resetChecks(lcId,authentication,"ZIP-Akte hochgeladen");
+        audit.record(authentication,"DOCUMENT_ARCHIVE_UPLOADED","LETTER_OF_CREDIT",lcId,file.getOriginalFilename()+" · "+imported.size()+" Dateien importiert");return imported;
+    }
     private void resetChecks(UUID lcId,Authentication authentication,String reason){long reset=checks.invalidateDecisions(lcId);if(reset>0)audit.record(authentication,"DOCUMENT_CHECK_DECISIONS_RESET","LETTER_OF_CREDIT",lcId,reset+" Entscheidungen zurückgesetzt · "+reason);}
 
     @GetMapping("/lcs/{lcId}/documents")

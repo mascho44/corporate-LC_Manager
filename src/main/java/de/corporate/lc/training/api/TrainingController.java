@@ -102,8 +102,18 @@ public class TrainingController {
 
     @GetMapping
     public List<TrainingView> history() {
-        return repo.findTop100ByOrderByCreatedAtDesc().stream()
+        return repo.findTop100ByOrderByCreatedAtDesc().stream().filter(s->!"DELETED".equals(s.getStatus()))
                 .map(s->new TrainingView(s.getId(),s.getFilename(),s.getStatus(),s.getUsername(),s.getMessageType(),s.getCreatedAt())).toList();
+    }
+
+    @DeleteMapping("/templates")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Transactional
+    public void deleteTemplates(@RequestBody List<UUID> ids,Authentication auth){
+        if(ids==null||ids.isEmpty())throw new IllegalArgumentException("Keine Trainingsvorlagen ausgewählt.");
+        boolean admin=auth.getAuthorities().stream().anyMatch(a->"ROLE_ADMIN".equals(a.getAuthority()));int count=0;
+        for(UUID id:ids){TrainingSession session=find(id);if(!admin&&!Objects.equals(session.getUsername(),auth.getName()))throw new IllegalArgumentException("Trainingsvorlage gehört einem anderen Benutzer.");if(!"DELETED".equals(session.getStatus())){session.setStatus("DELETED");count++;}}
+        audit.record(auth,"TRAINING_TEMPLATES_DELETED","TRAINING_SESSION",null,count+" Trainingsvorlagen ausgeblendet · Lerninhalte erhalten");
     }
 
     @GetMapping("/quality")
@@ -131,8 +141,8 @@ public class TrainingController {
         boolean admin=auth.getAuthorities().stream().anyMatch(authority->"ROLE_ADMIN".equals(authority.getAuthority()));
         if(!admin&&!Objects.equals(session.getUsername(),auth.getName()))
             throw new IllegalArgumentException("Trainingsdatensatz gehört einem anderen Benutzer.");
-        String details=session.getFilename()+" · "+session.getStatus()+" · zugehörige Lernerfahrungen entfernt";
-        repo.delete(session);
+        String details=session.getFilename()+" · "+session.getStatus()+" · Vorlage ausgeblendet · Lerninhalte erhalten";
+        session.setStatus("DELETED");
         audit.record(auth,"TRAINING_DELETED","TRAINING_SESSION",id,details);
     }
 
