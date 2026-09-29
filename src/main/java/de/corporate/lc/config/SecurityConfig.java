@@ -5,7 +5,7 @@ import de.corporate.lc.user.service.AppUserDetailsService; import jakarta.servle
  @Bean AuthenticationManager authenticationManager(AuthenticationConfiguration c)throws Exception{return c.getAuthenticationManager();}
  @Bean SecurityFilterChain security(HttpSecurity http,AppUserDetailsService users)throws Exception{return http.userDetailsService(users)
   .authorizeHttpRequests(a->a
-   .requestMatchers("/login.html","/login.js","/styles.css","/api/auth/login","/api/health","/actuator/health","/actuator/health/liveness","/actuator/health/readiness").permitAll()
+   .requestMatchers("/login.html","/login.js","/styles.css","/api/auth/login","/api/auth/login/totp","/api/health","/actuator/health","/actuator/health/liveness","/actuator/health/readiness").permitAll()
    .requestMatchers("/actuator/**").hasRole("ADMIN")
    .requestMatchers("/api/audit/**").hasRole("ADMIN")
    .requestMatchers("/api/document-templates/**").hasRole("ADMIN")
@@ -30,7 +30,7 @@ import de.corporate.lc.user.service.AppUserDetailsService; import jakarta.servle
    .requestMatchers(org.springframework.http.HttpMethod.DELETE,"/api/lcs/*/document-checks/requirements").hasAnyRole("ADMIN","EDITOR")
    .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/lcs/*","/api/lcs/*/documents/*").hasAnyRole("ADMIN","EDITOR")
    .anyRequest().authenticated())
-  .csrf(c->c.ignoringRequestMatchers("/api/auth/login"))
+  .csrf(c->c.ignoringRequestMatchers("/api/auth/login","/api/auth/login/totp"))
   .exceptionHandling(e->e.defaultAuthenticationEntryPointFor(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),new AntPathRequestMatcher("/api/**")))
   .formLogin(f->f.loginPage("/login.html").permitAll()).logout(l->l.disable())
   .headers(h->h.frameOptions(f->f.deny()).contentTypeOptions(c->{}))

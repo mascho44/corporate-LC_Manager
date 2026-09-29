@@ -8,6 +8,9 @@ create table document_draft (
     version bigint not null default 0,
     created_by varchar(100) not null,
     updated_by varchar(100) not null,
+    submitted_by varchar(100),
+    approved_by varchar(100),
+    approved_at timestamp,
     created_at timestamp not null,
     updated_at timestamp not null
 );

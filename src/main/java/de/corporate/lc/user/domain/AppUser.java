@@ -7,6 +7,9 @@ import jakarta.persistence.*; import java.time.LocalDateTime; import java.util.U
  @Column(nullable=false) private String passwordHash;
  @Enumerated(EnumType.STRING) @Column(nullable=false) private UserRole role=UserRole.USER;
  @Column(nullable=false) private boolean active=true;
+ private boolean totpEnabled=false;
+ @Column(columnDefinition="text") private String totpSecretEncrypted;
+ @Column(columnDefinition="text") private String recoveryCodeHashes;
  @Column(nullable=false) private LocalDateTime createdAt=LocalDateTime.now();
- public UUID getId(){return id;} public String getUsername(){return username;} public void setUsername(String v){username=v;} public String getDisplayName(){return displayName;} public void setDisplayName(String v){displayName=v;} public String getPasswordHash(){return passwordHash;} public void setPasswordHash(String v){passwordHash=v;} public UserRole getRole(){return role;} public void setRole(UserRole v){role=v;} public boolean isActive(){return active;} public void setActive(boolean v){active=v;} public LocalDateTime getCreatedAt(){return createdAt;}
+ public UUID getId(){return id;} public String getUsername(){return username;} public void setUsername(String v){username=v;} public String getDisplayName(){return displayName;} public void setDisplayName(String v){displayName=v;} public String getPasswordHash(){return passwordHash;} public void setPasswordHash(String v){passwordHash=v;} public UserRole getRole(){return role;} public void setRole(UserRole v){role=v;} public boolean isActive(){return active;} public void setActive(boolean v){active=v;} public boolean isTotpEnabled(){return totpEnabled;} public void setTotpEnabled(boolean v){totpEnabled=v;} public String getTotpSecretEncrypted(){return totpSecretEncrypted;} public void setTotpSecretEncrypted(String v){totpSecretEncrypted=v;} public String getRecoveryCodeHashes(){return recoveryCodeHashes;} public void setRecoveryCodeHashes(String v){recoveryCodeHashes=v;} public LocalDateTime getCreatedAt(){return createdAt;}
 }

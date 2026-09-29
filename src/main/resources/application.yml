@@ -37,6 +37,8 @@ management:
         readiness:
           include: readinessState,db
 app:
+  security:
+    totp-encryption-key: ${TOTP_ENCRYPTION_KEY:}
   initial-admin:
     username: ${ADMIN_USERNAME:admin}
     password: ${ADMIN_PASSWORD:}
