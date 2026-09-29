@@ -5,7 +5,6 @@ import de.corporate.lc.lc.domain.LetterOfCredit;
 import de.corporate.lc.lc.service.LetterOfCreditService;
 import de.corporate.lc.check.service.DocumentCheckService;
 import de.corporate.lc.document.repository.LcDocumentRepository;
-import de.corporate.lc.messaging.service.OutboxService;
 import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -22,21 +21,18 @@ public class LetterOfCreditController {
     private final AuditService audit;
     private final DocumentCheckService checks;
     private final LcDocumentRepository documents;
-    private final OutboxService outbox;
 
-    public LetterOfCreditController(LetterOfCreditService service, AuditService audit,DocumentCheckService checks,LcDocumentRepository documents,OutboxService outbox) {
+    public LetterOfCreditController(LetterOfCreditService service, AuditService audit,DocumentCheckService checks,LcDocumentRepository documents) {
         this.service = service;
         this.audit = audit;
         this.checks = checks;
         this.documents=documents;
-        this.outbox=outbox;
     }
 
     @PostMapping(value = "/import/mt700", consumes = MediaType.TEXT_PLAIN_VALUE)
     public LetterOfCredit importMt700(@RequestBody String raw, Authentication authentication) {
         LetterOfCredit lc = service.importMt700(raw);
         audit.record(authentication, "LC_IMPORTED", "LETTER_OF_CREDIT", lc.getId(), lc.getReference());
-        outbox.enqueue("lc.created",lc.getId(),java.util.Map.of("id",lc.getId(),"reference",lc.getReference(),"messageType","MT700"));
         return lc;
     }
 
@@ -62,7 +58,6 @@ public class LetterOfCreditController {
         String followUp = lc.getFollowUpDate() == null ? "keine Wiedervorlage" : "Wiedervorlage " + lc.getFollowUpDate();
         audit.recordChange(authentication, "LC_UPDATED", "LETTER_OF_CREDIT", id, lc.getReference() + " · " + assignment + " · " + followUp,previous,auditState(lc));
         if(reset>0)audit.record(authentication,"DOCUMENT_CHECK_DECISIONS_RESET","LETTER_OF_CREDIT",id,reset+" Entscheidungen wegen LC-Änderung zurückgesetzt");
-        outbox.enqueue("lc.updated",id,java.util.Map.of("id",id,"reference",lc.getReference(),"status",lc.getStatus()));
         return lc;
     }
 

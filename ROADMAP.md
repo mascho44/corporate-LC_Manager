@@ -2,7 +2,7 @@
 
 ## Als Nächstes
 
-- Ereignisse schrittweise an die Integrations-Outbox anbinden und bei Bedarf einen RabbitMQ-Adapter aktivieren
+- RabbitMQ-Adapter bei konkretem externem Integrationsbedarf aktivieren
 
 ## Erledigt
 
@@ -21,6 +21,7 @@
 - Vererbbare, administrierbare Rollen mit granularen Rechten ([GitHub #3](https://github.com/mascho44/corporate-LC_Manager/issues/3))
 - SMTP-E-Mail-Versand aus der LC-Akte mit Anhängen, eigenem Recht, Versandhistorie und Audit-Protokoll ([GitHub #2](https://github.com/mascho44/corporate-LC_Manager/issues/2))
 - Provider-unabhängige MQ-Abstraktion mit persistenter Outbox, Wiederholungsstrategie und lokalem Adapter ([GitHub #1](https://github.com/mascho44/corporate-LC_Manager/issues/1))
+- Zentrale Outbox-Anbindung aller relevanten LC-, Dokument-, Training-, SWIFT- und E-Mail-Geschäftsereignisse
 
 ## Später
 
