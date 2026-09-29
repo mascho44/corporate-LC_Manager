@@ -45,6 +45,8 @@ management:
         readiness:
           include: readinessState,db
 app:
+  messaging:
+    outbox-interval-ms: ${OUTBOX_INTERVAL_MS:5000}
   mail:
     enabled: ${SMTP_ENABLED:false}
     from: ${SMTP_FROM:}

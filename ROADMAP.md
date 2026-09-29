@@ -2,7 +2,7 @@
 
 ## Als Nächstes
 
-- MQ-Abstraktion, beispielsweise für RabbitMQ ([GitHub #1](https://github.com/mascho44/corporate-LC_Manager/issues/1))
+- Ereignisse schrittweise an die Integrations-Outbox anbinden und bei Bedarf einen RabbitMQ-Adapter aktivieren
 
 ## Erledigt
 
@@ -20,6 +20,7 @@
 - Batch-Upload für Einzeldateien und ZIP-Archive mit Typkorrektur, Limits und Ergebnisübersicht
 - Vererbbare, administrierbare Rollen mit granularen Rechten ([GitHub #3](https://github.com/mascho44/corporate-LC_Manager/issues/3))
 - SMTP-E-Mail-Versand aus der LC-Akte mit Anhängen, eigenem Recht, Versandhistorie und Audit-Protokoll ([GitHub #2](https://github.com/mascho44/corporate-LC_Manager/issues/2))
+- Provider-unabhängige MQ-Abstraktion mit persistenter Outbox, Wiederholungsstrategie und lokalem Adapter ([GitHub #1](https://github.com/mascho44/corporate-LC_Manager/issues/1))
 
 ## Später
 
@@ -27,4 +28,3 @@
 - Multiple Entities: mehrere Gesellschaften oder Mandanten mit getrennten Akten, Benutzern, Rollen und Einstellungen
 - Weitere SWIFT-Profile, insbesondere MT767
 - Kerberos-Anbindung für Enterprise-SSO mit Rollenabbildung und lokalem Notfall-Adminzugang
-- [GitHub #1](https://github.com/mascho44/corporate-LC_Manager/issues/1): MQ-Abstraktion, beispielsweise für RabbitMQ
