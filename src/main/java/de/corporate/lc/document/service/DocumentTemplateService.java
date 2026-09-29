@@ -16,8 +16,20 @@ public class DocumentTemplateService {
     private final de.corporate.lc.company.service.CompanyProfileService companies;
     public DocumentTemplateService(DocumentTemplateRepository repository,de.corporate.lc.company.service.CompanyProfileService companies){this.repository=repository;this.companies=companies;}
     @Transactional(readOnly=true) public List<DocumentTemplateView> list(){return repository.findAll().stream().map(DocumentTemplateView::from).sorted(Comparator.comparing(v->v.documentType().name())).toList();}
-    @Transactional(readOnly=true) public Optional<byte[]> content(DocumentType type,String companyName){return repository.findByDocumentTypeAndCompanyIdIsNullAndCompanyNameIgnoreCase(type,company(companyName)).or(()->repository.findByDocumentTypeAndCompanyIdIsNullAndCompanyNameIgnoreCase(type,"*")).map(DocumentTemplate::getContent);}
-    @Transactional(readOnly=true) public Optional<byte[]> content(DocumentType type,Integer companyId,String legacyName){if(companyId==null)return content(type,legacyName);return repository.findByDocumentTypeAndCompanyId(type,companyId).map(DocumentTemplate::getContent).or(()->repository.findByDocumentTypeAndCompanyIdIsNullAndCompanyNameIgnoreCase(type,"*").map(DocumentTemplate::getContent));}
+    private Optional<DocumentTemplate> resolve(DocumentType type,Integer companyId,String legacyName){
+        var specific=companyId==null?repository.findByDocumentTypeAndCompanyIdIsNullAndCompanyNameIgnoreCase(type,company(legacyName)):repository.findByDocumentTypeAndCompanyId(type,companyId);
+        return specific.or(()->repository.findByDocumentTypeAndCompanyIdIsNullAndCompanyNameIgnoreCase(type,"*"));
+    }
+    @Transactional(readOnly=true) public Optional<byte[]> content(DocumentType type,String companyName){return resolve(type,null,companyName).map(DocumentTemplate::getContent);}
+    @Transactional(readOnly=true) public Optional<byte[]> content(DocumentType type,Integer companyId,String legacyName){return resolve(type,companyId,legacyName).map(DocumentTemplate::getContent);}
+    public record Selection(String companyName,String templateName,String source){}
+    @Transactional(readOnly=true) public Selection selection(DocumentType type,Integer companyId,String legacyName){
+        var profile=companies.profile(companyId);
+        var selected=resolve(type,companyId,legacyName);
+        return new Selection(profile.getLegalName()==null?"Standardfirma":profile.getLegalName(),
+            selected.map(DocumentTemplate::getOriginalFilename).orElse("Eingebaute Word-Vorlage"),
+            selected.map(t->t.getCompanyId()!=null?"Firmenvorlage":"*".equals(t.getCompanyName())?"Allgemeine Vorlage":"Namensvorlage").orElse("Eingebaute Vorlage"));
+    }
     @Transactional public DocumentTemplateView save(DocumentType type,String companyName,Integer companyId,MultipartFile file,String username)throws IOException{
         if(!EnumSet.of(DocumentType.COMMERCIAL_INVOICE,DocumentType.PACKING_LIST,DocumentType.CERTIFICATE_OF_ORIGIN,DocumentType.BENEFICIARY_CERTIFICATE,DocumentType.QUALITY_CERTIFICATE).contains(type))throw new IllegalArgumentException("Für diesen Dokumenttyp werden noch keine Vorlagen unterstützt.");
         String filename=Optional.ofNullable(file.getOriginalFilename()).orElse("");if(file.isEmpty())throw new IllegalArgumentException("Die Vorlagendatei ist leer.");if(file.getSize()>MAX_SIZE)throw new IllegalArgumentException("Die Vorlage ist größer als 5 MB.");if(!filename.toLowerCase(Locale.ROOT).endsWith(".docx"))throw new IllegalArgumentException("Bitte eine DOCX-Datei hochladen.");byte[] content=file.getBytes();
