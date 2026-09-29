@@ -19,6 +19,7 @@ import de.corporate.lc.user.service.AppUserDetailsService; import jakarta.servle
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/imports","/api/imports/preview","/api/imports/file-preview","/api/lcs/import/**").hasAuthority("PERM_SWIFT_IMPORT")
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/lcs/*/documents","/api/lcs/*/documents/archive","/api/lcs/*/documents/batch").hasAuthority("PERM_DOCUMENT_UPLOAD")
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/lcs/*/generated-documents","/api/lcs/*/generated-documents/docx").hasAuthority("PERM_DOCUMENT_GENERATE")
+   .requestMatchers("/api/lcs/*/emails","/api/lcs/*/emails/**").hasAuthority("PERM_EMAIL_SEND")
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/lcs/*/document-checks/decisions").hasAuthority("PERM_DOCUMENT_REVIEW")
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/lcs/*/notes","/api/lcs/*/follow-up/complete","/api/lcs/*/assign-to-me","/api/lcs/*/tasks").hasAuthority("PERM_LC_EDIT")
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/lcs/*/document-drafts/**").hasAuthority("PERM_DOCUMENT_GENERATE")

@@ -1,4 +1,12 @@
 spring:
+  mail:
+    host: ${SMTP_HOST:localhost}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME:}
+    password: ${SMTP_PASSWORD:}
+    properties:
+      mail.smtp.auth: ${SMTP_AUTH:true}
+      mail.smtp.starttls.enable: ${SMTP_STARTTLS:true}
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/lcmanager}
     username: ${DB_USER:lcmanager}
@@ -37,6 +45,9 @@ management:
         readiness:
           include: readinessState,db
 app:
+  mail:
+    enabled: ${SMTP_ENABLED:false}
+    from: ${SMTP_FROM:}
   security:
     totp-encryption-key: ${TOTP_ENCRYPTION_KEY:}
   initial-admin:

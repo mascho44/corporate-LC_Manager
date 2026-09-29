@@ -1,0 +1,1 @@
+package de.corporate.lc.email.repository;import de.corporate.lc.email.domain.EmailDelivery;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;public interface EmailDeliveryRepository extends JpaRepository<EmailDelivery,UUID>{List<EmailDelivery> findByLetterOfCreditIdOrderBySentAtDesc(UUID lcId);}

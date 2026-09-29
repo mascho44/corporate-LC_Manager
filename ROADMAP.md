@@ -2,7 +2,7 @@
 
 ## Als Nächstes
 
-- E-Mail-Anbindung fachlich und technisch vorbereiten ([GitHub #2](https://github.com/mascho44/corporate-LC_Manager/issues/2))
+- MQ-Abstraktion, beispielsweise für RabbitMQ ([GitHub #1](https://github.com/mascho44/corporate-LC_Manager/issues/1))
 
 ## Erledigt
 
@@ -19,6 +19,7 @@
 - Transport-, Ursprungsland- und Incoterm-Prüfungen mit dokumentübergreifender Widerspruchserkennung
 - Batch-Upload für Einzeldateien und ZIP-Archive mit Typkorrektur, Limits und Ergebnisübersicht
 - Vererbbare, administrierbare Rollen mit granularen Rechten ([GitHub #3](https://github.com/mascho44/corporate-LC_Manager/issues/3))
+- SMTP-E-Mail-Versand aus der LC-Akte mit Anhängen, eigenem Recht, Versandhistorie und Audit-Protokoll ([GitHub #2](https://github.com/mascho44/corporate-LC_Manager/issues/2))
 
 ## Später
 
@@ -26,5 +27,4 @@
 - Multiple Entities: mehrere Gesellschaften oder Mandanten mit getrennten Akten, Benutzern, Rollen und Einstellungen
 - Weitere SWIFT-Profile, insbesondere MT767
 - Kerberos-Anbindung für Enterprise-SSO mit Rollenabbildung und lokalem Notfall-Adminzugang
-- [GitHub #2](https://github.com/mascho44/corporate-LC_Manager/issues/2): E-Mail-Anbindung
 - [GitHub #1](https://github.com/mascho44/corporate-LC_Manager/issues/1): MQ-Abstraktion, beispielsweise für RabbitMQ
