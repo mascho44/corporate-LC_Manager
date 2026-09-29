@@ -2,7 +2,7 @@
 
 ## Als Nächstes
 
-- Fachliche Dokumentprüfung um weitere transport- und länderspezifische Regeln erweitern
+- Batch-Upload für mehrere Dokumente mit gemeinsamer Vorprüfung und Ergebnisübersicht umsetzen
 
 ## Erledigt
 
@@ -16,11 +16,11 @@
 - Entwurfsprüfung gegen LC-Betrag, Laufzeit, Warenbeschreibung und Packdaten
 - Vier-Augen-Freigabe für Dokumententwürfe mit getrenntem Ersteller und Freigeber
 - Optionale TOTP-Zwei-Faktor-Anmeldung mit Authenticator-App und Notfallcodes
+- Transport-, Ursprungsland- und Incoterm-Prüfungen mit dokumentübergreifender Widerspruchserkennung
 
 ## Später
 
 - EBICS-Anbindung für den sicheren Bankaustausch
 - Multiple Entities: mehrere Gesellschaften oder Mandanten mit getrennten Akten, Benutzern, Rollen und Einstellungen
 - Weitere SWIFT-Profile, insbesondere MT767
-- Batch-Upload für mehrere Dokumente und Archive mit gemeinsamer Vorprüfung und Ergebnisübersicht
 - Kerberos-Anbindung für Enterprise-SSO mit Rollenabbildung und lokalem Notfall-Adminzugang

@@ -265,6 +265,22 @@ class DocumentCheckServiceTest {
         assertThat(result.results()).filteredOn(item->item.code().equals("GOODS_DESCRIPTION_MISMATCH")||item.code().equals("INVOICE_PACKING_DESCRIPTION_CONSISTENCY")).allMatch(item->item.severity()==de.corporate.lc.check.api.CheckResult.Severity.DISCREPANCY);
     }
 
+    @Test void detectsConflictingCountriesOfOriginAcrossDocuments() {
+        UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-ORIGIN-1");lc.setRequiredDocuments(List.of("CERTIFICATE OF ORIGIN SHOWING ORIGIN GERMANY"));
+        LcDocument invoice=document(DocumentType.COMMERCIAL_INVOICE,"invoice.pdf","Country of origin: Germany");LcDocument certificate=document(DocumentType.CERTIFICATE_OF_ORIGIN,"origin.pdf","Country of origin: France");
+        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(invoice,certificate));
+        var result=service(lcs,docs).check(id);
+        assertThat(result.results()).extracting("code").contains("COUNTRY_OF_ORIGIN_OK","COUNTRY_OF_ORIGIN_MISMATCH","COUNTRY_OF_ORIGIN_DOCUMENT_CONFLICT");
+    }
+
+    @Test void comparesInvoiceIncotermWithEffectiveLcTerms() {
+        UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-TERM-1");lc.setRawMessage(":20:LC-TERM-1\n:45A:INDUSTRIAL PUMPS CIF HAMBURG");
+        LcDocument invoice=document(DocumentType.COMMERCIAL_INVOICE,"invoice.pdf","Description: Industrial pumps\nDelivery term: FOB Alexandria");
+        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(invoice));
+        var result=service(lcs,docs).check(id);
+        assertThat(result.results()).filteredOn(item->item.code().equals("INCOTERM_MISMATCH")).singleElement().satisfies(item->{assertThat(item.severity()).isEqualTo(de.corporate.lc.check.api.CheckResult.Severity.DISCREPANCY);assertThat(item.lcCondition()).contains("CIF");assertThat(item.documentEvidence()).contains("FOB");});
+    }
+
     private LcDocument document(DocumentType type,String name,String text){LcDocument document=new LcDocument();document.setDocumentType(type);document.setOriginalFilename(name);document.setExtractionStatus("GENERATED");document.setExtractedText(text);document.setDocumentDate(LocalDate.now());return document;}
     private DocumentCheckService service(LetterOfCreditRepository lcs,LcDocumentRepository docs){DocumentCheckDecisionRepository decisions=mock(DocumentCheckDecisionRepository.class);when(decisions.findByLcId(any())).thenReturn(List.of());return new DocumentCheckService(lcs,docs,decisions);}
 }
