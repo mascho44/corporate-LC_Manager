@@ -27,9 +27,11 @@ class DocxTemplateServiceTest {
                 java.util.List.of(new de.corporate.lc.document.api.GeneratedDocumentItemRequest("1", "Product A", new BigDecimal("10"), "pcs", new BigDecimal("125"), new BigDecimal("1250"), null, null, null)));
 
         DocumentTemplateService templates=mock(DocumentTemplateService.class);
-        org.mockito.Mockito.when(templates.content(DocumentType.COMMERCIAL_INVOICE,"Example Company GmbH")).thenReturn(java.util.Optional.empty());
+        lc.setTemplateCompany("Vorlagenfirma GmbH");
+        org.mockito.Mockito.when(templates.content(DocumentType.COMMERCIAL_INVOICE,"Vorlagenfirma GmbH")).thenReturn(java.util.Optional.empty());
         var companies=mock(de.corporate.lc.company.service.CompanyProfileService.class);org.mockito.Mockito.when(companies.profile()).thenReturn(new de.corporate.lc.company.domain.CompanyProfile());
         byte[] result = new DocxTemplateService(templates,companies).render(lc, request);
+        org.mockito.Mockito.verify(templates).content(DocumentType.COMMERCIAL_INVOICE,"Vorlagenfirma GmbH");
 
         try (XWPFDocument document = new XWPFDocument(new ByteArrayInputStream(result))) {
             String text = document.getParagraphs().stream().map(paragraph -> paragraph.getText()).reduce("", (a, b) -> a + "\n" + b);

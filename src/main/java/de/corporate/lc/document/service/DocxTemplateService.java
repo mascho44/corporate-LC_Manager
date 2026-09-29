@@ -24,7 +24,7 @@ public class DocxTemplateService {
     private final CompanyProfileService companies;
     public DocxTemplateService(DocumentTemplateService templates,CompanyProfileService companies){this.templates=templates;this.companies=companies;}
     public byte[] render(LetterOfCredit lc, GeneratedDocumentRequest request) throws IOException {
-        var customTemplate = templates.content(request.type(),lc.getBeneficiary());
+        var customTemplate = templates.content(request.type(),lc.getTemplateCompany()==null||lc.getTemplateCompany().isBlank()?lc.getBeneficiary():lc.getTemplateCompany());
         byte[] template = customTemplate.isPresent() ? customTemplate.get() : template(request.type());
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("title", title(request.type()));

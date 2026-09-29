@@ -6,6 +6,8 @@
 
 ## Erledigt
 
+- Firmenbezogene Word-Vorlagen mit expliziter Vorlagenfirma je LC-Akte und allgemeiner Ersatzvorlage; vollständige Gesellschaftsverwaltung weiterhin geplant
+
 - Vorlagenverwaltung für Word-Dokumente
 - Handelsrechnung und Packliste gegen die gültige LC-Fassung einschließlich MT707-Änderungen prüfen
 - Audit-Protokoll mit Vorher-/Nachher-Werten, Exportereignissen und Aktenchronik

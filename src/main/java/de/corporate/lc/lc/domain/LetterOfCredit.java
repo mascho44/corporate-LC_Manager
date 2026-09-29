@@ -2,6 +2,9 @@ package de.corporate.lc.lc.domain;
 import jakarta.persistence.*; import java.math.BigDecimal; import java.time.LocalDate; import java.util.*;
 @Entity @Table(name="letter_of_credit")
 public class LetterOfCredit {
+ private String templateCompany;
+ public String getTemplateCompany(){return templateCompany;}
+ public void setTemplateCompany(String value){templateCompany=value;}
  @Id @GeneratedValue(strategy=GenerationType.UUID) private UUID id;
  @Column(nullable=false,unique=true) private String reference;
  private String applicant; private String beneficiary; private String issuingBank; private String advisingBank;
