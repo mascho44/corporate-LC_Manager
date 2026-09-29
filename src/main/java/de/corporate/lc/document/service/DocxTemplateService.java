@@ -24,7 +24,7 @@ public class DocxTemplateService {
     private final CompanyProfileService companies;
     public DocxTemplateService(DocumentTemplateService templates,CompanyProfileService companies){this.templates=templates;this.companies=companies;}
     public byte[] render(LetterOfCredit lc, GeneratedDocumentRequest request) throws IOException {
-        var customTemplate = templates.content(request.type(),lc.getTemplateCompany()==null||lc.getTemplateCompany().isBlank()?lc.getBeneficiary():lc.getTemplateCompany());
+        var customTemplate = templates.content(request.type(),lc.getCompanyId(),lc.getTemplateCompany()==null||lc.getTemplateCompany().isBlank()?lc.getBeneficiary():lc.getTemplateCompany());
         byte[] template = customTemplate.isPresent() ? customTemplate.get() : template(request.type());
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("title", title(request.type()));
@@ -41,7 +41,7 @@ public class DocxTemplateService {
         data.put("grossWeight", request.grossWeight() == null ? "-" : request.grossWeight() + " kg");
         data.put("notes", value(request.notes()));
         data.put("itemsTable", itemsTable(request));
-        var company=companies.profile();data.put("companyName",value(company.getLegalName()));data.put("companyAddress",value(company.getAddressLine()));data.put("companyPostalCode",value(company.getPostalCode()));data.put("companyCity",value(company.getCity()));data.put("companyCountry",value(company.getCountry()));data.put("companyEmail",value(company.getEmail()));data.put("companyPhone",value(company.getPhone()));data.put("companyTaxId",value(company.getTaxId()));data.put("companyRegistrationNumber",value(company.getRegistrationNumber()));data.put("companyBankName",value(company.getBankName()));data.put("companyIban",value(company.getIban()));data.put("companyBic",value(company.getBic()));data.put("companyContactPerson",value(company.getContactPerson()));if(company.getLogo()!=null)data.put("companyLogo",Pictures.ofBytes(company.getLogo()).size(160,60).create());
+        var company=companies.profile(lc.getCompanyId());data.put("companyName",value(company.getLegalName()));data.put("companyAddress",value(company.getAddressLine()));data.put("companyPostalCode",value(company.getPostalCode()));data.put("companyCity",value(company.getCity()));data.put("companyCountry",value(company.getCountry()));data.put("companyEmail",value(company.getEmail()));data.put("companyPhone",value(company.getPhone()));data.put("companyTaxId",value(company.getTaxId()));data.put("companyRegistrationNumber",value(company.getRegistrationNumber()));data.put("companyBankName",value(company.getBankName()));data.put("companyIban",value(company.getIban()));data.put("companyBic",value(company.getBic()));data.put("companyContactPerson",value(company.getContactPerson()));data.put("companyLogo",null);if(company.getLogo()!=null)data.put("companyLogo",Pictures.ofBytes(company.getLogo()).size(160,60).create());
         try (XWPFTemplate compiled = XWPFTemplate.compile(new ByteArrayInputStream(template)).render(data);
              ByteArrayOutputStream output = new ByteArrayOutputStream()) {
             compiled.write(output);
@@ -54,6 +54,10 @@ public class DocxTemplateService {
             XWPFParagraph heading = document.createParagraph();
             heading.setStyle("Title");
             heading.createRun().setText("{{title}}");
+            field(document, "Company", "companyName");
+            field(document, "Address", "companyAddress");
+            field(document, "City", "companyCity");
+            document.createParagraph().createRun().setText("{{@companyLogo}}");
             field(document, "Document No.", "documentNumber");
             field(document, "Date", "documentDate");
             field(document, "LC Reference", "lcReference");

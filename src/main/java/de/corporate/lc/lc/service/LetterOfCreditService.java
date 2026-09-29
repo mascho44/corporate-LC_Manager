@@ -17,8 +17,10 @@ import java.util.UUID;
 public class LetterOfCreditService {
     private final LetterOfCreditRepository repo;
     private final Mt700Parser parser;
+    private final de.corporate.lc.company.service.CompanyProfileService companies;
 
-    public LetterOfCreditService(LetterOfCreditRepository repo, Mt700Parser parser) {
+    public LetterOfCreditService(LetterOfCreditRepository repo, Mt700Parser parser,de.corporate.lc.company.service.CompanyProfileService companies) {
+        this.companies=companies;
         this.repo = repo;
         this.parser = parser;
     }
@@ -47,6 +49,8 @@ public class LetterOfCreditService {
             throw new IllegalArgumentException("LC reference already exists: " + reference);
         }
         lc.setReference(reference);
+        if(request.companyId()!=null)companies.profile(request.companyId());
+        lc.setCompanyId(request.companyId());
         lc.setTemplateCompany(clean(request.templateCompany()));
         lc.setApplicant(clean(request.applicant()));
         lc.setBeneficiary(clean(request.beneficiary()));

@@ -8,6 +8,8 @@ import de.corporate.lc.user.service.AppUserDetailsService; import jakarta.servle
    .requestMatchers("/login.html","/login.js","/styles.css","/api/auth/login","/api/auth/login/totp","/api/health","/actuator/health","/actuator/health/liveness","/actuator/health/readiness").permitAll()
    .requestMatchers("/actuator/**").hasRole("ADMIN")
    .requestMatchers("/api/audit/**").hasAuthority("PERM_AUDIT_VIEW")
+   .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/companies/choices").authenticated()
+   .requestMatchers("/api/companies/**").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/document-templates/companies").authenticated()
    .requestMatchers("/api/document-templates/**","/api/company-profile/**").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/training/**").authenticated()

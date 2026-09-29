@@ -17,7 +17,8 @@ import java.util.*;
 public class GeneratedDocumentService {
     private static final Set<DocumentType> SUPPORTED=EnumSet.of(DocumentType.COMMERCIAL_INVOICE,DocumentType.PACKING_LIST,DocumentType.CERTIFICATE_OF_ORIGIN,DocumentType.BENEFICIARY_CERTIFICATE,DocumentType.QUALITY_CERTIFICATE);
     private final LetterOfCreditRepository lcs;private final LcDocumentRepository documents;private final DocxTemplateService docxTemplates;
-    public GeneratedDocumentService(LetterOfCreditRepository lcs,LcDocumentRepository documents,DocxTemplateService docxTemplates){this.lcs=lcs;this.documents=documents;this.docxTemplates=docxTemplates;}
+    private final de.corporate.lc.company.service.CompanyProfileService companies;
+    public GeneratedDocumentService(LetterOfCreditRepository lcs,LcDocumentRepository documents,DocxTemplateService docxTemplates,de.corporate.lc.company.service.CompanyProfileService companies){this.lcs=lcs;this.documents=documents;this.docxTemplates=docxTemplates;this.companies=companies;}
     @Transactional public DocumentView create(UUID lcId,GeneratedDocumentRequest request)throws IOException{
         validate(request.type());
         var lc=lcs.findById(lcId).orElseThrow();byte[] pdf=pdf(lc,request);String filename=safe(prefix(request.type())+"-"+request.documentNumber()+".pdf");
@@ -37,7 +38,18 @@ public class GeneratedDocumentService {
             PDPage page=new PDPage(PDRectangle.A4);pdf.addPage(page);
             var regular=new PDType1Font(Standard14Fonts.FontName.HELVETICA);var bold=new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
             try(PDPageContentStream c=new PDPageContentStream(pdf,page)){
-                float y=790;y=line(c,bold,18,50,y,title(r.type()));y-=8;
+                var company=companies.profile(lc.getCompanyId());
+                float y=790;
+                if(company.getLogo()!=null){
+                    var image=org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject.createFromByteArray(pdf,company.getLogo(),"company-logo");
+                    float scale=Math.min(100f/image.getWidth(),45f/image.getHeight());
+                    c.drawImage(image,445,755,image.getWidth()*scale,image.getHeight()*scale);
+                }
+                if(company.getLegalName()!=null)y=line(c,bold,12,50,y,company.getLegalName());
+                if(company.getAddressLine()!=null)y=line(c,regular,9,50,y,company.getAddressLine());
+                String locality=java.util.stream.Stream.of(company.getPostalCode(),company.getCity(),company.getCountry()).filter(Objects::nonNull).collect(java.util.stream.Collectors.joining(" "));
+                if(!locality.isBlank())y=line(c,regular,9,50,y,locality);
+                y=Math.min(y-12,730);y=line(c,bold,18,50,y,title(r.type()));y-=8;
                 y=field(c,bold,regular,y,"Document No.",r.documentNumber());y=field(c,bold,regular,y,"Date",r.documentDate().toString());y=field(c,bold,regular,y,"LC Reference",lc.getReference());y-=8;
                 y=field(c,bold,regular,y,"Seller / Beneficiary",lc.getBeneficiary());y=field(c,bold,regular,y,"Buyer / Applicant",lc.getApplicant());y-=8;
                 if(r.items()!=null&&!r.items().isEmpty()){

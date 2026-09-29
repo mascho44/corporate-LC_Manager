@@ -6,6 +6,8 @@
 
 ## Erledigt
 
+- Firmenverwaltung mit eigenen Stammdaten und Logos, fester Gesellschaftszuordnung je LC und Word-Vorlage; Firmenangaben in Word und Standard-PDFs
+
 - Firmenbezogene Word-Vorlagen mit expliziter Vorlagenfirma je LC-Akte und allgemeiner Ersatzvorlage; vollständige Gesellschaftsverwaltung weiterhin geplant
 
 - Vorlagenverwaltung für Word-Dokumente

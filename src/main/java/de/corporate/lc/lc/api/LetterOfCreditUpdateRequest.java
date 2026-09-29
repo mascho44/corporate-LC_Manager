@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 public record LetterOfCreditUpdateRequest(
+        Integer companyId,
         @Size(max = 255) String templateCompany,
         @NotBlank @Size(max = 255) String reference,
         @Size(max = 255) String applicant,

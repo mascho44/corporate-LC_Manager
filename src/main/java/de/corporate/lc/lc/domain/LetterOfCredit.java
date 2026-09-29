@@ -2,6 +2,9 @@ package de.corporate.lc.lc.domain;
 import jakarta.persistence.*; import java.math.BigDecimal; import java.time.LocalDate; import java.util.*;
 @Entity @Table(name="letter_of_credit")
 public class LetterOfCredit {
+ private Integer companyId;
+ public Integer getCompanyId(){return companyId;}
+ public void setCompanyId(Integer value){companyId=value;}
  private String templateCompany;
  public String getTemplateCompany(){return templateCompany;}
  public void setTemplateCompany(String value){templateCompany=value;}

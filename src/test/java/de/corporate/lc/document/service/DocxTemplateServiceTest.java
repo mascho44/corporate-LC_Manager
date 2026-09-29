@@ -27,15 +27,16 @@ class DocxTemplateServiceTest {
                 java.util.List.of(new de.corporate.lc.document.api.GeneratedDocumentItemRequest("1", "Product A", new BigDecimal("10"), "pcs", new BigDecimal("125"), new BigDecimal("1250"), null, null, null)));
 
         DocumentTemplateService templates=mock(DocumentTemplateService.class);
+        lc.setCompanyId(2);
         lc.setTemplateCompany("Vorlagenfirma GmbH");
-        org.mockito.Mockito.when(templates.content(DocumentType.COMMERCIAL_INVOICE,"Vorlagenfirma GmbH")).thenReturn(java.util.Optional.empty());
-        var companies=mock(de.corporate.lc.company.service.CompanyProfileService.class);org.mockito.Mockito.when(companies.profile()).thenReturn(new de.corporate.lc.company.domain.CompanyProfile());
+        org.mockito.Mockito.when(templates.content(DocumentType.COMMERCIAL_INVOICE,2,"Vorlagenfirma GmbH")).thenReturn(java.util.Optional.empty());
+        var companies=mock(de.corporate.lc.company.service.CompanyProfileService.class);var chosen=new de.corporate.lc.company.domain.CompanyProfile();chosen.setLegalName("Selected Company");chosen.setAddressLine("Selected Street");org.mockito.Mockito.when(companies.profile(2)).thenReturn(chosen);
         byte[] result = new DocxTemplateService(templates,companies).render(lc, request);
-        org.mockito.Mockito.verify(templates).content(DocumentType.COMMERCIAL_INVOICE,"Vorlagenfirma GmbH");
+        org.mockito.Mockito.verify(templates).content(DocumentType.COMMERCIAL_INVOICE,2,"Vorlagenfirma GmbH");
 
         try (XWPFDocument document = new XWPFDocument(new ByteArrayInputStream(result))) {
             String text = document.getParagraphs().stream().map(paragraph -> paragraph.getText()).reduce("", (a, b) -> a + "\n" + b);
-            assertThat(text).contains("COMMERCIAL INVOICE", "LC-4711", "Seller GmbH", "EUR 1250.00");
+            assertThat(text).contains("Selected Company","Selected Street","COMMERCIAL INVOICE", "LC-4711", "Seller GmbH", "EUR 1250.00");
             assertThat(document.getTables()).isNotEmpty();
             assertThat(document.getTables().get(0).getText()).contains("Product A", "1250");
         }

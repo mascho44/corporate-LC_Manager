@@ -8,6 +8,9 @@ import java.util.UUID;
 @Entity
 @Table(name="document_template")
 public class DocumentTemplate {
+    private Integer companyId;
+    public Integer getCompanyId(){return companyId;}
+    public void setCompanyId(Integer value){companyId=value;}
     @Id @GeneratedValue(strategy=GenerationType.UUID) private UUID id;
     @Enumerated(EnumType.STRING) @Column(nullable=false,length=60) private DocumentType documentType;
     @Column(nullable=false,length=255) private String companyName="*";
