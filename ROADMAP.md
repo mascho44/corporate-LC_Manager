@@ -2,7 +2,7 @@
 
 ## Als Nächstes
 
-- [GitHub #3](https://github.com/mascho44/corporate-LC_Manager/issues/3): granulare Rollenberechtigungen als Grundlage für Kerberos/SSO und Freigaben
+- E-Mail-Anbindung fachlich und technisch vorbereiten ([GitHub #2](https://github.com/mascho44/corporate-LC_Manager/issues/2))
 
 ## Erledigt
 
@@ -18,6 +18,7 @@
 - Optionale TOTP-Zwei-Faktor-Anmeldung mit Authenticator-App und Notfallcodes
 - Transport-, Ursprungsland- und Incoterm-Prüfungen mit dokumentübergreifender Widerspruchserkennung
 - Batch-Upload für Einzeldateien und ZIP-Archive mit Typkorrektur, Limits und Ergebnisübersicht
+- Vererbbare, administrierbare Rollen mit granularen Rechten ([GitHub #3](https://github.com/mascho44/corporate-LC_Manager/issues/3))
 
 ## Später
 
