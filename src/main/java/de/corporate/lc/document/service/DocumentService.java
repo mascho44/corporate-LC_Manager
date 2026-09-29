@@ -80,6 +80,22 @@ public class DocumentService {
         return imported;
     }
 
+    @Transactional
+    public List<DocumentView> uploadBatch(UUID lcId,List<MultipartFile> files,List<DocumentType> types)throws IOException{
+        if(files==null||files.isEmpty())throw new IllegalArgumentException("Bitte mindestens eine Datei auswählen.");
+        if(files.size()>100)throw new IllegalArgumentException("Ein Batch darf höchstens 100 Dateien enthalten.");
+        if(types==null||types.size()!=files.size())throw new IllegalArgumentException("Für jede Datei muss ein Dokumenttyp angegeben werden.");
+        long total=files.stream().mapToLong(MultipartFile::getSize).sum();if(total>50L*1024*1024)throw new IllegalArgumentException("Der Batch überschreitet 50 MB.");
+        List<DocumentView> imported=new ArrayList<>();
+        for(int index=0;index<files.size();index++){
+            MultipartFile file=files.get(index);String name=file.getOriginalFilename()==null?"":file.getOriginalFilename().toLowerCase(Locale.ROOT);
+            if(name.endsWith(".zip"))imported.addAll(uploadArchive(lcId,file));else imported.add(upload(lcId,file,types.get(index),null,null,null));
+        }
+        return imported;
+    }
+
+    public DocumentType suggestType(String filename){return type(filename==null?"":filename);}
+
     private DocumentView save(de.corporate.lc.lc.domain.LetterOfCredit lc,String filename,byte[] content,String contentType,DocumentType type,LocalDate date,BigDecimal amount,String currency){
         LcDocument document=new LcDocument();document.setLetterOfCredit(lc);document.setDocumentType(type);document.setOriginalFilename(filename);document.setContentType(contentType);document.setFileSize(content.length);document.setDocumentDate(date);document.setAmount(amount);document.setCurrency(currency);document.setContent(content);extraction.extract(document);if(document.getAmount()==null)document.setAmount(document.getExtractedAmount());if(document.getCurrency()==null)document.setCurrency(document.getExtractedCurrency());return DocumentView.from(documents.save(document));
     }

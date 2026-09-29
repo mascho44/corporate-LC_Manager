@@ -17,7 +17,7 @@ import de.corporate.lc.user.service.AppUserDetailsService; import jakarta.servle
    .requestMatchers("/api/users/**").hasRole("ADMIN")
    .requestMatchers(org.springframework.http.HttpMethod.DELETE,"/api/lcs/*").hasRole("ADMIN")
    .requestMatchers(org.springframework.http.HttpMethod.DELETE,"/api/lcs/*/documents/*").hasAnyRole("ADMIN","EDITOR")
-   .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/imports","/api/imports/preview","/api/imports/file-preview","/api/lcs/import/**","/api/lcs/*/documents","/api/lcs/*/documents/archive","/api/lcs/*/generated-documents","/api/lcs/*/generated-documents/docx").hasAnyRole("ADMIN","EDITOR")
+   .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/imports","/api/imports/preview","/api/imports/file-preview","/api/lcs/import/**","/api/lcs/*/documents","/api/lcs/*/documents/archive","/api/lcs/*/documents/batch","/api/lcs/*/generated-documents","/api/lcs/*/generated-documents/docx").hasAnyRole("ADMIN","EDITOR")
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/lcs/*/document-checks/decisions").hasAnyRole("ADMIN","EDITOR")
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/lcs/*/notes","/api/lcs/*/follow-up/complete","/api/lcs/*/assign-to-me").hasAnyRole("ADMIN","EDITOR")
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/lcs/*/tasks").hasAnyRole("ADMIN","EDITOR")

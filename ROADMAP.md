@@ -2,7 +2,7 @@
 
 ## Als Nächstes
 
-- Batch-Upload für mehrere Dokumente mit gemeinsamer Vorprüfung und Ergebnisübersicht umsetzen
+- [GitHub #3](https://github.com/mascho44/corporate-LC_Manager/issues/3): granulare Rollenberechtigungen als Grundlage für Kerberos/SSO und Freigaben
 
 ## Erledigt
 
@@ -17,6 +17,7 @@
 - Vier-Augen-Freigabe für Dokumententwürfe mit getrenntem Ersteller und Freigeber
 - Optionale TOTP-Zwei-Faktor-Anmeldung mit Authenticator-App und Notfallcodes
 - Transport-, Ursprungsland- und Incoterm-Prüfungen mit dokumentübergreifender Widerspruchserkennung
+- Batch-Upload für Einzeldateien und ZIP-Archive mit Typkorrektur, Limits und Ergebnisübersicht
 
 ## Später
 
@@ -24,3 +25,5 @@
 - Multiple Entities: mehrere Gesellschaften oder Mandanten mit getrennten Akten, Benutzern, Rollen und Einstellungen
 - Weitere SWIFT-Profile, insbesondere MT767
 - Kerberos-Anbindung für Enterprise-SSO mit Rollenabbildung und lokalem Notfall-Adminzugang
+- [GitHub #2](https://github.com/mascho44/corporate-LC_Manager/issues/2): E-Mail-Anbindung
+- [GitHub #1](https://github.com/mascho44/corporate-LC_Manager/issues/1): MQ-Abstraktion, beispielsweise für RabbitMQ
