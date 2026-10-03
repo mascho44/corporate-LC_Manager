@@ -213,6 +213,15 @@ ensureTrainingUi();setupAppNavigation();setupDocumentBatchUpload();ensureRoleUi(
 function templateFormData(form){const body=new FormData(form);if(!body.get('companyId'))body.delete('companyId');return body;}
 async function setupTemplateCompanies(){
     const form=$('#templateForm');
+    if(!$('#downloadTemplateSample')){
+        const block=document.createElement('div');block.className='template-help';
+        block.innerHTML='<b>Mit einer Mustervorlage beginnen</b><p>Dokumenttyp unten auswählen, Muster herunterladen, in Word gestalten und als DOCX wieder hochladen. Platzhalter in doppelten geschweiften Klammern unverändert lassen.</p><a id="downloadTemplateSample" class="button-link">Word-Muster herunterladen</a>';
+        form.before(block);
+        const updateLink=()=>{$('#downloadTemplateSample').href='/api/document-templates/sample?type='+encodeURIComponent(form.elements.type.value);};
+        form.elements.type.addEventListener('change',updateLink);
+        form.addEventListener('reset',()=>setTimeout(updateLink,0));
+        updateLink();
+    }
     if(!form.elements.companyId)form.querySelector('.form-grid').insertAdjacentHTML('afterbegin','<label>Firma / Gesellschaft<select name="companyId"></select><small>Firmenvorlagen bleiben auch bei einer Umbenennung zugeordnet.</small></label>');
     const choices=await json('/api/companies/choices');
     form.elements.companyId.innerHTML='<option value="">Allgemeine oder bisherige Namensvorlage</option>'+choices.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');

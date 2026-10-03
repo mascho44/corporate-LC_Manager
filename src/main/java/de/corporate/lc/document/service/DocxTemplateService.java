@@ -49,7 +49,9 @@ public class DocxTemplateService {
         }
     }
 
-    private byte[] template(DocumentType type) throws IOException {
+    public byte[] template(DocumentType type) throws IOException {
+        if(type==null||!java.util.EnumSet.of(DocumentType.COMMERCIAL_INVOICE,DocumentType.PACKING_LIST,DocumentType.CERTIFICATE_OF_ORIGIN,DocumentType.BENEFICIARY_CERTIFICATE,DocumentType.QUALITY_CERTIFICATE).contains(type))
+            throw new IllegalArgumentException("Für diesen Dokumenttyp ist keine Word-Mustervorlage verfügbar.");
         try (XWPFDocument document = new XWPFDocument(); ByteArrayOutputStream output = new ByteArrayOutputStream()) {
             XWPFParagraph heading = document.createParagraph();
             heading.setStyle("Title");

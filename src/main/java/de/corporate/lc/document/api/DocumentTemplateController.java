@@ -5,7 +5,14 @@ import de.corporate.lc.audit.service.AuditService;import de.corporate.lc.documen
 @RestController @RequestMapping("/api/document-templates")
 public class DocumentTemplateController {
     private final DocumentTemplateService service;private final AuditService audit;
-    public DocumentTemplateController(DocumentTemplateService service,AuditService audit){this.service=service;this.audit=audit;}
+    private final de.corporate.lc.document.service.DocxTemplateService docx;
+    public DocumentTemplateController(DocumentTemplateService service,AuditService audit,de.corporate.lc.document.service.DocxTemplateService docx){this.service=service;this.audit=audit;this.docx=docx;}
+    @GetMapping("/sample") public ResponseEntity<byte[]> sample(@RequestParam DocumentType type)throws IOException{
+        byte[] bytes=docx.template(type);
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
+            .header(HttpHeaders.CONTENT_DISPOSITION,ContentDisposition.attachment().filename("Mustervorlage-"+type.name()+".docx").build().toString())
+            .contentLength(bytes.length).body(bytes);
+    }
     @GetMapping public List<DocumentTemplateView> list(){return service.list();}
     @GetMapping("/companies") public List<String> companies(){return service.list().stream().map(DocumentTemplateView::companyName).filter(name->!"*".equals(name)).distinct().sorted().toList();}
     @PostMapping(consumes=MediaType.MULTIPART_FORM_DATA_VALUE) public DocumentTemplateView upload(@RequestParam DocumentType type,@RequestParam(defaultValue="*")String companyName,@RequestParam(required=false)Integer companyId,@RequestPart("file")MultipartFile file,Authentication authentication)throws IOException{var result=service.save(type,companyName,companyId,file,authentication.getName());audit.record(authentication,"DOCUMENT_TEMPLATE_SAVED","DOCUMENT_TEMPLATE",result.id(),result.companyName()+" · "+result.documentType()+" · "+result.originalFilename());return result;}
