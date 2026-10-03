@@ -21,6 +21,18 @@ class SwiftImportServiceProfileTest {
 
     private TrainingLearningService learning(){TrainingLearningService service=mock(TrainingLearningService.class);org.mockito.Mockito.when(service.apply(org.mockito.ArgumentMatchers.anyString(),org.mockito.ArgumentMatchers.anyString())).thenAnswer(invocation->invocation.getArgument(1));return service;}
 
+    @Test void previewsReferencedBeneficiaryWithReviewNotice() {
+        String raw=":20:REF\n:31D:271231BERLIN\n:32B:EUR100,\n:59:SEE FIELD 47A\n:47A:BENEFICIARY: ACME\nBERLIN";
+        var preview=service.preview(new SwiftImportRequest("lc.swift",raw));
+        assertThat(preview.beneficiary()).isEqualTo("ACME\nBERLIN");
+        assertThat(preview.warnings()).anyMatch(warning->warning.contains(":47A:"));
+        assertThat(preview.rawFields()).anySatisfy(field->{
+            assertThat(field.code()).isEqualTo("59");
+            assertThat(field.value()).isEqualTo("SEE FIELD 47A");
+            assertThat(field.confidence()).isEqualTo("LOW");
+        });
+    }
+
     @Test void detectsMt707ByProfileFields() {
         assertThat(service.detect(":20:LC-1\n:26E:2\n:30:260922\n:46B:NEW DOCUMENTS"))
                 .isEqualTo("MT707");

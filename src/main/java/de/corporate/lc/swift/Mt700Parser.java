@@ -8,7 +8,7 @@ import de.corporate.lc.lc.domain.LetterOfCredit; import org.springframework.ster
   if(f.containsKey("31D")){ParsedDate p=leadingDate("31D",f.get("31D"));lc.setExpiryDate(p.date());lc.setExpiryPlace(p.rest());}
   if(f.containsKey("32B")){String x=f.get("32B").replace("\n","").trim();lc.setCurrency(x.substring(0,3));lc.setAmount(new BigDecimal(x.substring(3).trim().replace(" ","").replace(".","").replace(',','.')));}
   if(f.containsKey("44C"))lc.setLatestShipmentDate(leadingDate("44C",f.get("44C")).date());
-  lc.setApplicant(f.get("50")); lc.setBeneficiary(f.get("59"));
+  lc.setApplicant(f.get("50")); lc.setBeneficiary(BeneficiaryReferenceResolver.resolve(f).value());
   if(f.containsKey("46A")) lc.setRequiredDocuments(Arrays.stream(f.get("46A").split("\\R")).map(String::trim).filter(s->!s.isBlank()).map(s->s.replaceFirst("^[+*-]\\s*","")).toList()); return lc;
  }
  private String req(Map<String,String> f,String k){if(!f.containsKey(k)) throw new IllegalArgumentException("MT700 field :"+k+": is required"); return f.get(k);}
