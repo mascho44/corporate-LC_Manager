@@ -93,7 +93,69 @@ async function openTrainingSession(id){try{const item=await json(`/api/training/
 async function loadTrainingQuality(){try{const rows=await json('/api/training/quality');$('#trainingQuality').innerHTML=rows.length?`<details><summary>OCR-Qualität nach Profil und Feld</summary><div class="quality-profiles">${rows.map(p=>`<section><h4>${esc(p.messageType)} <span>${p.accuracyPercent}% unverändert erkannt</span></h4><small>${p.sessions} bestätigte Dokumente · ${p.fields} geprüfte Felder · ${p.corrected} korrigiert</small><div class="quality-fields">${p.fieldQuality.map(f=>`<span>:${esc(f.code)}: <b>${f.accuracyPercent}%</b><small>${f.confirmed}× geprüft</small></span>`).join('')}</div></section>`).join('')}</div></details>`:'<small>Noch nicht genügend bestätigte Daten für die Qualitätsanzeige.</small>'}catch(e){$('#trainingQuality').innerHTML=''}}
 async function loadLearningRules(){try{const rules=await json('/api/training/learning-rules');$('#learningHistory').innerHTML=rules.length?`<details><summary>Lernhistorie (${rules.length} Regeln)</summary><div class="learning-rules">${rules.map(rule=>`<section class="learning-rule ${rule.active?'':'inactive'}"><div><b>${esc(rule.messageType)} · ${esc(rule.kind)}</b><small>:${esc(rule.sourceCode)}:${rule.sourceValue?` „${esc(rule.sourceValue)}“`:''} → ${rule.rejected?'nicht verwenden':`:${esc(rule.targetCode)}:${rule.targetValue?` „${esc(rule.targetValue)}“`:''}`}</small><small>${rule.examples}× gelernt · ${rule.documents.map(esc).join(', ')}</small></div><button type="button" class="secondary learning-toggle" data-id="${rule.id}" data-active="${rule.active}">${rule.active?'Deaktivieren':'Aktivieren'}</button></section>`).join('')}</div></details>`:'<small>Noch keine dauerhaften Lernregeln vorhanden.</small>';document.querySelectorAll('.learning-toggle').forEach(button=>button.onclick=()=>toggleLearningRule(button))}catch(e){$('#learningHistory').innerHTML='<small>Lernhistorie konnte nicht geladen werden.</small>'}}
 async function toggleLearningRule(button){button.disabled=true;try{await json(`/api/training/learning-rules/${button.dataset.id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({active:button.dataset.active!=='true'})});await loadLearningRules()}catch(e){$('#trainingError').textContent=e.message;button.disabled=false}}
-async function processTrainingFile(file){if(!file)return;$('#trainingError').textContent='';$('#trainingStatus').innerHTML='<div class="empty compact">PDF wird gelesen, gespeichert und analysiert …</div>';$('#trainingFields').innerHTML='';$('#confirmTraining').disabled=true;try{const body=new FormData();body.append('file',file);const result=await json('/api/training/preview',{method:'POST',body});trainingItem={...result.request,sessionId:result.sessionId,preview:result.preview,extractionStatus:result.extractionStatus,reviews:(result.preview.rawFields||[]).map(()=>null)};renderTraining();loadTrainingHistory()}catch(e){$('#trainingStatus').innerHTML='';$('#trainingError').textContent=e.message}}
+let trainingUploadBusy=false;
+function uploadTrainingPdf(file,onProgress){
+    return new Promise((resolve,reject)=>{
+        const request=new XMLHttpRequest();
+        request.open('POST','/api/training/preview');
+        request.timeout=300000;
+        if(csrfToken)request.setRequestHeader('X-CSRF-TOKEN',csrfToken);
+        request.upload.onprogress=event=>onProgress(event.lengthComputable?Math.round(event.loaded/event.total*100):null);
+        request.upload.onload=()=>onProgress(100);
+        request.onerror=()=>reject(new Error('Verbindung unterbrochen. Bitte zuerst die Trainingshistorie prüfen, bevor du erneut hochlädst.'));
+        request.ontimeout=()=>reject(new Error('Die Analyse dauert zu lange. Der Server könnte noch arbeiten. Bitte die Trainingshistorie prüfen, bevor du erneut hochlädst.'));
+        request.onload=()=>{
+            if(request.status===401){location.replace('/login.html');reject(new Error('Anmeldung erforderlich.'));return;}
+            let result;try{result=JSON.parse(request.responseText);}catch(error){reject(new Error('Keine gültige Serverantwort. Bitte Trainingshistorie prüfen.'));return;}
+            if(request.status<200||request.status>=300){reject(new Error(result.error||'Verarbeitung fehlgeschlagen (HTTP '+request.status+').'));return;}
+            resolve(result);
+        };
+        const body=new FormData();body.append('file',file);request.send(body);
+    });
+}
+async function processTrainingFile(file){
+    if(!file||trainingUploadBusy)return;
+    if(file.size>10*1024*1024||!file.name.toLowerCase().endsWith('.pdf')){$('#trainingError').textContent='Bitte eine PDF-Datei mit maximal 10 MB auswählen.';return;}
+    trainingUploadBusy=true;
+    clearTimeout(trainingSaveTimer);clearTimeout(trainingQualityTimer);
+    $('#trainingError').textContent='';
+    $('#trainingFields').innerHTML='';
+    $('#finishTrainingOnly')?.classList.add('hidden');
+    $('#confirmTraining').disabled=true;
+    const controls=[$('#trainingFile'),$('#closeTraining'),$('#cancelTraining')];
+    controls.forEach(control=>control.disabled=true);
+    const dialog=$('#trainingDialog'),preventClose=event=>event.preventDefault();
+    dialog.addEventListener('cancel',preventClose);
+    $('#trainingStatus').setAttribute('aria-busy','true');
+    $('#trainingStatus').innerHTML='<div class="template-help" role="status" aria-live="polite"><b id="trainingUploadStage">1 von 2 · PDF wird hochgeladen</b><progress id="trainingUploadProgress" max="100" value="0" aria-label="PDF-Verarbeitung"></progress><p id="trainingUploadHelp">Bitte dieses Fenster geöffnet lassen.</p><small id="trainingUploadElapsed"></small></div>';
+    const started=Date.now();
+    const timer=setInterval(()=>{$('#trainingUploadElapsed').textContent='Verstrichen: '+Math.floor((Date.now()-started)/1000)+' Sekunden';},1000);
+    try{
+        const result=await uploadTrainingPdf(file,percent=>{
+            const progress=$('#trainingUploadProgress');
+            if(percent===100){
+                progress.removeAttribute('value');
+                $('#trainingUploadStage').textContent='2 von 2 · PDF wird analysiert';
+                $('#trainingUploadHelp').textContent='Texterkennung und SWIFT-Felderkennung laufen. Bei Scans kann dies einige Minuten dauern.';
+            }else{
+                if(percent==null)progress.removeAttribute('value');else progress.value=percent;
+                $('#trainingUploadStage').textContent='1 von 2 · PDF wird hochgeladen'+(percent==null?'':' · '+percent+' %');
+            }
+        });
+        clearInterval(timer);
+        trainingItem={...result.request,sessionId:result.sessionId,preview:result.preview,extractionStatus:result.extractionStatus,reviews:(result.preview.rawFields||[]).map(()=>null)};
+        renderTraining();loadTrainingHistory();
+    }catch(error){
+        clearInterval(timer);
+        $('#trainingStatus').textContent='Verarbeitung nicht erfolgreich abgeschlossen.';
+        $('#trainingError').textContent=error.message;
+    }finally{
+        clearInterval(timer);trainingUploadBusy=false;
+        controls.forEach(control=>control.disabled=false);
+        dialog.removeEventListener('cancel',preventClose);
+        $('#trainingStatus').setAttribute('aria-busy','false');
+    }
+}
 function updateTrainingReview(){const total=trainingItem.reviews.length,done=trainingItem.reviews.filter(Boolean).length;$('#trainingReviewProgress').textContent=`${done} von ${total} Feldern fachlich bestätigt`;$('#confirmTraining').disabled=total===0}
 function setTrainingReview(index,status){trainingItem.reviews[index]=status;const row=document.querySelector(`.training-field[data-index="${index}"]`);row.classList.remove('review-correct','review-corrected','review-reassigned','review-invalid');row.classList.add(`review-${status}`);row.querySelectorAll('.review-actions button').forEach(button=>button.classList.toggle('selected',button.dataset.review===status));if(status==='corrected'||status==='reassigned'||status==='invalid')$('#trainingError').textContent='';updateTrainingReview()}
 const swiftCatalog={MT700:['20','27','31C','31D','32B','40A','40E','41A','41D','42A','42C','42M','42P','43P','43T','44A','44B','44C','44E','44F','45A','46A','47A','48','49','50','52A','57A','59','71D','72Z','78'],MT707:['20','21','23','26E','27','30','31E','32B','33B','44C','45B','46B','47B','52A','57A','59','72'],MT760:['15A','15B','20','21','22A','22D','23','23B','23H','24E','24G','27','30','31C','31D','32B','40C','45C','45L','50','52A','59','77C','77U']};
@@ -231,6 +293,7 @@ async function setupTemplateCompanies(){
 const renderTrainingWithBusinessImport=renderTraining;
 renderTraining=function(){
     renderTrainingWithBusinessImport();
+    setupTrainingPreviewSizes();
     $('#trainingModeNotice')?.remove();
     $('#trainingStatus').insertAdjacentHTML('afterbegin','<div id="trainingModeNotice" class="template-help"><b>Trainingsmodus — Erkennung verbessern</b><p>„Nur Training abschließen“ speichert die geprüften Trainingsdaten, ohne eine LC-Akte anzulegen oder zu ändern. Die Qualitätsampel bewertet die Eignung für den Geschäftsimport, nicht den Trainingsabschluss.</p></div>');
     let finish=$('#finishTrainingOnly');
@@ -257,3 +320,26 @@ async function finishTrainingOnly(){
 }
 const openTrainingSeparated=openTraining;
 openTraining=function(){openTrainingSeparated();$('#finishTrainingOnly')?.classList.add('hidden');$('#confirmTraining').textContent='Geschäftsdaten übernehmen';};
+
+function setupTrainingPreviewSizes(){
+    document.querySelectorAll('.training-field').forEach(row=>{
+        const text=row.querySelector('textarea').value;
+        const expanded=text.length>400||text.split(/\r?\n/).length>6;
+        const frame=row.querySelector('.snippet-frame');
+        frame.id='trainingSnippet-'+row.dataset.index;
+        frame.tabIndex=0;
+        frame.setAttribute('role','region');
+        frame.setAttribute('aria-label','PDF-Ausschnitt; lange Inhalte können gescrollt werden');
+        const button=document.createElement('button');
+        button.type='button';button.className='secondary preview-size-toggle';
+        button.setAttribute('aria-controls',frame.id);
+        const setExpanded=value=>{
+            row.classList.toggle('preview-expanded',value);
+            button.setAttribute('aria-expanded',String(value));
+            button.textContent=value?'Kompakte Vorschau':'Große Vorschau';
+        };
+        button.onclick=()=>setExpanded(!row.classList.contains('preview-expanded'));
+        row.querySelector('.pdf-context').append(button);
+        setExpanded(expanded);
+    });
+}
