@@ -61,6 +61,21 @@ public class TrainingController {
         return new TrainingPreview(s.getId(),request,preview,x.status());
     }
 
+    @PostMapping("/{id}/finish")
+    @Transactional
+    public Map<String,String> finish(@PathVariable UUID id,@RequestBody TrainingConfirm request,Authentication auth) {
+        TrainingSession s=find(id);
+        if(!s.getUsername().equals(auth.getName())) throw new IllegalArgumentException("Trainingssitzung gehört einem anderen Benutzer.");
+        if(!"DRAFT".equals(s.getStatus())) throw new IllegalArgumentException("Nur ein Trainingsentwurf kann abgeschlossen werden.");
+        data.requireReviewedFields(request.reviewsJson());
+        s.setCorrectedText(request.correctedRawMessage());
+        s.setReviewsJson(request.reviewsJson());
+        s.setStatus("CONFIRMED");
+        s.setConfirmedAt(LocalDateTime.now());
+        audit.record(auth,"TRAINING_CONFIRMED","TRAINING_SESSION",s.getId(),s.getFilename()+" · Training abgeschlossen · keine LC-Akte angelegt oder geändert");
+        return Map.of("status","CONFIRMED");
+    }
+
     @PostMapping("/{id}/confirm")
     @Transactional
     public Object confirm(@PathVariable UUID id,@RequestBody TrainingConfirm request,Authentication auth) {

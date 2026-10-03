@@ -13,6 +13,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 class TrainingDataServiceTest {
     private final TrainingDataService service=new TrainingDataService(new ObjectMapper().findAndRegisterModules());
 
+    @Test void trainingCompletionRequiresReviewsButNotAValidBusinessRecord(){
+        service.requireReviewedFields("[{\"code\":\"44C\",\"value\":\"unreadable\",\"review\":\"invalid\"}]");
+        for(String invalid:List.of("[]","{}","null","not json","[{\"code\":\"20\"}]"))
+            org.assertj.core.api.Assertions.assertThatThrownBy(()->service.requireReviewedFields(invalid)).isInstanceOf(IllegalArgumentException.class);
+    }
+
     @Test void exportsConfirmedFieldsAsJsonAndXml(){
         TrainingSession session=session("MT760","corrected",":20:A&B", "[{\"code\":\"20\",\"value\":\"A&B\",\"review\":\"corrected\"}]");
         String json=new String(service.json(session),StandardCharsets.UTF_8);

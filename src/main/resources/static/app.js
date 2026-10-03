@@ -226,3 +226,34 @@ async function setupTemplateCompanies(){
     const choices=await json('/api/companies/choices');
     form.elements.companyId.innerHTML='<option value="">Allgemeine oder bisherige Namensvorlage</option>'+choices.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
 }
+
+// Training completion is separate from importing business records.
+const renderTrainingWithBusinessImport=renderTraining;
+renderTraining=function(){
+    renderTrainingWithBusinessImport();
+    $('#trainingModeNotice')?.remove();
+    $('#trainingStatus').insertAdjacentHTML('afterbegin','<div id="trainingModeNotice" class="template-help"><b>Trainingsmodus — Erkennung verbessern</b><p>„Nur Training abschließen“ speichert die geprüften Trainingsdaten, ohne eine LC-Akte anzulegen oder zu ändern. Die Qualitätsampel bewertet die Eignung für den Geschäftsimport, nicht den Trainingsabschluss.</p></div>');
+    let finish=$('#finishTrainingOnly');
+    if(!finish){finish=document.createElement('button');finish.id='finishTrainingOnly';finish.type='button';finish.textContent='Nur Training abschließen';$('#confirmTraining').before(finish);finish.onclick=finishTrainingOnly;}
+    finish.classList.toggle('hidden',trainingItem.status==='CONFIRMED');
+    $('#confirmTraining').classList.add('secondary');
+    $('#confirmTraining').textContent='Training abschließen und Geschäftsdaten übernehmen';
+    $('#confirmTraining').classList.toggle('hidden',trainingItem.status==='CONFIRMED'||trainingItem.preview.messageType==='MT760');
+    $('#confirmTraining').onclick=()=>{if(confirm('Damit werden Geschäftsdaten übernommen: Ein LC wird angelegt/verknüpft oder ein Amendment importiert. Fortfahren?'))confirmTraining();};
+};
+async function finishTrainingOnly(){
+    if(!trainingItem?.sessionId)return;
+    const button=$('#finishTrainingOnly');button.disabled=true;
+    clearTimeout(trainingSaveTimer);clearTimeout(trainingQualityTimer);
+    try{
+        await json(`/api/training/${trainingItem.sessionId}/finish`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(trainingDraftPayload())});
+        trainingItem.status='CONFIRMED';
+        await openTrainingSession(trainingItem.sessionId);
+        $('#trainingError').textContent='';
+        $('#trainingModeNotice').textContent='Training abgeschlossen. Es wurden keine Geschäftsdaten angelegt oder geändert. Export und Ansicht bleiben über die Trainingshistorie verfügbar.';
+        await loadDashboardDrafts();
+    }catch(error){$('#trainingError').textContent=error.message;}
+    finally{button.disabled=false;}
+}
+const openTrainingSeparated=openTraining;
+openTraining=function(){openTrainingSeparated();$('#finishTrainingOnly')?.classList.add('hidden');$('#confirmTraining').textContent='Geschäftsdaten übernehmen';};

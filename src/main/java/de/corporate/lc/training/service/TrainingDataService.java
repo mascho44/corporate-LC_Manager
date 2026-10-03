@@ -16,6 +16,17 @@ public class TrainingDataService {
 
     public TrainingDataService(ObjectMapper mapper){this.mapper=mapper;}
 
+    public void requireReviewedFields(String json) {
+        try {
+            JsonNode fields=mapper.readTree(json==null?"[]":json);
+            if(fields==null||!fields.isArray()||fields.isEmpty()) throw new IllegalArgumentException("Keine Trainingsfelder vorhanden.");
+            for(JsonNode field:fields) {
+                if(!Set.of("correct","corrected","reassigned","invalid").contains(field.path("review").asText()))
+                    throw new IllegalArgumentException("Bitte alle Trainingsfelder bestätigen oder als nicht verwendbar markieren.");
+            }
+        } catch(JsonProcessingException ex) { throw new IllegalArgumentException("Ungültige Trainingsfelder.",ex); }
+    }
+
     public record Detail(UUID id,String filename,String messageType,String status,String username,
                          String extractionStatus,String rawMessage,JsonNode fields,
                          java.time.LocalDateTime createdAt,java.time.LocalDateTime confirmedAt){}
