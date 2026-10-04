@@ -363,12 +363,17 @@ show=async function(id){
     overview.querySelector('.lc-operational-cockpit')?.remove();
     const block=document.createElement('div');block.className='lc-operational-cockpit';
     block.setAttribute('aria-live','polite');block.textContent='Aktenüberblick wird geladen …';overview.prepend(block);
-    const [documents,review,tasks]=await Promise.all([
+    const [documents,review,tasks,timeline]=await Promise.all([
         json(`/api/lcs/${id}/documents`).catch(()=>null),
         json(`/api/lcs/${id}/document-checks`).catch(()=>null),
-        json(`/api/lcs/${id}/tasks`).catch(()=>null)
+        json(`/api/lcs/${id}/tasks`).catch(()=>null),
+        json(`/api/lcs/${id}/timeline`).catch(()=>null)
     ]);
     if(activeLc?.id!==id||!block.isConnected)return;
     block.innerHTML='<h3>LC-Cockpit</h3><div class="grid">'+lcCockpitCards(activeLc,documents,review,tasks).map(([title,value,note,section])=>`<div class="card"><small>${esc(title)}</small><b>${esc(value)}</b><p>${esc(note)}</p><button type="button" class="secondary" data-cockpit-section="${section}">${esc(title)} öffnen</button></div>`).join('')+'</div>';
     block.querySelectorAll('[data-cockpit-section]').forEach(button=>button.onclick=()=>activateDossierSection(button.dataset.cockpitSection));
+    const activity=document.createElement('section');
+    activity.innerHTML='<div class="sectionhead"><h3>Letzte Aktivitäten</h3><button type="button" class="secondary">Gesamten Verlauf öffnen</button></div><div class="timeline-list">'+(timeline==null?'<p>Der Verlauf konnte nicht geladen werden. Bitte die Akte erneut öffnen.</p>':timelineHtml(timeline.slice(0,5)))+'</div>';
+    activity.querySelector('button').onclick=()=>activateDossierSection('history');
+    block.append(activity);
 };
