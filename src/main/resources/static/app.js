@@ -43,7 +43,17 @@ function renderFindingEvidence(result){
     const automatic={OK:'Erfüllt',WARNING:'Hinweis zur Prüfung',DISCREPANCY:'Abweichung'}[result.automaticSeverity]||'Nicht separat verfügbar';
     return `<p><strong>Automatische Bewertung:</strong> ${esc(automatic)}</p><div class="finding-evidence"><section><small>LC-Bedingung / Vergleichsgrundlage</small><p>${esc(result.lcCondition||'Für diesen Befund ist keine konkrete LC-Bedingung hinterlegt.')}</p></section><section><small>Dokumentwert / Textbeleg</small><b>${esc(result.documentName||'Kein einzelnes Dokument zugeordnet')}</b><p>${esc(result.documentEvidence||'Kein Textbeleg gespeichert. Bitte das Originaldokument prüfen.')}</p><small>Keine seitenexakte PDF-Fundstelle hinterlegt.</small></section></div><small class="check-source">Prüfregel: ${esc(result.code)} · Automatisch erzeugter Hinweis; die fachliche Entscheidung wird separat protokolliert.</small>`;
 }
-async function decideCheck(findingCode,documentName,decision){const comment=prompt('Optionaler Prüfvermerk:');if(comment===null)return;await json(`/api/lcs/${activeLc.id}/document-checks/decisions`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({findingCode,documentName,decision,comment})});await show(activeLc.id)}
+async function decideCheck(findingCode,documentName,decision){
+    const lcId=activeLc.id;
+    const comment=prompt(decision==='ACCEPTED'?'Pflichtbegründung: Warum wird dieser Befund als erfüllt bestätigt?':'Optionaler Prüfvermerk zur bestätigten Abweichung:');
+    if(comment===null)return;
+    if(decision==='ACCEPTED'&&!comment.trim()){alert('Bitte eine Begründung eingeben. Die Entscheidung wurde nicht gespeichert.');return;}
+    if(comment.length>1000){alert('Die Begründung darf maximal 1000 Zeichen enthalten.');return;}
+    try{
+        await json(`/api/lcs/${lcId}/document-checks/decisions`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({findingCode,documentName,decision,comment:comment.trim()})});
+        if(activeLc?.id===lcId){await show(lcId);activateDossierSection('checks');}
+    }catch(error){alert('Entscheidung konnte nicht gespeichert werden: '+error.message);}
+}
 function downloadCheckReport(){location.href=`/api/lcs/${activeLc.id}/document-checks/report`}
 document.addEventListener('click',event=>{const decision=event.target.closest('[data-check-decision]');if(decision)decideCheck(decision.dataset.checkCode,decision.dataset.checkDocument,decision.dataset.checkDecision);const deletion=event.target.closest('[data-document-id]');if(deletion)deleteDocument(deletion);const edit=event.target.closest('[data-document-edit]');if(edit)openDocumentEdit(edit)});
 function label(s){return s==='OK'?'Erfüllt':s==='WARNING'?'Hinweis':'Abweichung'}

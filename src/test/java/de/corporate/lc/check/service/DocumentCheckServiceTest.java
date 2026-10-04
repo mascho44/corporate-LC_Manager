@@ -16,6 +16,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 class DocumentCheckServiceTest {
+    @Test void requiresAndStoresAcceptanceReason(){
+        UUID id=UUID.randomUUID();var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);var decisions=mock(DocumentCheckDecisionRepository.class);
+        when(lcs.findById(id)).thenReturn(Optional.of(new LetterOfCredit()));
+        var service=new DocumentCheckService(lcs,docs,decisions);
+        for(String comment:Arrays.asList(null,"","  ")){
+            var request=new de.corporate.lc.check.api.CheckDecisionRequest("TEST","invoice.pdf","ACCEPTED",comment);
+            org.assertj.core.api.Assertions.assertThatThrownBy(()->service.decide(id,request,"checker")).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("begründen");
+        }
+        verify(decisions,never()).save(any());
+        service.decide(id,new de.corporate.lc.check.api.CheckDecisionRequest("TEST","invoice.pdf","ACCEPTED"," Original geprüft "),"checker");
+        verify(decisions).save(argThat(d->"Original geprüft".equals(d.getComment())&&"checker".equals(d.getReviewedBy())&&d.getReviewedAt()!=null));
+    }
+
     @Test void identifiesEffectiveLcVersionIncludingAmendments(){
         UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-VERSION");lc.setCurrency("EUR");lc.setAmount(new BigDecimal("1250"));lc.setExpiryDate(LocalDate.of(2026,12,31));lc.setRequiredDocuments(List.of());
         Amendment amendment=new Amendment();amendment.setAmendmentNumber("2");amendment.setAmendmentDate(LocalDate.of(2026,9,28));
