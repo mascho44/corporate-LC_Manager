@@ -123,12 +123,16 @@ function findingDocumentLink(result,documents){
 }
 let examinationDocumentWindow=null;
 let examinationDocumentLcId=null;
+const workspacePresetStorageKey='corporate-lc-manager.workspace-preset';
+let examinationWorkspaceWindows=[];
 const examinationWorkspaceTabId=globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random()}`;
+const examinationWorkspacePanel=new URLSearchParams(location.search).get('workspace');
 const examinationWorkspaceChannel=typeof BroadcastChannel==='function'?new BroadcastChannel('corporate-lc-manager-examination-v1'):null;
 let receivingSynchronizedLcSelection=false;
 let synchronizedLcSelectionQueue=Promise.resolve();
 examinationWorkspaceChannel?.addEventListener('message',event=>{
     const message=event.data;
+    if(message?.type==='WORKSPACE_READY'&&message.source!==examinationWorkspaceTabId){if(activeLc?.id)examinationWorkspaceChannel?.postMessage({type:'LC_SELECTED',lcId:activeLc.id,source:examinationWorkspaceTabId});return;}
     if(message?.type!=='LC_SELECTED'||message.source===examinationWorkspaceTabId||typeof message.lcId!=='string'||activeLc?.id===message.lcId)return;
     synchronizedLcSelectionQueue=synchronizedLcSelectionQueue.then(async()=>{
         if(activeLc?.id===message.lcId)return;
@@ -410,7 +414,7 @@ function refreshCompanyFilter(){
 }
 const showWithCompanyLabel=show;
 show=async function(id){await showWithCompanyLabel(id);if(activeLc?.id!==id)return;const heading=$('#detail .panelhead p');if(heading){const label=document.createElement('span');label.textContent=' · '+dossierCompanyName(activeLc);heading.append(label);}};
-ensureTrainingUi();setupAppNavigation();setupDocumentBatchUpload();ensureRoleUi();init();
+ensureTrainingUi();setupAppNavigation();setupWorkspacePresets();setupDocumentBatchUpload();ensureRoleUi();init().then(()=>examinationWorkspaceChannel?.postMessage({type:'WORKSPACE_READY',source:examinationWorkspaceTabId}));
 function templateFormData(form){const body=new FormData(form);if(!body.get('companyId'))body.delete('companyId');return body;}
 async function setupTemplateCompanies(){
     const form=$('#templateForm');
@@ -517,4 +521,43 @@ show=async function(id){
     activity.innerHTML='<div class="sectionhead"><h3>Letzte Aktivitäten</h3><button type="button" class="secondary">Gesamten Verlauf öffnen</button></div><div class="timeline-list">'+(timeline==null?'<p>Der Verlauf konnte nicht geladen werden. Bitte die Akte erneut öffnen.</p>':timelineHtml(timeline.slice(0,5)))+'</div>';
     activity.querySelector('button').onclick=()=>activateDossierSection('history');
     block.append(activity);
+    if(examinationWorkspacePanel==='documents'||examinationWorkspacePanel==='checks')activateDossierSection(examinationWorkspacePanel);
 };
+
+function positionExaminationWorkspaceWindows(windows){
+    if(typeof window.getScreenDetails!=='function')return;
+    window.getScreenDetails().then(details=>{
+        const screens=(details.screens||[]).filter(screen=>!screen.isPrimary);
+        windows.forEach((handle,index)=>{const screen=screens[index];if(!screen||handle.closed)return;try{handle.moveTo(screen.availLeft??screen.left,screen.availTop??screen.top);handle.resizeTo(screen.availWidth??screen.width,screen.availHeight??screen.height)}catch(error){/* Browser or OS may disallow programmatic positioning. */}});
+    }).catch(()=>{/* The standard draggable-window fallback remains available. */});
+}
+function setupWorkspacePresets(){
+    const control=document.createElement('div');control.className='workspace-control';control.innerHTML='<small>ARBEITSPLATZ</small><select id="workspacePreset" aria-label="Arbeitsplatz auswählen"><option value="standard">Standard</option><option value="examination">LC-Prüfung</option><option value="professional">Drei Bildschirme</option></select><button type="button" id="applyWorkspacePreset">Arbeitsplatz öffnen</button><small id="workspacePresetHint" aria-live="polite"></small>';
+    $('#appNav').insertBefore(control,$('.app-nav-footer'));
+    const select=$('#workspacePreset'),hint=$('#workspacePresetHint'),lcButton=document.querySelector('[data-app-section="lcs"]'),cockpitButton=document.querySelector('[data-app-section="cockpit"]'),childWindow=examinationWorkspacePanel==='documents'||examinationWorkspacePanel==='checks';
+    if(childWindow){control.classList.add('hidden');select.value='professional';lcButton.click();return;}
+    let saved='standard';try{const candidate=localStorage.getItem(workspacePresetStorageKey);if(['standard','examination','professional'].includes(candidate))saved=candidate}catch(error){}
+    select.value=saved;
+    if(saved==='standard')cockpitButton.click();else lcButton.click();
+    if(saved==='professional')hint.textContent='Gespeichert. Erneut öffnen, um Zusatzfenster zu starten.';
+    $('#applyWorkspacePreset').onclick=()=>{
+        const preset=select.value;try{localStorage.setItem(workspacePresetStorageKey,preset)}catch(error){}
+        if(preset==='standard'){cockpitButton.click();hint.textContent='Standardansicht geöffnet.';return;}
+        lcButton.click();
+        if(preset==='examination'){hint.textContent='LC-Aktenansicht geöffnet. Dokumente lassen sich separat öffnen.';if(activeLc)show(activeLc.id);return;}
+        const openWorkspace=(panel,name)=>{
+            const existing=examinationWorkspaceWindows.find(item=>item.panel===panel&&!item.handle.closed);
+            if(existing){existing.handle.focus();return existing.handle;}
+            const url=new URL('/',location.href);url.searchParams.set('workspace',panel);
+            const handle=window.open(url.toString(),name,'popup,width=1100,height=850,resizable=yes,scrollbars=yes');
+            if(handle){try{handle.opener=null}catch(error){}examinationWorkspaceWindows.push({panel,handle});}
+            return handle;
+        };
+        const documents=openWorkspace('documents','clm-examination-documents');
+        const checks=openWorkspace('checks','clm-examination-checks');
+        if(!documents||!checks){hint.textContent='Ein Zusatzfenster wurde blockiert. Bitte Pop-ups erlauben; geöffnete Fenster können Sie manuell auf weitere Bildschirme ziehen.';return;}
+        hint.textContent='Prüfung, Dokumente und Befunde geöffnet. Fenster bei Bedarf auf die Bildschirme ziehen.';
+        positionExaminationWorkspaceWindows([documents,checks]);
+        if(activeLc)show(activeLc.id);
+    };
+}
