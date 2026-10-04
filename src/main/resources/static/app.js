@@ -123,6 +123,20 @@ function findingDocumentLink(result,documents){
 }
 let examinationDocumentWindow=null;
 let examinationDocumentLcId=null;
+const examinationWorkspaceTabId=globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random()}`;
+const examinationWorkspaceChannel=typeof BroadcastChannel==='function'?new BroadcastChannel('corporate-lc-manager-examination-v1'):null;
+let receivingSynchronizedLcSelection=false;
+let synchronizedLcSelectionQueue=Promise.resolve();
+examinationWorkspaceChannel?.addEventListener('message',event=>{
+    const message=event.data;
+    if(message?.type!=='LC_SELECTED'||message.source===examinationWorkspaceTabId||typeof message.lcId!=='string'||activeLc?.id===message.lcId)return;
+    synchronizedLcSelectionQueue=synchronizedLcSelectionQueue.then(async()=>{
+        if(activeLc?.id===message.lcId)return;
+        receivingSynchronizedLcSelection=true;
+        try{await show(message.lcId)}finally{receivingSynchronizedLcSelection=false}
+    }).catch(()=>{receivingSynchronizedLcSelection=false});
+});
+window.addEventListener('pagehide',()=>examinationWorkspaceChannel?.close(),{once:true});
 function closeExaminationDocumentWindow(){
     try{if(examinationDocumentWindow&&!examinationDocumentWindow.closed)examinationDocumentWindow.close();}
     catch(error){/* A manually navigated or closed window must not block the main application. */}
@@ -484,6 +498,7 @@ show=async function(id){
     synchronizeExaminationLc(id);
     await showWithOperationalCockpit(id);
     if(activeLc?.id!==id)return;
+    if(!receivingSynchronizedLcSelection)examinationWorkspaceChannel?.postMessage({type:'LC_SELECTED',lcId:id,source:examinationWorkspaceTabId});
     const overview=$('#detail .dossier-section[data-section="overview"]');
     if(!overview)return;
     overview.querySelector('.lc-operational-cockpit')?.remove();
