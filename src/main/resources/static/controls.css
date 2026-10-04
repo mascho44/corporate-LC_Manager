@@ -1,0 +1,5 @@
+/* Shared height for single-line dropdowns and action buttons across all pages. */
+:root{--control-height:44px}
+body select:not([multiple]):not([size]),body select:not([multiple])[size="1"]{height:var(--control-height);min-height:var(--control-height);box-sizing:border-box;padding-top:6px;padding-bottom:6px}
+body button:not(.ghost){min-height:var(--control-height);box-sizing:border-box}
+body .button-link{min-height:var(--control-height);box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center}
