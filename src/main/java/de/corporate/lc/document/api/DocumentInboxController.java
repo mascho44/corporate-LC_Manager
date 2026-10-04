@@ -1,0 +1,79 @@
+package de.corporate.lc.document.api;
+
+import de.corporate.lc.audit.service.AuditService;
+import de.corporate.lc.document.domain.DocumentInboxItem;
+import de.corporate.lc.document.service.DocumentInboxService;
+import jakarta.validation.Valid;
+import org.springframework.http.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/inbox")
+public class DocumentInboxController {
+    private final DocumentInboxService service;
+    private final AuditService audit;
+
+    public DocumentInboxController(DocumentInboxService service, AuditService audit) {
+        this.service = service;
+        this.audit = audit;
+    }
+
+    @GetMapping
+    public List<DocumentInboxItemView> list() {
+        return service.openItems();
+    }
+
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public List<DocumentInboxItemView> upload(@RequestPart("file") List<MultipartFile> files,
+                                              Authentication authentication) throws IOException {
+        List<DocumentInboxItemView> received = service.receive(files, authentication.getName());
+        received.forEach(item -> audit.record(authentication, "DOCUMENT_INBOX_UPLOADED", "DOCUMENT_INBOX", item.id(),
+                item.originalFilename() + " · " + item.fileSize() + " Bytes · " + item.extractionStatus()));
+        return received;
+    }
+
+    @GetMapping("/{id}/content")
+    public ResponseEntity<byte[]> content(@PathVariable UUID id) {
+        DocumentInboxItem item = service.openItem(id);
+        MediaType type = switch (item.getContentType()) {
+            case "application/pdf" -> MediaType.APPLICATION_PDF;
+            case "image/png" -> MediaType.IMAGE_PNG;
+            case "image/jpeg" -> MediaType.IMAGE_JPEG;
+            case "text/plain" -> MediaType.TEXT_PLAIN;
+            case "application/xml" -> MediaType.APPLICATION_XML;
+            default -> MediaType.APPLICATION_OCTET_STREAM;
+        };
+        boolean inline = MediaType.APPLICATION_PDF.equals(type) || MediaType.IMAGE_PNG.equals(type) || MediaType.IMAGE_JPEG.equals(type);
+        return ResponseEntity.ok().contentType(type)
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.builder(inline ? "inline" : "attachment")
+                                .filename(item.getOriginalFilename(), java.nio.charset.StandardCharsets.UTF_8).build().toString())
+                .header("X-Content-Type-Options", "nosniff")
+                .body(item.getContent());
+    }
+
+    @PostMapping("/{id}/attach")
+    public DocumentInboxAttachResult attach(@PathVariable UUID id,
+                                             @Valid @RequestBody DocumentInboxAttachRequest request,
+                                             Authentication authentication) {
+        DocumentInboxAttachResult result = service.attach(id, request);
+        audit.record(authentication, "DOCUMENT_INBOX_ATTACHED", "LETTER_OF_CREDIT",
+                request.lcId(), result.document().originalFilename() + " · " + request.documentType()
+                        + " · Posteingang " + id + " · Dokument " + result.document().id());
+        return result;
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable UUID id, Authentication authentication) {
+        DocumentInboxItem item = service.delete(id);
+        audit.record(authentication, "DOCUMENT_INBOX_DELETED", "DOCUMENT_INBOX", id,
+                item.getOriginalFilename());
+    }
+}
