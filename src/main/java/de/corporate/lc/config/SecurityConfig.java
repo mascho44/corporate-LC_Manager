@@ -7,6 +7,7 @@ import de.corporate.lc.user.service.AppUserDetailsService; import jakarta.servle
   .authorizeHttpRequests(a->a
    .requestMatchers("/login.html","/login.js","/styles.css","/api/auth/login","/api/auth/login/totp","/api/health","/actuator/health","/actuator/health/liveness","/actuator/health/readiness").permitAll()
    .requestMatchers("/actuator/**").hasRole("ADMIN")
+   .requestMatchers("/api/admin/outbox/**").hasRole("ADMIN")
    .requestMatchers("/api/audit/**").hasAuthority("PERM_AUDIT_VIEW")
    .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/companies/choices").authenticated()
    .requestMatchers("/api/companies/**").hasAuthority("PERM_SETTINGS_MANAGE")

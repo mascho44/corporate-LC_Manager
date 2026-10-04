@@ -47,6 +47,7 @@ management:
 app:
   messaging:
     outbox-interval-ms: ${OUTBOX_INTERVAL_MS:5000}
+    max-attempts: ${OUTBOX_MAX_ATTEMPTS:8}
   mail:
     enabled: ${SMTP_ENABLED:false}
     from: ${SMTP_FROM:}
