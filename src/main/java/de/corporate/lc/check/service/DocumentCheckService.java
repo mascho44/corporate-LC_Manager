@@ -53,9 +53,9 @@ public class DocumentCheckService {
                 results.add(new CheckResult(WARNING, "EXTRACTION_FAILED", document.getOriginalFilename() + ": text extraction failed."));
 
             if (document.getDocumentDate() == null) {
-                results.add(new CheckResult(WARNING, "DATE_NOT_CAPTURED", document.getOriginalFilename() + ": document date not captured."));
+                results.add(finding(WARNING, "DATE_NOT_CAPTURED", "Dokumentdatum wurde nicht erfasst.", "Dokumentdatum zur Fristenprüfung erforderlich", document.getOriginalFilename(), "Kein Dokumentdatum in den erfassten Metadaten"));
             } else if (lc.getExpiryDate() != null && document.getDocumentDate().isAfter(lc.getExpiryDate())) {
-                results.add(new CheckResult(DISCREPANCY, "DOCUMENT_AFTER_EXPIRY", document.getOriginalFilename() + ": date is after LC expiry."));
+                results.add(finding(DISCREPANCY, "DOCUMENT_AFTER_EXPIRY", "Erfasstes Dokumentdatum liegt nach dem LC-Ablaufdatum.", "LC-Ablaufdatum :31D: "+lc.getExpiryDate(), document.getOriginalFilename(), "Erfasstes Dokumentdatum (Metadaten): "+document.getDocumentDate()));
             }
             if (document.getDocumentType() == DocumentType.COMMERCIAL_INVOICE && document.getAmount() != null) {
                 if (document.getExtractedAmount() != null && document.getAmount().compareTo(document.getExtractedAmount()) != 0)
