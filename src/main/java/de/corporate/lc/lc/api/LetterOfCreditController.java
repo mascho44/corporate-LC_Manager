@@ -3,6 +3,7 @@ package de.corporate.lc.lc.api;
 import de.corporate.lc.audit.service.AuditService;
 import de.corporate.lc.lc.domain.LetterOfCredit;
 import de.corporate.lc.lc.service.LetterOfCreditService;
+import de.corporate.lc.lc.service.LcDeadlineService;
 import de.corporate.lc.check.service.DocumentCheckService;
 import de.corporate.lc.document.repository.LcDocumentRepository;
 import jakarta.validation.Valid;
@@ -21,12 +22,14 @@ public class LetterOfCreditController {
     private final AuditService audit;
     private final DocumentCheckService checks;
     private final LcDocumentRepository documents;
+    private final LcDeadlineService deadlines;
 
-    public LetterOfCreditController(LetterOfCreditService service, AuditService audit,DocumentCheckService checks,LcDocumentRepository documents) {
+    public LetterOfCreditController(LetterOfCreditService service, AuditService audit,DocumentCheckService checks,LcDocumentRepository documents,LcDeadlineService deadlines) {
         this.service = service;
         this.audit = audit;
         this.checks = checks;
         this.documents=documents;
+        this.deadlines=deadlines;
     }
 
     @PostMapping(value = "/import/mt700", consumes = MediaType.TEXT_PLAIN_VALUE)
@@ -47,6 +50,11 @@ public class LetterOfCreditController {
     @GetMapping("/{id}")
     public LetterOfCredit one(@PathVariable UUID id) {
         return service.one(id);
+    }
+
+    @GetMapping("/{id}/deadlines")
+    public List<LcDeadlineService.LcDeadlineView> deadlines(@PathVariable UUID id) {
+        return deadlines.forLc(id);
     }
 
     @PutMapping("/{id}")

@@ -490,14 +490,14 @@ function setupTrainingPreviewSizes(){
     });
 }
 
-function lcCockpitCards(lc,documents,review,tasks){
+function lcCockpitCards(lc,documents,review,tasks,deadlines){
     return [
         ['Beteiligte',lc.beneficiary||'Nicht erfasst','Begünstigter · Antragsteller: '+(lc.applicant||'Nicht erfasst'),'admin'],
         ['Betrag',money(lc.amount,lc.currency),statusLabel(lc.status||'RECEIVED'),'admin'],
         ['Dokumentenakte',documents==null?'Nicht verfügbar':documents.length+' Dokumente','Dokumente und Anlagen öffnen','documents'],
         ['Automatische Vorprüfung',review==null?'Nicht verfügbar':review.discrepancies+' Abweichungen · '+review.warnings+' Hinweise','Fachliche Endprüfung bleibt erforderlich','checks'],
         ['Aufgaben',tasks==null?'Nicht verfügbar':tasks.filter(task=>!task.completed).length+' offen','Bearbeiter: '+(lc.assignedTo||'Nicht zugewiesen'),'tasks'],
-        ['Fristen','Ablauf: '+fmtDate(lc.expiryDate),'Spätester Versand: '+fmtDate(lc.latestShipmentDate)+' · Wiedervorlage: '+fmtDate(lc.followUpDate),'history']
+        ['Fristen',deadlines==null?'Nicht verfügbar':deadlines.length+' berechnete Termine','Ablauf, Versand, Vorlagefrist und gegebenenfalls Fälligkeit','deadlines']
     ];
 }
 const showWithOperationalCockpit=show;
@@ -511,19 +511,23 @@ show=async function(id){
     overview.querySelector('.lc-operational-cockpit')?.remove();
     const block=document.createElement('div');block.className='lc-operational-cockpit';
     block.setAttribute('aria-live','polite');block.textContent='Aktenüberblick wird geladen …';overview.prepend(block);
-    const [documents,review,tasks,timeline]=await Promise.all([
+    const [documents,review,tasks,timeline,deadlines]=await Promise.all([
         json(`/api/lcs/${id}/documents`).catch(()=>null),
         json(`/api/lcs/${id}/document-checks`).catch(()=>null),
         json(`/api/lcs/${id}/tasks`).catch(()=>null),
-        json(`/api/lcs/${id}/timeline`).catch(()=>null)
+        json(`/api/lcs/${id}/timeline`).catch(()=>null),
+        json(`/api/lcs/${id}/deadlines`).catch(()=>null)
     ]);
     if(activeLc?.id!==id||!block.isConnected)return;
-    block.innerHTML='<h3>LC-Cockpit</h3><div class="grid">'+lcCockpitCards(activeLc,documents,review,tasks).map(([title,value,note,section])=>`<div class="card"><small>${esc(title)}</small><b>${esc(value)}</b><p>${esc(note)}</p><button type="button" class="secondary" data-cockpit-section="${section}">${esc(title)} öffnen</button></div>`).join('')+'</div>';
+    block.innerHTML='<h3>LC-Cockpit</h3><div class="grid">'+lcCockpitCards(activeLc,documents,review,tasks,deadlines).map(([title,value,note,section])=>`<div class="card"><small>${esc(title)}</small><b>${esc(value)}</b><p>${esc(note)}</p><button type="button" class="secondary" data-cockpit-section="${section}">${esc(title)} öffnen</button></div>`).join('')+'</div>';
     block.querySelectorAll('[data-cockpit-section]').forEach(button=>button.onclick=()=>activateDossierSection(button.dataset.cockpitSection));
     const activity=document.createElement('section');
     activity.innerHTML='<div class="sectionhead"><h3>Letzte Aktivitäten</h3><button type="button" class="secondary">Gesamten Verlauf öffnen</button></div><div class="timeline-list">'+(timeline==null?'<p>Der Verlauf konnte nicht geladen werden. Bitte die Akte erneut öffnen.</p>':timelineHtml(timeline.slice(0,5)))+'</div>';
     activity.querySelector('button').onclick=()=>activateDossierSection('history');
     block.append(activity);
+    const deadlineSection=document.createElement('section');deadlineSection.className='dossier-section';deadlineSection.dataset.section='deadlines';
+    deadlineSection.innerHTML='<div class="sectionhead"><div><h3>Fristenmonitor</h3><p>Automatisch abgeleitete Termine; markierte Fälligkeitsschätzungen bitte fachlich prüfen.</p></div></div>'+(deadlines==null?'<p>Fristen konnten nicht geladen werden.</p>':deadlines.length?'<div class="grid">'+deadlines.map(item=>`<div class="card"><small>${esc(item.title)}</small><b>${esc(fmtDate(item.date))}${item.confirmedBasis?'':' · Schätzung'}</b><p>${esc(item.source)}<br>${esc(item.note)}</p></div>`).join('')+'</div>':'<p>Aus den erfassten LC-Daten und Dokumenten wurden keine weiteren Termine abgeleitet.</p>');
+    const dossierContent=$('#detail .dossier-content'),dossierNav=$('#detail .dossier-nav');dossierContent.append(deadlineSection);const deadlineNav=document.createElement('button');deadlineNav.type='button';deadlineNav.dataset.section='deadlines';deadlineNav.textContent='Fristen';deadlineNav.onclick=()=>activateDossierSection('deadlines');dossierNav.append(deadlineNav);
     if(examinationWorkspacePanel==='documents'||examinationWorkspacePanel==='checks')activateDossierSection(examinationWorkspacePanel);
 };
 

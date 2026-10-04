@@ -12,9 +12,10 @@ import java.util.*;
 public class LcCalendarService {
     private final LetterOfCreditRepository lettersOfCredit;
     private final LcTaskRepository tasks;
+    private final LcDeadlineService deadlines;
 
-    public LcCalendarService(LetterOfCreditRepository lettersOfCredit, LcTaskRepository tasks) {
-        this.lettersOfCredit = lettersOfCredit; this.tasks = tasks;
+    public LcCalendarService(LetterOfCreditRepository lettersOfCredit, LcTaskRepository tasks, LcDeadlineService deadlines) {
+        this.lettersOfCredit = lettersOfCredit; this.tasks = tasks; this.deadlines = deadlines;
     }
 
     public byte[] export(String scope, String username) {
@@ -23,6 +24,8 @@ public class LcCalendarService {
             event(out, lc.getId()+"-expiry", lc.getExpiryDate(), "LC "+lc.getReference()+" – Ablauf", party(lc));
             event(out, lc.getId()+"-shipment", lc.getLatestShipmentDate(), "LC "+lc.getReference()+" – spätester Versand", party(lc));
             event(out, lc.getId()+"-follow-up", lc.getFollowUpDate(), "LC "+lc.getReference()+" – Wiedervorlage", party(lc));
+            deadlines.forLc(lc.getId()).stream().filter(item -> item.type().equals("PRESENTATION") || item.type().equals("MATURITY_ESTIMATE"))
+                    .forEach(item -> event(out, lc.getId()+"-"+item.type()+"-"+item.title().hashCode(), item.date(), "LC "+lc.getReference()+" – "+item.title(), party(lc)+" | "+item.note()));
         });
         tasks.findByCompletedFalseOrderByDueDateAscCreatedAtAsc().stream().filter(task -> visible(scope, username, task.getAssignedTo())).forEach(task ->
                 event(out, task.getId()+"-task", task.getDueDate(), "LC-Aufgabe – "+task.getTitle(), "Zugewiesen an: "+Objects.toString(task.getAssignedTo(), "nicht zugewiesen")));
