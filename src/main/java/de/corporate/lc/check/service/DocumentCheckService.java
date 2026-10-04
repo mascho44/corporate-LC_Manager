@@ -156,7 +156,7 @@ public class DocumentCheckService {
         if (results.isEmpty()) results.add(new CheckResult(WARNING, "NO_RULES_APPLIED", "No automated rule could be applied."));
 
         Map<String,DocumentCheckDecision> reviewed=new HashMap<>();decisions.findByLcId(lcId).forEach(d->reviewed.put(decisionKey(d.getFindingCode(),d.getDocumentName()),d));
-        List<CheckResult> reviewedResults=results.stream().map(result->{var d=reviewed.get(decisionKey(result.code(),result.documentName()));if(d==null)return result;CheckResult.Severity effective="ACCEPTED".equals(d.getDecision())?OK:DISCREPANCY;return new CheckResult(effective,result.code(),result.message(),result.lcCondition(),result.documentName(),result.documentEvidence(),d.getDecision(),d.getComment(),d.getReviewedBy(),d.getReviewedAt());}).toList();
+List<CheckResult> reviewedResults=results.stream().map(result->{var d=reviewed.get(decisionKey(result.code(),result.documentName()));if(d==null)return result;CheckResult.Severity effective="ACCEPTED".equals(d.getDecision())?OK:DISCREPANCY;return new CheckResult(effective,result.code(),result.message(),result.lcCondition(),result.documentName(),result.documentEvidence(),d.getDecision(),d.getComment(),d.getReviewedBy(),d.getReviewedAt(),result.automaticSeverity());}).toList();
         long discrepancies=count(reviewedResults,DISCREPANCY),warnings=count(reviewedResults,WARNING);String status=discrepancies>0?"RED":warnings>0?"YELLOW":"GREEN";
         return new ReviewSummary(status,discrepancies,warnings,count(reviewedResults,OK),reviewedResults);
     }

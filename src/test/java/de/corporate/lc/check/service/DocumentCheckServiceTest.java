@@ -79,6 +79,7 @@ class DocumentCheckServiceTest {
         var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);var decisions=mock(DocumentCheckDecisionRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(invoice));DocumentCheckDecision decision=new DocumentCheckDecision();decision.setFindingCode("DOCUMENT_COPIES_MANUAL_REVIEW");decision.setDocumentName("invoice.pdf");decision.setDecision("ACCEPTED");decision.setReviewedBy("checker");when(decisions.findByLcId(id)).thenReturn(List.of(decision));
         var result=new DocumentCheckService(lcs,docs,decisions).check(id);
         assertThat(result.results()).filteredOn(item->item.code().equals("DOCUMENT_COPIES_MANUAL_REVIEW")).allMatch(item->item.severity()==de.corporate.lc.check.api.CheckResult.Severity.OK&&"ACCEPTED".equals(item.reviewDecision()));
+        assertThat(result.results()).filteredOn(item->item.code().equals("DOCUMENT_COPIES_MANUAL_REVIEW")).isNotEmpty().allMatch(item->item.automaticSeverity()==de.corporate.lc.check.api.CheckResult.Severity.WARNING);
     }
 
     @Test void exposesEffectiveAdditionalConditionsForManualReview() {
