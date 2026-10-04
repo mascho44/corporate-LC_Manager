@@ -343,3 +343,32 @@ function setupTrainingPreviewSizes(){
         setExpanded(expanded);
     });
 }
+
+function lcCockpitCards(lc,documents,review,tasks){
+    return [
+        ['Beteiligte',lc.beneficiary||'Nicht erfasst','Begünstigter · Antragsteller: '+(lc.applicant||'Nicht erfasst'),'admin'],
+        ['Betrag',money(lc.amount,lc.currency),statusLabel(lc.status||'RECEIVED'),'admin'],
+        ['Dokumentenakte',documents==null?'Nicht verfügbar':documents.length+' Dokumente','Dokumente und Anlagen öffnen','documents'],
+        ['Automatische Vorprüfung',review==null?'Nicht verfügbar':review.discrepancies+' Abweichungen · '+review.warnings+' Hinweise','Fachliche Endprüfung bleibt erforderlich','checks'],
+        ['Aufgaben',tasks==null?'Nicht verfügbar':tasks.filter(task=>!task.completed).length+' offen','Bearbeiter: '+(lc.assignedTo||'Nicht zugewiesen'),'tasks'],
+        ['Fristen','Ablauf: '+fmtDate(lc.expiryDate),'Spätester Versand: '+fmtDate(lc.latestShipmentDate)+' · Wiedervorlage: '+fmtDate(lc.followUpDate),'history']
+    ];
+}
+const showWithOperationalCockpit=show;
+show=async function(id){
+    await showWithOperationalCockpit(id);
+    if(activeLc?.id!==id)return;
+    const overview=$('#detail .dossier-section[data-section="overview"]');
+    if(!overview)return;
+    overview.querySelector('.lc-operational-cockpit')?.remove();
+    const block=document.createElement('div');block.className='lc-operational-cockpit';
+    block.setAttribute('aria-live','polite');block.textContent='Aktenüberblick wird geladen …';overview.prepend(block);
+    const [documents,review,tasks]=await Promise.all([
+        json(`/api/lcs/${id}/documents`).catch(()=>null),
+        json(`/api/lcs/${id}/document-checks`).catch(()=>null),
+        json(`/api/lcs/${id}/tasks`).catch(()=>null)
+    ]);
+    if(activeLc?.id!==id||!block.isConnected)return;
+    block.innerHTML='<h3>LC-Cockpit</h3><div class="grid">'+lcCockpitCards(activeLc,documents,review,tasks).map(([title,value,note,section])=>`<div class="card"><small>${esc(title)}</small><b>${esc(value)}</b><p>${esc(note)}</p><button type="button" class="secondary" data-cockpit-section="${section}">${esc(title)} öffnen</button></div>`).join('')+'</div>';
+    block.querySelectorAll('[data-cockpit-section]').forEach(button=>button.onclick=()=>activateDossierSection(button.dataset.cockpitSection));
+};
