@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
+umask 077
 
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 COMPOSE_FILE="$APP_DIR/docker-compose.prod.yml"
@@ -14,13 +15,22 @@ if [[ ! -f "$ENV_FILE" ]]; then
 fi
 
 mkdir -p "$BACKUP_DIR"
+PARTIAL_FILE="$(mktemp "$BACKUP_DIR/.lcmanager-$TIMESTAMP.XXXXXX")"
+trap 'rm -f -- "$PARTIAL_FILE"' EXIT
 
 docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" exec -T postgres \
-  pg_dump -U lcmanager -d lcmanager --format=custom > "$BACKUP_FILE"
+  pg_dump -U lcmanager -d lcmanager --format=custom > "$PARTIAL_FILE"
 
-if [[ ! -s "$BACKUP_FILE" ]]; then
-  rm -f "$BACKUP_FILE"
+if [[ ! -s "$PARTIAL_FILE" ]]; then
   echo "Fehler: Die Datenbanksicherung ist leer." >&2
+  exit 1
+fi
+
+docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" exec -T postgres \
+  pg_restore --list < "$PARTIAL_FILE" > /dev/null
+mv -n -- "$PARTIAL_FILE" "$BACKUP_FILE"
+if [[ -f "$PARTIAL_FILE" ]]; then
+  echo "Fehler: Sicherung mit gleichem Zeitstempel vorhanden." >&2
   exit 1
 fi
 

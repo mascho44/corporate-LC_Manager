@@ -6,6 +6,16 @@ services:
       context: .
     image: corporate-lc-manager:0.5.0
     restart: unless-stopped
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    mem_limit: 2g
+    cpus: 2
+    pids_limit: 256
+    tmpfs:
+      - /tmp:size=512m,mode=1777
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/lcmanager
       DB_USER: lcmanager
@@ -14,6 +24,11 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD muss gesetzt sein}
       ADMIN_RESET_PASSWORD: ${ADMIN_RESET_PASSWORD:-false}
       SESSION_COOKIE_SECURE: "true"
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=60"
+      OMP_THREAD_LIMIT: "1"
+      UPLOAD_ANTIVIRUS_ENABLED: ${UPLOAD_ANTIVIRUS_ENABLED:-false}
+      UPLOAD_ANTIVIRUS_HOST: ${UPLOAD_ANTIVIRUS_HOST:-clamav}
+      UPLOAD_ANTIVIRUS_PORT: ${UPLOAD_ANTIVIRUS_PORT:-3310}
       TOTP_ENCRYPTION_KEY: ${TOTP_ENCRYPTION_KEY:?TOTP_ENCRYPTION_KEY muss gesetzt sein}
       SMTP_ENABLED: ${SMTP_ENABLED:-false}
       SMTP_HOST: ${SMTP_HOST:-localhost}

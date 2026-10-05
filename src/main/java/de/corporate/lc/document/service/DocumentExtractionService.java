@@ -29,7 +29,7 @@ public class DocumentExtractionService {
 
     public void extract(LcDocument document) {
         document.setOcrEvidenceJson(null);
-        try {
+        try (var slot=PdfProcessingSafety.acquire()) {
             String text = readText(document);
             if (text == null) {
                 document.setExtractionStatus("UNSUPPORTED");
@@ -69,6 +69,7 @@ public class DocumentExtractionService {
         String name = document.getOriginalFilename().toLowerCase(Locale.ROOT);
         if (isPdf(document)) {
             try (var pdf = Loader.loadPDF(document.getContent())) {
+                PdfProcessingSafety.validate(pdf);
                 return new PDFTextStripper().getText(pdf);
             }
         }
@@ -82,11 +83,10 @@ public class DocumentExtractionService {
         try {
             Path input = directory.resolve("input.pdf");
             Files.write(input, document.getContent(), StandardOpenOption.CREATE_NEW);
-            Process render = new ProcessBuilder("pdftoppm", "-png", "-r", "200", "-f", "1", "-l",
+            ProcessBuilder render = new ProcessBuilder("pdftoppm", "-png", "-r", "200", "-f", "1", "-l",
                     String.valueOf(MAX_OCR_PAGES), input.toString(), directory.resolve("page").toString())
-                    .redirectErrorStream(true).start();
-            if (!render.waitFor(60, TimeUnit.SECONDS)) { render.destroyForcibly(); throw new IOException("PDF rendering timed out"); }
-            if (render.exitValue() != 0) throw new IOException("PDF rendering failed");
+                    .redirectErrorStream(true);
+            BoundedProcess.run(render,60);
             List<Path> pages;
             try (var files = Files.list(directory)) {
                 pages = files.filter(p -> p.getFileName().toString().startsWith("page-") && p.toString().endsWith(".png"))
@@ -97,20 +97,16 @@ public class DocumentExtractionService {
             String engineVersion=tesseractVersion(directory);
             for (int index = 0; index < pages.size() && result.length() < MAX_TEXT_LENGTH; index++) {
                 Path output = directory.resolve("ocr-" + index);
-                Process ocr;
-                try {
-                    ocr = new ProcessBuilder("tesseract", pages.get(index).toString(), output.toString(), "-l", "deu+eng", "txt", "tsv")
-                            .redirectOutput(directory.resolve("ocr-process.log").toFile())
-                            .redirectErrorStream(true).start();
-                } catch (IOException exception) {
-                    throw new OcrUnavailableException();
-                }
-                if (!ocr.waitFor(30, TimeUnit.SECONDS)) { ocr.destroyForcibly(); throw new IOException("OCR timed out"); }
-                if (ocr.exitValue() != 0) throw new IOException("OCR failed");
+                ProcessBuilder ocr;
+                ocr = new ProcessBuilder("tesseract", pages.get(index).toString(), output.toString(), "-l", "deu+eng", "txt", "tsv")
+                    .redirectOutput(ProcessBuilder.Redirect.DISCARD).redirectErrorStream(true);
+                try { BoundedProcess.run(ocr,30); } catch(IOException unavailable) { throw new OcrUnavailableException(); }
                 Path textFile = Path.of(output + ".txt");
+                if(Files.exists(textFile)&&Files.size(textFile)>10*1024*1024)throw new IOException("OCR-Ausgabe zu groß");
                 if (Files.exists(textFile)) result.append(Files.readString(textFile, StandardCharsets.UTF_8)).append('\n');
                 Path tsvFile=Path.of(output+".tsv");
                 int page=Integer.parseInt(pages.get(index).getFileName().toString().replaceAll("[^0-9]",""));
+                if(Files.exists(tsvFile)&&Files.size(tsvFile)>10*1024*1024)throw new IOException("OCR-Ausgabe zu groß");
                 if(Files.exists(tsvFile))words.addAll(OcrEvidence.parseTsv(Files.readString(tsvFile,StandardCharsets.UTF_8),page));
             }
             if(!Double.isFinite(ocrThreshold)||ocrThreshold<0||ocrThreshold>1)throw new IllegalArgumentException("Ungültige OCR-Konfidenzschwelle");
@@ -126,7 +122,7 @@ public class DocumentExtractionService {
     public static OcrEvidence readEvidence(String json){if(json==null)return null;try{return new com.fasterxml.jackson.databind.ObjectMapper().readValue(json,OcrEvidence.class);}catch(Exception e){return null;}}
 
     private String tesseractVersion(Path directory){
-        try{Path file=directory.resolve("version.txt");Process process=new ProcessBuilder("tesseract","--version").redirectErrorStream(true).redirectOutput(file.toFile()).start();if(!process.waitFor(5,TimeUnit.SECONDS)){process.destroyForcibly();return "unknown";}return Files.readAllLines(file).stream().findFirst().orElse("unknown");}catch(Exception e){return "unknown";}
+        try{Path file=directory.resolve("version.txt");BoundedProcess.run(new ProcessBuilder("tesseract","--version").redirectErrorStream(true).redirectOutput(file.toFile()),5);return Files.readAllLines(file).stream().findFirst().orElse("unknown");}catch(Exception e){return "unknown";}
     }
 
     private boolean isPdf(LcDocument document) {

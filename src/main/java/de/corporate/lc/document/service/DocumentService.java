@@ -60,23 +60,13 @@ public class DocumentService {
 
     @Transactional
     public List<DocumentView> uploadArchive(UUID lcId,MultipartFile archive)throws IOException{
-        if(archive==null||archive.isEmpty())throw new IllegalArgumentException("Bitte ein nicht leeres ZIP-Archiv auswählen.");
-        if(archive.getSize()>50L*1024*1024)throw new IllegalArgumentException("ZIP-Archiv überschreitet 50 MB.");
+        var files=InboxUploadReader.read(List.of(archive));
         var lc=lcs.findById(lcId).orElseThrow(()->new NoSuchElementException("LC not found: "+lcId));
-        List<DocumentView> imported=new ArrayList<>();long total=0;int entries=0;
-        try(ZipInputStream zip=new ZipInputStream(new ByteArrayInputStream(archive.getBytes()))){
-            for(var entry=zip.getNextEntry();entry!=null;entry=zip.getNextEntry()){
-                if(entry.isDirectory()||entry.getName().startsWith("__MACOSX/")||entry.getName().endsWith(".DS_Store"))continue;
-                if(++entries>100)throw new IllegalArgumentException("ZIP-Archiv enthält mehr als 100 Dateien.");
-                byte[] content=zip.readNBytes((int)MAX_FILE_SIZE+1);
-                if(content.length>MAX_FILE_SIZE)throw new IllegalArgumentException("Datei im ZIP überschreitet 10 MB: "+entry.getName());
-                total+=content.length;if(total>50L*1024*1024)throw new IllegalArgumentException("Entpackter ZIP-Inhalt überschreitet 50 MB.");
-                String filename=entry.getName().replace('\\','/');filename=filename.substring(filename.lastIndexOf('/')+1);
-                if(filename.isBlank())continue;
-                imported.add(save(lc,filename,content,contentType(filename),type(filename),null,null,null));
-            }
-        }catch(java.util.zip.ZipException exception){throw new IllegalArgumentException("ZIP-Archiv ist beschädigt oder ungültig.",exception);}
-        if(imported.isEmpty())throw new IllegalArgumentException("ZIP-Archiv enthält keine importierbaren Dateien.");
+        List<DocumentView> imported=new ArrayList<>();
+        for(var file:files){
+            String filename=file.filename();filename=filename.substring(filename.lastIndexOf('/')+1);
+            imported.add(save(lc,filename,file.content(),contentType(filename),type(filename),null,null,null));
+        }
         return imported;
     }
 

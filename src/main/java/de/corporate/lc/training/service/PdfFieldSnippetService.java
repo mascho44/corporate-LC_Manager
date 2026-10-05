@@ -40,12 +40,12 @@ public class PdfFieldSnippetService {
         if(advice){try{codes=new ArrayList<>();for(var field:new com.fasterxml.jackson.databind.ObjectMapper().readTree(session.getReviewsJson())){String label=field.path("sourceLabel").asText();codes.add(label.startsWith("Empfänger (Briefkopf")?field.path("originalValue").asText().split("\\R")[0]:label);}}catch(Exception e){return List.of(placeholder("Trainingsfelder nicht lesbar"));}}
         if(codes.isEmpty())return List.of(placeholder("Keine SWIFT-Felder erkannt"));
         Path directory=null;
-        try{
+        try(var slot=de.corporate.lc.document.service.PdfProcessingSafety.acquire()){
             List<PageData> pageData=digitalPages(session.getOriginalPdf());
             if(!pageData.isEmpty())return advice?cropAdvice(codes,pageData):cropFields(codes,pageData);
             directory=Files.createTempDirectory("lc-snippets-"); Path pdf=directory.resolve("source.pdf");Files.write(pdf,session.getOriginalPdf());
-            Process render=new ProcessBuilder("pdftoppm","-png","-r","150","-f","1","-l","20",pdf.toString(),directory.resolve("page").toString()).redirectErrorStream(true).start();
-            if(!render.waitFor(90,TimeUnit.SECONDS)||render.exitValue()!=0)throw new IOException("PDF rendering failed");
+            ProcessBuilder render=new ProcessBuilder("pdftoppm","-png","-r","150","-f","1","-l","20",pdf.toString(),directory.resolve("page").toString()).redirectErrorStream(true);
+            de.corporate.lc.document.service.BoundedProcess.run(render,90);
             List<Path> pages;try(var files=Files.list(directory)){pages=files.filter(p->p.getFileName().toString().matches("page-\\d+\\.png")).sorted(Comparator.comparingInt(this::pageNumber)).toList();}
             pageData=new ArrayList<>();for(Path page:pages)pageData.add(new PageData(ImageIO.read(page.toFile()),ocr(page)));
             return advice?cropAdvice(codes,pageData):cropFields(codes,pageData);
@@ -55,7 +55,8 @@ public class PdfFieldSnippetService {
 
     private List<PageData> digitalPages(byte[] content)throws IOException{
         try(PDDocument document=Loader.loadPDF(content)){
-            PositionStripper stripper=new PositionStripper();stripper.setSortByPosition(true);stripper.getText(document);
+            de.corporate.lc.document.service.PdfProcessingSafety.validate(document);
+            PositionStripper stripper=new PositionStripper();stripper.setEndPage(20);stripper.setSortByPosition(true);stripper.getText(document);
             if(stripper.lines.isEmpty())return List.of();
             PDFRenderer renderer=new PDFRenderer(document);List<PageData> pages=new ArrayList<>();
             for(int page=0;page<Math.min(document.getNumberOfPages(),20);page++)pages.add(new PageData(renderer.renderImageWithDPI(page,150),stripper.lines.getOrDefault(page,List.of()).stream().map(line->line.scaled(150f/72f)).toList()));
@@ -75,9 +76,10 @@ public class PdfFieldSnippetService {
     }
 
     private List<Line> ocr(Path image)throws Exception{
-        Process process=new ProcessBuilder("tesseract",image.toString(),"stdout","-l","deu+eng","tsv").redirectErrorStream(false).start();
-        String output=new String(process.getInputStream().readAllBytes(),StandardCharsets.UTF_8);
-        if(!process.waitFor(60,TimeUnit.SECONDS)||process.exitValue()!=0)throw new IOException("OCR failed");
+        Path tsv=image.resolveSibling(image.getFileName()+".tsv");
+        de.corporate.lc.document.service.BoundedProcess.run(new ProcessBuilder("tesseract",image.toString(),"stdout","-l","deu+eng","tsv").redirectOutput(tsv.toFile()),60);
+        if(Files.size(tsv)>10*1024*1024)throw new IOException("OCR-Ausgabe zu groß");
+        String output=Files.readString(tsv,StandardCharsets.UTF_8);
         Map<String,LineBuilder> grouped=new LinkedHashMap<>();
         for(String row:output.split("\\R")){String[] c=row.split("\\t",12);if(c.length<12||!c[0].matches("\\d+"))continue;String text=c[11].trim();if(text.isEmpty())continue;String key=c[1]+"-"+c[2]+"-"+c[3]+"-"+c[4];int left=number(c[6]),top=number(c[7]),width=number(c[8]),height=number(c[9]);grouped.computeIfAbsent(key,k->new LineBuilder()).add(text,left,top,width,height);}
         return grouped.values().stream().map(LineBuilder::build).toList();

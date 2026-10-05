@@ -50,6 +50,10 @@ management:
         readiness:
           include: readinessState,db
 app:
+  upload:
+    antivirus-enabled: ${UPLOAD_ANTIVIRUS_ENABLED:false}
+    antivirus-host: ${UPLOAD_ANTIVIRUS_HOST:clamav}
+    antivirus-port: ${UPLOAD_ANTIVIRUS_PORT:3310}
   messaging:
     outbox-interval-ms: ${OUTBOX_INTERVAL_MS:5000}
     max-attempts: ${OUTBOX_MAX_ATTEMPTS:8}
