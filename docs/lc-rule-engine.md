@@ -1,6 +1,8 @@
 # lc-rule-engine – Zielarchitektur und Roadmap
 
-Status: versioniertes Framework im Manager vorhanden; noch kein eigenständiger Dienst.
+Status: ICC-bezogene Rule Packs und Engine zurückgestellt bis zur Rechteklärung.
+Die bereits eingeführte Teilregel und der Pack-Endpunkt sind aus dem aktuellen
+Softwarestand entfernt. Das interne versionierte Prüf- und Audit-Framework bleibt.
 Stand: 05.10.2026.
 Bezug: [#29](https://github.com/mascho44/corporate-LC_Manager/issues/29)
 und [#39](https://github.com/mascho44/corporate-LC_Manager/issues/39).
@@ -24,6 +26,33 @@ Ausdrückliche Änderungen oder Ausschlüsse und die gültige LC-Fassung nach
 Amendments sind zu berücksichtigen. Bei unbekannter Anwendbarkeit oder
 unzureichender Datenqualität entsteht ein Prüfhinweis, keine automatische
 Bestätigung der Konformität.
+
+## Veröffentlichungs- und Rechteprüfung
+
+Abstraktion ist eine technische Gestaltungsregel, keine Zusicherung von
+Lizenzfreiheit. Die [ICC-Copyright-Erklärung](https://iccwbo.org/copyright-and-trademarks/)
+fordert auch für Bearbeitungen eine schriftliche Erlaubnis. Der Kauf oder die
+Bereitstellung eines PDFs wird nicht als Veröffentlichungsrecht behandelt.
+Für bestehende und neue ICC-bezogene Regeln ist die konkrete Nutzung rechtlich
+zu klären; das bisherige Deployment gilt nicht als rechtliche Freigabe.
+
+- Regeln werden als eigenständige Datenbedingungen und Vergleichsoperationen
+  beschrieben, nicht durch absatzweises Umformulieren oder Übersetzen des Buchs.
+- Keine übernommenen Absätze, Erläuterungen, Beispiele, Tabellen oder
+  vollständige Nachbildung der Publikationsgliederung in Code, UI oder Tests.
+- Tests verwenden selbst erstellte, synthetische Fälle, keine ICC-Beispielfälle.
+- Quellenreferenzen bleiben knappe bibliografische Angaben mit Artikel- oder
+  Absatznummer; sie ersetzen weder eine Lizenz noch eine Genehmigung.
+- Fachliche Freigabe und Prüfung der Veröffentlichungsrechte sind getrennte
+  Freigabeschritte. Vor Veröffentlichung weiterer ICC-abgeleiteter Packs muss
+  der zulässige Umfang geklärt und dokumentiert sein. Ohne Klärung keine
+  Zusicherung von Lizenzfreiheit oder ICC-Zertifizierung.
+- Originale und vollständige OCR-Texte bleiben privat und werden nicht für
+  Modelltraining, öffentliche Trainingsdaten oder öffentliche Suchindizes genutzt.
+
+Diese Leitplanken sind zunächst eine dokumentierte Freigabevorgabe, kein bereits
+implementierter automatischer Lizenzprüfer. Eine Wortlautprüfung allein kann
+die erforderliche rechtliche Beurteilung nicht ersetzen.
 
 ## Pipeline
 
@@ -53,15 +82,11 @@ unvollständige Prüfung darf niemals als erfolgreiche Prüfung erscheinen.
 
 ## Phasen
 
-Aktueller Implementierungsumfang: formatneutraler Engine-Vertrag,
-Pack-Katalog unter `/api/rule-packs`, Anwendbarkeitsprüfung und eine
-Rechnungswährungs-Teilprüfung mit Referenz auf UCP 600 Art. 18(a)(iii).
-Ergebnisse bleiben Hinweise zur menschlichen Prüfung, auch bei übereinstimmender
-Währung. Unbekannte Regelprofile, fehlende Angaben und ausdrückliche
-Ausnahmeprofile werden nicht als erfolgreiche Prüfung bewertet.
-Die fünf übrigen Packs sind als `PLANNED` ohne aktive Regeln ausgewiesen.
-ISBP-Einzelregeln sind noch nicht fachlich freigegeben oder vollständig umgesetzt.
-Das Framework ist nicht mit vollständiger ICC-Konformitätsprüfung gleichzusetzen.
+Die folgenden Phasen sind vollständig zurückgestellt. Es werden keine
+ICC-bezogenen Rule Packs ausgeliefert; `/api/rule-packs` ist nicht mehr
+implementiert. Bestehende explizite LC-Bedingungsvergleiche sind interne
+Vorprüfungen ohne Zuordnung zu einer ICC-Einzelregel. Historische Prüfbelege
+bleiben erhalten, werden aber nicht als aktive Regeln erneut ausgeführt.
 
 1. Engine-Grundlage: versionierter Vertrag für LC Model, Normalized Facts und
    Findings; nachvollziehbare Quellenzuordnung, Anwendbarkeit und fachliche
