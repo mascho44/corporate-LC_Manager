@@ -10,3 +10,9 @@
 .idea/
 .vscode/
 *.iml
+
+# Licensed ICC references must remain outside the public repository.
+/private-references/
+*ISBP*.pdf
+*UCP*.pdf
+*65c1c211b0373*.pdf

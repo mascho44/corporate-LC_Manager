@@ -26,6 +26,12 @@ Die vollständigen Maven-Versionen und Lizenzmetadaten stehen in
 
 ## Modulstruktur
 
+Geplant ist die Auslagerung der regelbasierten Dokumentenprüfung in den
+Microservice `lc-rule-engine`. Die [Zielarchitektur](lc-rule-engine.md)
+beschreibt dessen Grenzen, Rule Packs und die Integrationspipeline.
+Dies ist ein Roadmap-Ziel, keine bereits vorhandene Laufzeitkomponente;
+die aktuelle Anwendung bleibt zunächst ein Monolith.
+
 Der Code liegt unter `de.corporate.lc`. Module trennen `api` (Controller/
 DTOs), `service` (Geschäftslogik), `domain` (JPA-Entitäten) und `repository`.
 

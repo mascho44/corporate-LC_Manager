@@ -26,6 +26,7 @@ final class AmendmentSnapshot {
         state.put("latestShipmentDate", text(lc.getLatestShipmentDate()));
         state.put("requiredDocuments", lc.getRequiredDocuments());
         state.put("additionalFields", lc.getAdditionalFields());
+        state.put("conditions", lc.getConditions());
         state.put("rawMessage", lc.getRawMessage());
         try { return JSON.writeValueAsString(state); }
         catch (JsonProcessingException e) { throw new IllegalStateException("LC-Fassung konnte nicht gesichert werden", e); }

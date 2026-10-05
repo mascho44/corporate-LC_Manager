@@ -9,6 +9,8 @@ Stand: 05.10.2026 · Corporate LC Manager 0.5.0-SNAPSHOT
 - [Upload-, Verarbeitungs- und Backup-Sicherheit](betriebssicherheit.md)
 - [OCR-Konfidenz, Messverfahren und Grenzen](ocr-confidence.md)
 - [Roadmap](../ROADMAP.md)
+- [Zielarchitektur und Roadmap: lc-rule-engine](lc-rule-engine.md)
+- [Fachliche LC-Bedingungen und Gebührenschätzungen](lc-bedingungen-und-gebuehren.md)
 
 Die Dokumentation beschreibt den Quellstand, mit dem sie ausgeliefert wird.
 Die Info-Seite `/info.html` enthält Copyright, Lizenz, Projektlinks und das

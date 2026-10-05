@@ -15,8 +15,8 @@ public class FindingEvidenceController {
     public FindingEvidenceController(DocumentCheckService checks,LcDocumentRepository documents){this.checks=checks;this.documents=documents;}
     public record View(CheckResult finding,UUID documentId,String contentType,EvidenceLocator.Location location){}
     @GetMapping("/api/lcs/{lcId}/document-checks/evidence") @Transactional(readOnly=true)
-    public View evidence(@PathVariable UUID lcId,@RequestParam String code,@RequestParam(required=false) String documentName){
-        var findings=checks.check(lcId).results().stream().filter(r->Objects.equals(r.code(),code)&&Objects.equals(r.documentName(),documentName)).toList();
+    public View evidence(@PathVariable UUID lcId,@RequestParam String code,@RequestParam(required=false) String documentName,@RequestParam(required=false) String reviewFingerprint){
+        var findings=checks.check(lcId).results().stream().filter(r->Objects.equals(r.code(),code)&&Objects.equals(r.documentName(),documentName)&&(reviewFingerprint==null||reviewFingerprint.equals(r.reviewFingerprint()))).toList();
         if(findings.size()!=1)throw new ResponseStatusException(HttpStatus.CONFLICT,"Befund nicht eindeutig oder nicht mehr aktuell. Bitte Prüfung neu laden.");
         var finding=findings.get(0);
         var matches=documents.findByLetterOfCreditIdOrderByUploadedAtDesc(lcId).stream().filter(d->finding.documentName()!=null&&Objects.equals(d.getOriginalFilename(),finding.documentName())).toList();
@@ -24,4 +24,5 @@ public class FindingEvidenceController {
         var doc=matches.get(0);
         return new View(finding,doc.getId(),doc.getContentType(),EvidenceLocator.locate(doc,finding.documentEvidence()));
     }
+    public View evidence(UUID lcId,String code,String documentName){return evidence(lcId,code,documentName,null);}
 }

@@ -2,6 +2,7 @@
 
 ## Als Nächstes
 
+- Eigenständiger Microservice `lc-rule-engine`: gemeinsame UCP-/ISBP-Prüfengine mit versionierten, dokumenttypspezifischen Rule Packs. Zielarchitektur, Phasen und Abnahmekriterien stehen in [lc-rule-engine](docs/lc-rule-engine.md). Bezug: GitHub #29 und #39. Noch nicht ausgelagert oder deployed.
 - RabbitMQ-Adapter bei konkretem externem Integrationsbedarf aktivieren
 - Löschkonzept erstellen und umsetzen: Datenarten und Aufbewahrungsfristen festlegen, gesetzliche und geschäftliche Löschsperren berücksichtigen, Löschrechte und Vier-Augen-Freigabe für irreversible Löschungen einführen. Originaldateien, OCR-Daten, Trainingsvorlagen, Lerninhalte und Backups ausdrücklich behandeln; Wiederherstellbarkeit, Löschberichte und Audit-Nachweise definieren.
 - OFAC- und EU-Sanktionslisten anbinden: täglicher Abruf der OFAC-SDN-/Non-SDN-Listen und der konsolidierten EU-Finanzsanktionsliste, XML-/CSV-Import mit Quelle, Versionsstand, Abrufzeit und Prüfsumme. Antragsteller, Begünstigte, Banken und weitere Beteiligte einschließlich Aliasnamen prüfen; mögliche Treffer fachlich bewerten, Warn-/Sperrlogik und erneutes Screening bei Listenänderungen vorsehen. Veraltete oder nicht verfügbare Listen sichtbar machen und Prüfungen sowie Entscheidungen auditieren.

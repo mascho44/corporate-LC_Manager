@@ -8,6 +8,15 @@ import java.util.*;
 import static org.mockito.Mockito.*;
 import static org.assertj.core.api.Assertions.*;
 class FindingEvidenceControllerTest {
+ @Test void fingerprintSelectsCorrectConditionAndRejectsStaleFinding(){
+  var checks=mock(DocumentCheckService.class);var docs=mock(LcDocumentRepository.class);var id=UUID.randomUUID();
+  var a=new CheckResult(CheckResult.Severity.WARNING,"TEST","Review","Condition A","invoice.pdf","A");
+  var b=new CheckResult(CheckResult.Severity.WARNING,"TEST","Review","Condition B","invoice.pdf","B");
+  when(checks.check(id)).thenReturn(new ReviewSummary("YELLOW",0,2,0,List.of(a,b)));
+  var controller=new FindingEvidenceController(checks,docs);
+  assertThat(controller.evidence(id,"TEST","invoice.pdf",b.reviewFingerprint()).finding()).isEqualTo(b);
+  assertThatThrownBy(()->controller.evidence(id,"TEST","invoice.pdf","0".repeat(64))).isInstanceOf(ResponseStatusException.class);
+ }
  @Test void duplicatesAndMissingFindingAreNotGuessed(){
   var checks=mock(DocumentCheckService.class);var docs=mock(LcDocumentRepository.class);var id=UUID.randomUUID();var finding=new CheckResult(CheckResult.Severity.WARNING,"TEST","Review","LC condition","invoice.pdf","Invoice 123");
   when(checks.check(id)).thenReturn(new ReviewSummary("REVIEW",0,1,0,List.of(finding)));
