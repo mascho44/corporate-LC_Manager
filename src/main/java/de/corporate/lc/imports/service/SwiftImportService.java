@@ -115,6 +115,8 @@ public class SwiftImportService {
     private final Mt700Parser mt700;
     private final Mt707Parser mt707;
     private final LetterOfCreditRepository lcs;
+    @org.springframework.beans.factory.annotation.Autowired
+    private ExtractionConfidencePolicy confidencePolicy=new ExtractionConfidencePolicy(0.8);
     private final AmendmentRepository amendments;
     private final LetterOfCreditService lcService;
     private final AmendmentService amendmentService;
@@ -230,9 +232,10 @@ public class SwiftImportService {
                             : "Verweis auf :"+reference.source()+": nicht eindeutig auflösbar. Bitte Begünstigtenadresse ergänzen.";
                 }
             }
-            String confidence=unusual||target==null?"LOW":"HIGH";
+            double confidenceScore=unusual||target==null?0.45:0.95;
+            String confidence=confidencePolicy.uncertain(confidenceScore)?"LOW":"HIGH";
             String reason=target==null?"Für dieses SWIFT-Feld gibt es in diesem Profil noch kein festes Zielfeld.":unusual?"Inhaltsbasierter Prüfhinweis – manuelle Bestätigung erforderlich.":"Standardzuordnung für "+type+"-Feld :"+code+":";
-            result.add(new SwiftFieldView(code,label(type,code),value,target,target==null?"Noch nicht zugeordnet":TARGET_LABELS.get(target),confidence,reason,unusual,notice));
+            result.add(new SwiftFieldView(code,label(type,code),value,target,target==null?"Noch nicht zugeordnet":TARGET_LABELS.get(target),confidence,reason,unusual,notice,confidenceScore,"FIELD_MAPPING_HEURISTIC_V1"));
         }
         return result;
     }

@@ -1,0 +1,17 @@
+function comparisonHtml(saved){
+    const result=JSON.parse(saved.resultJson);
+    return `<h3>${esc(result.beforeName)} → ${esc(result.afterName)}</h3><small>${esc(saved.createdBy)} · ${esc(saved.createdAt)}</small><div style="overflow:auto"><table><thead><tr><th>Feld</th><th>Vorher</th><th>Nachher</th></tr></thead><tbody>${result.fields.map(f=>`<tr ${f.changed?'style="background:#fff3cd"':''}><th>${f.changed?'Δ ':''}${esc(f.name)}</th><td style="white-space:pre-wrap;vertical-align:top">${esc(f.before??'–')}</td><td style="white-space:pre-wrap;vertical-align:top">${esc(f.after??'–')}</td></tr>`).join('')}</tbody></table></div><div class="form-grid">${[saved.beforeDocumentId,saved.afterDocumentId].map((id,i)=>`<a class="button-link" href="/api/documents/${encodeURIComponent(id)}/content" target="_blank" rel="noopener">${i?'Nachher':'Vorher'}: Original öffnen</a>`).join('')}</div>`;
+}
+async function openDocumentComparison(){
+    const lc=activeLc;if(!lc)return;
+    let dialog=document.querySelector('#comparisonDialog');if(!dialog){dialog=document.createElement('dialog');dialog.id='comparisonDialog';dialog.className='wide-dialog';document.body.append(dialog);}
+    dialog.innerHTML='<p>Dokumentversionen werden geladen …</p>';dialog.showModal();
+    try{
+        const [documents,history]=await Promise.all([json(`/api/lcs/${lc.id}/documents`),json(`/api/lcs/${lc.id}/document-comparisons`)]);
+        const options=documents.map(d=>`<option value="${d.id}">${esc(d.originalFilename)} · ${esc(d.typeLabel)} · ${esc(d.uploadedAt)}</option>`).join('');
+        dialog.innerHTML=`<div class="dialoghead"><h2>Dokumentversionen vergleichen</h2><button type="button" data-comparison-close class="ghost">×</button></div><p>Zwei Versionen desselben Dokumenttyps auswählen. Der Vergleich wird mit den aktuellen Werten gespeichert; die Dokumente bleiben unverändert.</p><form><div class="form-grid"><label>Vorher<select name="beforeId" required><option value="">Bitte wählen</option>${options}</select></label><label>Nachher<select name="afterId" required><option value="">Bitte wählen</option>${options}</select></label></div><button type="submit">Vergleichen & Ergebnis speichern</button><p class="error" role="alert"></p></form><section data-comparison-result></section><details><summary>Gespeicherte Vergleiche (${history.length})</summary>${history.map(saved=>`<details><summary>${esc(saved.createdAt)} · ${esc(saved.createdBy)}</summary>${comparisonHtml(saved)}</details>`).join('')}</details>`;
+        dialog.querySelector('[data-comparison-close]').onclick=()=>dialog.close();
+        dialog.querySelector('form').onsubmit=async event=>{event.preventDefault();const form=event.target,button=form.querySelector('button');button.disabled=true;form.querySelector('.error').textContent='';try{const saved=await json(`/api/lcs/${lc.id}/document-comparisons`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(form)))});dialog.querySelector('[data-comparison-result]').innerHTML=comparisonHtml(saved);}catch(error){form.querySelector('.error').textContent=error.message;}finally{button.disabled=false;}};
+    }catch(error){dialog.innerHTML=`<p class="error">${esc(error.message)}</p><button type="button">Schließen</button>`;dialog.querySelector('button').onclick=()=>dialog.close();}
+}
+document.addEventListener('click',event=>{if(event.target.closest('[data-document-comparison]'))openDocumentComparison();});
