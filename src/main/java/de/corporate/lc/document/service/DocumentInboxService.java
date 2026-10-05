@@ -79,6 +79,9 @@ public class DocumentInboxService {
         document.setExtractedCurrency(item.getExtractedCurrency());
         document.setExtractedText(item.getExtractedText());
         document.setExtractionStatus(item.getExtractionStatus());
+        document.setOcrEvidenceJson(item.getOcrEvidenceJson());
+        var auth=org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        document.setClassificationHistoryJson(ClassificationHistory.manual(item.getClassificationHistoryJson(),request.documentType(),auth==null?"unknown":auth.getName()));
         LcDocument saved = documents.save(document);
         checks.invalidateDecisions(request.lcId());
         item.setStatus("ATTACHED");
@@ -126,6 +129,8 @@ public class DocumentInboxService {
             item.setExtractedAmount(extracted.getExtractedAmount());
             item.setExtractedCurrency(extracted.getExtractedCurrency());
             item.setExtractedText(extracted.getExtractedText());
+            item.setOcrEvidenceJson(extracted.getOcrEvidenceJson());
+            item.setClassificationHistoryJson(extracted.getClassificationHistoryJson());
             return view(inbox.save(item),targets);
     }
 

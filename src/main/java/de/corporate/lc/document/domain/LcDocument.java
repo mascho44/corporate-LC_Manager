@@ -11,6 +11,9 @@ import java.util.UUID;
 @Entity
 @Table(name = "lc_document")
 public class LcDocument {
+    @Column(columnDefinition="text") @JsonIgnore private String classificationHistoryJson;
+    public String getClassificationHistoryJson(){return classificationHistoryJson;}
+    public void setClassificationHistoryJson(String value){classificationHistoryJson=value;}
     @Column(columnDefinition="text") @JsonIgnore private String ocrEvidenceJson;
     public String getOcrEvidenceJson(){return ocrEvidenceJson;}
     public void setOcrEvidenceJson(String value){ocrEvidenceJson=value;}

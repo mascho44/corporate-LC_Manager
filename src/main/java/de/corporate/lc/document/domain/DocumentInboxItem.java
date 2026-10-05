@@ -10,6 +10,12 @@ import java.util.UUID;
 @Entity
 @Table(name = "document_inbox_item")
 public class DocumentInboxItem {
+    @Column(columnDefinition="text") @JsonIgnore private String classificationHistoryJson;
+    @Column(columnDefinition="text") @JsonIgnore private String ocrEvidenceJson;
+    public String getClassificationHistoryJson(){return classificationHistoryJson;}
+    public void setClassificationHistoryJson(String value){classificationHistoryJson=value;}
+    public String getOcrEvidenceJson(){return ocrEvidenceJson;}
+    public void setOcrEvidenceJson(String value){ocrEvidenceJson=value;}
     @Id @GeneratedValue(strategy = GenerationType.UUID) private UUID id;
     @Column(nullable = false, length = 255) private String originalFilename;
     @Column(nullable = false, length = 150) private String contentType;

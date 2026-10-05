@@ -52,7 +52,7 @@ public class DocumentService {
         document.setAmount(amount);
         document.setCurrency(currency == null || currency.isBlank() ? null : currency.trim().toUpperCase());
         document.setContent(file.getBytes());
-        extraction.extract(document);
+        extraction.extract(document);document.setClassificationHistoryJson(ClassificationHistory.manual(document.getClassificationHistoryJson(),document.getDocumentType(),ClassificationHistory.actor()));
         if (document.getAmount() == null) document.setAmount(document.getExtractedAmount());
         if (document.getCurrency() == null) document.setCurrency(document.getExtractedCurrency());
         return DocumentView.from(documents.save(document));
@@ -97,7 +97,7 @@ public class DocumentService {
     public DocumentType suggestType(String filename){return type(filename==null?"":filename);}
 
     private DocumentView save(de.corporate.lc.lc.domain.LetterOfCredit lc,String filename,byte[] content,String contentType,DocumentType type,LocalDate date,BigDecimal amount,String currency){
-        LcDocument document=new LcDocument();document.setLetterOfCredit(lc);document.setDocumentType(type);document.setOriginalFilename(filename);document.setContentType(contentType);document.setFileSize(content.length);document.setDocumentDate(date);document.setAmount(amount);document.setCurrency(currency);document.setContent(content);extraction.extract(document);if(document.getAmount()==null)document.setAmount(document.getExtractedAmount());if(document.getCurrency()==null)document.setCurrency(document.getExtractedCurrency());return DocumentView.from(documents.save(document));
+        LcDocument document=new LcDocument();document.setLetterOfCredit(lc);document.setDocumentType(type);document.setOriginalFilename(filename);document.setContentType(contentType);document.setFileSize(content.length);document.setDocumentDate(date);document.setAmount(amount);document.setCurrency(currency);document.setContent(content);extraction.extract(document);document.setClassificationHistoryJson(ClassificationHistory.manual(document.getClassificationHistoryJson(),document.getDocumentType(),ClassificationHistory.actor()));if(document.getAmount()==null)document.setAmount(document.getExtractedAmount());if(document.getCurrency()==null)document.setCurrency(document.getExtractedCurrency());return DocumentView.from(documents.save(document));
     }
     private DocumentType type(String filename){String name=filename.toLowerCase(Locale.ROOT);if(name.contains("invoice")||name.contains("rechnung"))return DocumentType.COMMERCIAL_INVOICE;if(name.contains("packing")||name.contains("packliste"))return DocumentType.PACKING_LIST;if(name.contains("bill-of-lading")||name.contains("bill_of_lading")||name.matches(".*(?:^|[-_ ])bl(?:[-_ .]|$).*"))return DocumentType.BILL_OF_LADING;if(name.contains("airway")||name.contains("air-waybill")||name.contains("awb"))return DocumentType.AIR_WAYBILL;if(name.contains("cmr"))return DocumentType.ROAD_CONSIGNMENT_NOTE;if(name.contains("origin")||name.contains("ursprung"))return DocumentType.CERTIFICATE_OF_ORIGIN;if(name.contains("insurance")||name.contains("versicherung"))return DocumentType.INSURANCE_CERTIFICATE;if(name.contains("inspection")||name.contains("inspektion"))return DocumentType.INSPECTION_CERTIFICATE;if(name.contains("draft")||name.contains("bill-of-exchange")||name.contains("wechsel"))return DocumentType.BILL_OF_EXCHANGE;if(name.contains("beneficiary-certificate"))return DocumentType.BENEFICIARY_CERTIFICATE;if(name.contains("quality")||name.contains("analysis")||name.contains("analyse"))return DocumentType.QUALITY_CERTIFICATE;if(name.contains("courier")||name.contains("dhl")||name.contains("fedex"))return DocumentType.COURIER_RECEIPT;return DocumentType.ANNEX;}
     private String contentType(String filename){String name=filename.toLowerCase(Locale.ROOT);if(name.endsWith(".pdf"))return "application/pdf";if(name.endsWith(".xml"))return "application/xml";if(name.endsWith(".txt")||name.endsWith(".csv"))return "text/plain";if(name.endsWith(".png"))return "image/png";if(name.endsWith(".jpg")||name.endsWith(".jpeg"))return "image/jpeg";return "application/octet-stream";}
@@ -127,6 +127,10 @@ public class DocumentService {
         LcDocument document=one(id);
         if(document.getLetterOfCredit()==null||!lcId.equals(document.getLetterOfCredit().getId()))throw new IllegalArgumentException("Dokument gehört nicht zu diesem Akkreditiv.");
         if(request.amount()!=null&&request.amount().signum()<0)throw new IllegalArgumentException("Betrag darf nicht negativ sein.");
+        if(document.getDocumentType()!=request.type()){
+            var auth=org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            document.setClassificationHistoryJson(ClassificationHistory.manual(document.getClassificationHistoryJson(),request.type(),auth==null?"unknown":auth.getName()));
+        }
         document.setDocumentType(request.type());document.setDocumentDate(request.documentDate());document.setAmount(request.amount());
         document.setCurrency(request.currency()==null||request.currency().isBlank()?null:request.currency().trim().toUpperCase(Locale.ROOT));
         return DocumentView.from(document);

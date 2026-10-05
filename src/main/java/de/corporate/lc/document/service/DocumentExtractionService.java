@@ -59,6 +59,8 @@ public class DocumentExtractionService {
             document.setExtractionStatus("OCR_UNAVAILABLE");
         } catch (Exception exception) {
             document.setExtractionStatus("FAILED");
+        } finally {
+            document.setClassificationHistoryJson(ClassificationHistory.automatic(document.getOriginalFilename(),document.getExtractedText()));
         }
     }
 
