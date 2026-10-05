@@ -3,6 +3,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import static org.assertj.core.api.Assertions.*;
 class OcrEvidenceTest {
+ @Test void gluedSwiftTagUsesWholeWordMeasurementButDoesNotCrossTags(){var evidence=new OcrEvidence("5","V2",200,.8,List.of(word(":20:LC123456",.87),word(":32B:",.4),word("EUR1000,",.65),word("00",.95)));assertThat(evidence.assess("LC123456",.8).score()).isEqualTo(.87);assertThat(evidence.assess("EUR1000,00",.8).score()).isEqualTo(.65);assertThat(evidence.assess("LC123456EUR1000,00",.8).score()).isNull();}
  private OcrEvidence.Word word(String text,double score){return new OcrEvidence.Word(text,score,2,10,20,30,40);}
  @Test void parsesOnlyWordsAndPreservesActualPdfPage(){
   String tsv="level\tpage_num\tblock_num\tpar_num\tline_num\tword_num\tleft\ttop\twidth\theight\tconf\ttext\n5\t1\t1\t1\t1\t1\t10\t20\t30\t40\t87.5\tABC\n4\t1\t1\t1\t1\t0\t0\t0\t20\t20\t-1\tLINE";

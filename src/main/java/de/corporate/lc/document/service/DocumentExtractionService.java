@@ -114,7 +114,7 @@ public class DocumentExtractionService {
                 if(Files.exists(tsvFile))words.addAll(OcrEvidence.parseTsv(Files.readString(tsvFile,StandardCharsets.UTF_8),page));
             }
             if(!Double.isFinite(ocrThreshold)||ocrThreshold<0||ocrThreshold>1)throw new IllegalArgumentException("Ungültige OCR-Konfidenzschwelle");
-            document.setOcrEvidenceJson(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(new OcrEvidence(engineVersion,"TESSERACT_WORD_MIN_V1",200,ocrThreshold,List.copyOf(words))));
+            document.setOcrEvidenceJson(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(new OcrEvidence(engineVersion,"TESSERACT_WORD_MIN_V2",200,ocrThreshold,List.copyOf(words))));
             return limit(result.toString());
         } catch (NoSuchFileException exception) {
             throw new OcrUnavailableException();

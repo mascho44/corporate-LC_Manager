@@ -22,9 +22,11 @@ public record OcrEvidence(String engineVersion,String method,int dpi,double thre
   List<Word> match=null;
   // Exact full-token sequence only. Repeated or transformed values are deliberately unknown.
   for(int start=0;start<words.size();start++){
+   if(valueToken(words.get(start).text()).isEmpty())continue;
    StringBuilder candidate=new StringBuilder();
    for(int end=start;end<words.size()&&candidate.length()<=needle.length();end++){
-    candidate.append(compact(words.get(end).text()));
+    if(end>start&&compact(words.get(end).text()).matches("^:\\d{2}[A-Z]?:.*"))break;
+    candidate.append(valueToken(words.get(end).text()));
     if(candidate.toString().equals(needle)){
      if(match!=null)return unavailable(value,threshold);
      match=words.subList(start,end+1);break;
@@ -39,4 +41,5 @@ public record OcrEvidence(String engineVersion,String method,int dpi,double thre
  }
  private Assessment unavailable(String value,double threshold){return new Assessment(null,null,"UNAVAILABLE",method,engineVersion,threshold,value,List.of());}
  private static String compact(String value){return value==null?"":value.replaceAll("\\s+","");}
+ private static String valueToken(String value){return compact(value).replaceFirst("^:\\d{2}[A-Z]?:","");}
 }

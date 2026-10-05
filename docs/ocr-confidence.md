@@ -11,12 +11,15 @@ https://tesseract-ocr.github.io/tessdoc/Command-Line-Usage.html
 
 The application stores word confidence on a 0–1 scale, actual PDF page number,
 pixel bounding box, render DPI, engine version and method
-`TESSERACT_WORD_MIN_V1`. Bounding boxes are **not** PDF point coordinates.
+`TESSERACT_WORD_MIN_V2`. Bounding boxes are **not** PDF point coordinates.
 The field score is the minimum word confidence; the arithmetic mean is shown
 separately. Scores are not calibrated probabilities of correctness.
 
 Field evidence is assigned only when the original field value matches one exact
-full-token sequence, ignoring whitespace. No fuzzy character replacement is used.
+full-token sequence, ignoring whitespace and a directly attached SWIFT tag such as
+`:20:`. A standalone tag is not included in the value; a joined tag/value token
+retains its whole-word measurement. Matching cannot cross another SWIFT tag.
+No fuzzy character replacement is used.
 Repeated values, transformed amounts, missing words or invalid confidence values
 are reported as unavailable, not inferred as high confidence. Printed labels and
 normalization/learning can therefore result in unavailable scores. A human must
@@ -46,3 +49,15 @@ Existing imports are not silently reprocessed. Reimport a scan to measure it.
 `OcrPipelineIntegrationTest` creates an image-only PDF and runs real Tesseract when
 installed. It is skipped where Tesseract is absent; run it in an OCR-equipped test
 environment before relying on production behavior. No production files are used.
+
+## Isolated scan verification, 2026-10-05
+
+A synthetic two-page image-only PDF was tested in the production runtime image
+(Tesseract 5.5.2) with the updated V2 extraction classes, without network/database
+access and without touching the running application. The first run exposed joined
+tag/value tokens; V2 explicitly handles that case. The repeated run succeeded:
+LC reference on page 1 scored 0.87557823; amount on page 2 scored 0.63511421 and
+was flagged for review against 0.8. Word boxes and actual page numbers were
+preserved. A separate UI smoke test verified visible word/page/pixel evidence and
+HTML escaping. This is a synthetic pipeline test, not an authenticated production
+upload or a calibrated accuracy benchmark.

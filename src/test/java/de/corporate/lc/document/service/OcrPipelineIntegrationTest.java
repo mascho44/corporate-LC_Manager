@@ -17,5 +17,6 @@ class OcrPipelineIntegrationTest {
   try(var pdf=new PDDocument();var out=new ByteArrayOutputStream()){var page=new PDPage();pdf.addPage(page);try(var stream=new PDPageContentStream(pdf,page)){stream.drawImage(LosslessFactory.createFromImage(pdf,image),0,0,page.getMediaBox().getWidth(),page.getMediaBox().getHeight());}pdf.save(out);content=out.toByteArray();}
   var result=new DocumentExtractionService().extractFile(content,"scan.pdf","application/pdf");
   assertThat(result.status()).isEqualTo("OCR_EXTRACTED");assertThat(result.ocrEvidence()).isNotNull();assertThat(result.ocrEvidence().words()).isNotEmpty();assertThat(result.ocrEvidence().engineVersion()).containsIgnoringCase("tesseract");assertThat(result.ocrEvidence().words()).allMatch(w->w.page()==1);
+  assertThat(result.ocrEvidence().assess("LC123456",.8).score()).isNotNull();
  }
 }
