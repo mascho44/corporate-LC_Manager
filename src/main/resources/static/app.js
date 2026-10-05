@@ -710,3 +710,8 @@ async function loadMonitoring(){
         $('#monitoringGeneratedAt').textContent='Stand: '+new Intl.DateTimeFormat('de-DE',{dateStyle:'medium',timeStyle:'short'}).format(new Date(summary.generatedAt));
     }catch(error){container.innerHTML=`<div class="error">Operationsmonitor konnte nicht geladen werden: ${esc(error.message)}</div>`;$('#monitoringGeneratedAt').textContent=''}
 }
+document.addEventListener('click', event => {
+  if (event.target.closest('[data-close-upload-dialog]')) {
+    document.querySelector('#uploadDialog').close();
+  }
+});

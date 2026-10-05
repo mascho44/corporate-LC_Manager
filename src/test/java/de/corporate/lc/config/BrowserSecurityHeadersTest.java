@@ -6,11 +6,11 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import static org.assertj.core.api.Assertions.*;
 
 class BrowserSecurityHeadersTest {
-    @Test void observesWithoutEnforcingOrSendingReportsElsewhere() {
+    @Test void enforcesWithoutSendingReportsElsewhere() {
         var response=new MockHttpServletResponse();
         new BrowserSecurityHeaders().writeHeaders(new MockHttpServletRequest(),response);
-        assertThat(response.getHeader("Content-Security-Policy")).isNull();
-        assertThat(response.getHeader("Content-Security-Policy-Report-Only"))
+        assertThat(response.getHeader("Content-Security-Policy-Report-Only")).isNull();
+        assertThat(response.getHeader("Content-Security-Policy"))
             .contains("script-src 'self'","object-src 'none'","form-action 'self'")
             .doesNotContain("report-uri","report-to","unsafe-eval");
         assertThat(response.getHeader("Referrer-Policy")).isEqualTo("no-referrer");

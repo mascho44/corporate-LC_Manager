@@ -1,11 +1,11 @@
 # Browser-Sicherheit
 
-Die Anwendung liefert eine Content Security Policy zunächst ausschließlich als
-`Content-Security-Policy-Report-Only` aus. Sie blockiert noch keine Ressourcen.
-Abweichungen erscheinen in der Browser-Konsole; es gibt derzeit keine zentrale
+Die Anwendung liefert die Richtlinie als `Content-Security-Policy` aus und
+blockiert damit nicht erlaubte Ressourcen und Inline-JavaScript.
+Verstöße erscheinen in der Browser-Konsole; es gibt derzeit keine zentrale
 Sammlung und keine Übermittlung an externe Reporting-Dienste.
 
-Die Zielrichtlinie erlaubt Skripte, Netzwerkanfragen und Schriftarten nur von
+Die Richtlinie erlaubt Skripte, Netzwerkanfragen und Schriftarten nur von
 der eigenen Anwendung. Bilder dürfen zusätzlich Data-/Blob-URLs verwenden
 (Authenticator-QR-Code, Avatar und PDF-Ausschnitt). Interne PDF-Frames und
 Blob-Vorschauen bleiben vorgesehen. Plugins sind nicht vorgesehen.
@@ -21,7 +21,7 @@ Zusätzlich werden folgende Header bereits durchgesetzt:
 - Der bestehende Schutz gegen Framing (`X-Frame-Options: DENY`) und
   MIME-Sniffing (`X-Content-Type-Options: nosniff`) bleibt unverändert.
 
-## Prüfung vor CSP-Durchsetzung
+## Prüfung nach Deployment
 
 Nach Deployment in den Browser-Entwicklerwerkzeugen die Konsole prüfen:
 
@@ -30,10 +30,11 @@ Nach Deployment in den Browser-Entwicklerwerkzeugen die Konsole prüfen:
 3. SWIFT-/Avisierungstraining, PDF-Ausschnitte, Lupe und Originalansicht.
 4. Profilbild-Upload und Dokumentenerstellung.
 
-Erwartete Warnungen fachlich einordnen, notwendige Ausnahmen möglichst eng
-definieren und erst anschließend auf `Content-Security-Policy` umstellen.
-Bis dahin stellt die CSP **keinen durchgesetzten Schutz** gegen Script-Injection
-dar und ersetzt keine sichere Ausgabe-/Eingabeverarbeitung.
+Blockierungen fachlich einordnen und notwendige Ausnahmen möglichst eng
+definieren. Automatische Tests prüfen den durchgesetzten Header und verhindern
+Inline-Ereignisattribute und Inline-Skripte in den HTML-Seiten. Die CSP ersetzt
+keine sichere Ausgabe-/Eingabeverarbeitung. Der vollständige angemeldete
+Browserablauf einschließlich PDF-Viewer muss vor Produktionsfreigabe geprüft werden.
 
 Für Produktion sind HTTPS, eine HTTP-zu-HTTPS-Weiterleitung und HSTS am
 vertrauenswürdigen Proxy zu prüfen. HSTS-Preload wird nicht automatisch aktiviert;
