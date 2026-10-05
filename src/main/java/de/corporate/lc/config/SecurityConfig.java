@@ -5,7 +5,7 @@ import de.corporate.lc.user.service.AppUserDetailsService; import jakarta.servle
  @Bean AuthenticationManager authenticationManager(AuthenticationConfiguration c)throws Exception{return c.getAuthenticationManager();}
  @Bean SecurityFilterChain security(HttpSecurity http,AppUserDetailsService users,de.corporate.lc.user.repository.AppUserRepository accounts)throws Exception{return http.userDetailsService(users)
   .authorizeHttpRequests(a->a
-   .requestMatchers("/password-reset.html","/password-reset.js","/api/auth/password-reset/request","/api/auth/password-reset/complete","/login.html","/login.js","/styles.css","/info.html","/info.css","/info.js","/license.txt","/oss-components.json","/oss-notices.txt","/api/auth/login","/api/auth/login/totp","/api/health","/actuator/health","/actuator/health/liveness","/actuator/health/readiness").permitAll()
+   .requestMatchers("/password-reset.html","/password-reset.js","/api/auth/password-reset/request","/api/auth/password-reset/complete","/login.html","/login.js","/login-background.css","/login-background-v1.png","/styles.css","/info.html","/info.css","/info.js","/license.txt","/oss-components.json","/oss-notices.txt","/api/auth/login","/api/auth/login/totp","/api/health","/actuator/health","/actuator/health/liveness","/actuator/health/readiness").permitAll()
    .requestMatchers("/actuator/**").hasRole("ADMIN")
    .requestMatchers("/api/admin/outbox/**").hasRole("ADMIN")
    .requestMatchers("/api/admin/monitoring/**").hasRole("ADMIN")
