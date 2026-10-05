@@ -25,7 +25,10 @@ class DocumentCheckServiceTest {
             org.assertj.core.api.Assertions.assertThatThrownBy(()->service.decide(id,request,"checker")).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("begründen");
         }
         verify(decisions,never()).save(any());
-        service.decide(id,new de.corporate.lc.check.api.CheckDecisionRequest("TEST","invoice.pdf","ACCEPTED"," Original geprüft "),"checker");
+        var invoice=new LcDocument();invoice.setOriginalFilename("invoice.pdf");invoice.setDocumentType(DocumentType.COMMERCIAL_INVOICE);
+        when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(invoice));when(decisions.findByLcId(id)).thenReturn(List.of());
+        var finding=service.check(id).results().stream().filter(r->r.code().equals("DATE_NOT_CAPTURED")).findFirst().orElseThrow();
+        service.decide(id,new de.corporate.lc.check.api.CheckDecisionRequest("DATE_NOT_CAPTURED","invoice.pdf","ACCEPTED"," Original geprüft ",finding.reviewFingerprint()),"checker");
         verify(decisions).save(argThat(d->"Original geprüft".equals(d.getComment())&&"checker".equals(d.getReviewedBy())&&d.getReviewedAt()!=null));
     }
 
@@ -40,7 +43,7 @@ class DocumentCheckServiceTest {
     @Test void invalidatesDecisionsWithoutPrimitiveDeleteResult() {
         UUID id=UUID.randomUUID();var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);var decisions=mock(DocumentCheckDecisionRepository.class);when(decisions.findByLcId(id)).thenReturn(List.of(new DocumentCheckDecision(),new DocumentCheckDecision()));
         long count=new DocumentCheckService(lcs,docs,decisions).invalidateDecisions(id);
-        assertThat(count).isEqualTo(2);verify(decisions).deleteAllByLcId(id);
+        assertThat(count).isEqualTo(2);verify(decisions).saveAll(argThat(rows->java.util.stream.StreamSupport.stream(rows.spliterator(),false).allMatch(d->d.getInvalidatedAt()!=null)));verify(decisions,never()).deleteAllByLcId(id);
     }
 
     @Test void detectsMissingDocumentAndExcessInvoiceAmount() {
@@ -90,7 +93,9 @@ class DocumentCheckServiceTest {
     @Test void acceptedManualDecisionClosesWarning() {
         UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-13");lc.setRequiredDocuments(List.of("COMMERCIAL INVOICE IN 2 ORIGINALS"));LcDocument invoice=document(DocumentType.COMMERCIAL_INVOICE,"invoice.pdf","Invoice");
         var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);var decisions=mock(DocumentCheckDecisionRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(invoice));DocumentCheckDecision decision=new DocumentCheckDecision();decision.setFindingCode("DOCUMENT_COPIES_MANUAL_REVIEW");decision.setDocumentName("invoice.pdf");decision.setDecision("ACCEPTED");decision.setReviewedBy("checker");when(decisions.findByLcId(id)).thenReturn(List.of(decision));
-        var result=new DocumentCheckService(lcs,docs,decisions).check(id);
+        when(decisions.findByLcId(id)).thenReturn(List.of());var checkService=new DocumentCheckService(lcs,docs,decisions);
+        decision.setFindingFingerprint(checkService.check(id).results().stream().filter(item->item.code().equals("DOCUMENT_COPIES_MANUAL_REVIEW")).findFirst().orElseThrow().reviewFingerprint());
+        when(decisions.findByLcId(id)).thenReturn(List.of(decision));var result=checkService.check(id);
         assertThat(result.results()).filteredOn(item->item.code().equals("DOCUMENT_COPIES_MANUAL_REVIEW")).allMatch(item->item.severity()==de.corporate.lc.check.api.CheckResult.Severity.OK&&"ACCEPTED".equals(item.reviewDecision()));
         assertThat(result.results()).filteredOn(item->item.code().equals("DOCUMENT_COPIES_MANUAL_REVIEW")).isNotEmpty().allMatch(item->item.automaticSeverity()==de.corporate.lc.check.api.CheckResult.Severity.WARNING);
     }

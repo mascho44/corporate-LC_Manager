@@ -46,6 +46,9 @@ class ValidationSimulationServiceTest {
         setup();when(decisions.findByLcId(lcId)).thenReturn(List.of());
         var baseline=new DocumentCheckService(lcs,documents,decisions).check(lcId);
         var simulation=service.simulate(lcId,new SimulationRequest(null,null,null,null));
-        assertThat(simulation.results().stream().filter(r->!r.code().equals("SIMULATION_ONLY")).toList()).isEqualTo(baseline.results());
+        assertThat(simulation.results().stream().filter(r->!r.code().equals("SIMULATION_ONLY")).map(r->r.withInputFingerprint(null)).toList())
+            .isEqualTo(baseline.results().stream().map(r->r.withInputFingerprint(null)).toList());
+        // A copied simulation document is not a confirmable production document snapshot.
+        assertThat(simulation.results().get(1).inputFingerprint()).isNotEqualTo(baseline.results().get(0).inputFingerprint());
     }
 }

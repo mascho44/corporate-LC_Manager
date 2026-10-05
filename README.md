@@ -6,6 +6,7 @@ Spring-Boot-MVP für Corporate-Akkreditivmanagement mit Web-Dashboard, MT700/MT7
 
 - [Fachliche Dokumentation](docs/fachliche-dokumentation.md)
 - [Technische Dokumentation und Betrieb](docs/technische-dokumentation.md)
+- [Versionierte Prüfgrundlagen](docs/versionierte-pruefregeln.md)
 - [Dokumentationsübersicht](docs/README.md)
 - Info, Copyright und OSS-Danksagung in der Anwendung: `/info.html`
 
