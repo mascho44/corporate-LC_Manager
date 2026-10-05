@@ -9,6 +9,13 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface LetterOfCreditRepository extends JpaRepository<LetterOfCredit, UUID> {
+    interface AssignmentTarget {
+        UUID getId();
+        String getReference();
+        de.corporate.lc.lc.domain.LetterOfCreditStatus getStatus();
+    }
+    @org.springframework.data.jpa.repository.Query("select lc.id as id, lc.reference as reference, lc.status as status from LetterOfCredit lc order by lc.reference")
+    List<AssignmentTarget> findAssignmentTargets();
     boolean existsByReference(String reference);
     Optional<LetterOfCredit> findByReference(String reference);
     boolean existsByReferenceAndIdNot(String reference, UUID id);

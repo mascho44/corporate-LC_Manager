@@ -40,12 +40,16 @@ public class DocumentInboxService {
 
     @Transactional
     public List<DocumentInboxItemView> receive(List<MultipartFile> files, String username) throws IOException {
-        return InboxUploadReader.read(files).stream().map(file -> receiveOne(file, username)).toList();
+        var uploads=InboxUploadReader.read(files);
+        var targets=lettersOfCredit.findAssignmentTargets();
+        return uploads.stream().map(file -> receiveOne(file, username, targets)).toList();
     }
 
     @Transactional(readOnly = true)
     public List<DocumentInboxItemView> openItems() {
-        return inbox.findTop100ByStatusOrderByReceivedAtDesc("OPEN").stream().map(this::view).toList();
+        var items=inbox.findTop100ByStatusOrderByReceivedAtDesc("OPEN");
+        var targets=lettersOfCredit.findAssignmentTargets();
+        return items.stream().map(item->view(item,targets)).toList();
     }
 
     @Transactional(readOnly = true)
@@ -98,7 +102,8 @@ public class DocumentInboxService {
         return item;
     }
 
-    private DocumentInboxItemView receiveOne(InboxUploadReader.Upload file, String username) {
+    private DocumentInboxItemView receiveOne(InboxUploadReader.Upload file, String username,
+                                            List<LetterOfCreditRepository.AssignmentTarget> targets) {
             String filename = file.filename();
             String contentType = contentType(filename);
             byte[] bytes = file.content();
@@ -121,20 +126,15 @@ public class DocumentInboxService {
             item.setExtractedAmount(extracted.getExtractedAmount());
             item.setExtractedCurrency(extracted.getExtractedCurrency());
             item.setExtractedText(extracted.getExtractedText());
-            return view(inbox.save(item));
+            return view(inbox.save(item),targets);
     }
 
     private DocumentInboxItemView view(DocumentInboxItem item) {
-        UUID suggestedId = null;
-        String suggestedReference = null;
-        if (item.getExtractedReference() != null && !item.getExtractedReference().isBlank()) {
-            var suggestion = lettersOfCredit.findByReference(item.getExtractedReference().trim());
-            if (suggestion.isPresent()) {
-                suggestedId = suggestion.get().getId();
-                suggestedReference = suggestion.get().getReference();
-            }
-        }
-        return DocumentInboxItemView.from(item, suggestedId, suggestedReference);
+        return view(item,lettersOfCredit.findAssignmentTargets());
+    }
+
+    private DocumentInboxItemView view(DocumentInboxItem item,List<LetterOfCreditRepository.AssignmentTarget> targets) {
+        return DocumentInboxItemView.from(item,LcAssignmentMatcher.suggest(item,targets));
     }
 
     private String contentType(String filename) {

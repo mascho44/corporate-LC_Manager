@@ -63,9 +63,11 @@ public class DocumentInboxController {
                                              @Valid @RequestBody DocumentInboxAttachRequest request,
                                              Authentication authentication) {
         DocumentInboxAttachResult result = service.attach(id, request);
+        String assignmentSource=result.inboxItem().assignmentCandidates().stream().filter(candidate->candidate.lcId().equals(request.lcId()))
+                .findFirst().map(candidate->" · LC-Vorschlag bestätigt: "+candidate.reason()).orElse(" · Manuell zugeordnet");
         audit.record(authentication, "DOCUMENT_INBOX_ATTACHED", "LETTER_OF_CREDIT",
                 request.lcId(), result.document().originalFilename() + " · " + request.documentType()
-                        + " · Posteingang " + id + " · Dokument " + result.document().id());
+                        + " · Posteingang " + id + " · Dokument " + result.document().id() + assignmentSource);
         return result;
     }
 

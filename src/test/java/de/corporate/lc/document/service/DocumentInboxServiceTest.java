@@ -26,7 +26,9 @@ class DocumentInboxServiceTest {
     @Test void referenceSuggestionDoesNotCreateAnLcDocument() throws Exception {
         LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC1234");
         UUID lcId=UUID.randomUUID();ReflectionTestUtils.setField(lc,"id",lcId);
-        when(lcs.findByReference("LC1234")).thenReturn(Optional.of(lc));
+        var target=mock(LetterOfCreditRepository.AssignmentTarget.class);
+        when(target.getId()).thenReturn(lcId);when(target.getReference()).thenReturn("LC1234");
+        when(lcs.findAssignmentTargets()).thenReturn(List.of(target));
         doAnswer(call->{LcDocument doc=call.getArgument(0);doc.setExtractedReference("LC1234");doc.setExtractionStatus("EXTRACTED");return null;}).when(extraction).extract(any());
         when(inbox.save(any())).thenAnswer(call->call.getArgument(0));
         var result=service.receive(List.of(new MockMultipartFile("file","invoice.txt","text/plain",new byte[]{1})),"user");
