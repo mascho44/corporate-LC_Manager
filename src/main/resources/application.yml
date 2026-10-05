@@ -7,6 +7,9 @@ spring:
     properties:
       mail.smtp.auth: ${SMTP_AUTH:true}
       mail.smtp.starttls.enable: ${SMTP_STARTTLS:true}
+      mail.smtp.connectiontimeout: 5000
+      mail.smtp.timeout: 5000
+      mail.smtp.writetimeout: 5000
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/lcmanager}
     username: ${DB_USER:lcmanager}
@@ -52,6 +55,7 @@ app:
     enabled: ${SMTP_ENABLED:false}
     from: ${SMTP_FROM:}
   security:
+    public-base-url: ${PUBLIC_BASE_URL:https://lc.example.com}
     totp-encryption-key: ${TOTP_ENCRYPTION_KEY:}
   initial-admin:
     username: ${ADMIN_USERNAME:admin}

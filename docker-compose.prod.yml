@@ -22,6 +22,7 @@ services:
       SMTP_FROM: ${SMTP_FROM:-}
       SMTP_AUTH: ${SMTP_AUTH:-true}
       SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://lc.example.com}
     depends_on:
       postgres:
         condition: service_healthy

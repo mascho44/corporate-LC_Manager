@@ -171,15 +171,21 @@ Prüfung, Erstellung, Versand, Einstellungen, Benutzer und Audit.
 Die Avisierungsübernahme benötigt Training verwalten, LC bearbeiten und
 Dokumente hochladen sowie die Eigentümerschaft des Trainings.
 
-Passwortänderung und TOTP sind vorhanden. Ein selbstbedienter
-Passwort-vergessen-/E-Mail-Reset ist derzeit nicht implementiert.
+Passwortänderung und TOTP sind vorhanden. Auf der Anmeldeseite führt
+**Passwort vergessen?** zur Anforderung eines Reset-Links. Benutzername und
+hinterlegte E-Mail-Adresse müssen zum selben aktiven Konto passen. Die Rückmeldung
+verrät nicht, ob ein Konto existiert. Der per E-Mail versandte Link gilt 30 Minuten
+und einmalig. Eine neue Anforderung entwertet den vorherigen Link. Nach erfolgreichem
+Reset werden bisherige Sitzungen bei ihrer nächsten Anfrage abgemeldet. TOTP und
+Notfallcodes bleiben unverändert; es erfolgt keine automatische Anmeldung.
 
 Beim Anlegen und Speichern eines Benutzerkontos ist eine gültige E-Mail-Adresse
 Pflicht. Sie ist unabhängig vom Benutzernamen und kann im eigenen Profil geändert
 werden. Bestehende Konten ohne Adresse bleiben anmeldbar; das Profil und die
 Benutzerliste weisen auf die notwendige Ergänzung hin. Es werden keine Adressen
-aus Benutzernamen geraten und keine Bestätigungs- oder Reset-Mails automatisch
-versendet. Die Prüfung validiert das Format, nicht die tatsächliche Zustellbarkeit.
+aus Benutzernamen geraten. Reset-Mails werden nur nach einer passenden Anforderung
+versendet; es gibt keine automatische Verifikationsmail. Die Prüfung des E-Mail-Felds
+validiert das Format, nicht die tatsächliche Zustellbarkeit.
 
 Das Audit protokolliert relevante Aktionen und teilweise Vorher-/Nachher-Werte.
 Die neue Avisierungsübernahme schreibt Aktenanlage, Dokumentablage und

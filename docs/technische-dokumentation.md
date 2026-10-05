@@ -233,3 +233,40 @@ Zusätzlich den Trainingsdialog, die Anlage-Maske, Fehlerfall bei doppelter
 Referenz, Original-PDF in der Akte und die öffentliche Info-Seite im Browser
 prüfen. Reale OCR-Tests benötigen installierte Tesseract-/Poppler-Werkzeuge;
 einzelne Umgebungstests können ohne diese Voraussetzungen übersprungen werden.
+
+## Passwort-Neuanforderung
+
+- Öffentliche Seite `/password-reset.html`; öffentliche POST-Endpunkte
+  `/api/auth/password-reset/request` und `/api/auth/password-reset/complete`.
+- Anforderungen verwenden Benutzername und gespeicherte Kontaktadresse. Unbekannte,
+  gesperrte oder nicht passende Konten und gedrosselte Anforderungen erhalten dieselbe
+  Antwort. Mailversand läuft in einem begrenzten Executor (2 Threads, Queue 50), nicht
+  in der HTTP-Antwort. Der öffentliche Request ist deshalb auch bei SMTP-Ausfällen neutral.
+- 32 kryptografisch zufällige Bytes ergeben einen 43-stelligen URL-safe Token. Nur dessen
+  SHA-256-Hash wird in `password_reset_token` (Migration V40) gespeichert. Gültigkeit:
+  30 Minuten. Link im URL-Fragment; die Seite entfernt es sofort aus der Adresszeile.
+  Keine Tokens in Querystrings, Audit, Browserstorage oder Provider-Fehlermeldungen.
+- `PUBLIC_BASE_URL` ist die feste HTTPS-Basis für E-Mails (Produktion: `https://lc.example.com`).
+  Links werden niemals aus dem eingehenden Host-Header erzeugt. Der bestehende
+  `SMTP_ENABLED`-/`SMTP_FROM`-/SMTP-Zugang wird verwendet; Zeitlimits je SMTP-Operation 5 s.
+- Reset serialisiert am Benutzer-Datensatz und aktualisiert Passwort, Token-Verbrauch
+  und Erfolgs-Audit in einer Transaktion. Ein zweiter gleichzeitiger Verbrauch scheitert.
+  Neue Anforderungen, geänderte Passwörter oder Kontaktadressen entwerten vorherige Links.
+- Rate-Limit im Arbeitsspeicher dieser einzelnen Instanz: pro 15 Minuten 3 Anforderungen
+  je Benutzername und 10 je Client-IP; Abschlussversuche 10 je IP. Identifikatoren sind
+  gehasht, Map und Versandqueue begrenzt. Ein Neustart setzt Limits zurück; für mehrere
+  Instanzen ist ein gemeinsamer Limiter notwendig. Reverse-Proxy-Header nur aus
+  vertrauenswürdigen Proxys übernehmen, damit Client-IP-Limits nicht umgangen werden.
+- Authentifizierte Sessions speichern einen Hash des aktuellen Passwort-Hashes.
+  `CredentialSessionFilter` prüft ihn vor weiteren Zugriffen. Nach Reset oder sonstiger
+  Passwortänderung werden alte Sessions bei der nächsten Anfrage invalidiert. Auch ein
+  bereits begonnener TOTP-Login prüft den Passwortstand vor dem zweiten Faktor.
+  TOTP-Geheimnis und Recovery-Codes werden nicht verändert, kein Auto-Login nach Reset.
+- Bei der ersten Auslieferung werden bestehende Sessions ohne Credential-Stamp einmalig
+  abgemeldet. Benutzer müssen sich neu anmelden. Ein schon laufender Request wird nicht
+  rückwirkend abgebrochen. Die Passwortregel bleibt Groß-/Kleinbuchstaben und Zahl bei
+  mindestens 10 Zeichen; Reset erlaubt höchstens 72 UTF-8-Bytes (BCrypt-Grenze).
+- Audit-Aktionen: `PASSWORD_RESET_REQUESTED`, `PASSWORD_RESET_MAIL_FAILED`,
+  `PASSWORD_RESET_FAILED`, `PASSWORD_RESET_COMPLETED`; niemals Passwort oder Token.
+  Es wurden keine echten Reset-Mails oder Passwortänderungen an Produktionskonten
+  zum Testen ausgelöst. Tests verwenden Mail-Mocks und eine isolierte H2-Datenbank.
