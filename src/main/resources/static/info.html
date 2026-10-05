@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Info & Lizenzen · Corporate LC Manager</title>
+  <link rel="stylesheet" href="/info.css?v=20261005-1">
+  <script src="/info.js?v=20261005-1" defer></script>
+</head>
+<body class="info-page">
+  <header class="info-header"><a class="info-brand" href="/">LC <span>Corporate LC Manager</span></a><a href="/">Zur Anwendung</a></header>
+  <main class="info-main">
+    <p class="info-eyebrow">ÜBER DIE ANWENDUNG</p>
+    <h1>Info & Lizenzen</h1>
+    <p class="info-lead">Akkreditivverwaltung, Dokumentenakte und lernende Dokumentenerkennung.</p>
+    <div class="info-cards">
+      <section><h2>Copyright</h2><p>© 2026 Markus Schorpp</p><p>Die Rechte am Corporate LC Manager liegen bei Markus Schorpp. Die Rechte an eingebundenen Komponenten liegen bei deren jeweiligen Urhebern.</p></section>
+      <section><h2>Lizenz</h2><p>GNU General Public License, Version 3 oder jede spätere Version (GPL-3.0-or-later).</p><p><a href="https://www.gnu.org/licenses/gpl.html" target="_blank" rel="noopener noreferrer">Aktuelle GPL auf gnu.org</a> · <a href="/license.txt">GPL-v3-Lizenztext</a></p><p>Die Anwendung wird ohne Gewährleistung im Rahmen der GPL bereitgestellt. Einzelheiten regelt der Lizenztext.</p></section>
+      <section><h2>Version & Quellcode</h2><p>Version <strong id="applicationVersion">0.5.0-SNAPSHOT</strong></p><p><a href="https://github.com/mascho44/corporate-LC_Manager" target="_blank" rel="noopener noreferrer">Projekt und Quellcode</a> · <a href="https://github.com/mascho44/corporate-LC_Manager/issues" target="_blank" rel="noopener noreferrer">Fehler und Anregungen</a></p><p><a href="https://github.com/mascho44/corporate-LC_Manager/blob/main/docs/fachliche-dokumentation.md" target="_blank" rel="noopener noreferrer">Fachliche Dokumentation</a> · <a href="https://github.com/mascho44/corporate-LC_Manager/blob/main/docs/technische-dokumentation.md" target="_blank" rel="noopener noreferrer">Technische Dokumentation</a></p></section>
+    </div>
+    <section class="info-thanks"><h2>Danke an die Open-Source-Community</h2><p>Diese Anwendung baut auf der Arbeit vieler Entwicklerinnen und Entwickler auf. Unser Dank gilt insbesondere den Teams von Spring, PostgreSQL, Hibernate, Flyway, Apache PDFBox, Apache POI, poi-tl, Tesseract, Poppler, ZXing und Eclipse Temurin – und allen Beteiligten der unten aufgeführten Projekte.</p></section>
+    <section><h2>Java-Bibliotheken</h2><p>Die Übersicht enthält die direkten und transitiven Bibliotheken des aufgelösten Laufzeit-Classpaths. Versions- und Lizenzangaben stammen aus den veröffentlichten Maven-Metadaten. Testwerkzeuge und Betriebssystempakete sind darin nicht enthalten.</p><p><a href="/oss-notices.txt">Originale Lizenz- und Copyright-Hinweise der Bibliotheken</a> · <a href="/oss-components.json">Komponentenliste als JSON</a></p><label class="info-search">Komponenten filtern<input id="ossSearch" type="search" placeholder="Name, Version oder Lizenz …"></label><p id="ossStatus" role="status">Bibliotheken werden geladen …</p><div class="info-table-wrap"><table><caption class="info-sr-only">Verwendete Java-Laufzeitbibliotheken</caption><thead><tr><th scope="col">Komponente</th><th scope="col">Version</th><th scope="col">Lizenz</th><th scope="col">Quelle</th></tr></thead><tbody id="ossRows"></tbody></table></div></section>
+    <section><h2>Weitere Laufzeitkomponenten</h2><p>Installierter Produktionsstand vom 05.10.2026. Die Versionen dieser Docker-Komponenten können sich beim nächsten Image-Build ändern.</p><div class="info-table-wrap"><table><thead><tr><th scope="col">Komponente</th><th scope="col">Version</th><th scope="col">Lizenz / Projekt</th><th scope="col">Verwendung</th></tr></thead><tbody>
+      <tr><td>PostgreSQL</td><td>17.11</td><td><a href="https://www.postgresql.org/about/licence/" target="_blank" rel="noopener noreferrer">PostgreSQL License</a></td><td>Datenbank</td></tr>
+      <tr><td>Tesseract OCR</td><td>5.5.2</td><td><a href="https://github.com/tesseract-ocr/tesseract/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">Apache License 2.0</a></td><td>Texterkennung in Scans</td></tr>
+      <tr><td>Tesseract Sprachdaten</td><td>Deutsch und Englisch; Docker-Pakete</td><td><a href="https://github.com/tesseract-ocr/tessdata/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">Apache License 2.0</a></td><td>OCR-Sprachmodelle</td></tr>
+      <tr><td>Poppler / poppler-utils</td><td>25.12.0</td><td><a href="https://gitlab.freedesktop.org/poppler/poppler/-/blob/master/COPYING" target="_blank" rel="noopener noreferrer">GPL v2 oder später</a></td><td>PDF-Rendering und Textebene</td></tr>
+      <tr><td>Eclipse Temurin / OpenJDK</td><td>17.0.20.1+1</td><td><a href="https://github.com/openjdk/jdk17u/blob/master/LICENSE" target="_blank" rel="noopener noreferrer">GPL v2 mit Classpath Exception</a></td><td>Java-Laufzeit</td></tr>
+    </tbody></table></div><p>Weitere Systembibliotheken und ihre Lizenzhinweise gehören zu den jeweiligen Container-Paketen. Die Komponenten behalten ihre eigenen Lizenzen.</p></section>
+  </main>
+  <footer class="info-footer">© 2026 Markus Schorpp · Corporate LC Manager · <a href="https://www.gnu.org/licenses/gpl.html" target="_blank" rel="noopener noreferrer">GNU GPL</a></footer>
+</body>
+</html>

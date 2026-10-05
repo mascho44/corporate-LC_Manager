@@ -55,7 +55,7 @@ public class TrainingDataService {
 
     public record Detail(UUID id,String filename,String messageType,String status,String username,
                          String extractionStatus,String rawMessage,JsonNode fields,
-                         java.time.LocalDateTime createdAt,java.time.LocalDateTime confirmedAt){}
+                         java.time.LocalDateTime createdAt,java.time.LocalDateTime confirmedAt,UUID lcId){}
     public record FieldQuality(String code,long confirmed,long correct,long corrected,double accuracyPercent){}
     public record ProfileQuality(String messageType,long sessions,long fields,long correct,long corrected,
                                  double accuracyPercent,List<FieldQuality> fieldQuality){}
@@ -63,7 +63,7 @@ public class TrainingDataService {
     public Detail detail(TrainingSession session){
         return new Detail(session.getId(),session.getFilename(),session.getMessageType(),session.getStatus(),
                 session.getUsername(),session.getExtractionStatus(),raw(session),fields(session),
-                session.getCreatedAt(),session.getConfirmedAt());
+                session.getCreatedAt(),session.getConfirmedAt(),session.getLcId());
     }
 
     public byte[] json(TrainingSession session){

@@ -4,9 +4,18 @@ Spring-Boot-MVP für Corporate-Akkreditivmanagement mit Web-Dashboard, MT700/MT7
 
 Eine vollständige macOS-Buildanleitung steht in [`BUILD-MACOS.md`](BUILD-MACOS.md). Alternativ baut und startet `build-and-run-macos.command` das Projekt per Doppelklick, wenn Java und Maven installiert sind.
 
+## Dokumentation und Lizenz
+
+- [Fachliche Dokumentation](docs/fachliche-dokumentation.md)
+- [Technische Dokumentation und Betrieb](docs/technische-dokumentation.md)
+- [Dokumentationsübersicht](docs/README.md)
+- Info, Copyright und OSS-Danksagung in der Anwendung: `/info.html`
+
+Copyright © 2026 Markus Schorpp. GPL v3 oder später ([Lizenztext](LICENSE), [aktuelle GPL](https://www.gnu.org/licenses/gpl.html)). Drittanbieterkomponenten behalten ihre eigenen Lizenzen; das Inventar und Originalhinweise stehen auf der Info-Seite.
+
 ## Stack
 
-- Java 21 / Spring Boot 3.5 / Maven
+- Java 17 / Spring Boot 3.5.6 / Maven
 - Spring Web, Data JPA, Validation
 - PostgreSQL + Flyway
 - Responsive Web UI ohne separaten Node-Build

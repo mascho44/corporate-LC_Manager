@@ -1,0 +1,1828 @@
+{
+  "applicationVersion": "0.5.0-SNAPSHOT",
+  "source": "Resolved Maven runtime dependencies; licenses from published artifact POMs (including parent POMs).",
+  "components": [
+    {
+      "name": "Logback Classic Module",
+      "coordinate": "ch.qos.logback:logback-classic",
+      "version": "1.5.18",
+      "scope": "compile",
+      "projectUrl": "http://logback.qos.ch",
+      "licenses": [
+        {
+          "name": "Eclipse Public License - v 1.0",
+          "url": "http://www.eclipse.org/legal/epl-v10.html"
+        },
+        {
+          "name": "GNU Lesser General Public License",
+          "url": "http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/ch/qos/logback/logback-classic/1.5.18/logback-classic-1.5.18.pom"
+    },
+    {
+      "name": "Logback Core Module",
+      "coordinate": "ch.qos.logback:logback-core",
+      "version": "1.5.18",
+      "scope": "compile",
+      "projectUrl": "http://logback.qos.ch",
+      "licenses": [
+        {
+          "name": "Eclipse Public License - v 1.0",
+          "url": "http://www.eclipse.org/legal/epl-v10.html"
+        },
+        {
+          "name": "GNU Lesser General Public License",
+          "url": "http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/ch/qos/logback/logback-core/1.5.18/logback-core-1.5.18.pom"
+    },
+    {
+      "name": "jcommander",
+      "coordinate": "com.beust:jcommander",
+      "version": "1.82",
+      "scope": "compile",
+      "projectUrl": "https://jcommander.org",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/com/beust/jcommander/1.82/jcommander-1.82.pom"
+    },
+    {
+      "name": "poi-tl",
+      "coordinate": "com.deepoove:poi-tl",
+      "version": "1.12.2",
+      "scope": "compile",
+      "projectUrl": "http://deepoove.com/poi-tl",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/com/deepoove/poi-tl/1.12.2/poi-tl-1.12.2.pom"
+    },
+    {
+      "name": "Jackson-annotations",
+      "coordinate": "com.fasterxml.jackson.core:jackson-annotations",
+      "version": "2.19.2",
+      "scope": "compile",
+      "projectUrl": "https://github.com/FasterXML/jackson",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-annotations/2.19.2/jackson-annotations-2.19.2.pom"
+    },
+    {
+      "name": "Jackson-core",
+      "coordinate": "com.fasterxml.jackson.core:jackson-core",
+      "version": "2.19.2",
+      "scope": "compile",
+      "projectUrl": "https://github.com/FasterXML/jackson-core",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-core/2.19.2/jackson-core-2.19.2.pom"
+    },
+    {
+      "name": "jackson-databind",
+      "coordinate": "com.fasterxml.jackson.core:jackson-databind",
+      "version": "2.19.2",
+      "scope": "compile",
+      "projectUrl": "https://github.com/FasterXML/jackson",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/com/fasterxml/jackson/core/jackson-databind/2.19.2/jackson-databind-2.19.2.pom"
+    },
+    {
+      "name": "Jackson-dataformat-TOML",
+      "coordinate": "com.fasterxml.jackson.dataformat:jackson-dataformat-toml",
+      "version": "2.19.2",
+      "scope": "compile",
+      "projectUrl": "https://github.com/FasterXML/jackson-dataformats-text",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/com/fasterxml/jackson/dataformat/jackson-dataformat-toml/2.19.2/jackson-dataformat-toml-2.19.2.pom"
+    },
+    {
+      "name": "Jackson datatype: jdk8",
+      "coordinate": "com.fasterxml.jackson.datatype:jackson-datatype-jdk8",
+      "version": "2.19.2",
+      "scope": "compile",
+      "projectUrl": "https://github.com/FasterXML/jackson-modules-java8",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/com/fasterxml/jackson/datatype/jackson-datatype-jdk8/2.19.2/jackson-datatype-jdk8-2.19.2.pom"
+    },
+    {
+      "name": "Jackson datatype: JSR310",
+      "coordinate": "com.fasterxml.jackson.datatype:jackson-datatype-jsr310",
+      "version": "2.19.2",
+      "scope": "compile",
+      "projectUrl": "https://github.com/FasterXML/jackson-modules-java8",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/com/fasterxml/jackson/datatype/jackson-datatype-jsr310/2.19.2/jackson-datatype-jsr310-2.19.2.pom"
+    },
+    {
+      "name": "Jackson-module-parameter-names",
+      "coordinate": "com.fasterxml.jackson.module:jackson-module-parameter-names",
+      "version": "2.19.2",
+      "scope": "compile",
+      "projectUrl": "https://github.com/FasterXML/jackson-modules-java8",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/com/fasterxml/jackson/module/jackson-module-parameter-names/2.19.2/jackson-module-parameter-names-2.19.2.pom"
+    },
+    {
+      "name": "ClassMate",
+      "coordinate": "com.fasterxml:classmate",
+      "version": "1.7.0",
+      "scope": "compile",
+      "projectUrl": "https://github.com/FasterXML/java-classmate",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/com/fasterxml/classmate/1.7.0/classmate-1.7.0.pom"
+    },
+    {
+      "name": "Java Advanced Imaging Image I/O Tools API core (standalone)",
+      "coordinate": "com.github.jai-imageio:jai-imageio-core",
+      "version": "1.4.0",
+      "scope": "runtime",
+      "projectUrl": "https://github.com/jai-imageio/jai-imageio-core",
+      "licenses": [
+        {
+          "name": "BSD 3-clause License w/nuclear disclaimer",
+          "url": "LICENSE.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/com/github/jai-imageio/jai-imageio-core/1.4.0/jai-imageio-core-1.4.0.pom"
+    },
+    {
+      "name": "curvesapi",
+      "coordinate": "com.github.virtuald:curvesapi",
+      "version": "1.07",
+      "scope": "compile",
+      "projectUrl": "https://github.com/virtuald/curvesapi",
+      "licenses": [
+        {
+          "name": "BSD License",
+          "url": "http://opensource.org/licenses/BSD-3-Clause"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/com/github/virtuald/curvesapi/1.07/curvesapi-1.07.pom"
+    },
+    {
+      "name": "ZXing Core",
+      "coordinate": "com.google.zxing:core",
+      "version": "3.5.3",
+      "scope": "compile",
+      "projectUrl": "https://github.com/zxing/zxing",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/com/google/zxing/core/3.5.3/core-3.5.3.pom"
+    },
+    {
+      "name": "ZXing Java SE extensions",
+      "coordinate": "com.google.zxing:javase",
+      "version": "3.5.3",
+      "scope": "compile",
+      "projectUrl": "https://github.com/zxing/zxing",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/com/google/zxing/javase/3.5.3/javase-3.5.3.pom"
+    },
+    {
+      "name": "H2 Database Engine",
+      "coordinate": "com.h2database:h2",
+      "version": "2.3.232",
+      "scope": "runtime",
+      "projectUrl": "https://h2database.com",
+      "licenses": [
+        {
+          "name": "MPL 2.0",
+          "url": "https://www.mozilla.org/en-US/MPL/2.0/"
+        },
+        {
+          "name": "EPL 1.0",
+          "url": "https://opensource.org/licenses/eclipse-1.0.php"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/com/h2database/h2/2.3.232/h2-2.3.232.pom"
+    },
+    {
+      "name": "istack common utility code runtime",
+      "coordinate": "com.sun.istack:istack-commons-runtime",
+      "version": "4.1.2",
+      "scope": "runtime",
+      "projectUrl": "https://projects.eclipse.org/projects/ee4j",
+      "licenses": [
+        {
+          "name": "Eclipse Distribution License - v 1.0",
+          "url": "http://www.eclipse.org/org/documents/edl-v10.php"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/com/sun/istack/istack-commons-runtime/4.1.2/istack-commons-runtime-4.1.2.pom"
+    },
+    {
+      "name": "HikariCP",
+      "coordinate": "com.zaxxer:HikariCP",
+      "version": "6.3.3",
+      "scope": "compile",
+      "projectUrl": "https://github.com/brettwooldridge/HikariCP",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/com/zaxxer/HikariCP/6.3.3/HikariCP-6.3.3.pom"
+    },
+    {
+      "name": "SparseBitSet",
+      "coordinate": "com.zaxxer:SparseBitSet",
+      "version": "1.2",
+      "scope": "compile",
+      "projectUrl": "https://github.com/brettwooldridge/SparseBitSet",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/com/zaxxer/SparseBitSet/1.2/SparseBitSet-1.2.pom"
+    },
+    {
+      "name": "Apache Commons Codec",
+      "coordinate": "commons-codec:commons-codec",
+      "version": "1.18.0",
+      "scope": "compile",
+      "projectUrl": "https://commons.apache.org/proper/commons-codec/",
+      "licenses": [
+        {
+          "name": "Apache-2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/commons-codec/commons-codec/1.18.0/commons-codec-1.18.0.pom"
+    },
+    {
+      "name": "Apache Commons IO",
+      "coordinate": "commons-io:commons-io",
+      "version": "2.11.0",
+      "scope": "compile",
+      "projectUrl": "https://commons.apache.org/proper/commons-io/",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/commons-io/commons-io/2.11.0/commons-io-2.11.0.pom"
+    },
+    {
+      "name": "Apache Commons Logging",
+      "coordinate": "commons-logging:commons-logging",
+      "version": "1.4.0",
+      "scope": "compile",
+      "projectUrl": "https://commons.apache.org/proper/commons-logging/",
+      "licenses": [
+        {
+          "name": "Apache-2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/commons-logging/commons-logging/1.4.0/commons-logging-1.4.0.pom"
+    },
+    {
+      "name": "micrometer-commons",
+      "coordinate": "io.micrometer:micrometer-commons",
+      "version": "1.15.4",
+      "scope": "compile",
+      "projectUrl": "https://github.com/micrometer-metrics/micrometer",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/io/micrometer/micrometer-commons/1.15.4/micrometer-commons-1.15.4.pom"
+    },
+    {
+      "name": "micrometer-core",
+      "coordinate": "io.micrometer:micrometer-core",
+      "version": "1.15.4",
+      "scope": "compile",
+      "projectUrl": "https://github.com/micrometer-metrics/micrometer",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/io/micrometer/micrometer-core/1.15.4/micrometer-core-1.15.4.pom"
+    },
+    {
+      "name": "micrometer-jakarta9",
+      "coordinate": "io.micrometer:micrometer-jakarta9",
+      "version": "1.15.4",
+      "scope": "compile",
+      "projectUrl": "https://github.com/micrometer-metrics/micrometer",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/io/micrometer/micrometer-jakarta9/1.15.4/micrometer-jakarta9-1.15.4.pom"
+    },
+    {
+      "name": "micrometer-observation",
+      "coordinate": "io.micrometer:micrometer-observation",
+      "version": "1.15.4",
+      "scope": "compile",
+      "projectUrl": "https://github.com/micrometer-metrics/micrometer",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/io/micrometer/micrometer-observation/1.15.4/micrometer-observation-1.15.4.pom"
+    },
+    {
+      "name": "Jandex: Core",
+      "coordinate": "io.smallrye:jandex",
+      "version": "3.2.0",
+      "scope": "runtime",
+      "projectUrl": "https://smallrye.io",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/io/smallrye/jandex/3.2.0/jandex-3.2.0.pom"
+    },
+    {
+      "name": "Jakarta Activation API",
+      "coordinate": "jakarta.activation:jakarta.activation-api",
+      "version": "2.1.4",
+      "scope": "compile",
+      "projectUrl": "https://github.com/jakartaee/jaf-api",
+      "licenses": [
+        {
+          "name": "EDL 1.0",
+          "url": "http://www.eclipse.org/org/documents/edl-v10.php"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/jakarta/activation/jakarta.activation-api/2.1.4/jakarta.activation-api-2.1.4.pom"
+    },
+    {
+      "name": "Jakarta Annotations API",
+      "coordinate": "jakarta.annotation:jakarta.annotation-api",
+      "version": "2.1.1",
+      "scope": "compile",
+      "projectUrl": "https://projects.eclipse.org/projects/ee4j.ca",
+      "licenses": [
+        {
+          "name": "EPL 2.0",
+          "url": "http://www.eclipse.org/legal/epl-2.0"
+        },
+        {
+          "name": "GPL2 w/ CPE",
+          "url": "https://www.gnu.org/software/classpath/license.html"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/jakarta/annotation/jakarta.annotation-api/2.1.1/jakarta.annotation-api-2.1.1.pom"
+    },
+    {
+      "name": "Jakarta Dependency Injection",
+      "coordinate": "jakarta.inject:jakarta.inject-api",
+      "version": "2.0.1",
+      "scope": "runtime",
+      "projectUrl": "https://github.com/eclipse-ee4j/injection-api",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/jakarta/inject/jakarta.inject-api/2.0.1/jakarta.inject-api-2.0.1.pom"
+    },
+    {
+      "name": "Jakarta Persistence API",
+      "coordinate": "jakarta.persistence:jakarta.persistence-api",
+      "version": "3.1.0",
+      "scope": "compile",
+      "projectUrl": "https://github.com/eclipse-ee4j/jpa-api",
+      "licenses": [
+        {
+          "name": "Eclipse Public License v. 2.0",
+          "url": "http://www.eclipse.org/legal/epl-2.0"
+        },
+        {
+          "name": "Eclipse Distribution License v. 1.0",
+          "url": "http://www.eclipse.org/org/documents/edl-v10.php"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/jakarta/persistence/jakarta.persistence-api/3.1.0/jakarta.persistence-api-3.1.0.pom"
+    },
+    {
+      "name": "jakarta.transaction API",
+      "coordinate": "jakarta.transaction:jakarta.transaction-api",
+      "version": "2.0.1",
+      "scope": "compile",
+      "projectUrl": "https://projects.eclipse.org/projects/ee4j.jta",
+      "licenses": [
+        {
+          "name": "EPL 2.0",
+          "url": "http://www.eclipse.org/legal/epl-2.0"
+        },
+        {
+          "name": "GPL2 w/ CPE",
+          "url": "https://www.gnu.org/software/classpath/license.html"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/jakarta/transaction/jakarta.transaction-api/2.0.1/jakarta.transaction-api-2.0.1.pom"
+    },
+    {
+      "name": "Jakarta Bean Validation API",
+      "coordinate": "jakarta.validation:jakarta.validation-api",
+      "version": "3.0.2",
+      "scope": "compile",
+      "projectUrl": "https://beanvalidation.org",
+      "licenses": [
+        {
+          "name": "Apache License 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/jakarta/validation/jakarta.validation-api/3.0.2/jakarta.validation-api-3.0.2.pom"
+    },
+    {
+      "name": "Jakarta XML Binding API",
+      "coordinate": "jakarta.xml.bind:jakarta.xml.bind-api",
+      "version": "4.0.2",
+      "scope": "runtime",
+      "projectUrl": "https://github.com/jakartaee/jaxb-api",
+      "licenses": [
+        {
+          "name": "Eclipse Distribution License - v 1.0",
+          "url": "http://www.eclipse.org/org/documents/edl-v10.php"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/jakarta/xml/bind/jakarta.xml.bind-api/4.0.2/jakarta.xml.bind-api-4.0.2.pom"
+    },
+    {
+      "name": "Byte Buddy (without dependencies)",
+      "coordinate": "net.bytebuddy:byte-buddy",
+      "version": "1.17.7",
+      "scope": "runtime",
+      "projectUrl": "https://bytebuddy.net",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/net/bytebuddy/byte-buddy/1.17.7/byte-buddy-1.17.7.pom"
+    },
+    {
+      "name": "ANTLR 4 Runtime",
+      "coordinate": "org.antlr:antlr4-runtime",
+      "version": "4.13.0",
+      "scope": "compile",
+      "projectUrl": "https://www.antlr.org/",
+      "licenses": [
+        {
+          "name": "BSD-3-Clause",
+          "url": "https://www.antlr.org/license.html"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/antlr/antlr4-runtime/4.13.0/antlr4-runtime-4.13.0.pom"
+    },
+    {
+      "name": "Apache Commons Collections",
+      "coordinate": "org.apache.commons:commons-collections4",
+      "version": "4.4",
+      "scope": "compile",
+      "projectUrl": "https://commons.apache.org/proper/commons-collections/",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/commons/commons-collections4/4.4/commons-collections4-4.4.pom"
+    },
+    {
+      "name": "Apache Commons Compress",
+      "coordinate": "org.apache.commons:commons-compress",
+      "version": "1.21",
+      "scope": "compile",
+      "projectUrl": "https://commons.apache.org/proper/commons-compress/",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/commons/commons-compress/1.21/commons-compress-1.21.pom"
+    },
+    {
+      "name": "Apache Commons Lang",
+      "coordinate": "org.apache.commons:commons-lang3",
+      "version": "3.17.0",
+      "scope": "compile",
+      "projectUrl": "https://commons.apache.org/proper/commons-lang/",
+      "licenses": [
+        {
+          "name": "Apache-2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/commons/commons-lang3/3.17.0/commons-lang3-3.17.0.pom"
+    },
+    {
+      "name": "Apache Commons Math",
+      "coordinate": "org.apache.commons:commons-math3",
+      "version": "3.6.1",
+      "scope": "compile",
+      "projectUrl": "http://commons.apache.org/proper/commons-math/",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/commons/commons-math3/3.6.1/commons-math3-3.6.1.pom"
+    },
+    {
+      "name": "Apache Log4j API",
+      "coordinate": "org.apache.logging.log4j:log4j-api",
+      "version": "2.24.3",
+      "scope": "compile",
+      "projectUrl": "https://logging.apache.org/log4j/2.x/",
+      "licenses": [
+        {
+          "name": "Apache-2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/logging/log4j/log4j-api/2.24.3/log4j-api-2.24.3.pom"
+    },
+    {
+      "name": "Log4j API to SLF4J Adapter",
+      "coordinate": "org.apache.logging.log4j:log4j-to-slf4j",
+      "version": "2.24.3",
+      "scope": "compile",
+      "projectUrl": "https://logging.apache.org/log4j/2.x/",
+      "licenses": [
+        {
+          "name": "Apache-2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/logging/log4j/log4j-to-slf4j/2.24.3/log4j-to-slf4j-2.24.3.pom"
+    },
+    {
+      "name": "Apache FontBox",
+      "coordinate": "org.apache.pdfbox:fontbox",
+      "version": "3.0.8",
+      "scope": "compile",
+      "projectUrl": "http://pdfbox.apache.org/",
+      "licenses": [
+        {
+          "name": "Apache-2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/pdfbox/fontbox/3.0.8/fontbox-3.0.8.pom"
+    },
+    {
+      "name": "Apache PDFBox",
+      "coordinate": "org.apache.pdfbox:pdfbox",
+      "version": "3.0.8",
+      "scope": "compile",
+      "projectUrl": "https://www.apache.org/",
+      "licenses": [
+        {
+          "name": "Apache-2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/pdfbox/pdfbox/3.0.8/pdfbox-3.0.8.pom"
+    },
+    {
+      "name": "Apache PDFBox io",
+      "coordinate": "org.apache.pdfbox:pdfbox-io",
+      "version": "3.0.8",
+      "scope": "compile",
+      "projectUrl": "https://www.apache.org/",
+      "licenses": [
+        {
+          "name": "Apache-2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/pdfbox/pdfbox-io/3.0.8/pdfbox-io-3.0.8.pom"
+    },
+    {
+      "name": "Apache POI - Common",
+      "coordinate": "org.apache.poi:poi",
+      "version": "5.2.2",
+      "scope": "compile",
+      "projectUrl": "https://poi.apache.org/",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/poi/poi/5.2.2/poi-5.2.2.pom"
+    },
+    {
+      "name": "Apache POI - API based on OPC and OOXML schemas",
+      "coordinate": "org.apache.poi:poi-ooxml",
+      "version": "5.2.2",
+      "scope": "compile",
+      "projectUrl": "https://poi.apache.org/",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/poi/poi-ooxml/5.2.2/poi-ooxml-5.2.2.pom"
+    },
+    {
+      "name": "Apache POI",
+      "coordinate": "org.apache.poi:poi-ooxml-lite",
+      "version": "5.2.2",
+      "scope": "compile",
+      "projectUrl": "https://poi.apache.org/",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/poi/poi-ooxml-lite/5.2.2/poi-ooxml-lite-5.2.2.pom"
+    },
+    {
+      "name": "tomcat-embed-core",
+      "coordinate": "org.apache.tomcat.embed:tomcat-embed-core",
+      "version": "10.1.46",
+      "scope": "compile",
+      "projectUrl": "https://tomcat.apache.org/",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/tomcat/embed/tomcat-embed-core/10.1.46/tomcat-embed-core-10.1.46.pom"
+    },
+    {
+      "name": "tomcat-embed-el",
+      "coordinate": "org.apache.tomcat.embed:tomcat-embed-el",
+      "version": "10.1.46",
+      "scope": "compile",
+      "projectUrl": "https://tomcat.apache.org/",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/tomcat/embed/tomcat-embed-el/10.1.46/tomcat-embed-el-10.1.46.pom"
+    },
+    {
+      "name": "tomcat-embed-websocket",
+      "coordinate": "org.apache.tomcat.embed:tomcat-embed-websocket",
+      "version": "10.1.46",
+      "scope": "compile",
+      "projectUrl": "https://tomcat.apache.org/",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/tomcat/embed/tomcat-embed-websocket/10.1.46/tomcat-embed-websocket-10.1.46.pom"
+    },
+    {
+      "name": "XmlBeans",
+      "coordinate": "org.apache.xmlbeans:xmlbeans",
+      "version": "5.0.3",
+      "scope": "compile",
+      "projectUrl": "https://xmlbeans.apache.org/",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/xmlbeans/xmlbeans/5.0.3/xmlbeans-5.0.3.pom"
+    },
+    {
+      "name": "org.apache.xmlgraphics:batik-anim",
+      "coordinate": "org.apache.xmlgraphics:batik-anim",
+      "version": "1.17",
+      "scope": "compile",
+      "projectUrl": "http://xmlgraphics.apache.org/batik/",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-anim/1.17/batik-anim-1.17.pom"
+    },
+    {
+      "name": "org.apache.xmlgraphics:batik-awt-util",
+      "coordinate": "org.apache.xmlgraphics:batik-awt-util",
+      "version": "1.17",
+      "scope": "compile",
+      "projectUrl": "http://xmlgraphics.apache.org/batik/",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-awt-util/1.17/batik-awt-util-1.17.pom"
+    },
+    {
+      "name": "org.apache.xmlgraphics:batik-bridge",
+      "coordinate": "org.apache.xmlgraphics:batik-bridge",
+      "version": "1.17",
+      "scope": "compile",
+      "projectUrl": "http://xmlgraphics.apache.org/batik/",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-bridge/1.17/batik-bridge-1.17.pom"
+    },
+    {
+      "name": "org.apache.xmlgraphics:batik-codec",
+      "coordinate": "org.apache.xmlgraphics:batik-codec",
+      "version": "1.17",
+      "scope": "compile",
+      "projectUrl": "http://xmlgraphics.apache.org/batik/",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-codec/1.17/batik-codec-1.17.pom"
+    },
+    {
+      "name": "org.apache.xmlgraphics:batik-constants",
+      "coordinate": "org.apache.xmlgraphics:batik-constants",
+      "version": "1.17",
+      "scope": "compile",
+      "projectUrl": "http://xmlgraphics.apache.org/batik/",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-constants/1.17/batik-constants-1.17.pom"
+    },
+    {
+      "name": "org.apache.xmlgraphics:batik-css",
+      "coordinate": "org.apache.xmlgraphics:batik-css",
+      "version": "1.17",
+      "scope": "compile",
+      "projectUrl": "http://xmlgraphics.apache.org/batik/",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-css/1.17/batik-css-1.17.pom"
+    },
+    {
+      "name": "org.apache.xmlgraphics:batik-dom",
+      "coordinate": "org.apache.xmlgraphics:batik-dom",
+      "version": "1.17",
+      "scope": "compile",
+      "projectUrl": "http://xmlgraphics.apache.org/batik/",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-dom/1.17/batik-dom-1.17.pom"
+    },
+    {
+      "name": "org.apache.xmlgraphics:batik-ext",
+      "coordinate": "org.apache.xmlgraphics:batik-ext",
+      "version": "1.17",
+      "scope": "compile",
+      "projectUrl": "http://xmlgraphics.apache.org/batik/",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-ext/1.17/batik-ext-1.17.pom"
+    },
+    {
+      "name": "org.apache.xmlgraphics:batik-gvt",
+      "coordinate": "org.apache.xmlgraphics:batik-gvt",
+      "version": "1.17",
+      "scope": "compile",
+      "projectUrl": "http://xmlgraphics.apache.org/batik/",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-gvt/1.17/batik-gvt-1.17.pom"
+    },
+    {
+      "name": "org.apache.xmlgraphics:batik-i18n",
+      "coordinate": "org.apache.xmlgraphics:batik-i18n",
+      "version": "1.17",
+      "scope": "compile",
+      "projectUrl": "http://xmlgraphics.apache.org/batik/",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-i18n/1.17/batik-i18n-1.17.pom"
+    },
+    {
+      "name": "org.apache.xmlgraphics:batik-parser",
+      "coordinate": "org.apache.xmlgraphics:batik-parser",
+      "version": "1.17",
+      "scope": "compile",
+      "projectUrl": "http://xmlgraphics.apache.org/batik/",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-parser/1.17/batik-parser-1.17.pom"
+    },
+    {
+      "name": "org.apache.xmlgraphics:batik-script",
+      "coordinate": "org.apache.xmlgraphics:batik-script",
+      "version": "1.17",
+      "scope": "compile",
+      "projectUrl": "http://xmlgraphics.apache.org/batik/",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-script/1.17/batik-script-1.17.pom"
+    },
+    {
+      "name": "org.apache.xmlgraphics:batik-shared-resources",
+      "coordinate": "org.apache.xmlgraphics:batik-shared-resources",
+      "version": "1.17",
+      "scope": "compile",
+      "projectUrl": "http://xmlgraphics.apache.org/batik/",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-shared-resources/1.17/batik-shared-resources-1.17.pom"
+    },
+    {
+      "name": "org.apache.xmlgraphics:batik-svg-dom",
+      "coordinate": "org.apache.xmlgraphics:batik-svg-dom",
+      "version": "1.17",
+      "scope": "compile",
+      "projectUrl": "http://xmlgraphics.apache.org/batik/",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-svg-dom/1.17/batik-svg-dom-1.17.pom"
+    },
+    {
+      "name": "org.apache.xmlgraphics:batik-svggen",
+      "coordinate": "org.apache.xmlgraphics:batik-svggen",
+      "version": "1.17",
+      "scope": "compile",
+      "projectUrl": "http://xmlgraphics.apache.org/batik/",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-svggen/1.17/batik-svggen-1.17.pom"
+    },
+    {
+      "name": "org.apache.xmlgraphics:batik-transcoder",
+      "coordinate": "org.apache.xmlgraphics:batik-transcoder",
+      "version": "1.17",
+      "scope": "compile",
+      "projectUrl": "http://xmlgraphics.apache.org/batik/",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-transcoder/1.17/batik-transcoder-1.17.pom"
+    },
+    {
+      "name": "org.apache.xmlgraphics:batik-util",
+      "coordinate": "org.apache.xmlgraphics:batik-util",
+      "version": "1.17",
+      "scope": "compile",
+      "projectUrl": "http://xmlgraphics.apache.org/batik/",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-util/1.17/batik-util-1.17.pom"
+    },
+    {
+      "name": "org.apache.xmlgraphics:batik-xml",
+      "coordinate": "org.apache.xmlgraphics:batik-xml",
+      "version": "1.17",
+      "scope": "compile",
+      "projectUrl": "http://xmlgraphics.apache.org/batik/",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/batik-xml/1.17/batik-xml-1.17.pom"
+    },
+    {
+      "name": "Apache XML Graphics Commons",
+      "coordinate": "org.apache.xmlgraphics:xmlgraphics-commons",
+      "version": "2.9",
+      "scope": "compile",
+      "projectUrl": "http://xmlgraphics.apache.org/commons/",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/apache/xmlgraphics/xmlgraphics-commons/2.9/xmlgraphics-commons-2.9.pom"
+    },
+    {
+      "name": "AspectJ Weaver",
+      "coordinate": "org.aspectj:aspectjweaver",
+      "version": "1.9.24",
+      "scope": "compile",
+      "projectUrl": "https://www.eclipse.org/aspectj/",
+      "licenses": [
+        {
+          "name": "Eclipse Public License - v 2.0",
+          "url": "https://www.eclipse.org/org/documents/epl-2.0/EPL-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/aspectj/aspectjweaver/1.9.24/aspectjweaver-1.9.24.pom"
+    },
+    {
+      "name": "Checker Qual",
+      "coordinate": "org.checkerframework:checker-qual",
+      "version": "3.49.3",
+      "scope": "runtime",
+      "projectUrl": "https://checkerframework.org/",
+      "licenses": [
+        {
+          "name": "The MIT License",
+          "url": "http://opensource.org/licenses/MIT"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/checkerframework/checker-qual/3.49.3/checker-qual-3.49.3.pom"
+    },
+    {
+      "name": "Angus Activation Registries",
+      "coordinate": "org.eclipse.angus:angus-activation",
+      "version": "2.0.2",
+      "scope": "runtime",
+      "projectUrl": "https://github.com/eclipse-ee4j/angus-activation",
+      "licenses": [
+        {
+          "name": "EDL 1.0",
+          "url": "http://www.eclipse.org/org/documents/edl-v10.php"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/eclipse/angus/angus-activation/2.0.2/angus-activation-2.0.2.pom"
+    },
+    {
+      "name": "Angus Mail default provider",
+      "coordinate": "org.eclipse.angus:jakarta.mail",
+      "version": "2.0.4",
+      "scope": "compile",
+      "projectUrl": "http://eclipse-ee4j.github.io/angus-mail",
+      "licenses": [
+        {
+          "name": "EPL 2.0",
+          "url": "http://www.eclipse.org/legal/epl-2.0"
+        },
+        {
+          "name": "GPL2 w/ CPE",
+          "url": "https://www.gnu.org/software/classpath/license.html"
+        },
+        {
+          "name": "EDL 1.0",
+          "url": "http://www.eclipse.org/org/documents/edl-v10.php"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/eclipse/angus/jakarta.mail/2.0.4/jakarta.mail-2.0.4.pom"
+    },
+    {
+      "name": "flyway-core",
+      "coordinate": "org.flywaydb:flyway-core",
+      "version": "11.7.2",
+      "scope": "compile",
+      "projectUrl": "https://flywaydb.org",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://flywaydb.org/licenses/flyway-oss"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/flywaydb/flyway-core/11.7.2/flyway-core-11.7.2.pom"
+    },
+    {
+      "name": "flyway-database-postgresql",
+      "coordinate": "org.flywaydb:flyway-database-postgresql",
+      "version": "11.7.2",
+      "scope": "compile",
+      "projectUrl": "https://flywaydb.org",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://flywaydb.org/licenses/flyway-oss"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/flywaydb/flyway-database-postgresql/11.7.2/flyway-database-postgresql-11.7.2.pom"
+    },
+    {
+      "name": "JAXB Core",
+      "coordinate": "org.glassfish.jaxb:jaxb-core",
+      "version": "4.0.5",
+      "scope": "runtime",
+      "projectUrl": "https://eclipse-ee4j.github.io/jaxb-ri/",
+      "licenses": [
+        {
+          "name": "Eclipse Distribution License - v 1.0",
+          "url": "http://www.eclipse.org/org/documents/edl-v10.php"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/glassfish/jaxb/jaxb-core/4.0.5/jaxb-core-4.0.5.pom"
+    },
+    {
+      "name": "JAXB Runtime",
+      "coordinate": "org.glassfish.jaxb:jaxb-runtime",
+      "version": "4.0.5",
+      "scope": "runtime",
+      "projectUrl": "https://eclipse-ee4j.github.io/jaxb-ri/",
+      "licenses": [
+        {
+          "name": "Eclipse Distribution License - v 1.0",
+          "url": "http://www.eclipse.org/org/documents/edl-v10.php"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/glassfish/jaxb/jaxb-runtime/4.0.5/jaxb-runtime-4.0.5.pom"
+    },
+    {
+      "name": "TXW2 Runtime",
+      "coordinate": "org.glassfish.jaxb:txw2",
+      "version": "4.0.5",
+      "scope": "runtime",
+      "projectUrl": "https://eclipse-ee4j.github.io/jaxb-ri/",
+      "licenses": [
+        {
+          "name": "Eclipse Distribution License - v 1.0",
+          "url": "http://www.eclipse.org/org/documents/edl-v10.php"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/glassfish/jaxb/txw2/4.0.5/txw2-4.0.5.pom"
+    },
+    {
+      "name": "HdrHistogram",
+      "coordinate": "org.hdrhistogram:HdrHistogram",
+      "version": "2.2.2",
+      "scope": "runtime",
+      "projectUrl": "http://hdrhistogram.github.io/HdrHistogram/",
+      "licenses": [
+        {
+          "name": "Public Domain, per Creative Commons CC0",
+          "url": "http://creativecommons.org/publicdomain/zero/1.0/"
+        },
+        {
+          "name": "BSD-2-Clause",
+          "url": "https://opensource.org/licenses/BSD-2-Clause"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/hdrhistogram/HdrHistogram/2.2.2/HdrHistogram-2.2.2.pom"
+    },
+    {
+      "name": "Hibernate Commons Annotations",
+      "coordinate": "org.hibernate.common:hibernate-commons-annotations",
+      "version": "7.0.3.Final",
+      "scope": "runtime",
+      "projectUrl": "http://hibernate.org",
+      "licenses": [
+        {
+          "name": "Apache License Version 2.0",
+          "url": "https://opensource.org/licenses/Apache-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/hibernate/common/hibernate-commons-annotations/7.0.3.Final/hibernate-commons-annotations-7.0.3.Final.pom"
+    },
+    {
+      "name": "Hibernate ORM - hibernate-core",
+      "coordinate": "org.hibernate.orm:hibernate-core",
+      "version": "6.6.29.Final",
+      "scope": "compile",
+      "projectUrl": "https://hibernate.org/orm",
+      "licenses": [
+        {
+          "name": "GNU Library General Public License v2.1 or later",
+          "url": "https://www.opensource.org/licenses/LGPL-2.1"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/hibernate/orm/hibernate-core/6.6.29.Final/hibernate-core-6.6.29.Final.pom"
+    },
+    {
+      "name": "Hibernate Validator Engine",
+      "coordinate": "org.hibernate.validator:hibernate-validator",
+      "version": "8.0.3.Final",
+      "scope": "compile",
+      "projectUrl": "https://hibernate.org/validator",
+      "licenses": [
+        {
+          "name": "Apache License 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/hibernate/validator/hibernate-validator/8.0.3.Final/hibernate-validator-8.0.3.Final.pom"
+    },
+    {
+      "name": "JBoss Logging 3",
+      "coordinate": "org.jboss.logging:jboss-logging",
+      "version": "3.6.1.Final",
+      "scope": "compile",
+      "projectUrl": "http://www.jboss.org",
+      "licenses": [
+        {
+          "name": "Apache License 2.0",
+          "url": "https://repository.jboss.org/licenses/apache-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/jboss/logging/jboss-logging/3.6.1.Final/jboss-logging-3.6.1.Final.pom"
+    },
+    {
+      "name": "LatencyUtils",
+      "coordinate": "org.latencyutils:LatencyUtils",
+      "version": "2.0.3",
+      "scope": "runtime",
+      "projectUrl": "http://latencyutils.github.io/LatencyUtils/",
+      "licenses": [
+        {
+          "name": "Public Domain, per Creative Commons CC0",
+          "url": "http://creativecommons.org/publicdomain/zero/1.0/"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/latencyutils/LatencyUtils/2.0.3/LatencyUtils-2.0.3.pom"
+    },
+    {
+      "name": "PostgreSQL JDBC Driver",
+      "coordinate": "org.postgresql:postgresql",
+      "version": "42.7.7",
+      "scope": "runtime",
+      "projectUrl": "https://jdbc.postgresql.org",
+      "licenses": [
+        {
+          "name": "BSD-2-Clause",
+          "url": "https://jdbc.postgresql.org/about/license.html"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/postgresql/postgresql/42.7.7/postgresql-42.7.7.pom"
+    },
+    {
+      "name": "JUL to SLF4J bridge",
+      "coordinate": "org.slf4j:jul-to-slf4j",
+      "version": "2.0.17",
+      "scope": "compile",
+      "projectUrl": "http://www.slf4j.org",
+      "licenses": [
+        {
+          "name": "MIT",
+          "url": "https://opensource.org/license/mit"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/slf4j/jul-to-slf4j/2.0.17/jul-to-slf4j-2.0.17.pom"
+    },
+    {
+      "name": "SLF4J API Module",
+      "coordinate": "org.slf4j:slf4j-api",
+      "version": "2.0.17",
+      "scope": "compile",
+      "projectUrl": "http://www.slf4j.org",
+      "licenses": [
+        {
+          "name": "MIT",
+          "url": "https://opensource.org/license/mit"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.pom"
+    },
+    {
+      "name": "spring-boot",
+      "coordinate": "org.springframework.boot:spring-boot",
+      "version": "3.5.6",
+      "scope": "compile",
+      "projectUrl": "https://spring.io/projects/spring-boot",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot/3.5.6/spring-boot-3.5.6.pom"
+    },
+    {
+      "name": "spring-boot-actuator",
+      "coordinate": "org.springframework.boot:spring-boot-actuator",
+      "version": "3.5.6",
+      "scope": "compile",
+      "projectUrl": "https://spring.io/projects/spring-boot",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-actuator/3.5.6/spring-boot-actuator-3.5.6.pom"
+    },
+    {
+      "name": "spring-boot-actuator-autoconfigure",
+      "coordinate": "org.springframework.boot:spring-boot-actuator-autoconfigure",
+      "version": "3.5.6",
+      "scope": "compile",
+      "projectUrl": "https://spring.io/projects/spring-boot",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-actuator-autoconfigure/3.5.6/spring-boot-actuator-autoconfigure-3.5.6.pom"
+    },
+    {
+      "name": "spring-boot-autoconfigure",
+      "coordinate": "org.springframework.boot:spring-boot-autoconfigure",
+      "version": "3.5.6",
+      "scope": "compile",
+      "projectUrl": "https://spring.io/projects/spring-boot",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-autoconfigure/3.5.6/spring-boot-autoconfigure-3.5.6.pom"
+    },
+    {
+      "name": "spring-boot-starter",
+      "coordinate": "org.springframework.boot:spring-boot-starter",
+      "version": "3.5.6",
+      "scope": "compile",
+      "projectUrl": "https://spring.io/projects/spring-boot",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-starter/3.5.6/spring-boot-starter-3.5.6.pom"
+    },
+    {
+      "name": "spring-boot-starter-actuator",
+      "coordinate": "org.springframework.boot:spring-boot-starter-actuator",
+      "version": "3.5.6",
+      "scope": "compile",
+      "projectUrl": "https://spring.io/projects/spring-boot",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-starter-actuator/3.5.6/spring-boot-starter-actuator-3.5.6.pom"
+    },
+    {
+      "name": "spring-boot-starter-data-jpa",
+      "coordinate": "org.springframework.boot:spring-boot-starter-data-jpa",
+      "version": "3.5.6",
+      "scope": "compile",
+      "projectUrl": "https://spring.io/projects/spring-boot",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-starter-data-jpa/3.5.6/spring-boot-starter-data-jpa-3.5.6.pom"
+    },
+    {
+      "name": "spring-boot-starter-jdbc",
+      "coordinate": "org.springframework.boot:spring-boot-starter-jdbc",
+      "version": "3.5.6",
+      "scope": "compile",
+      "projectUrl": "https://spring.io/projects/spring-boot",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-starter-jdbc/3.5.6/spring-boot-starter-jdbc-3.5.6.pom"
+    },
+    {
+      "name": "spring-boot-starter-json",
+      "coordinate": "org.springframework.boot:spring-boot-starter-json",
+      "version": "3.5.6",
+      "scope": "compile",
+      "projectUrl": "https://spring.io/projects/spring-boot",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-starter-json/3.5.6/spring-boot-starter-json-3.5.6.pom"
+    },
+    {
+      "name": "spring-boot-starter-logging",
+      "coordinate": "org.springframework.boot:spring-boot-starter-logging",
+      "version": "3.5.6",
+      "scope": "compile",
+      "projectUrl": "https://spring.io/projects/spring-boot",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-starter-logging/3.5.6/spring-boot-starter-logging-3.5.6.pom"
+    },
+    {
+      "name": "spring-boot-starter-mail",
+      "coordinate": "org.springframework.boot:spring-boot-starter-mail",
+      "version": "3.5.6",
+      "scope": "compile",
+      "projectUrl": "https://spring.io/projects/spring-boot",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-starter-mail/3.5.6/spring-boot-starter-mail-3.5.6.pom"
+    },
+    {
+      "name": "spring-boot-starter-security",
+      "coordinate": "org.springframework.boot:spring-boot-starter-security",
+      "version": "3.5.6",
+      "scope": "compile",
+      "projectUrl": "https://spring.io/projects/spring-boot",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-starter-security/3.5.6/spring-boot-starter-security-3.5.6.pom"
+    },
+    {
+      "name": "spring-boot-starter-tomcat",
+      "coordinate": "org.springframework.boot:spring-boot-starter-tomcat",
+      "version": "3.5.6",
+      "scope": "compile",
+      "projectUrl": "https://spring.io/projects/spring-boot",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-starter-tomcat/3.5.6/spring-boot-starter-tomcat-3.5.6.pom"
+    },
+    {
+      "name": "spring-boot-starter-validation",
+      "coordinate": "org.springframework.boot:spring-boot-starter-validation",
+      "version": "3.5.6",
+      "scope": "compile",
+      "projectUrl": "https://spring.io/projects/spring-boot",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-starter-validation/3.5.6/spring-boot-starter-validation-3.5.6.pom"
+    },
+    {
+      "name": "spring-boot-starter-web",
+      "coordinate": "org.springframework.boot:spring-boot-starter-web",
+      "version": "3.5.6",
+      "scope": "compile",
+      "projectUrl": "https://spring.io/projects/spring-boot",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/boot/spring-boot-starter-web/3.5.6/spring-boot-starter-web-3.5.6.pom"
+    },
+    {
+      "name": "Spring Data Core",
+      "coordinate": "org.springframework.data:spring-data-commons",
+      "version": "3.5.4",
+      "scope": "compile",
+      "projectUrl": "https://spring.io/projects/spring-data",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/data/spring-data-commons/3.5.4/spring-data-commons-3.5.4.pom"
+    },
+    {
+      "name": "Spring Data JPA",
+      "coordinate": "org.springframework.data:spring-data-jpa",
+      "version": "3.5.4",
+      "scope": "compile",
+      "projectUrl": "https://projects.spring.io/spring-data-jpa",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/data/spring-data-jpa/3.5.4/spring-data-jpa-3.5.4.pom"
+    },
+    {
+      "name": "spring-security-config",
+      "coordinate": "org.springframework.security:spring-security-config",
+      "version": "6.5.5",
+      "scope": "compile",
+      "projectUrl": "https://spring.io/projects/spring-security",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/security/spring-security-config/6.5.5/spring-security-config-6.5.5.pom"
+    },
+    {
+      "name": "spring-security-core",
+      "coordinate": "org.springframework.security:spring-security-core",
+      "version": "6.5.5",
+      "scope": "compile",
+      "projectUrl": "https://spring.io/projects/spring-security",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/security/spring-security-core/6.5.5/spring-security-core-6.5.5.pom"
+    },
+    {
+      "name": "spring-security-crypto",
+      "coordinate": "org.springframework.security:spring-security-crypto",
+      "version": "6.5.5",
+      "scope": "compile",
+      "projectUrl": "https://spring.io/projects/spring-security",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/security/spring-security-crypto/6.5.5/spring-security-crypto-6.5.5.pom"
+    },
+    {
+      "name": "spring-security-web",
+      "coordinate": "org.springframework.security:spring-security-web",
+      "version": "6.5.5",
+      "scope": "compile",
+      "projectUrl": "https://spring.io/projects/spring-security",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/security/spring-security-web/6.5.5/spring-security-web-6.5.5.pom"
+    },
+    {
+      "name": "Spring AOP",
+      "coordinate": "org.springframework:spring-aop",
+      "version": "6.2.11",
+      "scope": "compile",
+      "projectUrl": "https://github.com/spring-projects/spring-framework",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/spring-aop/6.2.11/spring-aop-6.2.11.pom"
+    },
+    {
+      "name": "Spring Aspects",
+      "coordinate": "org.springframework:spring-aspects",
+      "version": "6.2.11",
+      "scope": "compile",
+      "projectUrl": "https://github.com/spring-projects/spring-framework",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/spring-aspects/6.2.11/spring-aspects-6.2.11.pom"
+    },
+    {
+      "name": "Spring Beans",
+      "coordinate": "org.springframework:spring-beans",
+      "version": "6.2.11",
+      "scope": "compile",
+      "projectUrl": "https://github.com/spring-projects/spring-framework",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/spring-beans/6.2.11/spring-beans-6.2.11.pom"
+    },
+    {
+      "name": "Spring Context",
+      "coordinate": "org.springframework:spring-context",
+      "version": "6.2.11",
+      "scope": "compile",
+      "projectUrl": "https://github.com/spring-projects/spring-framework",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/spring-context/6.2.11/spring-context-6.2.11.pom"
+    },
+    {
+      "name": "Spring Context Support",
+      "coordinate": "org.springframework:spring-context-support",
+      "version": "6.2.11",
+      "scope": "compile",
+      "projectUrl": "https://github.com/spring-projects/spring-framework",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/spring-context-support/6.2.11/spring-context-support-6.2.11.pom"
+    },
+    {
+      "name": "Spring Core",
+      "coordinate": "org.springframework:spring-core",
+      "version": "6.2.11",
+      "scope": "compile",
+      "projectUrl": "https://github.com/spring-projects/spring-framework",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/spring-core/6.2.11/spring-core-6.2.11.pom"
+    },
+    {
+      "name": "Spring Expression Language (SpEL)",
+      "coordinate": "org.springframework:spring-expression",
+      "version": "6.2.11",
+      "scope": "compile",
+      "projectUrl": "https://github.com/spring-projects/spring-framework",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/spring-expression/6.2.11/spring-expression-6.2.11.pom"
+    },
+    {
+      "name": "Spring Commons Logging Bridge",
+      "coordinate": "org.springframework:spring-jcl",
+      "version": "6.2.11",
+      "scope": "compile",
+      "projectUrl": "https://github.com/spring-projects/spring-framework",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/spring-jcl/6.2.11/spring-jcl-6.2.11.pom"
+    },
+    {
+      "name": "Spring JDBC",
+      "coordinate": "org.springframework:spring-jdbc",
+      "version": "6.2.11",
+      "scope": "compile",
+      "projectUrl": "https://github.com/spring-projects/spring-framework",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/spring-jdbc/6.2.11/spring-jdbc-6.2.11.pom"
+    },
+    {
+      "name": "Spring Object/Relational Mapping",
+      "coordinate": "org.springframework:spring-orm",
+      "version": "6.2.11",
+      "scope": "compile",
+      "projectUrl": "https://github.com/spring-projects/spring-framework",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/spring-orm/6.2.11/spring-orm-6.2.11.pom"
+    },
+    {
+      "name": "Spring Transaction",
+      "coordinate": "org.springframework:spring-tx",
+      "version": "6.2.11",
+      "scope": "compile",
+      "projectUrl": "https://github.com/spring-projects/spring-framework",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/spring-tx/6.2.11/spring-tx-6.2.11.pom"
+    },
+    {
+      "name": "Spring Web",
+      "coordinate": "org.springframework:spring-web",
+      "version": "6.2.11",
+      "scope": "compile",
+      "projectUrl": "https://github.com/spring-projects/spring-framework",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/spring-web/6.2.11/spring-web-6.2.11.pom"
+    },
+    {
+      "name": "Spring Web MVC",
+      "coordinate": "org.springframework:spring-webmvc",
+      "version": "6.2.11",
+      "scope": "compile",
+      "projectUrl": "https://github.com/spring-projects/spring-framework",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "https://www.apache.org/licenses/LICENSE-2.0"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/springframework/spring-webmvc/6.2.11/spring-webmvc-6.2.11.pom"
+    },
+    {
+      "name": "SnakeYAML",
+      "coordinate": "org.yaml:snakeyaml",
+      "version": "2.4",
+      "scope": "compile",
+      "projectUrl": "https://bitbucket.org/snakeyaml/snakeyaml",
+      "licenses": [
+        {
+          "name": "Apache License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/org/yaml/snakeyaml/2.4/snakeyaml-2.4.pom"
+    },
+    {
+      "name": "XML Commons External Components XML APIs",
+      "coordinate": "xml-apis:xml-apis",
+      "version": "1.4.01",
+      "scope": "compile",
+      "projectUrl": "http://xml.apache.org/commons/components/external/",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        },
+        {
+          "name": "The SAX License",
+          "url": "http://www.saxproject.org/copying.html"
+        },
+        {
+          "name": "The W3C License",
+          "url": "http://www.w3.org/TR/2004/REC-DOM-Level-3-Core-20040407/java-binding.zip"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/xml-apis/xml-apis/1.4.01/xml-apis-1.4.01.pom"
+    },
+    {
+      "name": "XML Commons External Components XML APIs Extensions",
+      "coordinate": "xml-apis:xml-apis-ext",
+      "version": "1.3.04",
+      "scope": "compile",
+      "projectUrl": "http://xml.apache.org/commons/components/external/",
+      "licenses": [
+        {
+          "name": "The Apache Software License, Version 2.0",
+          "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+        }
+      ],
+      "metadataUrl": "https://repo.maven.apache.org/maven2/xml-apis/xml-apis-ext/1.3.04/xml-apis-ext-1.3.04.pom"
+    }
+  ]
+}

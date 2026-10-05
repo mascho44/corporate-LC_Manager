@@ -19,7 +19,7 @@ public class AdvisingTrainingService {
   return fields;
  }
  @Transactional public TrainingSession save(UUID id,List<Field> submitted,String username,boolean finish){
-  var session=sessions.findById(id).orElseThrow();
+  var session=sessions.findForUpdate(id).orElseThrow();
   if(!"ADVISING_LETTER".equals(session.getMessageType())||!username.equals(session.getUsername())||!"DRAFT".equals(session.getStatus()))throw new IllegalArgumentException("Trainingsentwurf nicht bearbeitbar.");
   try{
    List<Field> original=Arrays.asList(mapper.readValue(session.getReviewsJson(),Field[].class));

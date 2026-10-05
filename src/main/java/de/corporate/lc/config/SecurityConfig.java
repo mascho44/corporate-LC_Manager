@@ -5,7 +5,7 @@ import de.corporate.lc.user.service.AppUserDetailsService; import jakarta.servle
  @Bean AuthenticationManager authenticationManager(AuthenticationConfiguration c)throws Exception{return c.getAuthenticationManager();}
  @Bean SecurityFilterChain security(HttpSecurity http,AppUserDetailsService users)throws Exception{return http.userDetailsService(users)
   .authorizeHttpRequests(a->a
-   .requestMatchers("/login.html","/login.js","/styles.css","/api/auth/login","/api/auth/login/totp","/api/health","/actuator/health","/actuator/health/liveness","/actuator/health/readiness").permitAll()
+   .requestMatchers("/login.html","/login.js","/styles.css","/info.html","/info.css","/info.js","/license.txt","/oss-components.json","/oss-notices.txt","/api/auth/login","/api/auth/login/totp","/api/health","/actuator/health","/actuator/health/liveness","/actuator/health/readiness").permitAll()
    .requestMatchers("/actuator/**").hasRole("ADMIN")
    .requestMatchers("/api/admin/outbox/**").hasRole("ADMIN")
    .requestMatchers("/api/admin/monitoring/**").hasRole("ADMIN")

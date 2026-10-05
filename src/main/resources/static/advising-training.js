@@ -55,5 +55,5 @@ document.querySelector('#advisingTrainingUpload').onsubmit=async event=>{
 const openSwiftTrainingSession=openTrainingSession;
 openTrainingSession=async function(id){
  const item=await json(`/api/training/${id}`);if(item.messageType!=='ADVISING_LETTER'){setTrainingProfile('SWIFT');return openSwiftTrainingSession(id);}
- advisingTrainingItem={id:item.id,fields:item.fields,editable:item.status==='DRAFT'&&item.username===currentUser.username};setTrainingProfile('ADVISING_LETTER');renderAdvisingTraining();document.querySelector('#advisingTrainingMessage').textContent=item.filename;if(!trainingDialog.open)trainingDialog.showModal();
+ advisingTrainingItem={id:item.id,fields:item.fields,username:item.username,status:item.status,lcId:item.lcId,editable:item.status==='DRAFT'&&item.username===currentUser.username};setTrainingProfile('ADVISING_LETTER');renderAdvisingTraining();document.querySelector('#advisingTrainingMessage').textContent=item.filename;if(!trainingDialog.open)trainingDialog.showModal();
 };
