@@ -2,8 +2,6 @@
 
 Spring-Boot-MVP für Corporate-Akkreditivmanagement mit Web-Dashboard, MT700/MT707 und Dokumentenakte.
 
-Eine vollständige macOS-Buildanleitung steht in [`BUILD-MACOS.md`](BUILD-MACOS.md). Alternativ baut und startet `build-and-run-macos.command` das Projekt per Doppelklick, wenn Java und Maven installiert sind.
-
 ## Dokumentation und Lizenz
 
 - [Fachliche Dokumentation](docs/fachliche-dokumentation.md)
