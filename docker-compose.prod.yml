@@ -22,7 +22,7 @@ services:
       SMTP_FROM: ${SMTP_FROM:-}
       SMTP_AUTH: ${SMTP_AUTH:-true}
       SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
-      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://lc.example.com}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:?PUBLIC_BASE_URL muss die öffentliche HTTPS-Adresse enthalten}
     depends_on:
       postgres:
         condition: service_healthy
@@ -56,7 +56,7 @@ services:
 networks:
   proxy:
     external: true
-    name: lc_proxy
+    name: ${PROXY_NETWORK:?PROXY_NETWORK muss das vorhandene Proxy-Netzwerk benennen}
 
 volumes:
   lc-postgres:

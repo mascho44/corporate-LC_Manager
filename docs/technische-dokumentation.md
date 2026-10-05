@@ -160,7 +160,11 @@ TOTP-Schlüssel. Secrets und Originalgeschäftsdokumente gehören nicht in Git.
 
 ## Produktion, Sicherung und Wiederherstellung
 
-Produktion: `https://lc.example.com`; Projektpfad auf dem Server:
+Die folgenden Adressen, Pfade und Aliase sind neutrale Beispiele und müssen an
+die eigene Installation angepasst werden. `PUBLIC_BASE_URL` und `PROXY_NETWORK`
+müssen für das Produktions-Compose in der privaten `.env` gesetzt sein.
+
+Beispiel-Produktion: `https://lc.example.com`; Projektpfad auf dem Server:
 `/opt/corporate-lc-manager`.
 SSH-Alias: `lc-server`.
 
