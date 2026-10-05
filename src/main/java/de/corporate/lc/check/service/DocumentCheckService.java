@@ -28,8 +28,17 @@ public class DocumentCheckService {
     public ReviewSummary check(UUID lcId) {
         LetterOfCredit lc = lcs.findById(lcId).orElseThrow();
         var uploaded = documents.findByLetterOfCreditIdOrderByUploadedAtDesc(lcId);
+        return evaluate(lcId,lc,uploaded,false);
+    }
+
+    public ReviewSummary simulate(UUID lcId,LetterOfCredit lc,List<de.corporate.lc.document.domain.LcDocument> uploaded){
+        return evaluate(lcId,lc,uploaded,true);
+    }
+
+    private ReviewSummary evaluate(UUID lcId,LetterOfCredit lc,List<de.corporate.lc.document.domain.LcDocument> uploaded,boolean simulation){
         List<CheckResult> results = new ArrayList<>();
-        addEffectiveVersionContext(lc,results);
+        if(simulation)results.add(new CheckResult(OK,"SIMULATION_ONLY","Simulation – keine Geschäftsdaten oder Prüfentscheidungen werden gespeichert."));
+        else addEffectiveVersionContext(lc,results);
 
         for (String requirement : lc.getRequiredDocuments()) {
             Optional<DocumentType> expected = mappedType(lcId,requirement).or(()->classify(requirement));
@@ -155,7 +164,7 @@ public class DocumentCheckService {
             results.add(new CheckResult(WARNING, "LC_EXPIRED", "The LC has expired."));
         if (results.isEmpty()) results.add(new CheckResult(WARNING, "NO_RULES_APPLIED", "No automated rule could be applied."));
 
-        Map<String,DocumentCheckDecision> reviewed=new HashMap<>();decisions.findByLcId(lcId).forEach(d->reviewed.put(decisionKey(d.getFindingCode(),d.getDocumentName()),d));
+        Map<String,DocumentCheckDecision> reviewed=new HashMap<>();if(!simulation)decisions.findByLcId(lcId).forEach(d->reviewed.put(decisionKey(d.getFindingCode(),d.getDocumentName()),d));
 List<CheckResult> reviewedResults=results.stream().map(result->{var d=reviewed.get(decisionKey(result.code(),result.documentName()));if(d==null)return result;CheckResult.Severity effective="ACCEPTED".equals(d.getDecision())?OK:DISCREPANCY;return new CheckResult(effective,result.code(),result.message(),result.lcCondition(),result.documentName(),result.documentEvidence(),d.getDecision(),d.getComment(),d.getReviewedBy(),d.getReviewedAt(),result.automaticSeverity());}).toList();
         long discrepancies=count(reviewedResults,DISCREPANCY),warnings=count(reviewedResults,WARNING);String status=discrepancies>0?"RED":warnings>0?"YELLOW":"GREEN";
         return new ReviewSummary(status,discrepancies,warnings,count(reviewedResults,OK),reviewedResults);
