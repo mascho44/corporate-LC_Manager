@@ -9,7 +9,7 @@ class RuleCatalogTest {
     @Test void mapsKnownFindingToExplicitVersionedRule(){
         var rule=RuleCatalog.forFinding("INVOICE_AMOUNT_EXCEEDED");
         assertThat(rule.id()).isEqualTo("LC_AMOUNT_LIMIT");assertThat(rule.version()).isEqualTo("1.0");
-        assertThat(rule.limitations()).contains("keine vollständige");assertThat(rule.sourceUrl()).startsWith("https://library.iccwbo.org/");
+        assertThat(rule.limitations()).contains("keine vollständige");assertThat(rule.sourceUrl()).isNull();
     }
     @Test void unknownRuleNeverClaimsAnIccRule(){
         var rule=RuleCatalog.forFinding("SOME_NEW_HEURISTIC");assertThat(rule.sourceUrl()).isNull();assertThat(rule.basis()).contains("keine zugeordnete ICC");

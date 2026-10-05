@@ -1,9 +1,9 @@
 # Versionierte Prüfgrundlagen
 
-Der [Rule-Pack-Vertrag](lc-rule-engine.md) ergänzt das Framework um explizite
-Anwendbarkeit und einen versionierten Dokumenttyp-Katalog. Aktive Teilprüfungen
-und geplante Packs werden getrennt ausgewiesen. Lizenzierte ICC-Originaltexte
-sind kein Bestandteil der Software oder ihrer öffentlichen Dokumentation.
+Die [ICC-bezogenen Rule Packs](lc-rule-engine.md) sind bis zur Rechteklärung
+zurückgestellt und werden nicht ausgeliefert. Der Pack-Endpunkt und die neue
+ICC-Teilregel sind entfernt. Das interne Prüf- und Audit-Framework bleibt
+unabhängig davon erhalten. Lizenzierte ICC-Originaltexte werden nicht verteilt.
 
 Der bestehende Regelkatalog dokumentiert Kennung, Version, Vergleichsgrundlage,
 Erklärung und Grenzen einer automatischen Vorprüfung. Er ist kein vollständiges

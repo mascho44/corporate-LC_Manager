@@ -166,11 +166,6 @@ public class DocumentCheckService {
             results.add(new CheckResult(WARNING, "LC_EXPIRED", "The LC has expired."));
         if (results.isEmpty()) results.add(new CheckResult(WARNING, "NO_RULES_APPLIED", "No automated rule could be applied."));
 
-        results.addAll(RulePackEngine.evaluate(new RulePackEngine.Input(
-            LcConditions.value(lc,LcCondition.APPLICABLE_RULES).orElse(null), lc.getCurrency(),
-            uploaded.stream().filter(d->d.getDocumentType()==DocumentType.COMMERCIAL_INVOICE)
-                .map(d->new RulePackEngine.Fact(d.getOriginalFilename(),"commercial-invoice",
-                    d.getCurrency(),"Quelle: erfasste Dokumentmetadaten")).toList())));
         String inputFingerprint=ReviewInputFingerprint.of(lc,uploaded);
         List<DocumentCheckDecision> reviewed=simulation?List.of():decisions.findByLcId(lcId);
         List<CheckResult> reviewedResults=new ArrayList<>();
