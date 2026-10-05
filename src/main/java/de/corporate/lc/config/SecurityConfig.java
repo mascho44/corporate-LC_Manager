@@ -48,6 +48,6 @@ import de.corporate.lc.user.service.AppUserDetailsService; import jakarta.servle
   .addFilterAfter(new CredentialSessionFilter(accounts),org.springframework.security.web.context.SecurityContextHolderFilter.class)
   .exceptionHandling(e->e.defaultAuthenticationEntryPointFor(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),new AntPathRequestMatcher("/api/**")))
   .formLogin(f->f.loginPage("/login.html").permitAll()).logout(l->l.disable())
-  .headers(h->h.frameOptions(f->f.deny()).contentTypeOptions(c->{}))
+  .headers(h->h.frameOptions(f->f.deny()).contentTypeOptions(c->{}).addHeaderWriter(new BrowserSecurityHeaders()))
   .build();}
 }
