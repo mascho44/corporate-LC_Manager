@@ -31,9 +31,17 @@ class ProfileServiceTest {
     }
 
     @Test void ownNameCanChangeWithoutChangingRoleOrPassword(){
-        var profile=service.updateName("viewer","  New Name  ");
+        var profile=service.updateName("viewer","  New Name  ","viewer@example.com");
         assertThat(profile.displayName()).isEqualTo("New Name");assertThat(user.getRole()).isEqualTo(UserRole.VIEWER);assertThat(user.getPasswordHash()).isEqualTo("unchanged");
-        assertThatThrownBy(()->service.updateName("viewer"," ")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(()->service.updateName("viewer"," ","viewer@example.com")).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test void missingEmailCanBeCompletedAndCannotBeCleared(){
+        assertThat(service.profile("viewer").email()).isNull();
+        assertThat(service.updateName("viewer","Viewer"," viewer@example.com ").email()).isEqualTo("viewer@example.com");
+        assertThatThrownBy(()->service.updateName("viewer","Changed","")).isInstanceOf(IllegalArgumentException.class);
+        assertThat(user.getEmail()).isEqualTo("viewer@example.com");
+        assertThat(user.getDisplayName()).isEqualTo("Viewer");
     }
 
     @Test void realImageIsCroppedResizedAndStoredForOwnAccount() throws Exception {

@@ -25,10 +25,10 @@ public class ProfileService {
     public ProfileView profile(String username){return view(user(username));}
 
     @Transactional
-    public ProfileView updateName(String username,String displayName){
+    public ProfileView updateName(String username,String displayName,String email){
         if(displayName==null||displayName.isBlank()||displayName.trim().length()>255||displayName.chars().anyMatch(Character::isISOControl))
             throw new IllegalArgumentException("Bitte einen Anzeigenamen mit 1 bis 255 Zeichen eingeben.");
-        AppUser user=user(username);user.setDisplayName(displayName.trim());users.save(user);return view(user);
+        String contact=UserEmail.required(email);AppUser user=user(username);user.setEmail(contact);user.setDisplayName(displayName.trim());users.save(user);return view(user);
     }
 
     @Transactional
@@ -70,9 +70,9 @@ public class ProfileService {
     public byte[] avatar(String username){return avatars.findById(user(username).getId()).orElseThrow(()->new NoSuchElementException("Kein Profilbild vorhanden.")).getContent();}
 
     @Transactional
-    public ProfileView deleteAvatar(String username){AppUser user=user(username);avatars.findById(user.getId()).ifPresent(avatars::delete);return new ProfileView(user.getUsername(),user.getDisplayName(),roleName(user),user.isTotpEnabled(),null);}
+    public ProfileView deleteAvatar(String username){AppUser user=user(username);avatars.findById(user.getId()).ifPresent(avatars::delete);return new ProfileView(user.getUsername(),user.getDisplayName(),roleName(user),user.isTotpEnabled(),null,user.getEmail());}
 
     private AppUser user(String username){return users.findByUsernameIgnoreCase(username).orElseThrow(()->new NoSuchElementException("Benutzer nicht gefunden."));}
     private String roleName(AppUser user){return user.getAssignedRole()==null?user.getRole().name():user.getAssignedRole().getName();}
-    private ProfileView view(AppUser user){String url=avatars.findById(user.getId()).map(avatar->"/api/profile/avatar?v="+avatar.getUpdatedAt().toEpochMilli()).orElse(null);return new ProfileView(user.getUsername(),user.getDisplayName(),roleName(user),user.isTotpEnabled(),url);}
+    private ProfileView view(AppUser user){String url=avatars.findById(user.getId()).map(avatar->"/api/profile/avatar?v="+avatar.getUpdatedAt().toEpochMilli()).orElse(null);return new ProfileView(user.getUsername(),user.getDisplayName(),roleName(user),user.isTotpEnabled(),url,user.getEmail());}
 }

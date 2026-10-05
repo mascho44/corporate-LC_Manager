@@ -4,6 +4,8 @@ import jakarta.persistence.*; import java.time.LocalDateTime; import java.util.U
  @Id @GeneratedValue(strategy=GenerationType.UUID) private UUID id;
  @Column(nullable=false,unique=true,length=100) private String username;
  @Column(nullable=false) private String displayName;
+ @Column(length=255) private String email;
+ public String getEmail(){return email;} public void setEmail(String email){this.email=email;}
  @Column(nullable=false) private String passwordHash;
  @Enumerated(EnumType.STRING) @Column(nullable=false) private UserRole role=UserRole.USER;
  @Column(nullable=false) private boolean active=true;

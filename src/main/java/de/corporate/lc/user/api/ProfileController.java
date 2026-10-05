@@ -16,13 +16,13 @@ public class ProfileController {
     private final ProfileService service;
     private final AuditService audit;
     public ProfileController(ProfileService service,AuditService audit){this.service=service;this.audit=audit;}
-    public record UpdateRequest(@NotBlank @Size(max=255) String displayName) { }
+    public record UpdateRequest(@NotBlank @Size(max=255) String displayName,@NotBlank @jakarta.validation.constraints.Email @Size(max=255) String email) { }
 
     @GetMapping public ProfileView profile(Authentication auth){return service.profile(auth.getName());}
     @PutMapping public ProfileView update(@Valid @RequestBody UpdateRequest request,Authentication auth){
-        String previous=service.profile(auth.getName()).displayName();
-        ProfileView result=service.updateName(auth.getName(),request.displayName());
-        audit.recordChange(auth,"USER_PROFILE_UPDATED","USER",auth.getName(),"Eigenen Anzeigenamen geändert",previous,result.displayName());return result;
+        ProfileView previous=service.profile(auth.getName());
+        ProfileView result=service.updateName(auth.getName(),request.displayName(),request.email());
+        audit.recordChange(auth,"USER_PROFILE_UPDATED","USER",auth.getName(),"Eigenes Profil geändert",java.util.Map.of("displayName",previous.displayName(),"email",previous.email()==null?"":previous.email()).toString(),java.util.Map.of("displayName",result.displayName(),"email",result.email()).toString());return result;
     }
     @PostMapping(value="/avatar",consumes=MediaType.MULTIPART_FORM_DATA_VALUE)
     public ProfileView upload(@RequestPart("file") MultipartFile file,Authentication auth){

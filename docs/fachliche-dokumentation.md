@@ -174,6 +174,13 @@ Dokumente hochladen sowie die Eigentümerschaft des Trainings.
 Passwortänderung und TOTP sind vorhanden. Ein selbstbedienter
 Passwort-vergessen-/E-Mail-Reset ist derzeit nicht implementiert.
 
+Beim Anlegen und Speichern eines Benutzerkontos ist eine gültige E-Mail-Adresse
+Pflicht. Sie ist unabhängig vom Benutzernamen und kann im eigenen Profil geändert
+werden. Bestehende Konten ohne Adresse bleiben anmeldbar; das Profil und die
+Benutzerliste weisen auf die notwendige Ergänzung hin. Es werden keine Adressen
+aus Benutzernamen geraten und keine Bestätigungs- oder Reset-Mails automatisch
+versendet. Die Prüfung validiert das Format, nicht die tatsächliche Zustellbarkeit.
+
 Das Audit protokolliert relevante Aktionen und teilweise Vorher-/Nachher-Werte.
 Die neue Avisierungsübernahme schreibt Aktenanlage, Dokumentablage und
 Trainingsverknüpfung gemeinsam mit den Daten. Ein Audit ist kein
