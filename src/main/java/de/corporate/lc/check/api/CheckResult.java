@@ -8,4 +8,8 @@ public record CheckResult(Severity severity, String code, String message,
     public CheckResult(Severity severity,String code,String message){this(severity,code,message,null,null,null,null,null,null,null);}
     public CheckResult(Severity severity,String code,String message,String condition,String document,String evidence){this(severity,code,message,condition,document,evidence,null,null,null,null);}
     public enum Severity { OK, WARNING, DISCREPANCY }
+    @com.fasterxml.jackson.annotation.JsonProperty("rule")
+    public RuleDefinition rule(){return de.corporate.lc.check.service.RuleCatalog.forFinding(code);}
+    @com.fasterxml.jackson.annotation.JsonProperty("ruleCatalogVersion")
+    public String ruleCatalogVersion(){return de.corporate.lc.check.service.RuleCatalog.VERSION;}
 }
