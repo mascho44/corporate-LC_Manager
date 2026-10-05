@@ -17,6 +17,6 @@ public record DocumentInboxItemView(UUID id, String originalFilename, String con
                 item.getReceivedAt(), item.getReceivedBy(), item.getStatus(), item.getExtractionStatus(),
                 item.getExtractedReference(), item.getExtractedDocumentNumber(), item.getExtractedAmount(),
                 item.getExtractedCurrency(), single==null?null:single.lcId(), single==null?null:single.reference(), candidates,
-                de.corporate.lc.document.service.ClassificationHistory.suggestion(item.getClassificationHistoryJson()));
+                "OPEN".equals(item.getStatus())?de.corporate.lc.document.service.DocumentClassifier.classify(item.getOriginalFilename(),item.getExtractedText()):de.corporate.lc.document.service.ClassificationHistory.suggestion(item.getClassificationHistoryJson()));
     }
 }

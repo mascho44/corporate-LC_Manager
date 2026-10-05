@@ -14,6 +14,7 @@ public enum DocumentType {
     QUALITY_CERTIFICATE("Quality / Analysis Certificate"),
     COURIER_RECEIPT("Courier Receipt"),
     ADVISING_LETTER("Avisierungsschreiben"),
+    SWIFT_MT700("SWIFT MT700 / Akkreditiveröffnung"),
     ANNEX("Annex / Anlage"),
     OTHER("Other");
 
