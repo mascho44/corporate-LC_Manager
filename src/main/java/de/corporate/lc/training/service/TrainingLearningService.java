@@ -41,6 +41,17 @@ public class TrainingLearningService {
     }
 
     public LearningSummary summary(String messageType){Learned learned=learn(messageType);return new LearningSummary(learned.exact.size(),learned.mappings.size());}
+    /** Advice learning transfers bank-scoped label mappings, never transaction values. */
+    public String adviceTarget(String bank,String label){
+        String source=adviceSource(bank,label);var learned=learn("ADVISING_LETTER");
+        if(learned.disabled.contains(ruleId("MAPPING","ADVISING_LETTER",source,"")))return null;
+        return learned.mappings.get(source);
+    }
+    public static String adviceSource(String bank,String label){return bank.trim().toUpperCase(Locale.ROOT)+"|"+label.trim().toUpperCase(Locale.ROOT);}
+    public Map<String,String> adviceMappings(String bank){
+        var learned=learn("ADVISING_LETTER");String prefix=bank.trim().toUpperCase(Locale.ROOT)+"|";Map<String,String> result=new HashMap<>();
+        learned.mappings.forEach((source,target)->{if(source.startsWith(prefix)&&!learned.disabled.contains(ruleId("MAPPING","ADVISING_LETTER",source,"")))result.put(source.substring(prefix.length()),target);});return result;
+    }
     public record LearningSummary(int exactCorrections,int stableFieldMappings){}
 
     public record LearningRule(String id,String messageType,String kind,String sourceCode,String sourceValue,
@@ -51,7 +62,7 @@ public class TrainingLearningService {
         for(TrainingSession session:sessions.findAll()){
             try{for(JsonNode field:mapper.readTree(session.getReviewsJson()==null?"[]":session.getReviewsJson())){
                 String review=text(field,"review"),code=text(field,"code"),originalCode=value(text(field,"originalCode"),code),originalValue=text(field,"originalValue"),correctedValue=text(field,"value");
-                if(!originalValue.isBlank()&&(review.equals("corrected")||review.equals("reassigned")||review.equals("invalid"))){
+                if(!"ADVISING_LETTER".equals(session.getMessageType())&&!originalValue.isBlank()&&(review.equals("corrected")||review.equals("reassigned")||review.equals("invalid"))){
                     String id=ruleId("EXACT",session.getMessageType(),originalCode,originalValue);
                     found.computeIfAbsent(id,x->new RuleAccumulator(id,session.getMessageType(),"Exakte Korrektur",originalCode,originalValue,code,correctedValue,review.equals("invalid"))).add(session.getFilename());
                 }

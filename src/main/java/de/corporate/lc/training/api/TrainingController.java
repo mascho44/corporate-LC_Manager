@@ -66,6 +66,7 @@ public class TrainingController {
     @Transactional
     public Map<String,String> finish(@PathVariable UUID id,@RequestBody TrainingConfirm request,Authentication auth) {
         TrainingSession s=find(id);
+        if("ADVISING_LETTER".equals(s.getMessageType()))throw new IllegalArgumentException("Bitte das Avisierungstraining verwenden.");
         if(!s.getUsername().equals(auth.getName())) throw new IllegalArgumentException("Trainingssitzung gehört einem anderen Benutzer.");
         if(!"DRAFT".equals(s.getStatus())) throw new IllegalArgumentException("Nur ein Trainingsentwurf kann abgeschlossen werden.");
         data.requireReviewedFields(request.reviewsJson());
@@ -81,6 +82,7 @@ public class TrainingController {
     @Transactional
     public Object confirm(@PathVariable UUID id,@RequestBody TrainingConfirm request,Authentication auth) {
         TrainingSession s=find(id);
+        if("ADVISING_LETTER".equals(s.getMessageType()))throw new IllegalArgumentException("Bitte das Avisierungstraining verwenden.");
         if(!s.getUsername().equals(auth.getName())) throw new IllegalArgumentException("Trainingssitzung gehört einem anderen Benutzer.");
         var corrected=new SwiftImportRequest(s.getFilename(),request.correctedRawMessage());
         var qualityResult=quality.validate(s.getFilename(),request);
@@ -105,6 +107,7 @@ public class TrainingController {
     @Transactional
     public Map<String,String> saveDraft(@PathVariable UUID id,@RequestBody TrainingConfirm request,Authentication auth) {
         TrainingSession s=find(id);
+        if("ADVISING_LETTER".equals(s.getMessageType()))throw new IllegalArgumentException("Bitte das Avisierungstraining verwenden.");
         if(!s.getUsername().equals(auth.getName())) throw new IllegalArgumentException("Trainingssitzung gehört einem anderen Benutzer.");
         if("CONFIRMED".equals(s.getStatus())) throw new IllegalArgumentException("Ein bestätigter Trainingsdatensatz kann nicht mehr verändert werden.");
         s.setCorrectedText(request.correctedRawMessage());

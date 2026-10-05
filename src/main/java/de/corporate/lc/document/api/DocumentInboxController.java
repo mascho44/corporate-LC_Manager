@@ -18,10 +18,12 @@ import java.util.UUID;
 public class DocumentInboxController {
     private final DocumentInboxService service;
     private final AuditService audit;
+    private final de.corporate.lc.training.service.AdvisingTrainingService advisingTraining;
 
-    public DocumentInboxController(DocumentInboxService service, AuditService audit) {
+    public DocumentInboxController(DocumentInboxService service, AuditService audit,de.corporate.lc.training.service.AdvisingTrainingService advisingTraining) {
         this.service = service;
         this.audit = audit;
+        this.advisingTraining=advisingTraining;
     }
 
     @GetMapping
@@ -82,8 +84,8 @@ public class DocumentInboxController {
     }
 
     @GetMapping("/{id}/advising-preview")
-    public de.corporate.lc.document.service.AdvisingLetterExtractor.Proposal advisingPreview(@PathVariable UUID id){
-        return de.corporate.lc.document.service.AdvisingLetterExtractor.extract(service.openItem(id).getExtractedText());
+    public de.corporate.lc.document.service.AdvisingLetterExtractor.Proposal advisingPreview(@PathVariable UUID id,@RequestParam(required=false) String bank){
+        return advisingTraining.preview(bank,service.openItem(id).getExtractedText());
     }
 
     @DeleteMapping("/{id}")
