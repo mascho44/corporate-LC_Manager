@@ -5,7 +5,7 @@ import java.util.List;
 
 /** Append a new version when semantics change; never relabel a heuristic as ICC compliance. */
 public final class RuleCatalog {
-    public static final String VERSION="2026-10-05.1";
+    public static final String VERSION=RulePacks.VERSION;
     private static final String ICC="https://library.iccwbo.org/tfb/tfb-iccrules.htm";
     private static final List<RuleDefinition> RULES=List.of(
         new RuleDefinition("LC_AMOUNT_LIMIT","1.0","Rechnungsbetrag und LC-Höchstbetrag","LC-Bedingung :32B: / :39A:","Vergleicht Rechnungsbetrag und Währung mit dem LC-Höchstbetrag einschließlich erfasster Toleranz.","Metadatenprüfung; ersetzt keine vollständige Rechnungsprüfung nach UCP 600 / ISBP 821.",ICC),
@@ -16,6 +16,7 @@ public final class RuleCatalog {
     private RuleCatalog(){}
     public static List<RuleDefinition> definitions(){return RULES;}
     public static RuleDefinition forFinding(String code){
+        if ("UCP18_INVOICE_CURRENCY".equals(code)) return RulePacks.INVOICE_CURRENCY;
         String id=switch(code==null?"":code){
             case "INVOICE_AMOUNT_EXCEEDED","INVOICE_AMOUNT_OK","CURRENCY_MISMATCH"->"LC_AMOUNT_LIMIT";
             case "DOCUMENT_AFTER_EXPIRY"->"LC_EXPIRY_DATE";

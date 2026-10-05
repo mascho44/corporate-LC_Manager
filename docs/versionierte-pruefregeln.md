@@ -1,5 +1,10 @@
 # Versionierte Prüfgrundlagen
 
+Der [Rule-Pack-Vertrag](lc-rule-engine.md) ergänzt das Framework um explizite
+Anwendbarkeit und einen versionierten Dokumenttyp-Katalog. Aktive Teilprüfungen
+und geplante Packs werden getrennt ausgewiesen. Lizenzierte ICC-Originaltexte
+sind kein Bestandteil der Software oder ihrer öffentlichen Dokumentation.
+
 Der bestehende Regelkatalog dokumentiert Kennung, Version, Vergleichsgrundlage,
 Erklärung und Grenzen einer automatischen Vorprüfung. Er ist kein vollständiges
 UCP-/ISBP-Regelwerk und keine verbindliche Konformitätsentscheidung.
