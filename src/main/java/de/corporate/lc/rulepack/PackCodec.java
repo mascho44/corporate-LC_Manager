@@ -5,13 +5,11 @@ import org.springframework.stereotype.Component;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.*;
-import java.util.regex.Pattern;
 
 @Component
 public class PackCodec {
  public static final int MAX_BYTES=512*1024;
  private final ObjectMapper json;
- private static final Pattern EXCLUDED=Pattern.compile("(?i)(\\bICC\\b|\\bUCP\\b|\\bISBP\\b|iccwbo|international chamber of commerce)");
  public PackCodec(ObjectMapper mapper){json=mapper.copy().enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
   .enable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION);}
  public PackDefinition parse(byte[] bytes){
@@ -32,7 +30,7 @@ public class PackCodec {
   token(p.packId(),"[a-z][a-z0-9-]{2,30}","Pack-ID");
   token(p.version(),"[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}","Pack-Version");
   text(p.name(),100,"Name");text(p.license(),100,"Lizenz");text(p.rightsStatement(),500,"Rechteerklärung");
-  if(!"OWN_INTERNAL".equals(p.origin()))bad("Nur eigene interne Rule Packs sind derzeit zulässig.");
+  if(!"OWN_INTERNAL".equals(p.origin())&&!"ICC_LICENSED".equals(p.origin()))bad("Herkunft muss OWN_INTERNAL oder ICC_LICENSED sein.");
   if(p.rules()==null||p.rules().isEmpty()||p.rules().size()>25)bad("1 bis 25 Regeln erforderlich.");
   if(p.tests()==null||p.tests().isEmpty()||p.tests().size()>150)bad("1 bis 150 synthetische Testfälle erforderlich.");
   var ids=new HashSet<String>();
@@ -41,7 +39,7 @@ public class PackCodec {
    token(r.id(),"[a-z][a-z0-9-]{1,30}","Regel-ID");
    token(r.version(),"[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}","Regel-Version");
    if(!ids.add(r.id()))bad("Regel-ID doppelt.");
-   text(r.message(),200,"Meldung");text(r.sourceReference(),160,"Interne Quellenreferenz");
+   text(r.message(),200,"Meldung");text(r.sourceReference(),160,"Quellenreferenz");
    if(r.documentType()==null||r.left()==null||r.right()==null||r.operator()==null||r.severity()==null)bad("Regel ist unvollständig.");
    if(!r.left().document()||r.right().document()||!r.left().kind().equals(r.right().kind()))bad("Nur typgleiche Dokument-/LC-Vergleiche sind erlaubt.");
    if(r.left().kind().equals("TEXT")&&r.operator()!=PackDefinition.Operator.EQ&&r.operator()!=PackDefinition.Operator.NE)bad("Textfelder erlauben nur EQ oder NE.");
@@ -61,7 +59,6 @@ public class PackCodec {
  }
  private void text(String value,int max,String label){
   if(value==null||value.isBlank()||value.length()>max)bad(label+" fehlt oder ist zu lang.");
-  if(EXCLUDED.matcher(value).find())bad("ICC-/UCP-/ISBP-bezogene Packs bleiben ausgeschlossen.");
  }
  private void token(String value,String pattern,String label){
   text(value,80,label);if(!value.matches(pattern))bad(label+" hat ein ungültiges Format.");

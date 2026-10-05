@@ -26,9 +26,9 @@ Befunde enthalten Pack- und Regelversion sowie den Prüfsummenbezug. Prüfentsch
 
 ## Rechte und Quellen
 
-Nur `OWN_INTERNAL` wird unterstützt. ICC-/UCP-/ISBP-basierte Packs bleiben zurückgestellt. Die hochgeladenen ICC-PDFs sind weder Bestandteil der Anwendung noch dieser Dokumentation oder des Beispiels.
+`OWN_INTERNAL` bezeichnet eigene interne Packs; `ICC_LICENSED` kennzeichnet ICC-/UCP-/ISBP-bezogene Packs. Beide können importiert werden. Vor Aktivierung bestätigt der berechtigte Benutzer eine ausreichende Lizenz beziehungsweise Nutzungserlaubnis und die fachliche Freigabe, einschließlich der Nutzung durch alle Benutzer dieser Installation. Die Bestätigung wird mit Benutzer, Herkunft, Version und Prüfsumme protokolliert. Die hochgeladenen ICC-PDFs bleiben privat und sind weder Bestandteil der Anwendung noch dieser Dokumentation oder des Beispiels.
 
-Ein konservativer Textfilter weist entsprechende Quellenbezeichnungen zurück. Er kann Urheberrechte oder Herkunft nicht zuverlässig feststellen und ist keine rechtliche Freigabe. Auch abstrahierte Regeln sind nicht automatisch lizenzfrei. Der Importierende muss die Berechtigung und fachliche Freigabe vor Aktivierung tatsächlich klären. Quellenreferenzen sind kurze eigene Kennungen, keine kopierten Publikationstexte.
+Die Anwendung prüft die tatsächlichen Lizenzbedingungen nicht und erteilt keine rechtliche Freigabe. Der aktivierende Benutzer entscheidet eigenverantwortlich anhand seiner Rechte; eine persönliche Leselizenz deckt nicht notwendigerweise Software- oder organisationsweite Nutzung ab. Auch abstrahierte Regeln sind nicht automatisch lizenzfrei. Quellenreferenzen sind kurze Kennungen, keine kopierten Publikationstexte. Es werden keine ICC-Regeln oder Publikationen mitgeliefert.
 
 ## Schnittstellen
 

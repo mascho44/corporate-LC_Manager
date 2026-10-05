@@ -55,7 +55,7 @@ public class InternalPackService {
   if(id.equals(selected.activeVersionId))return;
   selected.previousVersionId=selected.activeVersionId;selected.activeVersionId=id;
   audit.recordInTransaction(auth,"LC_RULE_PACK_ACTIVATED","RULE_PACK_VERSION",id,
-   version.packId+" v"+version.version+" · SHA-256 "+version.checksum+" · Rechte und interne Freigabe bestätigt · vorher "+selected.previousVersionId);
+   version.packId+" v"+version.version+" · SHA-256 "+version.checksum+" · Herkunft "+read(version).origin()+" · ausreichende Lizenz/Nutzungserlaubnis für alle Benutzer und interne Freigabe bestätigt · vorher "+selected.previousVersionId);
  }
  @Transactional
  public void deactivate(String packId,Authentication auth){

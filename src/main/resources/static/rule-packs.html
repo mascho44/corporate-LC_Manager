@@ -11,7 +11,7 @@
  <main>
   <h1>Interne Rule Packs</h1>
   <p>Eigene deklarative Prüfregeln importieren, testen und bewusst aktivieren.</p>
-  <p class="pack-notice">Keine Skripte oder Plugins. Keine ICC-, UCP- oder ISBP-Packs. Angaben zu Lizenz und Herkunft ersetzen keine Rechteprüfung. Die Aktivierung gilt für alle Benutzer und LC-Akten.</p>
+  <p class="pack-notice">Keine Skripte oder Plugins. ICC-, UCP- oder ISBP-bezogene Packs benötigen eine passende Lizenz beziehungsweise Nutzungserlaubnis. Diese prüft der aktivierende Benutzer selbst. Die Anwendung prüft keine Lizenzen. Die Aktivierung gilt für alle Benutzer und LC-Akten.</p>
   <p id="packMessage" class="error" role="alert"></p>
   <div class="pack-grid">
    <section class="panel"><div class="panelhead"><div><h2>JSON-Import</h2><p>Schema 1 · maximal 512 KB · bis zu 25 Regeln</p></div></div>
@@ -25,7 +25,7 @@
    </section>
    <section class="panel"><div class="panelhead"><div><h2>Gespeicherte Versionen</h2><p>Versionen können nicht überschrieben werden.</p></div><button id="packRefresh" class="secondary" disabled>Aktualisieren</button></div>
     <div class="pack-body">
-     <label class="pack-rights"><input id="packRights" type="checkbox"> Ich bestätige die zulässigen Nutzungsrechte und die interne fachliche Freigabe für die von mir aktivierte Version. Sie ist kein ICC-abgeleitetes Pack.</label>
+     <label class="pack-rights"><input id="packRights" type="checkbox"> Ich bestätige die interne fachliche Freigabe und eine für dieses Pack ausreichende Lizenz beziehungsweise Nutzungserlaubnis, einschließlich der Nutzung durch alle Benutzer dieser Installation. Bei ICC-bezogenen Packs habe ich die entsprechenden Rechte selbst geprüft.</label>
      <p>Aktivierung erst nach bestandenen Tests. Zur Rückkehr kann eine frühere Version erneut aktiviert werden.</p>
      <div id="packVersions">Versionen werden geladen …</div>
     </div>

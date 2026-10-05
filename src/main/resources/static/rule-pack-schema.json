@@ -9,7 +9,7 @@
   "packId": {"type":"string","pattern":"^[a-z][a-z0-9-]{2,30}$"},
   "version": {"$ref":"#/$defs/version"},
   "name": {"type":"string","minLength":1,"maxLength":100},
-  "origin": {"const":"OWN_INTERNAL"},
+  "origin": {"enum":["OWN_INTERNAL","ICC_LICENSED"]},
   "license": {"type":"string","minLength":1,"maxLength":100},
   "rightsStatement": {"type":"string","minLength":1,"maxLength":500},
   "rules": {"type":"array","minItems":1,"maxItems":25,"items":{"$ref":"#/$defs/rule"}},

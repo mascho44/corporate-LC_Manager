@@ -20,11 +20,18 @@ class PackCodecTest {
   assertThatThrownBy(()->codec.parse(source.replace("\"schemaVersion\": 1","\"schemaVersion\":1,\"schemaVersion\":1").getBytes(StandardCharsets.UTF_8))).isInstanceOf(IllegalArgumentException.class);
   assertThatThrownBy(()->codec.parse(new byte[PackCodec.MAX_BYTES+1])).isInstanceOf(IllegalArgumentException.class);
  }
- @Test void iccAndExternalOriginsAndUnboundedExpressionsAreRejected()throws Exception{
+ @Test void unknownOriginsAndUnboundedExpressionsAreRejected()throws Exception{
   String source=new String(example(),StandardCharsets.UTF_8);
-  for(String changed:List.of(source.replace("OWN_INTERNAL","ICC"),source.replace("DEMO-01","ISBP 821"),source.replace("LTE","SCRIPT"),source.replace("DOCUMENT_AMOUNT","getClass"))){
+  for(String changed:List.of(source.replace("OWN_INTERNAL","UNKNOWN"),source.replace("LTE","SCRIPT"),source.replace("DOCUMENT_AMOUNT","getClass"))){
    assertThatThrownBy(()->codec.parse(changed.getBytes(StandardCharsets.UTF_8))).isInstanceOf(IllegalArgumentException.class);
   }
+ }
+ @Test void licensedOriginAndSourceReferencesAreAllowedWithoutBundlingPublicationText()throws Exception{
+  String source=new String(example(),StandardCharsets.UTF_8).replace("OWN_INTERNAL","ICC_LICENSED").replace("DEMO-01","ISBP 821");
+  var pack=codec.parse(source.getBytes(StandardCharsets.UTF_8));
+  assertThat(pack.origin()).isEqualTo("ICC_LICENSED");
+  assertThat(pack.rules().get(0).sourceReference()).contains("ISBP 821");
+  assertThat(PackEvaluator.test(pack)).allMatch(PackEvaluator.TestResult::passed);
  }
  @Test void wrongFieldTypesAndMissingCoverageAreRejected()throws Exception{
   String source=new String(example(),StandardCharsets.UTF_8);
