@@ -69,6 +69,7 @@ public class DocumentInboxService {
         lc.setReference(reference);lc.setApplicant(request.applicant());lc.setBeneficiary(request.beneficiary());
         lc.setOwnBankReference(cleanReference(request.ownBankReference()));lc.setForeignBankReference(cleanReference(request.foreignBankReference()));
         lc.setAmount(request.amount());lc.setCurrency(request.currency());lc.setExpiryDate(request.expiryDate());
+        lc.setIssuingBank(request.issuingBank());lc.setExpiryPlace(request.expiryPlace());
         var saved=lettersOfCredit.saveAndFlush(lc);
         return new NewCaseResult(saved.getId(),attach(id,new DocumentInboxAttachRequest(saved.getId(),request.documentType(),request.documentDate())));
     }

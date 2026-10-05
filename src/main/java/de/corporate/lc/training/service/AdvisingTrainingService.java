@@ -9,13 +9,13 @@ import java.util.regex.*;
 
 @Service
 public class AdvisingTrainingService {
- public static final Map<String,String> LABELS=Map.of("reference","LC number","ownBankReference","Referenz eigene Bank","foreignBankReference","Fremdbankreferenz","applicant","Applicant","beneficiary","Beneficiary","amount","Credit amount","expiryDate","Expiry date");
+ public static final Map<String,String> LABELS=Map.of("reference","LC number","ownBankReference","Referenz eigene Bank","foreignBankReference","Fremdbankreferenz","applicant","Applicant","beneficiary","Beneficiary","amount","Credit amount","expiryDate","Expiry date","issuingBank","Issuing bank");
  public record Field(String sourceLabel,String originalCode,String originalValue,String code,String value,String review){}
  private final TrainingSessionRepository sessions;private final ObjectMapper mapper;private final TrainingLearningService learning;
  public AdvisingTrainingService(TrainingSessionRepository sessions,ObjectMapper mapper,TrainingLearningService learning){this.sessions=sessions;this.mapper=mapper;this.learning=learning;}
  public List<Field> fields(String bank,String text){
-  var mappings=learning.adviceMappings(bank);List<Field> fields=new ArrayList<>();var matcher=Pattern.compile("(?m)^\\s*([^:\\r\\n]{1,100}):[ \\t]*([^\\r\\n]+)$").matcher(text==null?"":text);
-  while(matcher.find()&&fields.size()<100){String label=matcher.group(1).trim(),value=matcher.group(2).trim();String target=mappings.getOrDefault(label.toUpperCase(Locale.ROOT),"");fields.add(new Field(label,TrainingLearningService.adviceSource(bank,label),value,target,value,null));}
+  var mappings=learning.adviceMappings(bank);List<Field> fields=new ArrayList<>();
+  for(var row:de.corporate.lc.document.service.AdvisingRows.read(text)){String target=mappings.getOrDefault(row.label().toUpperCase(Locale.ROOT),row.target());fields.add(new Field(row.label(),TrainingLearningService.adviceSource(bank,row.label()),row.value(),target,row.value(),null));}
   return fields;
  }
  @Transactional public TrainingSession save(UUID id,List<Field> submitted,String username,boolean finish){
@@ -39,7 +39,7 @@ public class AdvisingTrainingService {
  }
  public de.corporate.lc.document.service.AdvisingLetterExtractor.Proposal preview(String bank,String text){
   String enriched=text==null?"":text;
-  if(bank!=null&&!bank.isBlank())for(var field:fields(bank,text)){if(!field.code().isBlank())enriched+="\n"+LABELS.get(field.code())+": "+field.value();}
+  if(bank!=null&&!bank.isBlank())for(var field:fields(bank,text)){if(!field.code().isBlank())enriched+="\n"+LABELS.get(field.code())+": "+field.value().replace('\n',' ');}
   return de.corporate.lc.document.service.AdvisingLetterExtractor.extract(enriched);
  }
 }

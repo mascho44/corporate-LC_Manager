@@ -37,7 +37,7 @@ public class PdfFieldSnippetService {
     private List<byte[]> create(TrainingSession session){
         List<String> codes=codes(session.getExtractedText());
         boolean advice="ADVISING_LETTER".equals(session.getMessageType());
-        if(advice){try{codes=new ArrayList<>();for(var field:new com.fasterxml.jackson.databind.ObjectMapper().readTree(session.getReviewsJson()))codes.add(field.path("sourceLabel").asText());}catch(Exception e){return List.of(placeholder("Trainingsfelder nicht lesbar"));}}
+        if(advice){try{codes=new ArrayList<>();for(var field:new com.fasterxml.jackson.databind.ObjectMapper().readTree(session.getReviewsJson())){String label=field.path("sourceLabel").asText();codes.add(label.startsWith("Empfänger (Briefkopf")?field.path("originalValue").asText().split("\\R")[0]:label);}}catch(Exception e){return List.of(placeholder("Trainingsfelder nicht lesbar"));}}
         if(codes.isEmpty())return List.of(placeholder("Keine SWIFT-Felder erkannt"));
         Path directory=null;
         try{
@@ -70,7 +70,7 @@ public class PdfFieldSnippetService {
     }
     private List<byte[]> cropAdvice(List<String> labels,List<PageData> pages)throws IOException{
         List<byte[]> result=new ArrayList<>();
-        for(String label:labels){List<Match> matches=new ArrayList<>();for(int page=0;page<pages.size();page++)for(int line=0;line<pages.get(page).lines.size();line++){var value=pages.get(page).lines.get(line);if(value.text.trim().matches("(?i)^"+Pattern.quote(label)+"\\s*:.*"))matches.add(new Match(page,line,pages.get(page),value));}result.add(matches.size()==1?crop(matches.get(0)):placeholder("Keine eindeutige Fundstelle für "+label));}
+        for(String label:labels){List<Match> matches=new ArrayList<>();for(int page=0;page<pages.size();page++)for(int line=0;line<pages.get(page).lines.size();line++){var value=pages.get(page).lines.get(line);if(value.text.trim().equalsIgnoreCase(label)||value.text.trim().matches("(?i)^"+Pattern.quote(label)+"(?:\\s*:|\\s+).*"))matches.add(new Match(page,line,pages.get(page),value));}result.add(matches.size()==1?crop(matches.get(0)):placeholder("Keine eindeutige Fundstelle für "+label));}
         return result;
     }
 
