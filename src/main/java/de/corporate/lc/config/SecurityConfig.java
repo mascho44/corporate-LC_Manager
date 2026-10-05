@@ -10,6 +10,7 @@ import de.corporate.lc.user.service.AppUserDetailsService; import jakarta.servle
    .requestMatchers("/api/admin/outbox/**").hasRole("ADMIN")
    .requestMatchers("/api/admin/monitoring/**").hasRole("ADMIN")
    .requestMatchers("/api/audit/**").hasAuthority("PERM_AUDIT_VIEW")
+   .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/lcs/*/document-checks/decisions/history").hasAuthority("PERM_AUDIT_VIEW")
    .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/lcs/*/dossier").hasAuthority("PERM_AUDIT_VIEW")
    .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/companies/choices").authenticated()
    .requestMatchers("/api/companies/**").hasAuthority("PERM_SETTINGS_MANAGE")

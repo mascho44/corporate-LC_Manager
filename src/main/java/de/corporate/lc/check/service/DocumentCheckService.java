@@ -164,18 +164,47 @@ public class DocumentCheckService {
             results.add(new CheckResult(WARNING, "LC_EXPIRED", "The LC has expired."));
         if (results.isEmpty()) results.add(new CheckResult(WARNING, "NO_RULES_APPLIED", "No automated rule could be applied."));
 
-        Map<String,DocumentCheckDecision> reviewed=new HashMap<>();if(!simulation)decisions.findByLcId(lcId).forEach(d->reviewed.put(decisionKey(d.getFindingCode(),d.getDocumentName()),d));
-List<CheckResult> reviewedResults=results.stream().map(result->{var d=reviewed.get(decisionKey(result.code(),result.documentName()));if(d==null)return result;CheckResult.Severity effective="ACCEPTED".equals(d.getDecision())?OK:DISCREPANCY;return new CheckResult(effective,result.code(),result.message(),result.lcCondition(),result.documentName(),result.documentEvidence(),d.getDecision(),d.getComment(),d.getReviewedBy(),d.getReviewedAt(),result.automaticSeverity());}).toList();
+        String inputFingerprint=ReviewInputFingerprint.of(lc,uploaded);
+        List<DocumentCheckDecision> reviewed=simulation?List.of():decisions.findByLcId(lcId);
+        List<CheckResult> reviewedResults=new ArrayList<>();
+        for(CheckResult rawResult:results){
+            CheckResult result=rawResult.withInputFingerprint(inputFingerprint);
+            var matching=reviewed.stream().filter(d->decisionKey(d.getFindingCode(),d.getDocumentName()).equals(decisionKey(result.code(),result.documentName()))).toList();
+            var current=matching.stream().filter(d->d.getInvalidatedAt()==null&&result.reviewFingerprint().equals(d.getFindingFingerprint())).findFirst();
+            if(current.isPresent()){
+                var d=current.get();var effective="ACCEPTED".equals(d.getDecision())?OK:DISCREPANCY;
+                reviewedResults.add(new CheckResult(effective,result.code(),result.message(),result.lcCondition(),result.documentName(),result.documentEvidence(),d.getDecision(),d.getComment(),d.getReviewedBy(),d.getReviewedAt(),result.automaticSeverity()).withInputFingerprint(inputFingerprint));
+            }else{
+                reviewedResults.add(result);
+                if(!matching.isEmpty())reviewedResults.add(finding(WARNING,"REVIEW_STALE","Frühere Prüfentscheidung gilt nicht für diesen Befundstand. Bitte erneut fachlich prüfen.",result.lcCondition(),result.documentName(),"Befund: "+result.code()+" · Regelversion oder Vergleichsgrundlage hat sich geändert; Altentscheidungen bleiben gespeichert."));
+            }
+        }
         long discrepancies=count(reviewedResults,DISCREPANCY),warnings=count(reviewedResults,WARNING);String status=discrepancies>0?"RED":warnings>0?"YELLOW":"GREEN";
         return new ReviewSummary(status,discrepancies,warnings,count(reviewedResults,OK),reviewedResults);
     }
 
-@Transactional public void decide(UUID lcId,CheckDecisionRequest request,String username){lcs.findById(lcId).orElseThrow();if("ACCEPTED".equals(request.decision())&&(request.comment()==null||request.comment().isBlank()))throw new IllegalArgumentException("Bitte begründen, warum der Befund als erfüllt bestätigt wird.");String name=request.documentName()==null?"":request.documentName();DocumentCheckDecision decision=decisions.findByLcIdAndFindingCodeAndDocumentName(lcId,request.findingCode(),name).orElseGet(DocumentCheckDecision::new);decision.setLcId(lcId);decision.setFindingCode(request.findingCode());decision.setDocumentName(name);decision.setDecision(request.decision());decision.setComment(request.comment()==null?null:request.comment().strip());decision.setReviewedBy(username);decision.setReviewedAt(java.time.LocalDateTime.now());decisions.save(decision);}
+    @Transactional public DocumentCheckDecision decide(UUID lcId,CheckDecisionRequest request,String username){
+        lcs.findById(lcId).orElseThrow();
+        if(!Set.of("ACCEPTED","CONFIRMED_DISCREPANCY").contains(request.decision()))throw new IllegalArgumentException("Ungültige Prüfentscheidung.");
+        if("ACCEPTED".equals(request.decision())&&(request.comment()==null||request.comment().isBlank()))throw new IllegalArgumentException("Bitte begründen, warum der Befund als erfüllt bestätigt wird.");
+        if(request.reviewFingerprint()==null)throw new IllegalArgumentException("Bitte den Befund neu laden und erneut bestätigen.");
+        String name=request.documentName()==null?"":request.documentName();
+        var selected=check(lcId).results().stream().filter(r->Objects.equals(r.code(),request.findingCode())&&Objects.equals(r.documentName()==null?"":r.documentName(),name)&&r.reviewFingerprint().equals(request.reviewFingerprint())).findFirst().orElseThrow(()->new IllegalArgumentException("Der Befund hat sich geändert oder besteht nicht mehr. Bitte neu laden und prüfen."));
+        if("REVIEW_STALE".equals(selected.code()))throw new IllegalArgumentException("Bitte den ursprünglichen Befund erneut prüfen und bestätigen.");
+        var baseline=new CheckResult(selected.automaticSeverity(),selected.code(),selected.message(),selected.lcCondition(),selected.documentName(),selected.documentEvidence()).withInputFingerprint(selected.inputFingerprint());
+        var decision=decisions.findByLcIdAndFindingCodeAndDocumentNameAndFindingFingerprint(lcId,request.findingCode(),name,baseline.reviewFingerprint()).orElseGet(DocumentCheckDecision::new);
+        decision.setLcId(lcId);decision.setFindingCode(request.findingCode());decision.setDocumentName(name);
+        decision.setFindingFingerprint(baseline.reviewFingerprint());decision.setRuleCatalogVersion(baseline.ruleCatalogVersion());decision.setRuleId(baseline.rule().id());decision.setRuleVersion(baseline.rule().version());
+        try{decision.setFindingSnapshot(new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules().writeValueAsString(baseline));}catch(com.fasterxml.jackson.core.JsonProcessingException e){throw new IllegalStateException("Prüfgrundlage konnte nicht gespeichert werden.",e);}
+        decision.setInvalidatedAt(null);decision.setDecision(request.decision());decision.setComment(request.comment()==null?null:request.comment().strip());decision.setReviewedBy(username);decision.setReviewedAt(java.time.LocalDateTime.now());
+        return decisions.save(decision);
+    }
     @Transactional public void mapRequirement(UUID lcId,String requirement,DocumentType type,String username){LetterOfCredit lc=lcs.findById(lcId).orElseThrow();if(!lc.getRequiredDocuments().contains(requirement))throw new IllegalArgumentException("Dokumentenanforderung gehört nicht zu dieser LC-Akte.");if(mappings==null)throw new IllegalStateException("Zuordnung ist nicht verfügbar.");LcRequirementMapping mapping=mappings.findByLcIdAndRequirement(lcId,requirement).orElseGet(LcRequirementMapping::new);mapping.setLcId(lcId);mapping.setRequirement(requirement);mapping.setDocumentType(type);mapping.setMappedBy(username);mapping.setMappedAt(java.time.LocalDateTime.now());mappings.save(mapping);}
     @Transactional(readOnly=true)public List<LcRequirementMapping> requirementMappings(UUID lcId){lcs.findById(lcId).orElseThrow();return mappings==null?List.of():mappings.findByLcIdOrderByMappedAtDesc(lcId);}
     @Transactional public void removeRequirementMapping(UUID lcId,String requirement){lcs.findById(lcId).orElseThrow();if(mappings==null)throw new IllegalStateException("Zuordnung ist nicht verfügbar.");LcRequirementMapping mapping=mappings.findByLcIdAndRequirement(lcId,requirement).orElseThrow(()->new NoSuchElementException("Zuordnung nicht gefunden"));mappings.delete(mapping);}
     private Optional<DocumentType> mappedType(UUID lcId,String requirement){return mappings==null?Optional.empty():mappings.findByLcIdAndRequirement(lcId,requirement).map(LcRequirementMapping::getDocumentType);}
-    @Transactional public long invalidateDecisions(UUID lcId){long count=decisions.findByLcId(lcId).size();decisions.deleteAllByLcId(lcId);return count;}
+    @Transactional public long invalidateDecisions(UUID lcId){var active=decisions.findByLcId(lcId).stream().filter(d->d.getInvalidatedAt()==null).toList();var now=java.time.LocalDateTime.now();active.forEach(d->d.setInvalidatedAt(now));decisions.saveAll(active);return active.size();}
+    @Transactional(readOnly=true) public List<DocumentCheckDecision> decisionHistory(UUID lcId){lcs.findById(lcId).orElseThrow();return decisions.findByLcId(lcId).stream().sorted(Comparator.comparing(DocumentCheckDecision::getReviewedAt).reversed()).toList();}
     private String decisionKey(String code,String document){return code+"\u0000"+(document==null?"":document);}
 
     private long count(List<CheckResult> results, CheckResult.Severity severity) {
