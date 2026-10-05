@@ -4,7 +4,7 @@
  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
  <title>Interne Rule Packs · Corporate LC Manager</title>
  <link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/rule-packs.css">
- <script src="/rule-packs.js?v=20261005-1" defer></script>
+ <script src="/rule-packs.js?v=20261005-2" defer></script>
 </head>
 <body class="pack-page">
  <header><strong>Corporate LC Manager · Rule Packs</strong><a class="button-link secondary" href="/">Zur Anwendung</a></header>
@@ -14,11 +14,11 @@
   <p class="pack-notice">Keine Skripte oder Plugins. ICC-, UCP- oder ISBP-bezogene Packs benötigen eine passende Lizenz beziehungsweise Nutzungserlaubnis. Diese prüft der aktivierende Benutzer selbst. Die Anwendung prüft keine Lizenzen. Die Aktivierung gilt für alle Benutzer und LC-Akten.</p>
   <p id="packMessage" class="error" role="alert"></p>
   <div class="pack-grid">
-   <section class="panel"><div class="panelhead"><div><h2>JSON-Import</h2><p>Schema 1 · maximal 512 KB · bis zu 25 Regeln</p></div></div>
+   <section class="panel"><div class="panelhead"><div><h2>JSON-Import</h2><p>Schema 1 und 2 · maximal 512 KB · bis zu 25 Regeln</p></div></div>
     <div class="pack-body">
      <label class="pack-upload">Rule-Pack-Datei auswählen<input id="packFile" type="file" accept=".json,application/json" disabled></label>
-     <p>Pro Regel sind synthetische Testfälle für erfüllt, verletzt und nicht prüfbar erforderlich.</p>
-     <p><a href="/rule-pack-example.json" download>Eigenes Demo-Pack herunterladen</a> · <a href="/rule-pack-schema.json" download>JSON-Schema herunterladen</a></p>
+     <p>Schema 2 ergänzt Anwendungsbedingungen, Parteienvergleiche und manuelle Prüfungen. Testfälle müssen auch fehlende Angaben und nicht anwendbare Regeln abdecken.</p>
+     <p><a href="/rule-pack-example.json" download>Demo Schema 1</a> · <a href="/rule-pack-example-v2.json" download>Demo Schema 2</a> · <a href="/rule-pack-schema.json" download>JSON-Schema herunterladen</a></p>
      <div id="packPreview" aria-live="polite">Noch keine Datei ausgewählt.</div>
     </div>
     <div class="actions"><button id="packImport" disabled>Als inaktive Version importieren</button></div>

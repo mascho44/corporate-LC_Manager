@@ -1,0 +1,8 @@
+#ruleFactsDialog{max-height:90vh;overflow:auto}
+#ruleFactsDialog>form>p{margin:0;padding:0 22px 16px;color:#667085;font-size:14px}
+#ruleFactsDialog>form>p.error{color:#b42318;padding-top:10px}
+#ruleFactsDialog textarea{width:100%;margin:6px 0 0;height:90px;min-height:70px;font-family:inherit}
+#ruleFactsDialog textarea[name$="GOODS_DESCRIPTION"]{height:150px}
+#ruleFactsDialog .dialoghead{align-items:center}
+#ruleFactsDialog .dialoghead h2{margin:0}
+@media(max-width:800px){.document-row:has([data-rule-facts])>.document-meta{display:flex;grid-column:1/-1;text-align:left;flex-wrap:wrap;gap:8px;align-items:center}#ruleFactsDialog .actions{flex-wrap:wrap}}

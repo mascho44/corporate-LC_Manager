@@ -14,6 +14,8 @@ Aktivierungen gelten für alle Benutzer und LC-Akten bei nachfolgenden Prüfunge
 
 ## Zulässige Regeln
 
+[Schema 2](rule-engine-v2.md) ergänzt Anwendungsbedingungen, Parteienvergleiche, strukturierte Prüfdaten und manuelle Warenprüfungen. Die folgenden Grundvergleiche stehen weiterhin unter Schema 1 zur Verfügung.
+
 Das MVP vergleicht ausschließlich erfasste Dokumentbeträge, Dokumentwährungen und Dokumentdaten mit passenden LC-Werten. Als Vergleich stehen Gleichheit, Ungleichheit und numerische beziehungsweise Datumsgrenzen zur Verfügung. Ein Dokumentdatum ist nicht automatisch ein Versanddatum. Es werden keine Skripte, Formeln, Klassen oder externen Aufrufe ausgeführt.
 
 Fehlende oder ungültige Werte ergeben eine Warnung „nicht prüfbar“, niemals ein positives Prüfergebnis. Jeder Regel müssen Testfälle für Erfolg, Abweichung und fehlende/ungültige Daten beiliegen. Nur Versionen mit vollständig bestandenen Tests können aktiviert werden; die Tests werden vor Aktivierung erneut ausgeführt.

@@ -61,4 +61,20 @@ class InternalPackServiceTest {
   when(selections.findAll()).thenReturn(List.of(selected));
   assertThat(service.evaluate(new LetterOfCredit(),List.of()).get(0).code()).isEqualTo("INTERNAL_PACK_INVALID");
  }
+ @Test void schemaTwoFindingsIncludeScopeFactsAndDoNotTurnManualOrExcludedRulesGreen()throws Exception{
+  byte[] source;try(var input=getClass().getResourceAsStream("/static/rule-pack-example-v2.json")){source=input.readAllBytes();}
+  var pack=codec.parse(source);var v=new StoredPackVersion();v.packId=pack.packId();v.version=pack.version();v.definitionJson=codec.canonical(pack);v.checksum=codec.digest(v.definitionJson);v.testsPassed=true;
+  when(versions.findById(v.id)).thenReturn(Optional.of(v));var selected=new PackSelection();selected.id=v.packId;selected.activeVersionId=v.id;when(selections.findAll()).thenReturn(List.of(selected));
+  var lc=new LetterOfCredit();lc.setBeneficiary("DEMO EXPORT");lc.setApplicant("DEMO IMPORT");
+  lc.setRuleFactsJson(RuleFacts.encode(Map.of(PackDefinition.Field.LC_TRANSFERRED,"false",PackDefinition.Field.LC_GOODS_DESCRIPTION,"Test items"),false));
+  var doc=new LcDocument();doc.setDocumentType(DocumentType.COMMERCIAL_INVOICE);doc.setOriginalFilename("synthetic.pdf");
+  doc.setRuleFactsJson(RuleFacts.encode(Map.of(PackDefinition.Field.DOCUMENT_ISSUER,"DEMO EXPORT",PackDefinition.Field.DOCUMENT_RECIPIENT,"DEMO IMPORT",PackDefinition.Field.DOCUMENT_GOODS_DESCRIPTION,"Test items"),true));
+  var findings=service.evaluate(lc,List.of(doc));assertThat(findings.get(0).severity().name()).isEqualTo("OK");
+  assertThat(findings.get(2).severity().name()).isEqualTo("WARNING");assertThat(findings.get(2).message()).contains("Manuelle");
+  var fingerprint=findings.get(0).reviewFingerprint();
+  lc.setRuleFactsJson(RuleFacts.encode(Map.of(PackDefinition.Field.LC_TRANSFERRED,"true",PackDefinition.Field.LC_GOODS_DESCRIPTION,"Test items"),false));
+  var excluded=service.evaluate(lc,List.of(doc));assertThat(excluded).allMatch(f->f.severity().name().equals("WARNING"));
+  assertThat(excluded.get(0).message()).contains("nicht anwendbar");assertThat(excluded.get(0).reviewFingerprint()).isNotEqualTo(fingerprint);
+  lc.setRuleFactsJson("{}");assertThat(service.evaluate(lc,List.of(doc))).allMatch(f->f.message().contains("nicht prüfbar"));
+ }
 }

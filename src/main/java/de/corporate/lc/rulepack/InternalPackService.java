@@ -94,12 +94,20 @@ public class InternalPackService {
       metadata.basis(),null,"Erforderlicher Typ: "+rule.documentType()+" · SHA-256 "+stored.checksum).withRule(metadata));
     }
     for(var document:matching){
-     String left=value(rule.left(),lc,document),right=value(rule.right(),lc,document);
-     var outcome=PackEvaluator.compare(rule,left,right);
-     var level=outcome==Outcome.PASS?CheckResult.Severity.OK:outcome==Outcome.NOT_EVALUABLE||rule.severity()==Level.WARNING?CheckResult.Severity.WARNING:CheckResult.Severity.DISCREPANCY;
-     findings.add(new CheckResult(level,code,(outcome==Outcome.PASS?"Interne Regel erfüllt: ":outcome==Outcome.FAIL?"Interne Regel verletzt: ":"Interne Regel nicht prüfbar: ")+rule.message(),
+     var facts=new EnumMap<Field,String>(Field.class);
+     try{
+      if(definition.schemaVersion()==1){facts.put(rule.left(),value(rule.left(),lc,document));facts.put(rule.right(),value(rule.right(),lc,document));}
+      else for(var field:Field.values())facts.put(field,value(field,lc,document));
+     }
+     catch(RuntimeException invalidFacts){facts.clear();}
+     String left=facts.get(rule.left()),right=facts.get(rule.right());
+     var outcome=PackEvaluator.evaluate(rule,facts);
+     var level=outcome==Outcome.PASS?CheckResult.Severity.OK:outcome!=Outcome.FAIL||rule.severity()==Level.WARNING?CheckResult.Severity.WARNING:CheckResult.Severity.DISCREPANCY;
+     String outcomeLabel=switch(outcome){case PASS->"Regel erfüllt: ";case FAIL->"Regel verletzt: ";case NOT_APPLICABLE->"Regel nicht anwendbar: ";case MANUAL_REVIEW->"Manuelle fachliche Prüfung erforderlich: ";case NOT_EVALUABLE->"Regel nicht prüfbar: ";};
+     if(definition.schemaVersion()==1)outcomeLabel=outcome==Outcome.PASS?"Interne Regel erfüllt: ":outcome==Outcome.FAIL?"Interne Regel verletzt: ":"Interne Regel nicht prüfbar: ";
+     findings.add(new CheckResult(level,code,outcomeLabel+rule.message(),
       metadata.basis()+" · "+rule.right()+" = "+Objects.toString(right,"nicht erfasst"),
-      document.getOriginalFilename(),rule.left()+" = "+Objects.toString(left,"nicht erfasst")+" · "+rule.operator()+" · SHA-256 "+stored.checksum).withRule(metadata));
+      document.getOriginalFilename(),rule.left()+" = "+Objects.toString(left,"nicht erfasst")+" · "+rule.operator()+" · SHA-256 "+stored.checksum+(definition.schemaVersion()==2?" · Ergebnis "+outcome+" · Prüfdaten "+facts:"")).withRule(metadata));
     }
    }
   }
@@ -109,6 +117,9 @@ public class InternalPackService {
   Object value=switch(field){
    case DOCUMENT_AMOUNT->doc.getAmount();case DOCUMENT_CURRENCY->doc.getCurrency();case DOCUMENT_DATE->doc.getDocumentDate();
    case LC_AMOUNT->lc.getAmount();case LC_CURRENCY->lc.getCurrency();case LC_EXPIRY_DATE->lc.getExpiryDate();case LC_LATEST_SHIPMENT_DATE->lc.getLatestShipmentDate();
+   case LC_BENEFICIARY->lc.getBeneficiary();case LC_APPLICANT->lc.getApplicant();
+   case DOCUMENT_ISSUER,DOCUMENT_RECIPIENT,DOCUMENT_GOODS_DESCRIPTION->RuleFacts.read(doc.getRuleFactsJson()).get(field);
+   case LC_RULE_STANDARD,LC_TRANSFERRED,LC_SECOND_BENEFICIARY,LC_GOODS_DESCRIPTION->RuleFacts.read(lc.getRuleFactsJson()).get(field);
   };
   return value==null?null:value instanceof java.math.BigDecimal number?number.toPlainString():value.toString();
  }

@@ -20,13 +20,17 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(InternalPackController.class)
+@WebMvcTest({InternalPackController.class,RuleFactsController.class})
 @Import(SecurityConfig.class)
 class PackSecurityTest {
  @Autowired MockMvc mvc;
  @MockitoBean InternalPackService service;
  @MockitoBean AppUserDetailsService details;
  @MockitoBean AppUserRepository users;
+ @MockitoBean de.corporate.lc.lc.repository.LetterOfCreditRepository lcs;
+ @MockitoBean de.corporate.lc.document.repository.LcDocumentRepository documents;
+ @MockitoBean de.corporate.lc.audit.service.AuditService audit;
+ @MockitoBean de.corporate.lc.check.service.DocumentCheckService checks;
  MockHttpSession session(boolean allowed){
   var user=new AppUser();user.setUsername("synthetic-user");user.setRole(UserRole.EDITOR);user.setActive(true);user.setPasswordHash("synthetic-hash");
   when(users.findByUsernameIgnoreCase(user.getUsername())).thenReturn(Optional.of(user));
@@ -54,5 +58,25 @@ class PackSecurityTest {
   verify(service).importPack(any(byte[].class),any());
   mvc.perform(post("/api/settings/rule-packs/preview").session(session).header(token.getHeaderName(),value).contentType("application/json").content(new byte[PackCodec.MAX_BYTES+1])).andExpect(status().isBadRequest());
   verify(service,never()).preview(any());
+ }
+ @Test void supplementaryLcFactsNeedLcEditAndCsrf()throws Exception{
+  var id=UUID.randomUUID();var lc=new de.corporate.lc.lc.domain.LetterOfCredit();when(lcs.findById(id)).thenReturn(Optional.of(lc));
+  var session=session(false);
+  var token=(CsrfToken)mvc.perform(get("/api/lcs/"+id+"/rule-facts").session(session)).andReturn().getRequest().getAttribute(CsrfToken.class.getName());
+  String value=token.getToken();
+  mvc.perform(put("/api/lcs/"+id+"/rule-facts").session(session).header(token.getHeaderName(),value).contentType("application/json").content("{\"LC_TRANSFERRED\":\"false\"}")).andExpect(status().isForbidden());
+  var auth=new UsernamePasswordAuthenticationToken("synthetic-user",null,List.of(new SimpleGrantedAuthority("PERM_LC_EDIT")));
+  session.setAttribute("SPRING_SECURITY_CONTEXT",new SecurityContextImpl(auth));
+  mvc.perform(put("/api/lcs/"+id+"/rule-facts").session(session).contentType("application/json").content("{}")).andExpect(status().isForbidden());
+  mvc.perform(put("/api/lcs/"+id+"/rule-facts").session(session).header(token.getHeaderName(),value).contentType("application/json").content("{\"LC_TRANSFERRED\":\"false\"}")).andExpect(status().isOk()).andExpect(jsonPath("$.LC_TRANSFERRED").value("false"));
+  verify(checks).invalidateDecisions(id);verify(audit).recordInTransaction(any(),eq("LC_RULE_FACTS_UPDATED"),anyString(),eq(id),contains("SHA-256"));
+  mvc.perform(put("/api/lcs/"+id+"/rule-facts").session(session).header(token.getHeaderName(),value).contentType("application/json").content("{\"DOCUMENT_ISSUER\":\"Demo\"}")).andExpect(status().isBadRequest());
+ }
+ @Test void documentFactsCannotBeEditedWithOnlyLcEdit()throws Exception{
+  var session=session(false);
+  var token=(CsrfToken)mvc.perform(get("/api/settings/rule-packs").session(session)).andReturn().getRequest().getAttribute(CsrfToken.class.getName());String value=token.getToken();
+  session.setAttribute("SPRING_SECURITY_CONTEXT",new SecurityContextImpl(new UsernamePasswordAuthenticationToken("synthetic-user",null,List.of(new SimpleGrantedAuthority("PERM_LC_EDIT")))));
+  mvc.perform(put("/api/lcs/"+UUID.randomUUID()+"/documents/"+UUID.randomUUID()+"/rule-facts").session(session).header(token.getHeaderName(),value).contentType("application/json").content("{}")).andExpect(status().isForbidden());
+  verifyNoInteractions(documents,checks);
  }
 }

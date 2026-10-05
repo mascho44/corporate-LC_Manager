@@ -12,6 +12,7 @@ Stand: 05.10.2026 · Corporate LC Manager 0.5.0-SNAPSHOT
 - [Zielarchitektur und Roadmap: lc-rule-engine](lc-rule-engine.md)
 - [Fachliche LC-Bedingungen und Gebührenschätzungen](lc-bedingungen-und-gebuehren.md)
 - [Import, Freigabe und Betrieb eigener Rule Packs](internal-rule-packs.md)
+- [Prüf-Engine Schema 2 und strukturierte Rechnungsdaten](rule-engine-v2.md)
 
 Die Dokumentation beschreibt den Quellstand, mit dem sie ausgeliefert wird.
 Die Info-Seite `/info.html` enthält Copyright, Lizenz, Projektlinks und das
