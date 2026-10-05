@@ -16,6 +16,27 @@ public class RuleFactsController {
  public RuleFactsController(LetterOfCreditRepository l,LcDocumentRepository d,AuditService a,DocumentCheckService c){lcs=l;documents=d;audit=a;checks=c;}
  @GetMapping("/rule-facts") @Transactional(readOnly=true)
  public Map<Field,String> lc(@PathVariable UUID lcId){return RuleFacts.read(lcs.findById(lcId).orElseThrow().getRuleFactsJson());}
+ @GetMapping("/rule-facts/definitions")
+ public Map<String,List<RuleFacts.Definition>> definitions(@PathVariable UUID lcId){
+  if(!lcs.existsById(lcId))throw new NoSuchElementException();
+  return Map.of("document",RuleFacts.definitions(true),"lc",RuleFacts.definitions(false),"requirements",RuleFacts.requirementDefinitions());
+ }
+ @GetMapping("/rule-requirements/{type}") @Transactional(readOnly=true)
+ public Map<Field,String> requirements(@PathVariable UUID lcId,@PathVariable de.corporate.lc.document.domain.DocumentType type){
+  return RuleRequirements.read(lcs.findById(lcId).orElseThrow().getRuleRequirementsJson()).getOrDefault(type,Map.of());
+ }
+ @PutMapping("/rule-requirements/{type}") @Transactional
+ public Map<Field,String> saveRequirements(@PathVariable UUID lcId,@PathVariable de.corporate.lc.document.domain.DocumentType type,jakarta.servlet.http.HttpServletRequest request,Authentication auth)throws java.io.IOException{
+  return updateRequirements(lcId,type,RuleFacts.decodeRequest(request.getInputStream().readNBytes(RuleFacts.MAX_BYTES+1)),auth);
+ }
+ @Transactional
+ public Map<Field,String> updateRequirements(UUID lcId,de.corporate.lc.document.domain.DocumentType type,Map<Field,String> facts,Authentication auth){
+  var lc=lcs.findById(lcId).orElseThrow();String before=lc.getRuleRequirementsJson();
+  String after=RuleRequirements.update(before,type,facts);lc.setRuleRequirementsJson(after);lcs.save(lc);
+  long reset=checks.invalidateDecisions(lcId);
+  audit.recordInTransaction(auth,"LC_RULE_REQUIREMENTS_UPDATED","LETTER_OF_CREDIT",lcId,"Typ "+type+" · SHA-256 vorher="+RuleFacts.fingerprint(before)+" nachher="+RuleFacts.fingerprint(after)+" · "+reset+" Prüfentscheidungen zurückgesetzt");
+  return RuleRequirements.read(after).get(type);
+ }
  @PutMapping("/rule-facts") @Transactional
  public Map<Field,String> saveLc(@PathVariable UUID lcId,jakarta.servlet.http.HttpServletRequest request,Authentication auth)throws java.io.IOException{
   return updateLc(lcId,RuleFacts.decodeRequest(request.getInputStream().readNBytes(RuleFacts.MAX_BYTES+1)),auth);

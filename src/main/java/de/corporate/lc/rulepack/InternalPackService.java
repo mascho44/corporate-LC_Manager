@@ -97,17 +97,21 @@ public class InternalPackService {
      var facts=new EnumMap<Field,String>(Field.class);
      try{
       if(definition.schemaVersion()==1){facts.put(rule.left(),value(rule.left(),lc,document));facts.put(rule.right(),value(rule.right(),lc,document));}
-      else for(var field:Field.values())facts.put(field,value(field,lc,document));
+      else for(var field:Field.values())if(!field.peer()&&(definition.schemaVersion()>=3||field.ordinal()<=15))facts.put(field,value(field,lc,document));
+      if(rule.parameters()!=null&&rule.parameters().peerDocumentType()!=null){
+       var peer=uniquePeer(rule,document,documents);
+       for(var field:Field.values())if(field.peer())facts.put(field,peer==null?null:value(peerSource(field),lc,peer));
+      }
      }
      catch(RuntimeException invalidFacts){facts.clear();}
      String left=facts.get(rule.left()),right=facts.get(rule.right());
-     var outcome=PackEvaluator.evaluate(rule,facts);
+     var outcome=PackEvaluator.evaluate(rule,facts,definition.calendars()==null?List.of():definition.calendars(),definition.schemaVersion()>=3);
      var level=outcome==Outcome.PASS?CheckResult.Severity.OK:outcome!=Outcome.FAIL||rule.severity()==Level.WARNING?CheckResult.Severity.WARNING:CheckResult.Severity.DISCREPANCY;
      String outcomeLabel=switch(outcome){case PASS->"Regel erfüllt: ";case FAIL->"Regel verletzt: ";case NOT_APPLICABLE->"Regel nicht anwendbar: ";case MANUAL_REVIEW->"Manuelle fachliche Prüfung erforderlich: ";case NOT_EVALUABLE->"Regel nicht prüfbar: ";};
      if(definition.schemaVersion()==1)outcomeLabel=outcome==Outcome.PASS?"Interne Regel erfüllt: ":outcome==Outcome.FAIL?"Interne Regel verletzt: ":"Interne Regel nicht prüfbar: ";
      findings.add(new CheckResult(level,code,outcomeLabel+rule.message(),
       metadata.basis()+" · "+rule.right()+" = "+Objects.toString(right,"nicht erfasst"),
-      document.getOriginalFilename(),rule.left()+" = "+Objects.toString(left,"nicht erfasst")+" · "+rule.operator()+" · SHA-256 "+stored.checksum+(definition.schemaVersion()==2?" · Ergebnis "+outcome+" · Prüfdaten "+facts:"")).withRule(metadata));
+      document.getOriginalFilename(),rule.left()+" = "+Objects.toString(left,"nicht erfasst")+" · "+rule.operator()+" · SHA-256 "+stored.checksum+(definition.schemaVersion()>=2?" · Ergebnis "+outcome+" · Prüfdaten "+facts:"")+peerEvidence(rule,document,documents)).withRule(metadata));
     }
    }
   }
@@ -118,9 +122,30 @@ public class InternalPackService {
    case DOCUMENT_AMOUNT->doc.getAmount();case DOCUMENT_CURRENCY->doc.getCurrency();case DOCUMENT_DATE->doc.getDocumentDate();
    case LC_AMOUNT->lc.getAmount();case LC_CURRENCY->lc.getCurrency();case LC_EXPIRY_DATE->lc.getExpiryDate();case LC_LATEST_SHIPMENT_DATE->lc.getLatestShipmentDate();
    case LC_BENEFICIARY->lc.getBeneficiary();case LC_APPLICANT->lc.getApplicant();
-   case DOCUMENT_ISSUER,DOCUMENT_RECIPIENT,DOCUMENT_GOODS_DESCRIPTION->RuleFacts.read(doc.getRuleFactsJson()).get(field);
-   case LC_RULE_STANDARD,LC_TRANSFERRED,LC_SECOND_BENEFICIARY,LC_GOODS_DESCRIPTION->RuleFacts.read(lc.getRuleFactsJson()).get(field);
+   case LC_SIGNATURE_REQUIRED,LC_REQUIRED_ORIGINAL_COUNT->RuleRequirements.read(lc.getRuleRequirementsJson()).getOrDefault(doc.getDocumentType(),Map.of()).get(field);
+   default->field.peer()?null:RuleFacts.read(field.document()?doc.getRuleFactsJson():lc.getRuleFactsJson()).get(field);
   };
   return value==null?null:value instanceof java.math.BigDecimal number?number.toPlainString():value.toString();
  }
+ private LcDocument uniquePeer(Rule rule,LcDocument document,List<LcDocument> documents){
+  String group=RuleFacts.read(document.getRuleFactsJson()).get(Field.DOCUMENT_PRESENTATION_GROUP);
+  var candidates=documents.stream().filter(d->d!=document&&d.getDocumentType()==rule.parameters().peerDocumentType()).toList();
+  if(group==null)return candidates.size()==1&&RuleFacts.read(candidates.get(0).getRuleFactsJson()).get(Field.DOCUMENT_PRESENTATION_GROUP)==null?candidates.get(0):null;
+  var peers=candidates.stream().filter(d->group.equals(RuleFacts.read(d.getRuleFactsJson()).get(Field.DOCUMENT_PRESENTATION_GROUP))).toList();
+  return peers.size()==1?peers.get(0):null;
+ }
+ private String peerEvidence(Rule rule,LcDocument document,List<LcDocument> documents){
+  if(rule.parameters()==null||rule.parameters().peerDocumentType()==null)return "";
+  try{
+   var peer=uniquePeer(rule,document,documents);
+   return peer==null?" · Gegen-Dokument fehlt oder ist nicht eindeutig":" · Gegen-Dokument "+peer.getId()+" / "+peer.getOriginalFilename()+" · Inhalts-SHA-256 "+RuleFacts.contentFingerprint(peer.getContent());
+  }catch(RuntimeException invalid){return " · Gegen-Dokumentdaten ungültig";}
+ }
+ private Field peerSource(Field field){return switch(field){
+  case PEER_AMOUNT->Field.DOCUMENT_AMOUNT;case PEER_CURRENCY->Field.DOCUMENT_CURRENCY;
+  case PEER_SHIPMENT_DATE->Field.DOCUMENT_SHIPMENT_DATE;case PEER_GOODS_DESCRIPTION->Field.DOCUMENT_GOODS_DESCRIPTION;
+  case PEER_QUANTITY->Field.DOCUMENT_QUANTITY;case PEER_QUANTITY_UNIT->Field.DOCUMENT_QUANTITY_UNIT;
+  case PEER_NET_WEIGHT->Field.DOCUMENT_NET_WEIGHT;case PEER_GROSS_WEIGHT->Field.DOCUMENT_GROSS_WEIGHT;case PEER_WEIGHT_UNIT->Field.DOCUMENT_WEIGHT_UNIT;
+  default->throw new IllegalArgumentException("Kein Peer-Feld.");
+ };}
 }

@@ -56,6 +56,23 @@ class InternalPackServiceTest {
   doc.setAmount(null);assertThat(service.evaluate(lc,List.of(doc)).get(0).message()).contains("nicht prüfbar");
   assertThat(service.evaluate(lc,List.of()).get(0).message()).contains("Dokument fehlt");
  }
+ @Test void schemaThreeUsesUniquePeersAndTracksTheirContent()throws Exception{
+  byte[] source;try(var input=getClass().getResourceAsStream("/static/rule-pack-example-v3.json")){source=input.readAllBytes();}
+  var pack=codec.parse(source);var v=new StoredPackVersion();v.packId=pack.packId();v.version=pack.version();v.definitionJson=codec.canonical(pack);v.checksum=codec.digest(v.definitionJson);v.testsPassed=true;
+  when(versions.findById(v.id)).thenReturn(Optional.of(v));var selected=new PackSelection();selected.id=v.packId;selected.activeVersionId=v.id;when(selections.findAll()).thenReturn(List.of(selected));
+  var lc=new LetterOfCredit();lc.setRuleFactsJson(RuleFacts.encode(Map.of(PackDefinition.Field.LC_INSURANCE_MIN_PERCENT,"125"),false));
+  var insurance=new LcDocument();insurance.setDocumentType(DocumentType.INSURANCE_CERTIFICATE);insurance.setOriginalFilename("insurance.pdf");
+  insurance.setRuleFactsJson(RuleFacts.encode(Map.of(PackDefinition.Field.DOCUMENT_INSURED_AMOUNT,"1250",PackDefinition.Field.DOCUMENT_INSURANCE_CURRENCY,"EUR"),true));
+  var invoice=new LcDocument();invoice.setDocumentType(DocumentType.COMMERCIAL_INVOICE);invoice.setOriginalFilename("invoice.pdf");invoice.setAmount(new BigDecimal("1000"));invoice.setCurrency("EUR");invoice.setContent(new byte[]{1});
+  var first=service.evaluate(lc,List.of(insurance,invoice)).get(0);assertThat(first.severity().name()).isEqualTo("OK");
+  invoice.setContent(new byte[]{2});assertThat(service.evaluate(lc,List.of(insurance,invoice)).get(0).reviewFingerprint()).isNotEqualTo(first.reviewFingerprint());
+  var duplicate=new LcDocument();duplicate.setDocumentType(DocumentType.COMMERCIAL_INVOICE);duplicate.setAmount(new BigDecimal("1000"));duplicate.setCurrency("EUR");
+  assertThat(service.evaluate(lc,List.of(insurance,invoice,duplicate)).get(0).message()).contains("nicht prüfbar");
+  var insuranceFacts=new EnumMap<PackDefinition.Field,String>(PackDefinition.Field.class);insuranceFacts.putAll(RuleFacts.read(insurance.getRuleFactsJson()));insuranceFacts.put(PackDefinition.Field.DOCUMENT_PRESENTATION_GROUP,"presentation-1");insurance.setRuleFactsJson(RuleFacts.encode(insuranceFacts,true));
+  invoice.setRuleFactsJson(RuleFacts.encode(Map.of(PackDefinition.Field.DOCUMENT_PRESENTATION_GROUP,"presentation-1"),true));
+  assertThat(service.evaluate(lc,List.of(insurance,invoice,duplicate)).get(0).severity().name()).isEqualTo("OK");
+  invoice.setCurrency("USD");assertThat(service.evaluate(lc,List.of(insurance,invoice)).get(0).message()).contains("nicht prüfbar");
+ }
  @Test void corruptedPackNeverProducesSuccessfulFinding()throws Exception{
   var v=version();v.definitionJson+=" ";var selected=new PackSelection();selected.id=v.packId;selected.activeVersionId=v.id;
   when(selections.findAll()).thenReturn(List.of(selected));

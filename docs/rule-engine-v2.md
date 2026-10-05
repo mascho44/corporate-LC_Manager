@@ -1,5 +1,7 @@
 # Prüf-Engine Schema 2: Handelsrechnungen
 
+Weitere generische Bausteine und der aktuelle Funktionsumfang stehen unter [Schema 3](rule-engine-v3.md). Seit Schema 3 beträgt das Upload-Limit für ergänzende Prüfdaten 64 KiB.
+
 Schema 2 erweitert die deklarative Engine, ohne hochgeladenen Code auszuführen. Schema-1-Packs bleiben gültig und behalten ihre bisherige kanonische Darstellung. Das Beispiel `/rule-pack-example-v2.json` enthält ausschließlich eigene synthetische Funktionstests, keine ICC-Regeln.
 
 ## Prüfdaten erfassen

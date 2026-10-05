@@ -1,31 +1,38 @@
 (() => {
- const labels={
-  DOCUMENT_ISSUER:'Dokumentaussteller',DOCUMENT_RECIPIENT:'Dokumentempfänger',DOCUMENT_GOODS_DESCRIPTION:'Warenbeschreibung im Dokument',
-  LC_RULE_STANDARD:'Anzuwendender Regelstandard',LC_TRANSFERRED:'Ist dieses LC tatsächlich übertragen?',LC_SECOND_BENEFICIARY:'Zweiter Begünstigter',LC_GOODS_DESCRIPTION:'Gültige LC-Warenbeschreibung'
- };
  let sequence=0;
- async function openFacts(documentId){
+ function widget(d,value){
+  const name=d.field,v=value||'';
+  if(d.choices.length)return '<select name="'+name+'"><option value="">Unbekannt / nicht geprüft</option>'+d.choices.map(choice=>'<option value="'+esc(choice)+'" '+(v===choice?'selected':'')+'>'+esc(choice==='true'?'Ja':choice==='false'?'Nein':choice)+'</option>').join('')+'</select>';
+  if(name.includes('GOODS_DESCRIPTION')||name.endsWith('RISKS'))return '<textarea name="'+name+'" maxlength="'+d.maxLength+'">'+esc(v)+'</textarea>';
+  const type=d.kind==='DATE'?'date':d.kind==='NUMBER'?'number':'text';
+  return '<input name="'+name+'" type="'+type+'" value="'+esc(v)+'" maxlength="'+d.maxLength+'" '+(type==='number'?'min="0" step="'+(name.endsWith('COUNT')||name.endsWith('DAYS')?'1':'0.000001')+'"':'')+'>';
+ }
+ function section(d){
+  if(d.field.includes('INSUR'))return 'Versicherung';
+  if(/SHIPMENT|PRESENTATION|QUANTITY|WEIGHT|TOLERANCE/.test(d.field))return 'Transport, Mengen und Fristen';
+  return 'Allgemeine Prüfdaten';
+ }
+ async function openFacts(documentId,documentType=null,requirements=false){
   const lcId=activeLc?.id;if(!lcId)return;
-  const current=++sequence,editing=documentId?'DOCUMENT_UPLOAD':'LC_EDIT',allowed=can(editing);
-  const url='/api/lcs/'+lcId+(documentId?'/documents/'+documentId:'')+'/rule-facts';
+  const current=++sequence,allowed=can(documentId?'DOCUMENT_UPLOAD':'LC_EDIT');
+  const base='/api/lcs/'+lcId;
+  const url=base+(requirements?'/rule-requirements/'+documentType:(documentId?'/documents/'+documentId:'')+'/rule-facts');
   try{
+   const definitions=await json(base+'/rule-facts/definitions');
    const values=await json(url);if(current!==sequence||activeLc?.id!==lcId)return;
+   const fields=definitions[requirements?'requirements':documentId?'document':'lc'],keys=fields.map(d=>d.field);
    let dialog=document.getElementById('ruleFactsDialog');
    if(!dialog){dialog=document.createElement('dialog');dialog.id='ruleFactsDialog';dialog.className='wide-dialog';document.body.append(dialog);}
    if(dialog.open)dialog.close();
-   const keys=documentId?['DOCUMENT_ISSUER','DOCUMENT_RECIPIENT','DOCUMENT_GOODS_DESCRIPTION']:['LC_RULE_STANDARD','LC_TRANSFERRED','LC_SECOND_BENEFICIARY','LC_GOODS_DESCRIPTION'];
-   dialog.innerHTML='<form><div class="dialoghead"><h2>'+ (documentId?'Dokument-Prüfdaten':'LC-Prüfkontext')+'</h2><button type="button" data-close class="ghost">×</button></div><p>Nur fachlich geprüfte Angaben erfassen. Leer bedeutet unbekannt, nicht „nein“. Änderungen setzen bisherige Prüfentscheidungen zurück.</p><div class="form-grid">'+keys.map(key=>{
-    let input;
-    if(key==='LC_RULE_STANDARD'||key==='LC_TRANSFERRED'){
-     const choices=key==='LC_RULE_STANDARD'?[['UCP600','UCP 600'],['OTHER','Anderer Regelstandard']]:[['true','Ja, tatsächlich übertragen'],['false','Nein, nicht übertragen']];
-     input='<select name="'+key+'"><option value="">Unbekannt / nicht geprüft</option>'+choices.map(([v,l])=>'<option value="'+v+'" '+(values[key]===v?'selected':'')+'>'+l+'</option>').join('')+'</select>';
-    }else input='<textarea name="'+key+'" maxlength="'+(key.includes('GOODS_DESCRIPTION')?4000:500)+'">'+esc(values[key]||'')+'</textarea>';
-    return '<label class="wide">'+labels[key]+input+'</label>';
-   }).join('')+'</div><p class="error" data-message role="alert"></p><div class="actions">'+(documentId?'<button type="button" class="secondary" data-context>LC-Prüfkontext</button>':'')+'<button type="button" class="secondary" data-close>Schließen</button>'+(allowed?'<button type="submit">Prüfdaten speichern</button>':'')+'</div></form>';
+   const groups=new Map();
+   fields.forEach(d=>{const key=section(d);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(d);});
+   const title=requirements?'LC-Anforderungen · '+documentType:documentId?'Dokument-Prüfdaten':'LC-Prüfkontext';
+   dialog.innerHTML='<form><div class="dialoghead"><h2>'+esc(title)+'</h2><button type="button" data-close class="ghost">×</button></div><p>Nur fachlich geprüfte Angaben erfassen. Leer bedeutet unbekannt, nicht „nein“. Änderungen setzen bisherige Prüfentscheidungen zurück. Die Dokumentensatzkennung muss bei zusammengehörigen Dokumenten übereinstimmen.</p>'+Array.from(groups,([name,items])=>'<details class="rule-facts-section" open><summary>'+esc(name)+'</summary><div class="form-grid">'+items.map(d=>'<label class="'+(d.field.includes('GOODS_DESCRIPTION')||d.field.endsWith('RISKS')?'wide':'')+'">'+esc(d.label)+widget(d,values[d.field])+'</label>').join('')+'</div></details>').join('')+'<p class="error" data-message role="alert"></p><div class="actions">'+(documentId||requirements?'<button type="button" class="secondary" data-context>LC-Prüfkontext</button>':'')+(documentType&&!requirements?'<button type="button" class="secondary" data-requirements>LC-Anforderungen für diesen Dokumenttyp</button>':'')+'<button type="button" class="secondary" data-close>Schließen</button>'+(allowed?'<button type="submit">Prüfdaten speichern</button>':'')+'</div></form>';
    const form=dialog.querySelector('form');
-   if(!allowed)form.querySelectorAll('textarea,select').forEach(input=>input.disabled=true);
+   if(!allowed)form.querySelectorAll('input,textarea,select').forEach(input=>input.disabled=true);
    dialog.querySelectorAll('[data-close]').forEach(button=>button.onclick=()=>{++sequence;dialog.close();});
-   const context=dialog.querySelector('[data-context]');if(context)context.onclick=()=>openFacts(null);
+   const context=dialog.querySelector('[data-context]');if(context)context.onclick=()=>openFacts(null,documentType);
+   const requirementButton=dialog.querySelector('[data-requirements]');if(requirementButton)requirementButton.onclick=()=>openFacts(null,documentType,true);
    form.onsubmit=async event=>{
     event.preventDefault();if(!allowed)return;
     const button=form.querySelector('[type="submit"]');if(button.disabled)return;button.disabled=true;
@@ -37,5 +44,5 @@
    dialog.showModal();
   }catch(error){alert('Prüfdaten konnten nicht geladen werden: '+error.message);}
  }
- document.addEventListener('click',event=>{const button=event.target.closest('[data-rule-facts]');if(button)openFacts(button.dataset.ruleFacts);});
+ document.addEventListener('click',event=>{const button=event.target.closest('[data-rule-facts]');if(button)openFacts(button.dataset.ruleFacts,button.dataset.ruleFactsType||null);});
 })();

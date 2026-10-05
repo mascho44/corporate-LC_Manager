@@ -72,6 +72,18 @@ class PackSecurityTest {
   verify(checks).invalidateDecisions(id);verify(audit).recordInTransaction(any(),eq("LC_RULE_FACTS_UPDATED"),anyString(),eq(id),contains("SHA-256"));
   mvc.perform(put("/api/lcs/"+id+"/rule-facts").session(session).header(token.getHeaderName(),value).contentType("application/json").content("{\"DOCUMENT_ISSUER\":\"Demo\"}")).andExpect(status().isBadRequest());
  }
+ @Test void typedRequirementsRequireEditRightsAndCsrfAndRejectInvalidTypes()throws Exception{
+  var id=UUID.randomUUID();var lc=new de.corporate.lc.lc.domain.LetterOfCredit();when(lcs.findById(id)).thenReturn(Optional.of(lc));when(lcs.existsById(id)).thenReturn(true);
+  var session=session(false);var token=(CsrfToken)mvc.perform(get("/api/lcs/"+id+"/rule-facts/definitions").session(session)).andExpect(status().isOk()).andExpect(jsonPath("$.requirements[0].field").exists()).andReturn().getRequest().getAttribute(CsrfToken.class.getName());
+  var route="/api/lcs/"+id+"/rule-requirements/BILL_OF_LADING";
+  mvc.perform(put(route).session(session).header(token.getHeaderName(),token.getToken()).contentType("application/json").content("{}")).andExpect(status().isForbidden());
+  session.setAttribute("SPRING_SECURITY_CONTEXT",new SecurityContextImpl(new UsernamePasswordAuthenticationToken("synthetic-user",null,List.of(new SimpleGrantedAuthority("PERM_LC_EDIT")))));
+  mvc.perform(put(route).session(session).contentType("application/json").content("{}")).andExpect(status().isForbidden());
+  mvc.perform(put(route).session(session).header(token.getHeaderName(),token.getToken()).contentType("application/json").content("{\"LC_REQUIRED_ORIGINAL_COUNT\":\"3\"}")).andExpect(status().isOk());
+  verify(audit).recordInTransaction(any(),eq("LC_RULE_REQUIREMENTS_UPDATED"),anyString(),eq(id),contains("BILL_OF_LADING"));
+  mvc.perform(put(route).session(session).header(token.getHeaderName(),token.getToken()).contentType("application/json").content(new byte[RuleFacts.MAX_BYTES+1])).andExpect(status().isBadRequest());
+  mvc.perform(put("/api/lcs/"+id+"/rule-requirements/INVALID").session(session).header(token.getHeaderName(),token.getToken()).contentType("application/json").content("{}")).andExpect(status().isBadRequest());
+ }
  @Test void documentFactsCannotBeEditedWithOnlyLcEdit()throws Exception{
   var session=session(false);
   var token=(CsrfToken)mvc.perform(get("/api/settings/rule-packs").session(session)).andReturn().getRequest().getAttribute(CsrfToken.class.getName());String value=token.getToken();

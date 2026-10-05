@@ -44,6 +44,7 @@ import de.corporate.lc.user.service.AppUserDetailsService; import jakarta.servle
    .requestMatchers(org.springframework.http.HttpMethod.DELETE,"/api/lcs/*/tasks/*").hasAuthority("PERM_LC_EDIT")
    .requestMatchers(org.springframework.http.HttpMethod.DELETE,"/api/lcs/*/document-checks/requirements").hasAuthority("PERM_DOCUMENT_REVIEW")
    .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/lcs/*/rule-facts").hasAuthority("PERM_LC_EDIT")
+   .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/lcs/*/rule-requirements/*").hasAuthority("PERM_LC_EDIT")
    .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/lcs/*/documents/*/rule-facts").hasAuthority("PERM_DOCUMENT_UPLOAD")
    .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/lcs/*/documents/*").hasAuthority("PERM_DOCUMENT_UPLOAD")
    .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/lcs/*").hasAuthority("PERM_LC_EDIT")

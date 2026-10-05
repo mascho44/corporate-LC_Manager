@@ -5,4 +5,6 @@
 #ruleFactsDialog textarea[name$="GOODS_DESCRIPTION"]{height:150px}
 #ruleFactsDialog .dialoghead{align-items:center}
 #ruleFactsDialog .dialoghead h2{margin:0}
+#ruleFactsDialog .rule-facts-section{border-top:1px solid #e5e9ef;margin:0 0 14px}
+#ruleFactsDialog .rule-facts-section>summary{padding:14px 22px;font-weight:700;cursor:pointer;color:#344054}
 @media(max-width:800px){.document-row:has([data-rule-facts])>.document-meta{display:flex;grid-column:1/-1;text-align:left;flex-wrap:wrap;gap:8px;align-items:center}#ruleFactsDialog .actions{flex-wrap:wrap}}

@@ -1,0 +1,568 @@
+{
+  "schemaVersion": 3,
+  "packId": "internal-multidoc-v3-demo",
+  "version": "1.0.0",
+  "name": "Eigene synthetische Mehrdokument-Prüfungen – Schema 3",
+  "origin": "OWN_INTERNAL",
+  "license": "INTERNAL_TEST_ONLY",
+  "rightsStatement": "Eigener synthetischer Funktionstest, keine normative ICC-Prüfung. Prozentwerte, Tage und Schließtag sind frei gewählte Testdaten; keine produktiven Standardwerte. Vor Aktivierung fachlich freigeben.",
+  "rules": [
+    {
+      "id": "insurance-min",
+      "version": "1.0.0",
+      "documentType": "INSURANCE_CERTIFICATE",
+      "left": "DOCUMENT_INSURED_AMOUNT",
+      "operator": "PERCENT_GTE",
+      "right": "PEER_AMOUNT",
+      "severity": "WARNING",
+      "message": "Test: Versicherte Summe mit geprüftem Prozentwert der zugeordneten Rechnung vergleichen.",
+      "sourceReference": "Eigener synthetischer Funktionstest V3-insurance-min",
+      "mode": "AUTOMATIC",
+      "parameters": {
+        "peerDocumentType": "COMMERCIAL_INVOICE",
+        "percentField": "LC_INSURANCE_MIN_PERCENT"
+      }
+    },
+    {
+      "id": "coverage-start",
+      "version": "1.0.0",
+      "documentType": "INSURANCE_CERTIFICATE",
+      "left": "DOCUMENT_INSURANCE_EFFECTIVE_DATE",
+      "operator": "LTE",
+      "right": "PEER_SHIPMENT_DATE",
+      "severity": "WARNING",
+      "message": "Test: Geprüften Deckungsbeginn gegen Versanddatum des zugeordneten Transportdokuments vergleichen.",
+      "sourceReference": "Eigener synthetischer Funktionstest V3-coverage-start",
+      "mode": "AUTOMATIC",
+      "parameters": {
+        "peerDocumentType": "BILL_OF_LADING"
+      }
+    },
+    {
+      "id": "quantity-match",
+      "version": "1.0.0",
+      "documentType": "COMMERCIAL_INVOICE",
+      "left": "DOCUMENT_QUANTITY",
+      "operator": "EQ",
+      "right": "PEER_QUANTITY",
+      "severity": "WARNING",
+      "message": "Test: Erfasste Mengen mit der zugeordneten Packliste vergleichen; gleiche Einheit erforderlich.",
+      "sourceReference": "Eigener synthetischer Funktionstest V3-quantity-match",
+      "mode": "AUTOMATIC",
+      "parameters": {
+        "peerDocumentType": "PACKING_LIST"
+      }
+    },
+    {
+      "id": "invoice-tolerance",
+      "version": "1.0.0",
+      "documentType": "COMMERCIAL_INVOICE",
+      "left": "DOCUMENT_AMOUNT",
+      "operator": "WITHIN_TOLERANCE",
+      "right": "LC_AMOUNT",
+      "severity": "WARNING",
+      "message": "Test: Betrag innerhalb ausdrücklich erfasster Toleranz prüfen; keine automatische LC-Toleranzannahme.",
+      "sourceReference": "Eigener synthetischer Funktionstest V3-invoice-tolerance",
+      "mode": "AUTOMATIC",
+      "parameters": {
+        "percentField": "LC_TOLERANCE_PERCENT"
+      }
+    },
+    {
+      "id": "shipment-deadline",
+      "version": "1.0.0",
+      "documentType": "BILL_OF_LADING",
+      "left": "DOCUMENT_SHIPMENT_DATE",
+      "operator": "LTE",
+      "right": "LC_LATEST_SHIPMENT_DATE",
+      "severity": "WARNING",
+      "message": "Test: Fachlich geprüftes Versanddatum gegen die gültige LC-Grenze vergleichen.",
+      "sourceReference": "Eigener synthetischer Funktionstest V3-shipment-deadline",
+      "mode": "AUTOMATIC"
+    },
+    {
+      "id": "presentation-window",
+      "version": "1.0.0",
+      "documentType": "BILL_OF_LADING",
+      "left": "DOCUMENT_SHIPMENT_DATE",
+      "operator": "WITHIN_DAYS",
+      "right": "LC_PRESENTATION_DATE",
+      "severity": "WARNING",
+      "message": "Test: Vorlagefenster ab geprüftem Versanddatum mit ausdrücklich erfasster Tagesgrenze prüfen.",
+      "sourceReference": "Eigener synthetischer Funktionstest V3-presentation-window",
+      "mode": "AUTOMATIC",
+      "parameters": {
+        "daysField": "LC_PRESENTATION_PERIOD_DAYS"
+      }
+    },
+    {
+      "id": "bank-window",
+      "version": "1.0.0",
+      "documentType": "BILL_OF_LADING",
+      "left": "DOCUMENT_EXAMINATION_START_DATE",
+      "operator": "WITHIN_DAYS",
+      "right": "LC_EXAMINATION_DECISION_DATE",
+      "severity": "WARNING",
+      "message": "Test: Geprüfte Prüfbeginn-/Entscheidungsdaten anhand eines ausdrücklich konfigurierten Bankkalenders vergleichen.",
+      "sourceReference": "Eigener synthetischer Funktionstest V3-bank-window",
+      "mode": "AUTOMATIC",
+      "parameters": {
+        "days": 2,
+        "calendarId": "demo-bank"
+      }
+    },
+    {
+      "id": "signature-status",
+      "version": "1.0.0",
+      "documentType": "INSURANCE_CERTIFICATE",
+      "left": "DOCUMENT_SIGNED",
+      "operator": "EQ",
+      "right": "LC_SIGNATURE_REQUIRED",
+      "severity": "WARNING",
+      "message": "Test: Geprüften Unterschriftsstatus nur bei ausdrücklich geforderter Unterschrift vergleichen.",
+      "sourceReference": "Eigener synthetischer Funktionstest V3-signature-status",
+      "mode": "AUTOMATIC",
+      "conditions": [
+        {
+          "field": "LC_SIGNATURE_REQUIRED",
+          "operator": "EQ",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "id": "original-count",
+      "version": "1.0.0",
+      "documentType": "BILL_OF_LADING",
+      "left": "DOCUMENT_ORIGINAL_COUNT",
+      "operator": "GTE",
+      "right": "LC_REQUIRED_ORIGINAL_COUNT",
+      "severity": "WARNING",
+      "message": "Test: Fachlich geprüfte Originalanzahl gegen die LC-Anforderung dieses Dokumenttyps vergleichen.",
+      "sourceReference": "Eigener synthetischer Funktionstest V3-original-count",
+      "mode": "AUTOMATIC",
+      "conditions": [
+        {
+          "field": "LC_REQUIRED_ORIGINAL_COUNT",
+          "operator": "NE",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "id": "risk-review",
+      "version": "1.0.0",
+      "documentType": "INSURANCE_CERTIFICATE",
+      "left": "DOCUMENT_INSURANCE_RISKS",
+      "operator": "EQ",
+      "right": "LC_INSURANCE_RISKS",
+      "severity": "WARNING",
+      "message": "Erfasste Risiken und LC-Anforderungen fachlich vergleichen; Wortgleichheit genügt nicht zur Bestätigung.",
+      "sourceReference": "Eigener synthetischer Funktionstest V3-risk-review",
+      "mode": "MANUAL"
+    }
+  ],
+  "tests": [
+    {
+      "name": "insurance-min · Grenze",
+      "ruleId": "insurance-min",
+      "left": "1250",
+      "right": "1000",
+      "expected": "PASS",
+      "facts": {
+        "DOCUMENT_INSURANCE_CURRENCY": "EUR",
+        "PEER_CURRENCY": "EUR",
+        "LC_INSURANCE_MIN_PERCENT": "125"
+      }
+    },
+    {
+      "name": "insurance-min · Unterdeckung",
+      "ruleId": "insurance-min",
+      "left": "1249.99",
+      "right": "1000",
+      "expected": "FAIL",
+      "facts": {
+        "DOCUMENT_INSURANCE_CURRENCY": "EUR",
+        "PEER_CURRENCY": "EUR",
+        "LC_INSURANCE_MIN_PERCENT": "125"
+      }
+    },
+    {
+      "name": "insurance-min · Fehlender Betrag",
+      "ruleId": "insurance-min",
+      "left": null,
+      "right": "1000",
+      "expected": "NOT_EVALUABLE",
+      "facts": {
+        "DOCUMENT_INSURANCE_CURRENCY": "EUR",
+        "PEER_CURRENCY": "EUR",
+        "LC_INSURANCE_MIN_PERCENT": "125"
+      }
+    },
+    {
+      "name": "insurance-min · Prozent fehlt",
+      "ruleId": "insurance-min",
+      "left": "1250",
+      "right": "1000",
+      "expected": "NOT_EVALUABLE",
+      "facts": {
+        "DOCUMENT_INSURANCE_CURRENCY": "EUR",
+        "PEER_CURRENCY": "EUR"
+      }
+    },
+    {
+      "name": "insurance-min · Währung passt nicht",
+      "ruleId": "insurance-min",
+      "left": "1250",
+      "right": "1000",
+      "expected": "NOT_EVALUABLE",
+      "facts": {
+        "DOCUMENT_INSURANCE_CURRENCY": "EUR",
+        "PEER_CURRENCY": "USD",
+        "LC_INSURANCE_MIN_PERCENT": "125"
+      }
+    },
+    {
+      "name": "coverage-start · Beginn rechtzeitig",
+      "ruleId": "coverage-start",
+      "left": "2026-10-01",
+      "right": "2026-10-02",
+      "expected": "PASS"
+    },
+    {
+      "name": "coverage-start · Beginn zu spät",
+      "ruleId": "coverage-start",
+      "left": "2026-10-03",
+      "right": "2026-10-02",
+      "expected": "FAIL"
+    },
+    {
+      "name": "coverage-start · Deckungsbeginn fehlt",
+      "ruleId": "coverage-start",
+      "left": null,
+      "right": "2026-10-02",
+      "expected": "NOT_EVALUABLE"
+    },
+    {
+      "name": "quantity-match · Menge gleich",
+      "ruleId": "quantity-match",
+      "left": "10",
+      "right": "10",
+      "expected": "PASS",
+      "facts": {
+        "DOCUMENT_QUANTITY_UNIT": "PCS",
+        "PEER_QUANTITY_UNIT": "PCS"
+      }
+    },
+    {
+      "name": "quantity-match · Menge abweichend",
+      "ruleId": "quantity-match",
+      "left": "11",
+      "right": "10",
+      "expected": "FAIL",
+      "facts": {
+        "DOCUMENT_QUANTITY_UNIT": "PCS",
+        "PEER_QUANTITY_UNIT": "PCS"
+      }
+    },
+    {
+      "name": "quantity-match · Menge fehlt",
+      "ruleId": "quantity-match",
+      "left": null,
+      "right": "10",
+      "expected": "NOT_EVALUABLE",
+      "facts": {
+        "DOCUMENT_QUANTITY_UNIT": "PCS",
+        "PEER_QUANTITY_UNIT": "PCS"
+      }
+    },
+    {
+      "name": "quantity-match · Einheit abweichend",
+      "ruleId": "quantity-match",
+      "left": "10",
+      "right": "10",
+      "expected": "NOT_EVALUABLE",
+      "facts": {
+        "DOCUMENT_QUANTITY_UNIT": "PCS",
+        "PEER_QUANTITY_UNIT": "BOX"
+      }
+    },
+    {
+      "name": "quantity-match · Einheit fehlt",
+      "ruleId": "quantity-match",
+      "left": "10",
+      "right": "10",
+      "expected": "NOT_EVALUABLE",
+      "facts": {
+        "DOCUMENT_QUANTITY_UNIT": "PCS"
+      }
+    },
+    {
+      "name": "invoice-tolerance · Toleranzgrenze",
+      "ruleId": "invoice-tolerance",
+      "left": "1070",
+      "right": "1000",
+      "expected": "PASS",
+      "facts": {
+        "DOCUMENT_CURRENCY": "EUR",
+        "LC_CURRENCY": "EUR",
+        "LC_TOLERANCE_PERCENT": "7"
+      }
+    },
+    {
+      "name": "invoice-tolerance · Außerhalb",
+      "ruleId": "invoice-tolerance",
+      "left": "1070.01",
+      "right": "1000",
+      "expected": "FAIL",
+      "facts": {
+        "DOCUMENT_CURRENCY": "EUR",
+        "LC_CURRENCY": "EUR",
+        "LC_TOLERANCE_PERCENT": "7"
+      }
+    },
+    {
+      "name": "invoice-tolerance · Betrag fehlt",
+      "ruleId": "invoice-tolerance",
+      "left": null,
+      "right": "1000",
+      "expected": "NOT_EVALUABLE",
+      "facts": {
+        "DOCUMENT_CURRENCY": "EUR",
+        "LC_CURRENCY": "EUR",
+        "LC_TOLERANCE_PERCENT": "7"
+      }
+    },
+    {
+      "name": "invoice-tolerance · Toleranz fehlt",
+      "ruleId": "invoice-tolerance",
+      "left": "1070",
+      "right": "1000",
+      "expected": "NOT_EVALUABLE",
+      "facts": {
+        "DOCUMENT_CURRENCY": "EUR",
+        "LC_CURRENCY": "EUR"
+      }
+    },
+    {
+      "name": "invoice-tolerance · Nullbasis",
+      "ruleId": "invoice-tolerance",
+      "left": "0",
+      "right": "0",
+      "expected": "NOT_EVALUABLE",
+      "facts": {
+        "DOCUMENT_CURRENCY": "EUR",
+        "LC_CURRENCY": "EUR",
+        "LC_TOLERANCE_PERCENT": "7"
+      }
+    },
+    {
+      "name": "shipment-deadline · Grenztag",
+      "ruleId": "shipment-deadline",
+      "left": "2026-10-02",
+      "right": "2026-10-02",
+      "expected": "PASS"
+    },
+    {
+      "name": "shipment-deadline · Verspätet",
+      "ruleId": "shipment-deadline",
+      "left": "2026-10-03",
+      "right": "2026-10-02",
+      "expected": "FAIL"
+    },
+    {
+      "name": "shipment-deadline · Versanddatum fehlt",
+      "ruleId": "shipment-deadline",
+      "left": null,
+      "right": "2026-10-02",
+      "expected": "NOT_EVALUABLE"
+    },
+    {
+      "name": "presentation-window · Grenztag",
+      "ruleId": "presentation-window",
+      "left": "2026-10-01",
+      "right": "2026-10-29",
+      "expected": "PASS",
+      "facts": {
+        "LC_PRESENTATION_PERIOD_DAYS": "28"
+      }
+    },
+    {
+      "name": "presentation-window · Frist überschritten",
+      "ruleId": "presentation-window",
+      "left": "2026-10-01",
+      "right": "2026-10-30",
+      "expected": "FAIL",
+      "facts": {
+        "LC_PRESENTATION_PERIOD_DAYS": "28"
+      }
+    },
+    {
+      "name": "presentation-window · Vorlage fehlt",
+      "ruleId": "presentation-window",
+      "left": "2026-10-01",
+      "right": null,
+      "expected": "NOT_EVALUABLE",
+      "facts": {
+        "LC_PRESENTATION_PERIOD_DAYS": "28"
+      }
+    },
+    {
+      "name": "presentation-window · Vor Versand",
+      "ruleId": "presentation-window",
+      "left": "2026-10-01",
+      "right": "2026-09-30",
+      "expected": "FAIL",
+      "facts": {
+        "LC_PRESENTATION_PERIOD_DAYS": "28"
+      }
+    },
+    {
+      "name": "presentation-window · Tagesgrenze fehlt",
+      "ruleId": "presentation-window",
+      "left": "2026-10-01",
+      "right": "2026-10-29",
+      "expected": "NOT_EVALUABLE"
+    },
+    {
+      "name": "bank-window · Wochenende und Schließtag",
+      "ruleId": "bank-window",
+      "left": "2026-10-02",
+      "right": "2026-10-07",
+      "expected": "PASS"
+    },
+    {
+      "name": "bank-window · Arbeitsfenster überschritten",
+      "ruleId": "bank-window",
+      "left": "2026-10-02",
+      "right": "2026-10-08",
+      "expected": "FAIL"
+    },
+    {
+      "name": "bank-window · Beginn fehlt",
+      "ruleId": "bank-window",
+      "left": null,
+      "right": "2026-10-07",
+      "expected": "NOT_EVALUABLE"
+    },
+    {
+      "name": "bank-window · Kalender deckt Zeitraum nicht ab",
+      "ruleId": "bank-window",
+      "left": "2026-12-30",
+      "right": "2027-01-04",
+      "expected": "NOT_EVALUABLE"
+    },
+    {
+      "name": "bank-window · Gleicher Tag",
+      "ruleId": "bank-window",
+      "left": "2026-10-02",
+      "right": "2026-10-02",
+      "expected": "PASS"
+    },
+    {
+      "name": "signature-status · Vorhanden",
+      "ruleId": "signature-status",
+      "left": "true",
+      "right": "true",
+      "expected": "PASS"
+    },
+    {
+      "name": "signature-status · Fehlt",
+      "ruleId": "signature-status",
+      "left": "false",
+      "right": "true",
+      "expected": "FAIL"
+    },
+    {
+      "name": "signature-status · Status unbekannt",
+      "ruleId": "signature-status",
+      "left": null,
+      "right": "true",
+      "expected": "NOT_EVALUABLE"
+    },
+    {
+      "name": "signature-status · Nicht gefordert",
+      "ruleId": "signature-status",
+      "left": "false",
+      "right": "false",
+      "expected": "NOT_APPLICABLE"
+    },
+    {
+      "name": "signature-status · Anforderung unbekannt",
+      "ruleId": "signature-status",
+      "left": "true",
+      "right": null,
+      "expected": "NOT_EVALUABLE"
+    },
+    {
+      "name": "original-count · Genügend",
+      "ruleId": "original-count",
+      "left": "3",
+      "right": "3",
+      "expected": "PASS"
+    },
+    {
+      "name": "original-count · Zu wenige",
+      "ruleId": "original-count",
+      "left": "2",
+      "right": "3",
+      "expected": "FAIL"
+    },
+    {
+      "name": "original-count · Anzahl unbekannt",
+      "ruleId": "original-count",
+      "left": null,
+      "right": "3",
+      "expected": "NOT_EVALUABLE"
+    },
+    {
+      "name": "original-count · Keine gefordert",
+      "ruleId": "original-count",
+      "left": "0",
+      "right": "0",
+      "expected": "NOT_APPLICABLE"
+    },
+    {
+      "name": "original-count · Anforderung unbekannt",
+      "ruleId": "original-count",
+      "left": "3",
+      "right": null,
+      "expected": "NOT_EVALUABLE"
+    },
+    {
+      "name": "risk-review · Fachliche Prüfung",
+      "ruleId": "risk-review",
+      "left": "Test-Risiko A und B",
+      "right": "Test-Risiko A",
+      "expected": "MANUAL_REVIEW"
+    },
+    {
+      "name": "risk-review · Identischer Text",
+      "ruleId": "risk-review",
+      "left": "Test-Risiko A",
+      "right": "Test-Risiko A",
+      "expected": "MANUAL_REVIEW"
+    },
+    {
+      "name": "risk-review · Angabe fehlt",
+      "ruleId": "risk-review",
+      "left": null,
+      "right": "Test-Risiko A",
+      "expected": "NOT_EVALUABLE"
+    }
+  ],
+  "calendars": [
+    {
+      "id": "demo-bank",
+      "coveredFrom": "2026-01-01",
+      "coveredTo": "2026-12-31",
+      "closedWeekdays": [
+        "SATURDAY",
+        "SUNDAY"
+      ],
+      "closedDates": [
+        "2026-10-06"
+      ]
+    }
+  ]
+}

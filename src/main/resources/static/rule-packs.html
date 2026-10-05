@@ -14,11 +14,12 @@
   <p class="pack-notice">Keine Skripte oder Plugins. ICC-, UCP- oder ISBP-bezogene Packs benötigen eine passende Lizenz beziehungsweise Nutzungserlaubnis. Diese prüft der aktivierende Benutzer selbst. Die Anwendung prüft keine Lizenzen. Die Aktivierung gilt für alle Benutzer und LC-Akten.</p>
   <p id="packMessage" class="error" role="alert"></p>
   <div class="pack-grid">
-   <section class="panel"><div class="panelhead"><div><h2>JSON-Import</h2><p>Schema 1 und 2 · maximal 512 KB · bis zu 25 Regeln</p></div></div>
+   <section class="panel"><div class="panelhead"><div><h2>JSON-Import</h2><p>Schema 1, 2 und 3 · maximal 512 KB · bis zu 25 Regeln</p></div></div>
     <div class="pack-body">
      <label class="pack-upload">Rule-Pack-Datei auswählen<input id="packFile" type="file" accept=".json,application/json" disabled></label>
      <p>Schema 2 ergänzt Anwendungsbedingungen, Parteienvergleiche und manuelle Prüfungen. Testfälle müssen auch fehlende Angaben und nicht anwendbare Regeln abdecken.</p>
-     <p><a href="/rule-pack-example.json" download>Demo Schema 1</a> · <a href="/rule-pack-example-v2.json" download>Demo Schema 2</a> · <a href="/rule-pack-schema.json" download>JSON-Schema herunterladen</a></p>
+     <p>Schema 3 ergänzt dokumentübergreifende Vergleiche, Deckung und Toleranzen, konfigurierbare Fristen und Bankkalender. Währungen und Einheiten müssen übereinstimmen. Fehlende Angaben bleiben nicht prüfbar.</p>
+     <p><a href="/rule-pack-example.json" download>Demo Schema 1</a> · <a href="/rule-pack-example-v2.json" download>Demo Schema 2</a> · <a href="/rule-pack-example-v3.json" download>Demo Schema 3 (eigene synthetische Regeln)</a> · <a href="/rule-pack-schema.json" download>JSON-Schema herunterladen</a></p>
      <div id="packPreview" aria-live="polite">Noch keine Datei ausgewählt.</div>
     </div>
     <div class="actions"><button id="packImport" disabled>Als inaktive Version importieren</button></div>
