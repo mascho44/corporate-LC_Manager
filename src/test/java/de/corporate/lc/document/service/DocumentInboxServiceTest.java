@@ -56,6 +56,28 @@ class DocumentInboxServiceTest {
         verifyNoInteractions(inbox,documents,extraction);
     }
 
+    @Test void zipDocumentsAreStoredSeparatelyWithoutAutomaticAssignment() throws Exception {
+        byte[] archive;
+        try(var output=new java.io.ByteArrayOutputStream();var zip=new java.util.zip.ZipOutputStream(output)){
+            for(String name:List.of("folder/invoice.txt","folder/packing.txt")){
+                zip.putNextEntry(new java.util.zip.ZipEntry(name));zip.write(new byte[]{1,2});zip.closeEntry();
+            }
+            zip.finish();archive=output.toByteArray();
+        }
+        when(inbox.save(any())).thenAnswer(call->call.getArgument(0));
+        var result=service.receive(List.of(new MockMultipartFile("file","batch.zip","application/zip",archive)),"user");
+        assertThat(result).extracting("originalFilename").containsExactly("folder/invoice.txt","folder/packing.txt");
+        assertThat(result).extracting("status").containsOnly("OPEN");
+        verify(inbox,times(2)).save(any());verifyNoInteractions(documents,checks);
+    }
+
+    @Test void invalidLaterArchivePreventsSavingEarlierOrdinaryFile() {
+        var ordinary=new MockMultipartFile("file","letter.txt","text/plain",new byte[]{1});
+        var invalid=new MockMultipartFile("file","bad.zip","application/zip",new byte[]{1,2});
+        assertThatThrownBy(()->service.receive(List.of(ordinary,invalid),"user")).isInstanceOf(IllegalArgumentException.class);
+        verifyNoInteractions(inbox,documents,extraction);
+    }
+
     @Test void attachedFilesCannotBePreviewedOrDeletedFromInbox() {
         UUID id=UUID.randomUUID();DocumentInboxItem item=item();item.setStatus("ATTACHED");
         when(inbox.findById(id)).thenReturn(Optional.of(item));when(inbox.findForUpdate(id)).thenReturn(Optional.of(item));

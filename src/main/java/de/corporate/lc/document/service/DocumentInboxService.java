@@ -22,8 +22,6 @@ import java.util.UUID;
 
 @Service
 public class DocumentInboxService {
-    private static final long MAX_FILE_SIZE = 10L * 1024 * 1024;
-    private static final long MAX_BATCH_SIZE = 50L * 1024 * 1024;
     private final DocumentInboxRepository inbox;
     private final LetterOfCreditRepository lettersOfCredit;
     private final LcDocumentRepository documents;
@@ -42,18 +40,7 @@ public class DocumentInboxService {
 
     @Transactional
     public List<DocumentInboxItemView> receive(List<MultipartFile> files, String username) throws IOException {
-        if (files == null || files.isEmpty()) throw new IllegalArgumentException("Bitte mindestens eine Datei auswählen.");
-        if (files.size() > 100) throw new IllegalArgumentException("Ein Eingang darf höchstens 100 Dateien enthalten.");
-        long batchSize = files.stream().mapToLong(file -> file == null ? 0 : file.getSize()).sum();
-        if (batchSize > MAX_BATCH_SIZE) throw new IllegalArgumentException("Der Datei-Batch überschreitet 50 MB.");
-        for (MultipartFile file : files) {
-            if (file == null || file.isEmpty()) throw new IllegalArgumentException("Leere Dateien können nicht aufgenommen werden.");
-            if (file.getSize() > MAX_FILE_SIZE) throw new IllegalArgumentException("Datei überschreitet 10 MB.");
-            String filename = file.getOriginalFilename();
-            if (filename != null && (filename.length() > 255 || filename.chars().anyMatch(Character::isISOControl))) throw new IllegalArgumentException("Ungültiger Dateiname.");
-            if (filename != null && (filename.contains("/") || filename.contains("\\"))) throw new IllegalArgumentException("Ungültiger Dateiname.");
-        }
-        return files.stream().map(file -> receiveOne(file, username)).toList();
+        return InboxUploadReader.read(files).stream().map(file -> receiveOne(file, username)).toList();
     }
 
     @Transactional(readOnly = true)
@@ -111,11 +98,10 @@ public class DocumentInboxService {
         return item;
     }
 
-    private DocumentInboxItemView receiveOne(MultipartFile file, String username) {
-        try {
-            String filename = file.getOriginalFilename() == null || file.getOriginalFilename().isBlank() ? "Dokument" : file.getOriginalFilename().trim();
+    private DocumentInboxItemView receiveOne(InboxUploadReader.Upload file, String username) {
+            String filename = file.filename();
             String contentType = contentType(filename);
-            byte[] bytes = file.getBytes();
+            byte[] bytes = file.content();
             LcDocument extracted = new LcDocument();
             extracted.setOriginalFilename(filename);
             extracted.setContentType(contentType);
@@ -136,9 +122,6 @@ public class DocumentInboxService {
             item.setExtractedCurrency(extracted.getExtractedCurrency());
             item.setExtractedText(extracted.getExtractedText());
             return view(inbox.save(item));
-        } catch (IOException ex) {
-            throw new IllegalArgumentException("Datei konnte nicht gelesen werden.", ex);
-        }
     }
 
     private DocumentInboxItemView view(DocumentInboxItem item) {
