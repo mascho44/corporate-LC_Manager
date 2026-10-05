@@ -81,6 +81,11 @@ public class DocumentInboxController {
         return result;
     }
 
+    @GetMapping("/{id}/advising-preview")
+    public de.corporate.lc.document.service.AdvisingLetterExtractor.Proposal advisingPreview(@PathVariable UUID id){
+        return de.corporate.lc.document.service.AdvisingLetterExtractor.extract(service.openItem(id).getExtractedText());
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable UUID id, Authentication authentication) {
