@@ -15,6 +15,7 @@ import de.corporate.lc.user.service.AppUserDetailsService; import jakarta.servle
    .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/companies/choices").authenticated()
    .requestMatchers("/api/companies/**").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers("/api/settings/approval-thresholds/**").hasAuthority("PERM_SETTINGS_MANAGE")
+   .requestMatchers("/api/settings/rule-packs","/api/settings/rule-packs/**","/rule-packs.html").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/document-templates/companies").authenticated()
    .requestMatchers("/api/document-templates/**","/api/company-profile/**").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/training/**").authenticated()

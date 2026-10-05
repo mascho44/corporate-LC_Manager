@@ -1,0 +1,27 @@
+{
+ "schemaVersion": 1,
+ "packId": "internal-amount-demo",
+ "version": "1.0.0",
+ "name": "Eigene interne Betragsgrenze – Demo",
+ "origin": "OWN_INTERNAL",
+ "license": "INTERNAL_USE_ONLY",
+ "rightsStatement": "Eigenes synthetisches Demo-Pack. Vor produktiver Nutzung intern fachlich prüfen.",
+ "rules": [
+  {
+   "id": "amount-limit",
+   "version": "1.0.0",
+   "documentType": "COMMERCIAL_INVOICE",
+   "left": "DOCUMENT_AMOUNT",
+   "operator": "LTE",
+   "right": "LC_AMOUNT",
+   "severity": "WARNING",
+   "message": "Erfassten Betrag gegen die interne LC-Betragsgrenze prüfen.",
+   "sourceReference": "Eigene interne Demo-Vorgabe DEMO-01"
+  }
+ ],
+ "tests": [
+  {"name":"Grenzwert","ruleId":"amount-limit","left":"100","right":"100","expected":"PASS"},
+  {"name":"Überschreitung","ruleId":"amount-limit","left":"101","right":"100","expected":"FAIL"},
+  {"name":"Fehlender Betrag","ruleId":"amount-limit","left":null,"right":"100","expected":"NOT_EVALUABLE"}
+ ]
+}

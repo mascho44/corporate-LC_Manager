@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="de">
+<head>
+ <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+ <title>Interne Rule Packs · Corporate LC Manager</title>
+ <link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/rule-packs.css">
+ <script src="/rule-packs.js?v=20261005-1" defer></script>
+</head>
+<body class="pack-page">
+ <header><strong>Corporate LC Manager · Rule Packs</strong><a class="button-link secondary" href="/">Zur Anwendung</a></header>
+ <main>
+  <h1>Interne Rule Packs</h1>
+  <p>Eigene deklarative Prüfregeln importieren, testen und bewusst aktivieren.</p>
+  <p class="pack-notice">Keine Skripte oder Plugins. Keine ICC-, UCP- oder ISBP-Packs. Angaben zu Lizenz und Herkunft ersetzen keine Rechteprüfung. Die Aktivierung gilt für alle Benutzer und LC-Akten.</p>
+  <p id="packMessage" class="error" role="alert"></p>
+  <div class="pack-grid">
+   <section class="panel"><div class="panelhead"><div><h2>JSON-Import</h2><p>Schema 1 · maximal 512 KB · bis zu 25 Regeln</p></div></div>
+    <div class="pack-body">
+     <label class="pack-upload">Rule-Pack-Datei auswählen<input id="packFile" type="file" accept=".json,application/json" disabled></label>
+     <p>Pro Regel sind synthetische Testfälle für erfüllt, verletzt und nicht prüfbar erforderlich.</p>
+     <p><a href="/rule-pack-example.json" download>Eigenes Demo-Pack herunterladen</a> · <a href="/rule-pack-schema.json" download>JSON-Schema herunterladen</a></p>
+     <div id="packPreview" aria-live="polite">Noch keine Datei ausgewählt.</div>
+    </div>
+    <div class="actions"><button id="packImport" disabled>Als inaktive Version importieren</button></div>
+   </section>
+   <section class="panel"><div class="panelhead"><div><h2>Gespeicherte Versionen</h2><p>Versionen können nicht überschrieben werden.</p></div><button id="packRefresh" class="secondary" disabled>Aktualisieren</button></div>
+    <div class="pack-body">
+     <label class="pack-rights"><input id="packRights" type="checkbox"> Ich bestätige die zulässigen Nutzungsrechte und die interne fachliche Freigabe für die von mir aktivierte Version. Sie ist kein ICC-abgeleitetes Pack.</label>
+     <p>Aktivierung erst nach bestandenen Tests. Zur Rückkehr kann eine frühere Version erneut aktiviert werden.</p>
+     <div id="packVersions">Versionen werden geladen …</div>
+    </div>
+   </section>
+  </div>
+ </main>
+</body>
+</html>

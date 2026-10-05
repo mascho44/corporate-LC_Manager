@@ -18,6 +18,7 @@ import static de.corporate.lc.check.api.CheckResult.Severity.*;
 
 @Service
 public class DocumentCheckService {
+    @Autowired(required=false) private de.corporate.lc.rulepack.InternalPackService internalPacks;
     private final LetterOfCreditRepository lcs;
     private final LcDocumentRepository documents;private final DocumentCheckDecisionRepository decisions;private final LcRequirementMappingRepository mappings;private final AmendmentRepository amendments;
 
@@ -164,8 +165,8 @@ public class DocumentCheckService {
 
         if (lc.getExpiryDate() != null && lc.getExpiryDate().isBefore(LocalDate.now()))
             results.add(new CheckResult(WARNING, "LC_EXPIRED", "The LC has expired."));
+        if(internalPacks!=null)results.addAll(internalPacks.evaluate(lc,uploaded));
         if (results.isEmpty()) results.add(new CheckResult(WARNING, "NO_RULES_APPLIED", "No automated rule could be applied."));
-
         String inputFingerprint=ReviewInputFingerprint.of(lc,uploaded);
         List<DocumentCheckDecision> reviewed=simulation?List.of():decisions.findByLcId(lcId);
         List<CheckResult> reviewedResults=new ArrayList<>();
@@ -175,7 +176,7 @@ public class DocumentCheckService {
             var current=matching.stream().filter(d->d.getInvalidatedAt()==null&&result.reviewFingerprint().equals(d.getFindingFingerprint())).findFirst();
             if(current.isPresent()){
                 var d=current.get();var effective="ACCEPTED".equals(d.getDecision())?OK:DISCREPANCY;
-                reviewedResults.add(new CheckResult(effective,result.code(),result.message(),result.lcCondition(),result.documentName(),result.documentEvidence(),d.getDecision(),d.getComment(),d.getReviewedBy(),d.getReviewedAt(),result.automaticSeverity()).withInputFingerprint(inputFingerprint));
+                reviewedResults.add(new CheckResult(effective,result.code(),result.message(),result.lcCondition(),result.documentName(),result.documentEvidence(),d.getDecision(),d.getComment(),d.getReviewedBy(),d.getReviewedAt(),result.automaticSeverity()).withRule(result.rule()).withInputFingerprint(inputFingerprint));
             }else{
                 reviewedResults.add(result);
                 if(!matching.isEmpty())reviewedResults.add(finding(WARNING,"REVIEW_STALE","Frühere Prüfentscheidung gilt nicht für diesen Befundstand. Bitte erneut fachlich prüfen.",result.lcCondition(),result.documentName(),"Befund: "+result.code()+" · Regelversion oder Vergleichsgrundlage hat sich geändert; Altentscheidungen bleiben gespeichert."));
@@ -193,7 +194,7 @@ public class DocumentCheckService {
         String name=request.documentName()==null?"":request.documentName();
         var selected=check(lcId).results().stream().filter(r->Objects.equals(r.code(),request.findingCode())&&Objects.equals(r.documentName()==null?"":r.documentName(),name)&&r.reviewFingerprint().equals(request.reviewFingerprint())).findFirst().orElseThrow(()->new IllegalArgumentException("Der Befund hat sich geändert oder besteht nicht mehr. Bitte neu laden und prüfen."));
         if("REVIEW_STALE".equals(selected.code()))throw new IllegalArgumentException("Bitte den ursprünglichen Befund erneut prüfen und bestätigen.");
-        var baseline=new CheckResult(selected.automaticSeverity(),selected.code(),selected.message(),selected.lcCondition(),selected.documentName(),selected.documentEvidence()).withInputFingerprint(selected.inputFingerprint());
+        var baseline=new CheckResult(selected.automaticSeverity(),selected.code(),selected.message(),selected.lcCondition(),selected.documentName(),selected.documentEvidence()).withRule(selected.rule()).withInputFingerprint(selected.inputFingerprint());
         var decision=decisions.findByLcIdAndFindingCodeAndDocumentNameAndFindingFingerprint(lcId,request.findingCode(),name,baseline.reviewFingerprint()).orElseGet(DocumentCheckDecision::new);
         decision.setLcId(lcId);decision.setFindingCode(request.findingCode());decision.setDocumentName(name);
         decision.setFindingFingerprint(baseline.reviewFingerprint());decision.setRuleCatalogVersion(baseline.ruleCatalogVersion());decision.setRuleId(baseline.rule().id());decision.setRuleVersion(baseline.rule().version());
