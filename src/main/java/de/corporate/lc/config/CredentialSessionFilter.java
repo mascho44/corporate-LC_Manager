@@ -11,6 +11,7 @@ import java.io.IOException;
 /** Revoke a session on its next request after a credential change or account removal. */
 public class CredentialSessionFilter extends OncePerRequestFilter {
     public static final String STAMP="LC_CREDENTIAL_STAMP";
+    public static final String AUTHENTICATED_AT="LC_AUTHENTICATED_AT";
     private final AppUserRepository users;
     public CredentialSessionFilter(AppUserRepository users){this.users=users;}
     @Override protected void doFilterInternal(HttpServletRequest request,HttpServletResponse response,FilterChain chain)throws ServletException,IOException {
@@ -18,7 +19,10 @@ public class CredentialSessionFilter extends OncePerRequestFilter {
         var session=request.getSession(false);
         if(auth!=null&&auth.isAuthenticated()&&!(auth instanceof AnonymousAuthenticationToken)&&session!=null){
             Object stamp=session.getAttribute(STAMP);
-            boolean valid=users.findByUsernameIgnoreCase(auth.getName()).filter(u->u.isActive()&&CredentialStamp.of(u.getPasswordHash()).equals(stamp)).isPresent();
+            Object started=session.getAttribute(AUTHENTICATED_AT);
+            boolean withinLifetime=started instanceof Long&&System.currentTimeMillis()-(Long)started<28_800_000;
+            boolean valid=withinLifetime&&users.findByUsernameIgnoreCase(auth.getName()).filter(u->u.isActive()&&CredentialStamp.of(u.getPasswordHash()).equals(stamp)&&
+                (u.getRole()!=de.corporate.lc.user.domain.UserRole.ADMIN||u.isTotpEnabled())).isPresent();
             if(!valid){session.invalidate();SecurityContextHolder.clearContext();
                 if(request.getRequestURI().startsWith("/api/")){response.setStatus(401);response.setContentType("application/json");response.getWriter().write("{\"error\":\"Bitte erneut anmelden.\"}");}
                 else response.sendRedirect("/login.html");

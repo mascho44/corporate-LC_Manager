@@ -25,8 +25,27 @@ class CredentialSessionFilterTest {
         var users=mock(AppUserRepository.class);var user=new AppUser();user.setPasswordHash("hash");
         when(users.findByUsernameIgnoreCase("user")).thenReturn(Optional.of(user));
         var request=new MockHttpServletRequest("GET","/api/lcs");request.getSession().setAttribute(CredentialSessionFilter.STAMP,CredentialStamp.of("hash"));
+        request.getSession().setAttribute(CredentialSessionFilter.AUTHENTICATED_AT,System.currentTimeMillis());
         SecurityContextHolder.getContext().setAuthentication(UsernamePasswordAuthenticationToken.authenticated("user",null,List.of()));
         var response=new MockHttpServletResponse();var chain=mock(FilterChain.class);
         new CredentialSessionFilter(users).doFilter(request,response,chain);verify(chain).doFilter(request,response);
+    }
+    @Test void absoluteLifetimeRevokesSession()throws Exception{
+        var users=mock(AppUserRepository.class);var request=new MockHttpServletRequest("GET","/api/lcs");
+        request.getSession().setAttribute(CredentialSessionFilter.AUTHENTICATED_AT,System.currentTimeMillis()-28_800_001);
+        SecurityContextHolder.getContext().setAuthentication(UsernamePasswordAuthenticationToken.authenticated("user",null,List.of()));
+        var response=new MockHttpServletResponse();var chain=mock(FilterChain.class);
+        new CredentialSessionFilter(users).doFilter(request,response,chain);
+        assertThat(response.getStatus()).isEqualTo(401);verifyNoInteractions(chain);
+    }
+    @Test void adminWithoutSecondFactorCannotUseExistingSession()throws Exception{
+        var users=mock(AppUserRepository.class);var user=new AppUser();user.setPasswordHash("hash");user.setRole(de.corporate.lc.user.domain.UserRole.ADMIN);
+        when(users.findByUsernameIgnoreCase("user")).thenReturn(Optional.of(user));
+        var request=new MockHttpServletRequest("GET","/api/lcs");request.getSession().setAttribute(CredentialSessionFilter.AUTHENTICATED_AT,System.currentTimeMillis());
+        request.getSession().setAttribute(CredentialSessionFilter.STAMP,CredentialStamp.of("hash"));
+        SecurityContextHolder.getContext().setAuthentication(UsernamePasswordAuthenticationToken.authenticated("user",null,List.of()));
+        var response=new MockHttpServletResponse();var chain=mock(FilterChain.class);
+        new CredentialSessionFilter(users).doFilter(request,response,chain);
+        assertThat(response.getStatus()).isEqualTo(401);verifyNoInteractions(chain);
     }
 }

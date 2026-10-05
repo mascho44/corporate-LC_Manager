@@ -29,7 +29,9 @@ server:
   forward-headers-strategy: framework
   servlet:
     session:
+      timeout: 30m
       cookie:
+        secure: ${SESSION_COOKIE_SECURE:false}
         http-only: true
         same-site: lax
 management:

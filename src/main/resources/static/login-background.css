@@ -17,3 +17,6 @@
   .login-hero-page { padding: 16px 0; }
   .login-hero-page .login-card { padding: 26px; }
 }
+.totp-enrollment img { display: block; margin: 12px auto; max-width: 100%; height: auto; }
+.totp-enrollment p { overflow-wrap: anywhere; font-size: 14px; }
+.login-card label[hidden] { display: none; }
