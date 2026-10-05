@@ -77,6 +77,6 @@ public class LetterOfCreditController {
         return ResponseEntity.noContent().build();
     }
 
-    private String auditState(LetterOfCredit lc){return "Firma="+value(lc.getCompanyId())+" | Vorlagenfirma="+value(lc.getTemplateCompany())+" | Referenz="+value(lc.getReference())+" | Status="+value(lc.getStatus())+" | Applicant="+value(lc.getApplicant())+" | Beneficiary="+value(lc.getBeneficiary())+" | Betrag="+value(lc.getCurrency())+" "+value(lc.getAmount())+" | Ablauf="+value(lc.getExpiryDate())+" | Versand="+value(lc.getLatestShipmentDate())+" | Bearbeiter="+value(lc.getAssignedTo())+" | Wiedervorlage="+value(lc.getFollowUpDate())+" | Dokumentenanforderungen="+lc.getRequiredDocuments().size();}
+    private String auditState(LetterOfCredit lc){return "Firma="+value(lc.getCompanyId())+" | Vorlagenfirma="+value(lc.getTemplateCompany())+" | Referenz="+value(lc.getReference())+" | Referenz eigene Bank="+value(lc.getOwnBankReference())+" | Referenz Fremdbank="+value(lc.getForeignBankReference())+" | Status="+value(lc.getStatus())+" | Applicant="+value(lc.getApplicant())+" | Beneficiary="+value(lc.getBeneficiary())+" | Betrag="+value(lc.getCurrency())+" "+value(lc.getAmount())+" | Ablauf="+value(lc.getExpiryDate())+" | Versand="+value(lc.getLatestShipmentDate())+" | Bearbeiter="+value(lc.getAssignedTo())+" | Wiedervorlage="+value(lc.getFollowUpDate())+" | Dokumentenanforderungen="+lc.getRequiredDocuments().size();}
     private String value(Object value){return value==null?"-":String.valueOf(value);}
 }

@@ -71,6 +71,16 @@ public class DocumentInboxController {
         return result;
     }
 
+    @PostMapping("/{id}/new-case")
+    public DocumentInboxService.NewCaseResult createCase(@PathVariable UUID id,@Valid @RequestBody InboxNewCaseRequest request,Authentication authentication){
+        if(authentication.getAuthorities().stream().noneMatch(a->a.getAuthority().equals("PERM_LC_EDIT")))throw new org.springframework.security.access.AccessDeniedException("Keine Berechtigung zur Aktenanlage.");
+        var result=service.createCase(id,request);
+        var lcId=result.lcId();
+        audit.record(authentication,"LC_CREATED","LETTER_OF_CREDIT",lcId,"Neue Akte aus Posteingang · "+request.reference());
+        audit.record(authentication,"DOCUMENT_INBOX_ATTACHED","LETTER_OF_CREDIT",lcId,result.attachment().document().originalFilename()+" · Posteingang "+id+" · Dokument "+result.attachment().document().id());
+        return result;
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable UUID id, Authentication authentication) {

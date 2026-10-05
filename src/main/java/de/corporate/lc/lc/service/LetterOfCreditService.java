@@ -49,6 +49,8 @@ public class LetterOfCreditService {
             throw new IllegalArgumentException("LC reference already exists: " + reference);
         }
         lc.setReference(reference);
+        lc.setOwnBankReference(clean(request.ownBankReference()));
+        lc.setForeignBankReference(clean(request.foreignBankReference()));
         if(request.companyId()!=null)companies.profile(request.companyId());
         lc.setCompanyId(request.companyId());
         lc.setTemplateCompany(clean(request.templateCompany()));

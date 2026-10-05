@@ -16,6 +16,18 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class DocumentInboxServiceTest {
+    @Test void newCaseCreatesAndAttachesOnlyAfterExplicitRequest(){
+        UUID id=UUID.randomUUID(),lcId=UUID.randomUUID();var item=item();when(inbox.findForUpdate(id)).thenReturn(Optional.of(item));
+        when(lcs.saveAndFlush(any())).thenAnswer(call->{LetterOfCredit lc=call.getArgument(0);ReflectionTestUtils.setField(lc,"id",lcId);when(lcs.findById(lcId)).thenReturn(Optional.of(lc));assertThat(lc.getReference()).isEqualTo("NEW123");assertThat(lc.getAmount()).isNull();assertThat(lc.getOwnBankReference()).isEqualTo("OWN-123");assertThat(lc.getForeignBankReference()).isEqualTo("FOREIGN-123");return lc;});
+        when(documents.save(any())).thenAnswer(call->{LcDocument doc=call.getArgument(0);ReflectionTestUtils.setField(doc,"id",UUID.randomUUID());return doc;});
+        var request=new de.corporate.lc.document.api.InboxNewCaseRequest(" NEW123 "," OWN-123 "," FOREIGN-123 ","Applicant","Beneficiary",null,null,null,DocumentType.ANNEX,null);
+        var result=service.createCase(id,request);assertThat(result.lcId()).isEqualTo(lcId);assertThat(item.getAttachedLcId()).isEqualTo(lcId);assertThat(item.getContent()).isNull();assertThat(item.getStatus()).isEqualTo("ATTACHED");
+    }
+    @Test void duplicateReferenceKeepsInboxUntouched(){
+        UUID id=UUID.randomUUID();var item=item();when(inbox.findForUpdate(id)).thenReturn(Optional.of(item));when(lcs.existsByReference("EXISTS")).thenReturn(true);
+        var request=new de.corporate.lc.document.api.InboxNewCaseRequest("EXISTS",null,null,null,null,null,null,null,DocumentType.ANNEX,null);
+        assertThatThrownBy(()->service.createCase(id,request)).isInstanceOf(IllegalArgumentException.class);assertThat(item.getStatus()).isEqualTo("OPEN");assertThat(item.getContent()).isNotNull();verify(lcs,never()).saveAndFlush(any());verifyNoInteractions(documents);
+    }
     final DocumentInboxRepository inbox=mock(DocumentInboxRepository.class);
     final LetterOfCreditRepository lcs=mock(LetterOfCreditRepository.class);
     final LcDocumentRepository documents=mock(LcDocumentRepository.class);

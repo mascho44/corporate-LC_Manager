@@ -15,6 +15,8 @@ public record LetterOfCreditUpdateRequest(
         Integer companyId,
         @Size(max = 255) String templateCompany,
         @NotBlank @Size(max = 255) String reference,
+        @Size(max = 255) String ownBankReference,
+        @Size(max = 255) String foreignBankReference,
         @Size(max = 255) String applicant,
         @Size(max = 255) String beneficiary,
         @Size(max = 255) String issuingBank,

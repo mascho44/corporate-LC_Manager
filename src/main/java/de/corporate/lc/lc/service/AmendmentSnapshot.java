@@ -12,6 +12,8 @@ final class AmendmentSnapshot {
     static String capture(LetterOfCredit lc) {
         Map<String, Object> state = new LinkedHashMap<>();
         state.put("reference", lc.getReference());
+        state.put("ownBankReference",lc.getOwnBankReference());
+        state.put("foreignBankReference",lc.getForeignBankReference());
         state.put("applicant", lc.getApplicant());
         state.put("beneficiary", lc.getBeneficiary());
         state.put("issuingBank", lc.getIssuingBank());

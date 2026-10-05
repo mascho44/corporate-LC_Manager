@@ -59,6 +59,20 @@ public class DocumentInboxService {
         return item;
     }
 
+    public record NewCaseResult(UUID lcId,DocumentInboxAttachResult attachment){}
+    @Transactional
+    public NewCaseResult createCase(UUID id,de.corporate.lc.document.api.InboxNewCaseRequest request){
+        lockedOpenItem(id);
+        String reference=request.reference().trim();
+        if(lettersOfCredit.existsByReference(reference))throw new IllegalArgumentException("Eine Akte mit dieser Referenz besteht bereits. Bitte die bestehende Akte auswählen.");
+        var lc=new de.corporate.lc.lc.domain.LetterOfCredit();
+        lc.setReference(reference);lc.setApplicant(request.applicant());lc.setBeneficiary(request.beneficiary());
+        lc.setOwnBankReference(cleanReference(request.ownBankReference()));lc.setForeignBankReference(cleanReference(request.foreignBankReference()));
+        lc.setAmount(request.amount());lc.setCurrency(request.currency());lc.setExpiryDate(request.expiryDate());
+        var saved=lettersOfCredit.saveAndFlush(lc);
+        return new NewCaseResult(saved.getId(),attach(id,new DocumentInboxAttachRequest(saved.getId(),request.documentType(),request.documentDate())));
+    }
+
     @Transactional
     public DocumentInboxAttachResult attach(UUID id, DocumentInboxAttachRequest request) {
         DocumentInboxItem item = lockedOpenItem(id);
@@ -142,6 +156,7 @@ public class DocumentInboxService {
         return DocumentInboxItemView.from(item,LcAssignmentMatcher.suggest(item,targets));
     }
 
+    private String cleanReference(String value){return value==null||value.isBlank()?null:value.trim();}
     private String contentType(String filename) {
         String name = filename.toLowerCase(Locale.ROOT);
         if (name.endsWith(".pdf")) return "application/pdf";

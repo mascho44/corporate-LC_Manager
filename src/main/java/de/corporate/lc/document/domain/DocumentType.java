@@ -13,6 +13,7 @@ public enum DocumentType {
     BENEFICIARY_CERTIFICATE("Beneficiary's Certificate"),
     QUALITY_CERTIFICATE("Quality / Analysis Certificate"),
     COURIER_RECEIPT("Courier Receipt"),
+    ADVISING_LETTER("Avisierungsschreiben"),
     ANNEX("Annex / Anlage"),
     OTHER("Other");
 
