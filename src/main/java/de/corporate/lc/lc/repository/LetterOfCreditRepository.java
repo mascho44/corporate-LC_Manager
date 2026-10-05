@@ -18,6 +18,9 @@ public interface LetterOfCreditRepository extends JpaRepository<LetterOfCredit, 
     List<AssignmentTarget> findAssignmentTargets();
     boolean existsByReference(String reference);
     Optional<LetterOfCredit> findByReference(String reference);
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.Query("select lc from LetterOfCredit lc where lc.reference = :reference")
+    Optional<LetterOfCredit> findForAmendment(@org.springframework.data.repository.query.Param("reference") String reference);
     boolean existsByReferenceAndIdNot(String reference, UUID id);
 
     @Override
