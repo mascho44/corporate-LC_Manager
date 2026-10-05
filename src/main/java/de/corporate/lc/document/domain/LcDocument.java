@@ -11,6 +11,9 @@ import java.util.UUID;
 @Entity
 @Table(name = "lc_document")
 public class LcDocument {
+    @Column(columnDefinition="text") @JsonIgnore private String ocrEvidenceJson;
+    public String getOcrEvidenceJson(){return ocrEvidenceJson;}
+    public void setOcrEvidenceJson(String value){ocrEvidenceJson=value;}
     @Id @GeneratedValue(strategy = GenerationType.UUID) private UUID id;
     @ManyToOne(optional = false, fetch = FetchType.LAZY) @JoinColumn(name = "lc_id") @JsonIgnore
     private LetterOfCredit letterOfCredit;

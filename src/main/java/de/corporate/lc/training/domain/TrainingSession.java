@@ -7,6 +7,9 @@ import java.util.UUID;
 @Entity
 @Table(name="training_session")
 public class TrainingSession {
+    @Column(columnDefinition="text") private String ocrConfidenceJson;
+    public String getOcrConfidenceJson(){return ocrConfidenceJson;}
+    public void setOcrConfidenceJson(String value){ocrConfidenceJson=value;}
     @Id @GeneratedValue(strategy=GenerationType.UUID) private UUID id;
     private String filename;
     private String contentType;

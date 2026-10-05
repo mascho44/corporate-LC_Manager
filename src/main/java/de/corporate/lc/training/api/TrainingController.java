@@ -56,9 +56,10 @@ public class TrainingController {
         s.setFilename(file.getOriginalFilename()); s.setContentType(file.getContentType());
         s.setOriginalPdf(file.getBytes()); s.setExtractedText(text); s.setStatus("DRAFT");
         s.setUsername(auth.getName()); s.setExtractionStatus(x.status()); s.setMessageType(preview.messageType());
+        var ocrFields=data.initializeOcrConfidence(s,preview,x);
         repo.save(s);
         audit.record(auth,"TRAINING_STARTED","TRAINING_SESSION",s.getId(),s.getFilename()+" · "+preview.messageType()+" · "+preview.rawFields().size()+" Felder erkannt");
-        return new TrainingPreview(s.getId(),request,preview,x.status());
+        return new TrainingPreview(s.getId(),request,preview,x.status(),ocrFields);
     }
 
     @PostMapping("/{id}/finish")
@@ -69,7 +70,7 @@ public class TrainingController {
         if(!"DRAFT".equals(s.getStatus())) throw new IllegalArgumentException("Nur ein Trainingsentwurf kann abgeschlossen werden.");
         data.requireReviewedFields(request.reviewsJson());
         s.setCorrectedText(request.correctedRawMessage());
-        s.setReviewsJson(request.reviewsJson());
+        s.setReviewsJson(data.preserveOcrConfidence(s,request.reviewsJson()));
         s.setStatus("CONFIRMED");
         s.setConfirmedAt(LocalDateTime.now());
         audit.record(auth,"TRAINING_CONFIRMED","TRAINING_SESSION",s.getId(),s.getFilename()+" · Training abgeschlossen · keine LC-Akte angelegt oder geändert");
@@ -93,7 +94,7 @@ public class TrainingController {
                 :preview.messageType().equals("MT760")
                 ? Map.of("status","CONFIRMED","messageType","MT760","trainingSessionId",id)
                 : imports.executeCorrected(corrected);
-        s.setCorrectedText(request.correctedRawMessage()); s.setReviewsJson(request.reviewsJson());
+        s.setCorrectedText(request.correctedRawMessage()); s.setReviewsJson(data.preserveOcrConfidence(s,request.reviewsJson()));
         s.setStatus("CONFIRMED"); s.setMessageType(preview.messageType()); s.setConfirmedAt(LocalDateTime.now());
         if(result instanceof LetterOfCredit lc) s.setLcId(lc.getId());
         audit.record(auth,"TRAINING_CONFIRMED","TRAINING_SESSION",s.getId(),s.getFilename()+" · "+preview.messageType()+" · Training abgeschlossen"+(s.getLcId()==null?"":existingMt700?" · mit bestehendem LC verknüpft":" · LC angelegt"));
@@ -107,7 +108,7 @@ public class TrainingController {
         if(!s.getUsername().equals(auth.getName())) throw new IllegalArgumentException("Trainingssitzung gehört einem anderen Benutzer.");
         if("CONFIRMED".equals(s.getStatus())) throw new IllegalArgumentException("Ein bestätigter Trainingsdatensatz kann nicht mehr verändert werden.");
         s.setCorrectedText(request.correctedRawMessage());
-        s.setReviewsJson(request.reviewsJson());
+        s.setReviewsJson(data.preserveOcrConfidence(s,request.reviewsJson()));
         audit.record(auth,"TRAINING_PROGRESS_SAVED","TRAINING_SESSION",s.getId(),s.getFilename()+" · Bearbeitungsstand gespeichert");
         return Map.of("status","SAVED");
     }

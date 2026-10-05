@@ -16,16 +16,19 @@ import java.util.regex.Pattern;
 
 @Service
 public class DocumentExtractionService {
+    @org.springframework.beans.factory.annotation.Value("${lc.ocr.confidence-threshold:0.8}")
+    private double ocrThreshold=0.8;
     private static final int MAX_TEXT_LENGTH = 100_000;
     private static final int MAX_OCR_PAGES = 20;
     private static final Pattern DOCUMENT_NUMBER = Pattern.compile("(?im)^(?:invoice|commercial invoice|document)\\s*(?:no\\.?|number|#)?\\s*[:#-]?\\s*([A-Z0-9][A-Z0-9./_-]{2,})\\s*$");
     private static final Pattern LC_REFERENCE = Pattern.compile("(?im)(?:letter of credit|documentary credit|lc|l/c)\\s*(?:no\\.?|number|reference|ref\\.?|#)?\\s*[:#-]?\\s*([A-Z0-9][A-Z0-9./_-]{3,})");
     private static final Pattern AMOUNT = Pattern.compile("(?im)(?:total|invoice amount|grand total|amount due)\\s*[:]?\\s*(EUR|USD|GBP|CHF|JPY)?\\s*([0-9][0-9., ]{0,20})\\s*(EUR|USD|GBP|CHF|JPY)?");
 
-    public record TextExtraction(String text,String status) {}
-    public TextExtraction extractFile(byte[] content,String filename,String contentType) { LcDocument document=new LcDocument();document.setContent(content);document.setOriginalFilename(filename==null?"document":filename);document.setContentType(contentType==null?"application/octet-stream":contentType);extract(document);return new TextExtraction(document.getExtractedText(),document.getExtractionStatus()); }
+    public record TextExtraction(String text,String status,OcrEvidence ocrEvidence) {public TextExtraction(String text,String status){this(text,status,null);}}
+    public TextExtraction extractFile(byte[] content,String filename,String contentType) { LcDocument document=new LcDocument();document.setContent(content);document.setOriginalFilename(filename==null?"document":filename);document.setContentType(contentType==null?"application/octet-stream":contentType);extract(document);return new TextExtraction(document.getExtractedText(),document.getExtractionStatus(),readEvidence(document.getOcrEvidenceJson())); }
 
     public void extract(LcDocument document) {
+        document.setOcrEvidenceJson(null);
         try {
             String text = readText(document);
             if (text == null) {
@@ -85,14 +88,17 @@ public class DocumentExtractionService {
             List<Path> pages;
             try (var files = Files.list(directory)) {
                 pages = files.filter(p -> p.getFileName().toString().startsWith("page-") && p.toString().endsWith(".png"))
-                        .sorted().limit(MAX_OCR_PAGES).toList();
+                        .sorted(Comparator.comparingInt(p->Integer.parseInt(p.getFileName().toString().replaceAll("[^0-9]","")))).limit(MAX_OCR_PAGES).toList();
             }
             StringBuilder result = new StringBuilder();
+            java.util.ArrayList<OcrEvidence.Word> words=new java.util.ArrayList<>();
+            String engineVersion=tesseractVersion(directory);
             for (int index = 0; index < pages.size() && result.length() < MAX_TEXT_LENGTH; index++) {
                 Path output = directory.resolve("ocr-" + index);
                 Process ocr;
                 try {
-                    ocr = new ProcessBuilder("tesseract", pages.get(index).toString(), output.toString(), "-l", "deu+eng", "txt")
+                    ocr = new ProcessBuilder("tesseract", pages.get(index).toString(), output.toString(), "-l", "deu+eng", "txt", "tsv")
+                            .redirectOutput(directory.resolve("ocr-process.log").toFile())
                             .redirectErrorStream(true).start();
                 } catch (IOException exception) {
                     throw new OcrUnavailableException();
@@ -101,13 +107,24 @@ public class DocumentExtractionService {
                 if (ocr.exitValue() != 0) throw new IOException("OCR failed");
                 Path textFile = Path.of(output + ".txt");
                 if (Files.exists(textFile)) result.append(Files.readString(textFile, StandardCharsets.UTF_8)).append('\n');
+                Path tsvFile=Path.of(output+".tsv");
+                int page=Integer.parseInt(pages.get(index).getFileName().toString().replaceAll("[^0-9]",""));
+                if(Files.exists(tsvFile))words.addAll(OcrEvidence.parseTsv(Files.readString(tsvFile,StandardCharsets.UTF_8),page));
             }
+            if(!Double.isFinite(ocrThreshold)||ocrThreshold<0||ocrThreshold>1)throw new IllegalArgumentException("Ungültige OCR-Konfidenzschwelle");
+            document.setOcrEvidenceJson(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(new OcrEvidence(engineVersion,"TESSERACT_WORD_MIN_V1",200,ocrThreshold,List.copyOf(words))));
             return limit(result.toString());
         } catch (NoSuchFileException exception) {
             throw new OcrUnavailableException();
         } finally {
             deleteDirectory(directory);
         }
+    }
+
+    public static OcrEvidence readEvidence(String json){if(json==null)return null;try{return new com.fasterxml.jackson.databind.ObjectMapper().readValue(json,OcrEvidence.class);}catch(Exception e){return null;}}
+
+    private String tesseractVersion(Path directory){
+        try{Path file=directory.resolve("version.txt");Process process=new ProcessBuilder("tesseract","--version").redirectErrorStream(true).redirectOutput(file.toFile()).start();if(!process.waitFor(5,TimeUnit.SECONDS)){process.destroyForcibly();return "unknown";}return Files.readAllLines(file).stream().findFirst().orElse("unknown");}catch(Exception e){return "unknown";}
     }
 
     private boolean isPdf(LcDocument document) {

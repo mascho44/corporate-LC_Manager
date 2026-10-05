@@ -15,6 +15,32 @@ public class TrainingDataService {
     private final ObjectMapper mapper;
 
     public TrainingDataService(ObjectMapper mapper){this.mapper=mapper;}
+    public List<de.corporate.lc.document.service.OcrEvidence.Assessment> initializeOcrConfidence(TrainingSession session,de.corporate.lc.imports.api.SwiftImportPreview preview,de.corporate.lc.document.service.DocumentExtractionService.TextExtraction extraction){
+        var evidence=extraction.ocrEvidence();
+        List<de.corporate.lc.document.service.OcrEvidence.Assessment> scores=preview.rawFields().stream().map(field->evidence==null
+            ?new de.corporate.lc.document.service.OcrEvidence.Assessment(null,null,"OCR_EXTRACTED".equals(extraction.status())?"UNAVAILABLE":"NOT_APPLICABLE",null,null,0.8,field.value(),List.of())
+            :evidence.assess(field.value(),evidence.threshold())).toList();
+        try{
+            session.setOcrConfidenceJson(mapper.writeValueAsString(scores));
+            var fields=mapper.valueToTree(preview.rawFields());
+            for(int i=0;i<fields.size();i++)((com.fasterxml.jackson.databind.node.ObjectNode)fields.get(i)).set("ocr",mapper.valueToTree(scores.get(i)));
+            session.setReviewsJson(mapper.writeValueAsString(fields));
+        }catch(JsonProcessingException e){throw new IllegalStateException("OCR-Bewertungen konnten nicht gespeichert werden",e);}
+        return scores;
+    }
+    /** Client edits cannot change the OCR measurement of the original field value. */
+    public String preserveOcrConfidence(TrainingSession session,String reviews){
+        if(session.getOcrConfidenceJson()==null)return reviews;
+        try{
+            var scores=mapper.readTree(session.getOcrConfidenceJson());var fields=mapper.readTree(reviews);
+            if(!fields.isArray()||fields.size()!=scores.size())throw new IllegalArgumentException("Anzahl der Trainingsfelder wurde verändert.");
+            for(int i=0;i<fields.size();i++){
+                if(!fields.get(i).isObject())throw new IllegalArgumentException("Ungültiges Trainingsfeld");
+                ((com.fasterxml.jackson.databind.node.ObjectNode)fields.get(i)).set("ocr",scores.get(i));
+            }
+            return mapper.writeValueAsString(fields);
+        }catch(JsonProcessingException e){throw new IllegalArgumentException("Ungültige Trainingsfelder",e);}
+    }
 
     public void requireReviewedFields(String json) {
         try {
@@ -58,6 +84,17 @@ public class TrainingDataService {
             for(JsonNode field:fields(session)){
                 xml.writeStartElement("field");
                 for(String name:List.of("code","label","value","suggestedTarget","targetLabel","confidence","review")) element(xml,name,text(field,name));
+                if(field.has("ocr")){
+                    xml.writeStartElement("ocrConfidence");
+                    for(String name:List.of("score","meanScore","status","method","engineVersion","threshold","originalValue"))element(xml,name,text(field.path("ocr"),name));
+                    xml.writeStartElement("words");
+                    for(JsonNode word:field.path("ocr").path("words")){
+                        xml.writeStartElement("word");
+                        for(String name:List.of("text","confidence","page","left","top","width","height"))element(xml,name,text(word,name));
+                        xml.writeEndElement();
+                    }
+                    xml.writeEndElement();xml.writeEndElement();
+                }
                 xml.writeEndElement();
             }
             xml.writeEndElement(); xml.writeEndElement(); xml.writeEndDocument(); xml.close();
