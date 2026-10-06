@@ -55,15 +55,7 @@ public class DocumentExtractionService {
                 document.setExtractionStatus("NO_TEXT");
                 return;
             }
-            match(DOCUMENT_NUMBER, text, 1).ifPresent(document::setExtractedDocumentNumber);
-            match(LC_REFERENCE, text, 1).ifPresent(document::setExtractedReference);
-            var amountMatcher = AMOUNT.matcher(text);
-            if (amountMatcher.find()) {
-                String currency = amountMatcher.group(1) != null ? amountMatcher.group(1) : amountMatcher.group(3);
-                document.setExtractedCurrency(currency == null ? null : currency.toUpperCase(Locale.ROOT));
-                parseAmount(amountMatcher.group(2)).ifPresent(document::setExtractedAmount);
-            }
-            document.setExtractionStatus(ocrUsed ? "OCR_EXTRACTED" : "EXTRACTED");
+            applyRecognizedText(document,text,ocrUsed ? "OCR_EXTRACTED" : "EXTRACTED");
         } catch (BoundedProcess.TimeoutException exception) {
             document.setExtractionStatus("OCR_TIMEOUT");
         } catch (BoundedProcess.UnavailableException exception) {
@@ -77,6 +69,21 @@ public class DocumentExtractionService {
         } finally {
             document.setClassificationHistoryJson(ClassificationHistory.automatic(document.getOriginalFilename(),document.getExtractedText()));
         }
+    }
+
+    /** Reuse page-local recognition without rerunning OCR or copying aggregate metadata. */
+    public void applyRecognizedText(LcDocument document,String recognized,String status) {
+            String text=limit(normalize(recognized));document.setExtractedText(text);
+            match(DOCUMENT_NUMBER, text, 1).ifPresent(document::setExtractedDocumentNumber);
+            match(LC_REFERENCE, text, 1).ifPresent(document::setExtractedReference);
+            var amountMatcher = AMOUNT.matcher(text);
+            if (amountMatcher.find()) {
+                String currency = amountMatcher.group(1) != null ? amountMatcher.group(1) : amountMatcher.group(3);
+                document.setExtractedCurrency(currency == null ? null : currency.toUpperCase(Locale.ROOT));
+                parseAmount(amountMatcher.group(2)).ifPresent(document::setExtractedAmount);
+            }
+            document.setExtractionStatus(status);
+            document.setClassificationHistoryJson(ClassificationHistory.automatic(document.getOriginalFilename(),document.getExtractedText()));
     }
 
     private String readText(LcDocument document) throws Exception {

@@ -35,6 +35,11 @@ class InboxExtractionQueueTest {
   var item=enqueue("QUEUED");doAnswer(call->{inbox.deleteById(item.getId());LcDocument doc=call.getArgument(0);doc.setExtractionStatus("EXTRACTED");return null;}).when(extraction).extractInBackground(any());
   queue.processNext();assertThat(inbox.findById(item.getId())).isEmpty();verifyNoInteractions(audit);
  }
+ @Test void preservesDocumentTypeConfirmedDuringSplit(){
+  var item=enqueue("QUEUED");item.setClassificationHistoryJson(ClassificationHistory.manual(null,DocumentType.PACKING_LIST,"synthetic-user"));inbox.saveAndFlush(item);
+  doAnswer(call->{LcDocument doc=call.getArgument(0);doc.setExtractionStatus("EXTRACTED");doc.setClassificationHistoryJson(ClassificationHistory.automatic("synthetic.txt","COMMERCIAL INVOICE"));return null;}).when(extraction).extractInBackground(any());
+  queue.processNext();assertThat(ClassificationHistory.selectedType(inbox.findById(item.getId()).orElseThrow().getClassificationHistoryJson())).isEqualTo(DocumentType.PACKING_LIST);
+ }
  @Test void recoversExpiredClaimButDoesNotStealActiveWork(){
   var item=enqueue("PROCESSING");item.setExtractionToken(UUID.randomUUID());item.setExtractionStartedAt(LocalDateTime.now());inbox.saveAndFlush(item);
   queue.processNext();verifyNoInteractions(extraction);

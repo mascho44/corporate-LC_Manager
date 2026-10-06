@@ -66,7 +66,8 @@ public class InboxExtractionQueue {
         var result=work.document();item.setExtractionStatus(result.getExtractionStatus()==null?"FAILED":result.getExtractionStatus());
         item.setExtractedReference(result.getExtractedReference());item.setExtractedDocumentNumber(result.getExtractedDocumentNumber());
         item.setExtractedAmount(result.getExtractedAmount());item.setExtractedCurrency(result.getExtractedCurrency());item.setExtractedText(result.getExtractedText());
-        item.setOcrEvidenceJson(result.getOcrEvidenceJson());item.setClassificationHistoryJson(result.getClassificationHistoryJson());
+        var selected=ClassificationHistory.selectedType(item.getClassificationHistoryJson());
+        item.setOcrEvidenceJson(result.getOcrEvidenceJson());item.setClassificationHistoryJson(selected==null?result.getClassificationHistoryJson():ClassificationHistory.manual(result.getClassificationHistoryJson(),selected,item.getReceivedBy()));
         item.setExtractionToken(null);item.setExtractionStartedAt(null);inbox.save(item);return true;
     }
     @PreDestroy public void shutdown(){executor.shutdownNow();}
