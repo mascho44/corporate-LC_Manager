@@ -1,4 +1,12 @@
 {
+  "membership.code": "Mandantenkennung",
+  "membership.language": "Standardsprache",
+  "membership.bank": "Bankprofil",
+  "membership.corporate": "Corporate-Profil",
+  "membership.enabled": "Aktiviert",
+  "membership.disabled": "Deaktiviert",
+  "membership.metadataNotice": "Profileinstellungen sind informativ und erteilen keine Zugriffsrechte.",
+ "membership.title":"Mandantenmitgliedschaften", "membership.notice":"Änderungen erfolgen über die Benutzerverwaltung. Mandantenwechsel ist noch nicht freigeschaltet.", "membership.empty":"Keine Mitgliedschaften vorhanden.", "membership.active":"Aktiv", "membership.inactive":"Gesperrt", "membership.loading":"Mitgliedschaften werden geladen…", "membership.error":"Mitgliedschaftsübersicht nicht verfügbar. Die Benutzerverwaltung bleibt nutzbar.",
  "nav.workspace":"Bank-Arbeitsbereich", "nav.cockpit":"Cockpit", "nav.myWork":"Meine Arbeit", "nav.lcs":"LC-Akten",
  "nav.inbox":"Dokumentenposteingang", "nav.training":"Training & Erkennung", "nav.import":"SWIFT importieren", "nav.imports":"Importhistorie",
  "nav.monitoring":"Operationsmonitor", "nav.company":"Firmenstammdaten", "nav.templates":"Dokumentvorlagen", "nav.users":"Benutzer",
