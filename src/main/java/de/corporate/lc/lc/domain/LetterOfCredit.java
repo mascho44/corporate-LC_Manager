@@ -2,6 +2,10 @@ package de.corporate.lc.lc.domain;
 import jakarta.persistence.*; import java.math.BigDecimal; import java.time.LocalDate; import java.util.*;
 @Entity @Table(name="letter_of_credit")
 public class LetterOfCredit {
+ @Column(nullable=false,updatable=false) @com.fasterxml.jackson.annotation.JsonIgnore
+ private UUID tenantId=de.corporate.lc.tenant.domain.TenantContext.currentId();
+ public UUID getTenantId(){return tenantId;}
+ @PrePersist @PreUpdate @PreRemove private void validateTenant(){de.corporate.lc.tenant.domain.TenantContext.require(tenantId);}
  @Column(columnDefinition="text") @com.fasterxml.jackson.annotation.JsonIgnore private String ruleFactsJson;
  public String getRuleFactsJson(){return ruleFactsJson;}
  public void setRuleFactsJson(String value){ruleFactsJson=value;}

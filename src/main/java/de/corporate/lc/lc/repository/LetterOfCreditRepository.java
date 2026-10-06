@@ -14,20 +14,29 @@ public interface LetterOfCreditRepository extends JpaRepository<LetterOfCredit, 
         String getReference();
         de.corporate.lc.lc.domain.LetterOfCreditStatus getStatus();
     }
-    @org.springframework.data.jpa.repository.Query("select lc.id as id, lc.reference as reference, lc.status as status from LetterOfCredit lc order by lc.reference")
+    @org.springframework.data.jpa.repository.Query("select lc.id as id, lc.reference as reference, lc.status as status from LetterOfCredit lc where lc.tenantId = :#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()} order by lc.reference")
     List<AssignmentTarget> findAssignmentTargets();
-    boolean existsByReference(String reference);
+    @org.springframework.data.jpa.repository.Query("select count(lc)>0 from LetterOfCredit lc where lc.reference=:reference and lc.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()}")
+    boolean existsByReference(@org.springframework.data.repository.query.Param("reference") String reference);
+    @org.springframework.data.jpa.repository.Query("select lc from LetterOfCredit lc where lc.reference=:reference and lc.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()}")
     Optional<LetterOfCredit> findByReference(String reference);
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
-    @org.springframework.data.jpa.repository.Query("select lc from LetterOfCredit lc where lc.reference = :reference")
+    @org.springframework.data.jpa.repository.Query("select lc from LetterOfCredit lc where lc.reference = :reference and lc.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()}")
     Optional<LetterOfCredit> findForAmendment(@org.springframework.data.repository.query.Param("reference") String reference);
-    boolean existsByReferenceAndIdNot(String reference, UUID id);
+    @org.springframework.data.jpa.repository.Query("select count(lc)>0 from LetterOfCredit lc where lc.reference=:reference and lc.id<>:id and lc.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()}")
+    boolean existsByReferenceAndIdNot(@org.springframework.data.repository.query.Param("reference") String reference,@org.springframework.data.repository.query.Param("id") UUID id);
 
     @Override
     @EntityGraph(attributePaths = {"requiredDocuments", "additionalFields"})
+    @org.springframework.data.jpa.repository.Query("select lc from LetterOfCredit lc where lc.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()}")
     List<LetterOfCredit> findAll();
 
     @Override
     @EntityGraph(attributePaths = {"requiredDocuments", "additionalFields"})
+    @org.springframework.data.jpa.repository.Query("select lc from LetterOfCredit lc where lc.id=:id and lc.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()}")
     Optional<LetterOfCredit> findById(UUID id);
+    @Override @org.springframework.data.jpa.repository.Query("select count(lc) from LetterOfCredit lc where lc.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()}")
+    long count();
+    @Override @org.springframework.data.jpa.repository.Query("select count(lc)>0 from LetterOfCredit lc where lc.id=:id and lc.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()}")
+    boolean existsById(UUID id);
 }

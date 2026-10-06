@@ -1,11 +1,13 @@
 package de.corporate.lc.user.domain;
 import jakarta.persistence.*; import java.time.LocalDateTime; import java.util.UUID;
 @Entity @Table(name="app_user") public class AppUser {
- @Column(nullable=false) private UUID tenantId=de.corporate.lc.tenant.domain.Tenant.DEFAULT_ID;
+ @Column(nullable=false,updatable=false) private UUID tenantId=de.corporate.lc.tenant.domain.TenantContext.currentId();
  @Column(length=20) private String preferredLanguage;
  public UUID getTenantId(){return tenantId;}
  public String getPreferredLanguage(){return preferredLanguage;}
  public void setPreferredLanguage(String value){preferredLanguage=value;}
+ @PrePersist @PreUpdate @PreRemove private void validateTenant(){de.corporate.lc.tenant.domain.TenantContext.require(tenantId);validateRoleTenant();}
+ public void validateRoleTenant(){if(assignedRole!=null&&!tenantId.equals(assignedRole.getTenantId()))throw new org.springframework.security.access.AccessDeniedException("Role belongs to another tenant.");}
  @Id @GeneratedValue(strategy=GenerationType.UUID) private UUID id;
  @Column(nullable=false,unique=true,length=100) private String username;
  @Column(nullable=false) private String displayName;
