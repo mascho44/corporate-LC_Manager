@@ -5,7 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 import java.util.UUID;
 
-public interface DocumentApprovalThresholdRepository extends JpaRepository<DocumentApprovalThreshold, UUID> {
+public interface DocumentApprovalThresholdRepository extends de.corporate.lc.tenant.repository.TenantScopedRepository<DocumentApprovalThreshold, UUID> {
     @org.springframework.data.jpa.repository.Query("select t from DocumentApprovalThreshold t where t.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()} order by t.currency asc,t.minimumAmount asc")
     List<DocumentApprovalThreshold> findAllByOrderByCurrencyAscMinimumAmountAsc();
     @Override @org.springframework.data.jpa.repository.Query("select t from DocumentApprovalThreshold t where t.id=:id and t.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()}")

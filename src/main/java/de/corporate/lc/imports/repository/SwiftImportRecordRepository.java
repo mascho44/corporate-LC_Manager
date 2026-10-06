@@ -1,6 +1,6 @@
 package de.corporate.lc.imports.repository;
 import de.corporate.lc.imports.domain.SwiftImportRecord; import org.springframework.data.jpa.repository.JpaRepository; import java.util.*;
-public interface SwiftImportRecordRepository extends JpaRepository<SwiftImportRecord,UUID>{
+public interface SwiftImportRecordRepository extends de.corporate.lc.tenant.repository.TenantScopedRepository<SwiftImportRecord,UUID>{
  default List<SwiftImportRecord> findTop20ByOrderByImportedAtDesc(){return findRecent(org.springframework.data.domain.PageRequest.of(0,20));}
  @org.springframework.data.jpa.repository.Query("select r from SwiftImportRecord r where r.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()} order by r.importedAt desc") List<SwiftImportRecord> findRecent(org.springframework.data.domain.Pageable pageable);
  @org.springframework.data.jpa.repository.Query("select count(r) from SwiftImportRecord r where r.status=:status and r.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()}") long countByStatus(@org.springframework.data.repository.query.Param("status") String status);

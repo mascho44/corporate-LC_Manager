@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface LetterOfCreditRepository extends JpaRepository<LetterOfCredit, UUID> {
+public interface LetterOfCreditRepository extends de.corporate.lc.tenant.repository.TenantScopedRepository<LetterOfCredit, UUID> {
     interface AssignmentTarget {
         UUID getId();
         String getReference();

@@ -31,7 +31,7 @@ public class InboxExtractionQueue {
     @Scheduled(fixedDelayString="${lc.inbox.extraction-interval-ms:2000}")
     public void dispatch(){
         if(!busy.compareAndSet(false,true))return;
-        try{executor.execute(()->{try{processNext();}catch(Exception failure){log.warn("Inbox extraction worker failed: type={}",failure.getClass().getSimpleName());}finally{busy.set(false);}});}
+        try{executor.execute(()->{try(var scope=de.corporate.lc.tenant.domain.TenantContext.open(de.corporate.lc.tenant.domain.Tenant.DEFAULT_ID)){processNext();}catch(Exception failure){log.warn("Inbox extraction worker failed: type={}",failure.getClass().getSimpleName());}finally{busy.set(false);}});}
         catch(RejectedExecutionException stopped){busy.set(false);}
     }
     void processNext(){

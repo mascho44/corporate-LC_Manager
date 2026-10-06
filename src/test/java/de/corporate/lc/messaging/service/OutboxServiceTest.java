@@ -14,6 +14,20 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 class OutboxServiceTest {
+    @Test void scheduledDispatchUsesExplicitDefaultTenantAndRestoresCallerScope() {
+        var repository=mock(OutboxMessageRepository.class);var publisher=mock(MessagePublisher.class);
+        var service=new OutboxService(repository,new ObjectMapper(),publisher,3);var message=new OutboxMessage();message.setTopic("synthetic.topic");message.setPayload("{}");
+        when(repository.findTop50ByStatusAndNextAttemptAtLessThanEqualOrderByCreatedAt(eq("PENDING"),any())).thenAnswer(call->{assertThat(de.corporate.lc.tenant.domain.TenantContext.currentId()).isEqualTo(de.corporate.lc.tenant.domain.Tenant.DEFAULT_ID);return java.util.List.of(message);});
+        UUID caller=UUID.randomUUID();try(var scope=de.corporate.lc.tenant.domain.TenantContext.open(caller)){service.dispatch();assertThat(de.corporate.lc.tenant.domain.TenantContext.currentId()).isEqualTo(caller);}
+        verify(publisher).publish(eq("synthetic.topic"),isNull(),eq("{}"));assertThat(message.getStatus()).isEqualTo("PUBLISHED");
+    }
+    @Test void scheduledDispatchRejectsForeignMessageAndRestoresScopeOnFailure() {
+        var repository=mock(OutboxMessageRepository.class);var publisher=mock(MessagePublisher.class);var service=new OutboxService(repository,new ObjectMapper(),publisher,3);
+        UUID caller=UUID.randomUUID();OutboxMessage foreign;try(var scope=de.corporate.lc.tenant.domain.TenantContext.open(caller)){foreign=new OutboxMessage();}
+        when(repository.findTop50ByStatusAndNextAttemptAtLessThanEqualOrderByCreatedAt(eq("PENDING"),any())).thenReturn(java.util.List.of(foreign));
+        try(var scope=de.corporate.lc.tenant.domain.TenantContext.open(caller)){assertThatThrownBy(service::dispatch).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);assertThat(de.corporate.lc.tenant.domain.TenantContext.currentId()).isEqualTo(caller);}
+        verifyNoInteractions(publisher);verify(repository,never()).save(any());
+    }
     @Test void movesMessageToDeadLetterAfterConfiguredAttempts() {
         var repository = mock(OutboxMessageRepository.class);
         var publisher = mock(MessagePublisher.class);

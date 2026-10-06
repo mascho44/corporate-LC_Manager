@@ -2,7 +2,7 @@ package de.corporate.lc.lc.repository;
 import de.corporate.lc.lc.domain.LcNote;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.*;
-public interface LcNoteRepository extends JpaRepository<LcNote,UUID>{
+public interface LcNoteRepository extends de.corporate.lc.tenant.repository.TenantScopedRepository<LcNote,UUID>{
  @Override  @org.springframework.data.jpa.repository.Query("select e from LcNote e where e.id=:id and e.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()}") Optional<LcNote> findById(@org.springframework.data.repository.query.Param("id") UUID id);
  @Override  @org.springframework.data.jpa.repository.Query("select e from LcNote e where e.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()}") List<LcNote> findAll();
  default List<LcNote> findTop100ByLetterOfCreditIdOrderByCreatedAtDesc(UUID id){return findRecent(id,org.springframework.data.domain.PageRequest.of(0,100));}

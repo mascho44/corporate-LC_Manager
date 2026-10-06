@@ -5,7 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 import java.util.UUID;
 
-public interface LcDocumentRepository extends JpaRepository<LcDocument, UUID> {
+public interface LcDocumentRepository extends de.corporate.lc.tenant.repository.TenantScopedRepository<LcDocument, UUID> {
     @org.springframework.data.jpa.repository.Query("select d from LcDocument d where d.letterOfCredit.id=:lcId and d.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()} and d.letterOfCredit.tenantId=d.tenantId order by d.uploadedAt desc")
     List<LcDocument> findByLetterOfCreditIdOrderByUploadedAtDesc(UUID lcId);
     @org.springframework.data.jpa.repository.Query("select count(d) from LcDocument d where d.letterOfCredit.id=:lcId and d.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()} and d.letterOfCredit.tenantId=d.tenantId")
