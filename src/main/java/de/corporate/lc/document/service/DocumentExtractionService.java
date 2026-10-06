@@ -11,11 +11,11 @@ import java.nio.file.*;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 @Service
 public class DocumentExtractionService {
+    private static final org.slf4j.Logger log=org.slf4j.LoggerFactory.getLogger(DocumentExtractionService.class);
     @org.springframework.beans.factory.annotation.Value("${lc.ocr.confidence-threshold:0.8}")
     private double ocrThreshold=0.8;
     private static final int MAX_TEXT_LENGTH = 100_000;
@@ -55,9 +55,13 @@ public class DocumentExtractionService {
                 parseAmount(amountMatcher.group(2)).ifPresent(document::setExtractedAmount);
             }
             document.setExtractionStatus(ocrUsed ? "OCR_EXTRACTED" : "EXTRACTED");
-        } catch (OcrUnavailableException exception) {
+        } catch (BoundedProcess.UnavailableException exception) {
+            log.warn("Document extraction: {}",exception.getMessage());
             document.setExtractionStatus("OCR_UNAVAILABLE");
         } catch (Exception exception) {
+            if(exception instanceof InterruptedException)Thread.currentThread().interrupt();
+            // Do not log filenames, document text or arbitrary exception messages.
+            log.warn("Document extraction failed: type={}",exception.getClass().getSimpleName());
             document.setExtractionStatus("FAILED");
         } finally {
             document.setClassificationHistoryJson(ClassificationHistory.automatic(document.getOriginalFilename(),document.getExtractedText()));
@@ -86,22 +90,25 @@ public class DocumentExtractionService {
             ProcessBuilder render = new ProcessBuilder("pdftoppm", "-png", "-r", "200", "-f", "1", "-l",
                     String.valueOf(MAX_OCR_PAGES), input.toString(), directory.resolve("page").toString())
                     .redirectErrorStream(true);
-            BoundedProcess.run(render,60);
+            runOcrStep(render,60);
             List<Path> pages;
             try (var files = Files.list(directory)) {
                 pages = files.filter(p -> p.getFileName().toString().startsWith("page-") && p.toString().endsWith(".png"))
                         .sorted(Comparator.comparingInt(p->Integer.parseInt(p.getFileName().toString().replaceAll("[^0-9]","")))).limit(MAX_OCR_PAGES).toList();
             }
+            if(pages.isEmpty())throw new IOException("PDF renderer produced no pages");
             StringBuilder result = new StringBuilder();
             java.util.ArrayList<OcrEvidence.Word> words=new java.util.ArrayList<>();
             String engineVersion=tesseractVersion(directory);
             for (int index = 0; index < pages.size() && result.length() < MAX_TEXT_LENGTH; index++) {
                 Path output = directory.resolve("ocr-" + index);
                 ProcessBuilder ocr;
-                ocr = new ProcessBuilder("tesseract", pages.get(index).toString(), output.toString(), "-l", "deu+eng", "txt", "tsv")
+                ocr = new ProcessBuilder("tesseract", pages.get(index).toString(), output.toString(), "-l", "deu+eng",
+                    "-c", "tessedit_create_txt=1", "-c", "tessedit_create_tsv=1")
                     .redirectOutput(ProcessBuilder.Redirect.DISCARD).redirectErrorStream(true);
-                try { BoundedProcess.run(ocr,30); } catch(IOException unavailable) { throw new OcrUnavailableException(); }
+                runOcrStep(ocr,30);
                 Path textFile = Path.of(output + ".txt");
+                if(!Files.isRegularFile(textFile))throw new IOException("OCR produced no text file");
                 if(Files.exists(textFile)&&Files.size(textFile)>10*1024*1024)throw new IOException("OCR-Ausgabe zu groß");
                 if (Files.exists(textFile)) result.append(Files.readString(textFile, StandardCharsets.UTF_8)).append('\n');
                 Path tsvFile=Path.of(output+".tsv");
@@ -112,8 +119,6 @@ public class DocumentExtractionService {
             if(!Double.isFinite(ocrThreshold)||ocrThreshold<0||ocrThreshold>1)throw new IllegalArgumentException("Ungültige OCR-Konfidenzschwelle");
             document.setOcrEvidenceJson(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(new OcrEvidence(engineVersion,"TESSERACT_WORD_MIN_V2",200,ocrThreshold,List.copyOf(words))));
             return limit(result.toString());
-        } catch (NoSuchFileException exception) {
-            throw new OcrUnavailableException();
         } finally {
             deleteDirectory(directory);
         }
@@ -137,7 +142,14 @@ public class DocumentExtractionService {
         try (var paths = Files.walk(directory)) { paths.sorted(Comparator.reverseOrder()).forEach(path -> { try { Files.deleteIfExists(path); } catch (IOException ignored) {} }); }
         catch (IOException ignored) {}
     }
-    private static class OcrUnavailableException extends Exception {}
+    private void runOcrStep(ProcessBuilder builder,long seconds)throws IOException,InterruptedException {
+        try { BoundedProcess.run(builder,seconds); }
+        catch(IOException failure) {
+            // BoundedProcess messages contain only fixed tool names and exit/timeout status.
+            log.warn("OCR step failed: {}",failure.getMessage());
+            throw failure;
+        }
+    }
 
     private java.util.Optional<String> match(Pattern pattern, String text, int group) {
         var matcher = pattern.matcher(text);
