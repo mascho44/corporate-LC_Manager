@@ -31,7 +31,7 @@ class TenantMembershipSecurityTest {
  @MockitoBean AppUserRepository users;
  MockHttpSession session(boolean allowed){
   var user=new AppUser();user.setUsername("synthetic-user");user.setPasswordHash("synthetic-hash");user.setRole(UserRole.EDITOR);when(users.findByUsernameIgnoreCase(user.getUsername())).thenReturn(Optional.of(user));
-  var session=new MockHttpSession();session.setAttribute("SPRING_SECURITY_CONTEXT",new SecurityContextImpl(new UsernamePasswordAuthenticationToken(user.getUsername(),null,List.of(new SimpleGrantedAuthority(allowed?"PERM_USER_MANAGE":"PERM_LC_EDIT")))));session.setAttribute(CredentialSessionFilter.STAMP,CredentialStamp.of(user.getPasswordHash()));session.setAttribute(CredentialSessionFilter.AUTHENTICATED_AT,System.currentTimeMillis());return session;
+  var session=new MockHttpSession();session.setAttribute("SPRING_SECURITY_CONTEXT",new SecurityContextImpl(new UsernamePasswordAuthenticationToken(user.getUsername(),null,List.of(new SimpleGrantedAuthority(allowed?"PERM_USER_MANAGE":"PERM_LC_EDIT")))));session.setAttribute(CredentialSessionFilter.STAMP,CredentialStamp.of(user.getPasswordHash()));session.setAttribute(CredentialSessionFilter.AUTHORIZATION_STAMP,AuthorizationStamp.of(user));session.setAttribute(CredentialSessionFilter.AUTHENTICATED_AT,System.currentTimeMillis());return session;
  }
  @Test void anonymousAndOrdinaryUsersCannotReadMemberships()throws Exception{
   mvc.perform(get("/api/users/memberships")).andExpect(status().isUnauthorized());mvc.perform(get("/api/users/memberships").session(session(false))).andExpect(status().isForbidden());verifyNoInteractions(memberships,tenants);

@@ -11,6 +11,7 @@ import java.io.IOException;
 /** Revoke a session on its next request after a credential change or account removal. */
 public class CredentialSessionFilter extends OncePerRequestFilter {
     public static final String STAMP="LC_CREDENTIAL_STAMP";
+    public static final String AUTHORIZATION_STAMP="LC_AUTHORIZATION_STAMP";
     public static final String AUTHENTICATED_AT="LC_AUTHENTICATED_AT";
     private final AppUserRepository users;
     public CredentialSessionFilter(AppUserRepository users){this.users=users;}
@@ -25,7 +26,8 @@ public class CredentialSessionFilter extends OncePerRequestFilter {
             boolean valid=withinLifetime&&account!=null&&account.isActive()&&CredentialStamp.of(account.getPasswordHash()).equals(stamp)&&
                 (account.getRole()!=de.corporate.lc.user.domain.UserRole.ADMIN||account.isTotpEnabled())&&
                 de.corporate.lc.tenant.domain.Tenant.DEFAULT_ID.equals(account.getTenantId())&&
-                (account.getAssignedRole()==null||account.getTenantId().equals(account.getAssignedRole().getTenantId()));
+                (account.getAssignedRole()==null||account.getTenantId().equals(account.getAssignedRole().getTenantId()))&&
+                de.corporate.lc.user.service.AuthorizationStamp.of(account).equals(session.getAttribute(AUTHORIZATION_STAMP));
             if(!valid){if(session!=null)session.invalidate();SecurityContextHolder.clearContext();
                 if(request.getRequestURI().startsWith("/api/")){response.setStatus(401);response.setContentType("application/json");response.getWriter().write("{\"error\":\"Bitte erneut anmelden.\"}");}
                 else response.sendRedirect("/login.html");

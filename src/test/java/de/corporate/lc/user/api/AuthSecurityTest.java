@@ -28,6 +28,7 @@ class AuthSecurityTest {
         assertThat(((Map<?,?>)result.getBody()).containsKey("requiresTotpSetup")).isTrue();
         assertThat(request.getSession().getAttribute("SPRING_SECURITY_CONTEXT")).isNull();
         assertThat(request.getSession().getAttribute("TOTP_PENDING_SECRET")).isEqualTo("secret");
+        assertThat(request.getSession().getAttribute(de.corporate.lc.config.CredentialSessionFilter.AUTHORIZATION_STAMP)).isNull();
     }
     @Test void adminCompletesEnrollmentAndReceivesRecoveryCodes(){
         account("ADMIN");when(totp.setup("user")).thenReturn(new TotpService.Setup("secret","uri","qr"));
@@ -38,6 +39,12 @@ class AuthSecurityTest {
         assertThat(((Map<?,?>)result.getBody()).containsKey("recoveryCodes")).isTrue();
         assertThat(request.getSession().getAttribute("SPRING_SECURITY_CONTEXT")).isNotNull();
         assertThat(request.getSession().getAttribute("TOTP_PENDING_SECRET")).isNull();
+        assertThat(request.getSession().getAttribute(de.corporate.lc.config.CredentialSessionFilter.AUTHORIZATION_STAMP)).isEqualTo(AuthorizationStamp.of(details.loadUserByUsername("user").getAuthorities()));
+    }
+    @Test void passwordOnlyLoginStoresGrantedAuthorizationSnapshot(){
+        account("EDITOR");var request=new MockHttpServletRequest();
+        assertThat(controller.login(new AuthController.LoginRequest("user","password"),request,new MockHttpServletResponse()).getStatusCode().value()).isEqualTo(200);
+        assertThat(request.getSession().getAttribute(de.corporate.lc.config.CredentialSessionFilter.AUTHORIZATION_STAMP)).isEqualTo(AuthorizationStamp.of(details.loadUserByUsername("user").getAuthorities()));
     }
     @Test void expiredSecondFactorCannotAuthenticate(){
         var request=new MockHttpServletRequest();var session=request.getSession();

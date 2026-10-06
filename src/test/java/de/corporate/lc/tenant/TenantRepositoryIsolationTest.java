@@ -15,6 +15,13 @@ import static org.assertj.core.api.Assertions.*;
 @DataJpaTest(properties={"spring.flyway.enabled=false","spring.jpa.hibernate.ddl-auto=create-drop","spring.datasource.url=jdbc:h2:mem:tenantisolation;MODE=PostgreSQL;DB_CLOSE_DELAY=-1","spring.datasource.driver-class-name=org.h2.Driver"},showSql=false)
 @AutoConfigureTestDatabase(replace=AutoConfigureTestDatabase.Replace.NONE)
 class TenantRepositoryIsolationTest {
+ @Test void administratorCountUsesCurrentAssignedRoleAndTenant(){
+  var role=createRole("Synthetic inherited administrator");var user=createTenantUser("synthetic-count-user",role);
+  assertThat(users.countByRoleAndActiveTrue(UserRole.ADMIN)).isEqualTo(1);
+  role.setBaseRole(UserRole.VIEWER);roles.flush();assertThat(user.getRole()).isEqualTo(UserRole.VIEWER);assertThat(users.countByRoleAndActiveTrue(UserRole.ADMIN)).isZero();
+  try(var scope=TenantContext.open(foreignTenant)){createTenantUser("synthetic-foreign-admin",createRole("Synthetic foreign administrator"));}
+  assertThat(users.countByRoleAndActiveTrue(UserRole.ADMIN)).isZero();assertThat(users.countByAssignedRoleIdAndActiveTrue(role.getId())).isEqualTo(1);
+ }
  @Test void roleNamesAreIndependentAcrossTenants(){
   var own=createRole("Synthetic shared role");own.setPermissions(java.util.Set.of(UserPermission.USER_MANAGE));roles.flush();AppRole foreign;
   try(var scope=TenantContext.open(foreignTenant)){assertThat(roles.existsByNameIgnoreCase("SYNTHETIC SHARED ROLE")).isFalse();foreign=createRole("Synthetic shared role");foreign.setPermissions(java.util.Set.of(UserPermission.LC_EDIT));roles.flush();}

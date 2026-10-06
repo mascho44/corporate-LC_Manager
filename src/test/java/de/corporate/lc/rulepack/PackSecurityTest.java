@@ -38,7 +38,7 @@ class PackSecurityTest {
   var authentication=new UsernamePasswordAuthenticationToken(user.getUsername(),null,List.of(authority));
   var session=new MockHttpSession();session.setAttribute("SPRING_SECURITY_CONTEXT",new SecurityContextImpl(authentication));
   session.setAttribute(CredentialSessionFilter.STAMP,CredentialStamp.of(user.getPasswordHash()));
-  session.setAttribute(CredentialSessionFilter.AUTHENTICATED_AT,System.currentTimeMillis());return session;
+  session.setAttribute(CredentialSessionFilter.AUTHORIZATION_STAMP,AuthorizationStamp.of(user));session.setAttribute(CredentialSessionFilter.AUTHENTICATED_AT,System.currentTimeMillis());return session;
  }
  @Test void anonymousAndOrdinaryUserCannotManagePacks()throws Exception{
   mvc.perform(get("/api/settings/rule-packs")).andExpect(status().isUnauthorized());

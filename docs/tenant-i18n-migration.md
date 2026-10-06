@@ -501,3 +501,48 @@ There is no new SQL migration in this stage. Production is unchanged.
 Verification: the complete Java regression passed without failures/errors. All
 four job-runner tests passed in a subsequent targeted run including the final
 worker-thread test. Whitespace validation passed. Stages 16–18 remain local.
+
+## Stage 19: revoke stale session permissions
+
+Successful password/second-factor authentication stores a deterministic digest of
+the granted role authority and permission authorities in the verified session.
+Each subsequent authenticated request compares this snapshot against the current
+stored user role and effective role permissions before entering protected code.
+Changes invalidate the session rather than retaining stale authorities or silently
+upgrading a session. Missing snapshots also require a new login; therefore rollout
+requires existing users to authenticate again. Pending 2FA sessions do not receive
+an authorization snapshot before verification completes.
+
+The digest sorts and deduplicates authorities. It contains no credential material.
+Existing password, account activation, TOTP, lifetime and tenant checks remain.
+This uses the existing stored user role semantics; it does not redesign identities
+or enable tenant switching. No schema migration is required. Tests cover changed
+permissions, missing legacy snapshots, deterministic role/default permissions and
+snapshot creation after password-only login and completed 2FA. Production unchanged.
+
+Verification: the complete Java regression passed without failures/errors. The
+final authorization stamp, login/2FA and credential-session test suites were then
+rerun successfully after the additional assertions. Whitespace validation passed.
+
+## Stage 20: current assigned-role base type
+
+`AppUser.getRole()` now derives its effective base type from the assigned role,
+falling back to the legacy field only when no role is assigned. This avoids stale
+copied role types after custom-role edits. Login authorities, user views, session
+authorization snapshots and administrator TOTP checks use the same live value.
+Permissions continue to come from the assigned role rather than base-type defaults.
+
+Active-role counts use a left join and the same assigned-role/legacy fallback,
+within the current tenant. Custom-role demotion is rejected if its active users
+represent all remaining active administrators. Existing system-role restrictions
+remain unchanged. This guard follows the current transaction/count approach; it
+does not introduce serializable concurrent administrator-change enforcement.
+
+Tests cover inherited base-type changes, login authorities, authorization snapshot
+changes, mandatory administrator TOTP, tenant-scoped live counts and rejection of
+last-administrator demotion through a role. No SQL migration or tenant activation
+is introduced. Stages 19–20 remain local and not deployed.
+
+Verification: complete Java regression passed without failures/errors. The final
+role-inheritance tests were rerun successfully after adding the administrator
+TOTP assertion. Whitespace validation passed.
