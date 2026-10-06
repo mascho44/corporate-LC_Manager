@@ -1,6 +1,6 @@
 package de.corporate.lc.user.repository;
 import de.corporate.lc.user.domain.*; import org.springframework.data.jpa.repository.JpaRepository; import java.util.*;
-public interface AppUserRepository extends JpaRepository<AppUser,UUID>{
+public interface AppUserRepository extends de.corporate.lc.tenant.repository.TenantScopedRepository<AppUser,UUID>{
  // Global identity lookup is reserved for authentication/password reset; administration is scoped below.
  Optional<AppUser> findByUsernameIgnoreCase(String username);boolean existsByUsernameIgnoreCase(String username);
  @org.springframework.data.jpa.repository.Query("select count(u) from AppUser u where u.role=:role and u.active=true and u.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()}")

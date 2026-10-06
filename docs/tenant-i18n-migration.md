@@ -339,3 +339,70 @@ scoped multi-ID/all-record deletion, blocked batch/example/fluent APIs, integer
 and composite identities, scheduled outbox scope restoration on success/failure,
 and asynchronous inbox dispatch without caller-context leakage. Existing OCR
 lease recovery and claimed-tenant propagation tests remain passing.
+
+## Access isolation stage 12: user and role administration boundaries
+
+User and role repositories now inherit the guarded standard repository APIs,
+including scoped counts, pages, multi-ID reads and lifecycle-aware deletion.
+Global username lookup and the locked identity lookup for password reset remain
+explicit authentication boundaries; username uniqueness remains global. Initial
+administrator detection now counts users in the bootstrap tenant rather than
+unrelated tenants. Existing role ownership and same-tenant assignment checks
+remain in place.
+
+Profile/avatar access, password changes, TOTP settings/login verification and
+language preferences validate the identity's owner before sensitive access.
+TOTP setup also resolves and validates the user before creating a setup secret.
+While non-default tenants remain disabled for login, reset requests for such
+identities produce no token, audit event or outgoing mail; reset completion for
+such an identity is rejected before credentials are changed or tokens consumed.
+Existing default-tenant authentication and reset flows remain unchanged.
+
+This is boundary hardening, not membership provisioning or tenant switching.
+The bootstrap gate, global identity uniqueness and existing single-tenant user
+ownership remain. Avatar/token repositories retain their identity-parent boundary;
+they are not tenant-wide administration APIs. No SQL migration or production
+change was made in this stage. Memberships, tenant provisioning and multi-tenant
+job routing still require their own implementation and release review.
+
+Verification: the complete regression ran 331 Java tests without failures or
+errors (two skipped), plus 30 passing JavaScript tests. The isolation test class
+was rerun successfully after adding reset-completion rejection coverage.
+Negative tests cover standard user/role reads and foreign-ID deletion, profile
+and avatar access, password/TOTP operations without crypto/avatar interaction,
+and blocked reset requests/completion without mail, credential or token mutation.
+
+## Access isolation stage 13: membership compatibility foundation
+
+V60 introduces `tenant_membership`: a stable membership ID, tenant/user pair,
+same-tenant role link and activation status. Existing users are backfilled without
+changing their roles or active state. A PostgreSQL trigger synchronously mirrors
+user creation and role/activation updates; user deletion cascades to membership.
+User administration remains the sole write authority during this compatibility
+stage. Direct membership insert/update/delete/truncate is blocked, while nested
+user-trigger writes and FK cascades remain allowed. Membership identity is unique
+per tenant/user; this does not grant permission to add another tenant.
+
+The immutable entity and scoped repository expose an internal read model only.
+`TenantMembershipService` returns a redacted view with current role permissions,
+not credential hashes, TOTP secrets or raw user entities. It checks membership,
+role and legacy user ownership. Permissions are read from the role, not copied
+into membership, so later role-permission changes are reflected automatically.
+
+Authentication still uses the existing user/role path. No management/switching
+endpoint or new UI has been enabled. The compatibility model deliberately retains
+legacy single-tenant user ownership; multi-tenant identity memberships and their
+provisioning require an explicit subsequent migration, authorization design and
+release review. The `tenant_bootstrap_single` constraint remains unchanged.
+
+Isolated PostgreSQL 17 migrations through V60 preserved active/inactive users,
+synchronized new users and role/activation changes, and retained deletion cascades.
+Direct insert/update/delete/truncate was rejected; a foreign role link was rejected
+by the composite membership FK, and the second-tenant bootstrap gate was verified.
+The additional tenant and temporary guard changes were confined to the disposable
+test database, which was removed. Production was not changed.
+
+Verification: the final complete regression ran 333 Java tests without failures
+or errors (two skipped), and all 30 JavaScript tests passed. Membership tests
+cover foreign IDs/users/lists/page counts, role-permission inheritance including
+subsequent changes, and rejection of direct read-model deletion.

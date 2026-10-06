@@ -18,6 +18,8 @@ class TenantRepositoryIsolationTest {
  @Autowired LetterOfCreditRepository lcs;
  @Autowired AppRoleRepository roles;
  @Autowired AppUserRepository users;
+ @Autowired de.corporate.lc.tenant.repository.TenantMembershipRepository memberships;
+ @Autowired jakarta.persistence.EntityManager entityManager;
  @Autowired de.corporate.lc.document.repository.DocumentInboxRepository inbox;
  @Autowired de.corporate.lc.document.repository.LcDocumentRepository documents;
  @Autowired de.corporate.lc.training.repository.TrainingSessionRepository training;
@@ -41,6 +43,41 @@ class TenantRepositoryIsolationTest {
  @Autowired de.corporate.lc.document.repository.DocumentComparisonRepository comparisons;
  @Autowired de.corporate.lc.email.repository.EmailDeliveryRepository deliveries;
  final UUID foreignTenant=UUID.fromString("00000000-0000-0000-0000-000000000099");
+ UUID seedMembership(AppUser user,AppRole role,UUID tenantId){var id=UUID.randomUUID();entityManager.createNativeQuery("insert into tenant_membership(id,tenant_id,user_id,role_id,active) values(:id,:tenant,:user,:role,true)").setParameter("id",id).setParameter("tenant",tenantId).setParameter("user",user.getId()).setParameter("role",role.getId()).executeUpdate();return id;}
+ @Test void membershipsExposeOnlyCurrentTenantAndInheritRolePermissions(){
+  var ownRole=createRole("Own membership role");ownRole.setPermissions(java.util.Set.of(UserPermission.USER_MANAGE));roles.flush();var own=createTenantUser("own-membership",ownRole);var ownId=seedMembership(own,ownRole,Tenant.DEFAULT_ID);
+  AppUser foreign;UUID foreignId;try(var scope=TenantContext.open(foreignTenant)){var role=createRole("Foreign membership role");foreign=createTenantUser("foreign-membership",role);foreignId=seedMembership(foreign,role,foreignTenant);}
+  var service=new de.corporate.lc.tenant.service.TenantMembershipService(memberships);assertThat(service.list()).hasSize(1);assertThat(service.forUser(own.getId()).orElseThrow().permissions()).containsExactly(UserPermission.USER_MANAGE);assertThat(service.forUser(foreign.getId())).isEmpty();assertThat(memberships.findById(foreignId)).isEmpty();assertThat(memberships.findAllById(java.util.List.of(ownId,foreignId))).hasSize(1);assertThat(memberships.findAll(org.springframework.data.domain.PageRequest.of(0,1)).getTotalElements()).isEqualTo(1);
+  ownRole.setPermissions(java.util.Set.of(UserPermission.AUDIT_VIEW));roles.flush();assertThat(service.forUser(own.getId()).orElseThrow().permissions()).containsExactly(UserPermission.AUDIT_VIEW);
+ }
+ @Test void membershipCannotBeDeletedThroughTheReadModel(){
+  var role=createRole("Read-only membership");var user=createTenantUser("readonly-membership",role);var id=seedMembership(user,role,Tenant.DEFAULT_ID);
+  assertThatThrownBy(()->{memberships.deleteById(id);memberships.flush();}).satisfies(error->{Throwable root=error;while(root.getCause()!=null)root=root.getCause();assertThat(root).isInstanceOf(AccessDeniedException.class);});
+ }
+ AppUser createTenantUser(String name,AppRole role){var u=new AppUser();u.setUsername(name);u.setDisplayName("Synthetic user");u.setPasswordHash("synthetic-hash");u.setAssignedRole(role);return users.saveAndFlush(u);}
+ @Test void standardUserAndRoleReadsAndDeletionAreTenantScoped(){
+  var ownRole=createRole("Own identity role");var own=createTenantUser("own-identity",ownRole);AppRole foreignRole;AppUser foreign;
+  try(var scope=TenantContext.open(foreignTenant)){foreignRole=createRole("Foreign identity role");foreign=createTenantUser("foreign-identity",foreignRole);}
+  assertThat(users.findAll()).extracting(AppUser::getId).containsExactly(own.getId());assertThat(users.count()).isEqualTo(1);assertThat(users.findAll(org.springframework.data.domain.PageRequest.of(0,1)).getTotalElements()).isEqualTo(1);
+  assertThat(users.findAllById(java.util.List.of(own.getId(),foreign.getId()))).hasSize(1);assertThat(users.existsById(foreign.getId())).isFalse();assertThat(roles.count()).isEqualTo(1);assertThat(roles.findAllById(java.util.List.of(ownRole.getId(),foreignRole.getId()))).hasSize(1);
+  users.deleteAllById(java.util.List.of(foreign.getId()));roles.deleteAllById(java.util.List.of(foreignRole.getId()));users.flush();roles.flush();
+  try(var scope=TenantContext.open(foreignTenant)){assertThat(users.findById(foreign.getId())).isPresent();assertThat(roles.findById(foreignRole.getId())).isPresent();}
+  assertThat(users.findByUsernameIgnoreCase("foreign-identity")).isPresent();
+ }
+ @Test void profilePasswordAndTotpRejectForeignIdentityBeforeSensitiveAccess(){
+  AppUser foreign;try(var scope=TenantContext.open(foreignTenant)){foreign=createTenantUser("foreign-profile",createRole("Foreign profile role"));}
+  var avatars=org.mockito.Mockito.mock(de.corporate.lc.user.repository.UserAvatarRepository.class);var profile=new de.corporate.lc.user.service.ProfileService(users,avatars);var encoder=org.mockito.Mockito.mock(org.springframework.security.crypto.password.PasswordEncoder.class);
+  assertThatThrownBy(()->profile.profile(foreign.getUsername())).isInstanceOf(AccessDeniedException.class);assertThatThrownBy(()->profile.avatar(foreign.getUsername())).isInstanceOf(AccessDeniedException.class);assertThatThrownBy(()->profile.deleteAvatar(foreign.getUsername())).isInstanceOf(AccessDeniedException.class);org.mockito.Mockito.verifyNoInteractions(avatars);
+  var service=new de.corporate.lc.user.service.UserService(users,roles,encoder);assertThatThrownBy(()->service.changePassword(foreign.getUsername(),"old","NewPassword123")).isInstanceOf(AccessDeniedException.class);
+  var totp=new de.corporate.lc.user.service.TotpService(users,encoder,"");assertThatThrownBy(()->totp.enabled(foreign.getUsername())).isInstanceOf(AccessDeniedException.class);assertThatThrownBy(()->totp.setup(foreign.getUsername())).isInstanceOf(AccessDeniedException.class);assertThatThrownBy(()->totp.verifyLogin(foreign.getUsername(),"123456")).isInstanceOf(AccessDeniedException.class);org.mockito.Mockito.verifyNoInteractions(encoder);
+ }
+ @Test void disabledTenantPasswordResetCreatesNoTokenOrMail(){
+  AppUser foreign;try(var scope=TenantContext.open(foreignTenant)){foreign=createTenantUser("foreign-reset",createRole("Foreign reset role"));foreign.setEmail("recipient@example.invalid");users.flush();}
+  var tokens=org.mockito.Mockito.mock(de.corporate.lc.user.repository.PasswordResetTokenRepository.class);var mail=org.mockito.Mockito.mock(org.springframework.mail.javamail.JavaMailSender.class);var audit=org.mockito.Mockito.mock(de.corporate.lc.audit.service.AuditService.class);var encoder=org.mockito.Mockito.mock(org.springframework.security.crypto.password.PasswordEncoder.class);
+  var reset=new de.corporate.lc.user.service.PasswordResetService(users,tokens,encoder,mail,audit,true,"sender@example.invalid","https://example.invalid");reset.request(foreign.getUsername(),foreign.getEmail());org.mockito.Mockito.verifyNoInteractions(tokens,mail,audit,encoder);
+  var saved=new de.corporate.lc.user.domain.PasswordResetToken("synthetic-hash",foreign.getId(),"synthetic-stamp",foreign.getEmail(),java.time.Instant.now().plusSeconds(600));org.mockito.Mockito.when(tokens.findById(org.mockito.ArgumentMatchers.anyString())).thenReturn(java.util.Optional.of(saved));
+  assertThatThrownBy(()->reset.complete("A".repeat(43),"NewPassword123")).isInstanceOf(IllegalArgumentException.class);org.mockito.Mockito.verify(tokens,org.mockito.Mockito.never()).existsById(org.mockito.ArgumentMatchers.anyString());org.mockito.Mockito.verify(tokens,org.mockito.Mockito.never()).deleteForUser(org.mockito.ArgumentMatchers.any());org.mockito.Mockito.verifyNoInteractions(mail,audit,encoder);
+ }
  void createLearningControl(String ruleId,boolean active){var control=new de.corporate.lc.training.domain.TrainingLearningControl();control.setRuleId(ruleId);control.setActive(active);learningControls.saveAndFlush(control);}
  @Test void standardDocumentReadsPagesAndReferencesAreTenantScoped(){
   var own=createDocument(createLc("OWN-STANDARD-READ"));de.corporate.lc.document.domain.LcDocument foreign;
