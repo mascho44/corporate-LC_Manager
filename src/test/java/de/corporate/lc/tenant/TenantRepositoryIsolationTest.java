@@ -31,7 +31,60 @@ class TenantRepositoryIsolationTest {
  @Autowired de.corporate.lc.charges.ChargeEstimateRepository chargeEstimates;
  @Autowired de.corporate.lc.rulepack.PackVersionRepository packVersions;
  @Autowired de.corporate.lc.rulepack.PackSelectionRepository packSelections;
+ @Autowired de.corporate.lc.lc.repository.LcNoteRepository notes;
+ @Autowired de.corporate.lc.lc.repository.LcTaskRepository tasks;
+ @Autowired de.corporate.lc.lc.repository.AmendmentRepository amendments;
+ @Autowired de.corporate.lc.check.repository.DocumentCheckDecisionRepository decisions;
+ @Autowired de.corporate.lc.check.repository.LcRequirementMappingRepository mappings;
+ @Autowired de.corporate.lc.document.repository.DocumentDraftRepository drafts;
+ @Autowired de.corporate.lc.document.repository.DocumentApprovalThresholdRepository approvalThresholds;
  final UUID foreignTenant=UUID.fromString("00000000-0000-0000-0000-000000000099");
+ de.corporate.lc.document.domain.DocumentDraft createDraft(LetterOfCredit lc){var d=new de.corporate.lc.document.domain.DocumentDraft();d.setLcId(lc.getId());d.setDocumentType(de.corporate.lc.document.domain.DocumentType.COMMERCIAL_INVOICE);d.setDocumentNumber("SYNTHETIC-1");d.setDataJson("{}");d.setCreatedBy("synthetic-user");d.setUpdatedBy("synthetic-user");return drafts.saveAndFlush(d);}
+ de.corporate.lc.document.domain.DocumentApprovalThreshold createThreshold(int approvals){var t=new de.corporate.lc.document.domain.DocumentApprovalThreshold();t.setCurrency("EUR");t.setMinimumAmount(java.math.BigDecimal.ZERO);t.setRequiredApprovals(approvals);return approvalThresholds.saveAndFlush(t);}
+ @Test void foreignDraftCannotBeViewedChangedDeletedOrApproved(){
+  var own=createDraft(createLc("OWN-DRAFT"));LetterOfCredit foreignLc;de.corporate.lc.document.domain.DocumentDraft foreign;
+  try(var scope=TenantContext.open(foreignTenant)){foreignLc=createLc("FOREIGN-DRAFT");foreign=createDraft(foreignLc);}
+  assertThat(drafts.findById(foreign.getId())).isEmpty();assertThat(drafts.findByLcIdOrderByUpdatedAtDesc(foreignLc.getId())).isEmpty();assertThat(drafts.findAll()).extracting(de.corporate.lc.document.domain.DocumentDraft::getId).containsExactly(own.getId());
+  var service=new de.corporate.lc.document.service.DocumentDraftService(drafts,lcs,new com.fasterxml.jackson.databind.ObjectMapper(),null,new de.corporate.lc.document.service.DocumentApprovalPolicyService(approvalThresholds));
+  assertThatThrownBy(()->service.list(foreignLc.getId())).isInstanceOf(java.util.NoSuchElementException.class);
+  assertThatThrownBy(()->service.update(foreignLc.getId(),foreign.getId(),null,"synthetic-user")).isInstanceOf(java.util.NoSuchElementException.class);
+  assertThatThrownBy(()->service.status(foreignLc.getId(),foreign.getId(),de.corporate.lc.document.domain.DocumentDraftStatus.SUBMITTED,"synthetic-user")).isInstanceOf(java.util.NoSuchElementException.class);
+  assertThatThrownBy(()->service.status(foreignLc.getId(),foreign.getId(),de.corporate.lc.document.domain.DocumentDraftStatus.FINAL,"synthetic-approver")).isInstanceOf(java.util.NoSuchElementException.class);
+  assertThatThrownBy(()->service.delete(foreignLc.getId(),foreign.getId())).isInstanceOf(java.util.NoSuchElementException.class);
+ }
+ @Test void replacingApprovalThresholdsOnlyChangesCurrentTenant(){
+  createThreshold(2);de.corporate.lc.document.domain.DocumentApprovalThreshold foreign;
+  try(var scope=TenantContext.open(foreignTenant)){foreign=createThreshold(5);}
+  var policy=new de.corporate.lc.document.service.DocumentApprovalPolicyService(approvalThresholds);
+  assertThat(policy.requiredApprovals(java.math.BigDecimal.TEN,"EUR")).isEqualTo(2);assertThat(approvalThresholds.findById(foreign.getId())).isEmpty();
+  policy.replace(java.util.List.of(new de.corporate.lc.document.api.ApprovalThresholdRequest("EUR",java.math.BigDecimal.ZERO,3)));approvalThresholds.flush();
+  assertThat(policy.all()).hasSize(1);assertThat(policy.requiredApprovals(java.math.BigDecimal.TEN,"EUR")).isEqualTo(3);
+  try(var scope=TenantContext.open(foreignTenant)){assertThat(approvalThresholds.findById(foreign.getId())).isPresent();assertThat(policy.requiredApprovals(java.math.BigDecimal.TEN,"EUR")).isEqualTo(5);}
+ }
+ record Children(de.corporate.lc.lc.domain.LcNote note,de.corporate.lc.lc.domain.LcTask task,de.corporate.lc.lc.domain.Amendment amendment,de.corporate.lc.check.domain.DocumentCheckDecision decision,de.corporate.lc.check.domain.LcRequirementMapping mapping){}
+ Children createChildren(LetterOfCredit lc){
+  var n=new de.corporate.lc.lc.domain.LcNote();n.setLetterOfCreditId(lc.getId());n.setUsername("synthetic-user");n.setContent("Synthetic note");notes.saveAndFlush(n);
+  var t=new de.corporate.lc.lc.domain.LcTask();t.setLetterOfCreditId(lc.getId());t.setTitle("Synthetic task");t.setCreatedBy("synthetic-user");tasks.saveAndFlush(t);
+  var a=new de.corporate.lc.lc.domain.Amendment();a.setLetterOfCredit(lc);a.setAmendmentNumber("1");amendments.saveAndFlush(a);
+  var d=new de.corporate.lc.check.domain.DocumentCheckDecision();d.setLcId(lc.getId());d.setFindingCode("SYNTHETIC");d.setFindingFingerprint("synthetic-fingerprint");d.setDecision("ACCEPTED");d.setReviewedBy("synthetic-user");decisions.saveAndFlush(d);
+  var m=new de.corporate.lc.check.domain.LcRequirementMapping();m.setLcId(lc.getId());m.setRequirement("Synthetic invoice");m.setDocumentType(de.corporate.lc.document.domain.DocumentType.COMMERCIAL_INVOICE);m.setMappedBy("synthetic-user");mappings.saveAndFlush(m);
+  return new Children(n,t,a,d,m);
+ }
+ @Test void caseChildrenAndWorkQueueDoNotRevealForeignRecords(){
+  var ownLc=createLc("OWN-CHILDREN");var own=createChildren(ownLc);LetterOfCredit foreignLc;Children foreign;
+  try(var scope=TenantContext.open(foreignTenant)){foreignLc=createLc("FOREIGN-CHILDREN");foreign=createChildren(foreignLc);}
+  assertThat(notes.findTop100ByLetterOfCreditIdOrderByCreatedAtDesc(foreignLc.getId())).isEmpty();assertThat(notes.findById(foreign.note().getId())).isEmpty();assertThat(notes.findAll()).hasSize(1);
+  assertThat(tasks.findByLetterOfCreditIdOrderByCompletedAscDueDateAscCreatedAtDesc(foreignLc.getId())).isEmpty();assertThat(tasks.findById(foreign.task().getId())).isEmpty();assertThat(tasks.findByCompletedFalseOrderByDueDateAscCreatedAtAsc()).extracting(de.corporate.lc.lc.domain.LcTask::getId).containsExactly(own.task().getId());
+  assertThat(amendments.findByLetterOfCreditIdOrderByImportedAtDesc(foreignLc.getId())).isEmpty();assertThat(amendments.findById(foreign.amendment().getId())).isEmpty();assertThat(amendments.existsByLetterOfCreditIdAndAmendmentNumber(foreignLc.getId(),"1")).isFalse();assertThat(amendments.existsByLetterOfCreditIdAndAmendmentNumber(ownLc.getId(),"1")).isTrue();
+  assertThat(decisions.findByLcId(foreignLc.getId())).isEmpty();assertThat(decisions.findById(foreign.decision().getId())).isEmpty();assertThat(decisions.findByLcIdAndFindingCodeAndDocumentNameAndFindingFingerprint(foreignLc.getId(),"SYNTHETIC","","synthetic-fingerprint")).isEmpty();
+  assertThat(mappings.findByLcIdOrderByMappedAtDesc(foreignLc.getId())).isEmpty();assertThat(mappings.findByLcIdAndRequirement(foreignLc.getId(),"Synthetic invoice")).isEmpty();assertThat(mappings.findById(foreign.mapping().getId())).isEmpty();
+  decisions.deleteAllByLcId(foreignLc.getId());decisions.flush();
+  try(var scope=TenantContext.open(foreignTenant)){assertThat(decisions.findById(foreign.decision().getId())).isPresent();assertThat(tasks.findById(own.task().getId())).isEmpty();}
+ }
+ @Test void loadedForeignCaseChildCannotBeChanged(){
+  Children foreign;try(var scope=TenantContext.open(foreignTenant)){foreign=createChildren(createLc("FOREIGN-CHILD-WRITE"));}
+  foreign.task().setTitle("Forbidden change");assertThatThrownBy(()->tasks.saveAndFlush(foreign.task())).satisfies(error->{Throwable root=error;while(root.getCause()!=null)root=root.getCause();assertThat(root).isInstanceOf(AccessDeniedException.class);});
+ }
  de.corporate.lc.rulepack.StoredPackVersion createPackVersion(String packId){var v=new de.corporate.lc.rulepack.StoredPackVersion();v.packId=packId;v.version="1.0";v.definitionJson="{}";v.checksum="synthetic";v.testsPassed=true;v.importedBy="synthetic-user";return packVersions.saveAndFlush(v);}
  de.corporate.lc.rulepack.PackSelection createSelection(de.corporate.lc.rulepack.StoredPackVersion version){var s=new de.corporate.lc.rulepack.PackSelection();s.id=version.packId;s.activeVersionId=version.id;return packSelections.saveAndFlush(s);}
  @Test void packVersionsIdsAndActivationLocksAreTenantLocal(){

@@ -6,7 +6,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "document_draft")
-public class DocumentDraft {
+public class DocumentDraft extends de.corporate.lc.tenant.domain.TenantOwnedEntity {
     @Id @GeneratedValue(strategy = GenerationType.UUID) private UUID id;
     @Column(name = "lc_id", nullable = false) private UUID lcId;
     @Enumerated(EnumType.STRING) @Column(nullable = false) private DocumentType documentType;
