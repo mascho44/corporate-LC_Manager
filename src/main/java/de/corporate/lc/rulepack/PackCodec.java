@@ -9,6 +9,8 @@ import java.util.*;
 @Component
 public class PackCodec {
  public static final int MAX_BYTES=512*1024;
+ public static final int MAX_RULES=50;
+ public static final int MAX_TESTS=300;
  private final ObjectMapper json;
  public PackCodec(ObjectMapper mapper){json=mapper.copy().enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
   .enable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION);}
@@ -46,8 +48,8 @@ public class PackCodec {
   token(p.version(),"[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}","Pack-Version");
   text(p.name(),100,"Name");text(p.license(),100,"Lizenz");text(p.rightsStatement(),500,"Rechteerklärung");
   if(!"OWN_INTERNAL".equals(p.origin())&&!"ICC_LICENSED".equals(p.origin()))bad("Herkunft muss OWN_INTERNAL oder ICC_LICENSED sein.");
-  if(p.rules()==null||p.rules().isEmpty()||p.rules().size()>25)bad("1 bis 25 Regeln erforderlich.");
-  if(p.tests()==null||p.tests().isEmpty()||p.tests().size()>150)bad("1 bis 150 synthetische Testfälle erforderlich.");
+  if(p.rules()==null||p.rules().isEmpty()||p.rules().size()>MAX_RULES)bad("1 bis "+MAX_RULES+" Regeln erforderlich.");
+  if(p.tests()==null||p.tests().isEmpty()||p.tests().size()>MAX_TESTS)bad("1 bis "+MAX_TESTS+" synthetische Testfälle erforderlich.");
   var ids=new HashSet<String>();
   for(var r:p.rules()){
    if(r==null)bad("Leere Regel.");

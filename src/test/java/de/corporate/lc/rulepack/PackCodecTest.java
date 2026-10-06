@@ -38,6 +38,20 @@ class PackCodecTest {
   assertThatThrownBy(()->codec.parse(source.replace("LC_AMOUNT","LC_CURRENCY").getBytes(StandardCharsets.UTF_8))).isInstanceOf(IllegalArgumentException.class);
   assertThatThrownBy(()->codec.parse(source.replace("\"expected\":\"FAIL\"","\"expected\":\"PASS\"").getBytes(StandardCharsets.UTF_8))).isInstanceOf(IllegalArgumentException.class);
  }
+ @Test void largerPacksRemainBoundedAndRequireCoverageForEveryRule()throws Exception{
+  var original=codec.parse(example());var prototype=original.rules().get(0);
+  var rules=new ArrayList<Rule>();var tests=new ArrayList<TestCase>();
+  for(int i=0;i<PackCodec.MAX_RULES;i++){
+   var id="own-rule-"+i;rules.add(new Rule(id,prototype.version(),prototype.documentType(),prototype.left(),prototype.operator(),prototype.right(),prototype.severity(),prototype.message(),prototype.sourceReference()));
+   for(var t:original.tests())tests.add(new TestCase(id+" "+t.name(),id,t.left(),t.right(),t.expected()));
+  }
+  var pack=new PackDefinition(1,original.packId(),original.version(),original.name(),original.origin(),original.license(),original.rightsStatement(),rules,tests);
+  codec.validate(pack);assertThat(PackEvaluator.test(pack)).allMatch(PackEvaluator.TestResult::passed);
+  rules.add(new Rule("own-extra",prototype.version(),prototype.documentType(),prototype.left(),prototype.operator(),prototype.right(),prototype.severity(),prototype.message(),prototype.sourceReference()));
+  assertThatThrownBy(()->codec.validate(pack)).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("50 Regeln");rules.remove(rules.size()-1);
+  var tooMany=new ArrayList<TestCase>();for(int i=0;i<=PackCodec.MAX_TESTS;i++)tooMany.add(tests.get(0));
+  assertThatThrownBy(()->codec.validate(new PackDefinition(1,original.packId(),original.version(),original.name(),original.origin(),original.license(),original.rightsStatement(),rules,tooMany))).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("300 synthetische");
+ }
  @Test void invalidNumbersAndDatesCannotProduceSuccess()throws Exception{
   var r=codec.parse(example()).rules().get(0);
   for(String invalid:List.of("NaN","Infinity","1e100000","9999999999999999999999999999999","1,20","")){
