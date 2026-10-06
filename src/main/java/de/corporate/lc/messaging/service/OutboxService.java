@@ -44,9 +44,9 @@ public class OutboxService {
 
     @Scheduled(fixedDelayString = "${app.messaging.outbox-interval-ms:5000}")
     public void dispatch() {
-        try (var scope = de.corporate.lc.tenant.domain.TenantContext.open(de.corporate.lc.tenant.domain.Tenant.DEFAULT_ID)) {
+        de.corporate.lc.tenant.service.TenantJobRunner.run(de.corporate.lc.tenant.domain.Tenant.DEFAULT_ID, () -> {
         for (OutboxMessage message : repo.findTop50ByStatusAndNextAttemptAtLessThanEqualOrderByCreatedAt("PENDING", LocalDateTime.now())) publish(message);
-        }
+        });
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)

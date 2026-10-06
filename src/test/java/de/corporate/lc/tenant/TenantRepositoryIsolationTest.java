@@ -15,6 +15,23 @@ import static org.assertj.core.api.Assertions.*;
 @DataJpaTest(properties={"spring.flyway.enabled=false","spring.jpa.hibernate.ddl-auto=create-drop","spring.datasource.url=jdbc:h2:mem:tenantisolation;MODE=PostgreSQL;DB_CLOSE_DELAY=-1","spring.datasource.driver-class-name=org.h2.Driver"},showSql=false)
 @AutoConfigureTestDatabase(replace=AutoConfigureTestDatabase.Replace.NONE)
 class TenantRepositoryIsolationTest {
+ @Test void roleNamesAreIndependentAcrossTenants(){
+  var own=createRole("Synthetic shared role");own.setPermissions(java.util.Set.of(UserPermission.USER_MANAGE));roles.flush();AppRole foreign;
+  try(var scope=TenantContext.open(foreignTenant)){assertThat(roles.existsByNameIgnoreCase("SYNTHETIC SHARED ROLE")).isFalse();foreign=createRole("Synthetic shared role");foreign.setPermissions(java.util.Set.of(UserPermission.LC_EDIT));roles.flush();}
+  assertThat(roles.existsByNameIgnoreCase("SYNTHETIC SHARED ROLE")).isTrue();assertThat(roles.findById(own.getId())).get().extracting(AppRole::getPermissions).isEqualTo(java.util.Set.of(UserPermission.USER_MANAGE));assertThat(roles.findById(foreign.getId())).isEmpty();
+ }
+ @Test void duplicateRoleNameWithinTenantIsRejected(){
+  createRole("Synthetic duplicate role");assertThatThrownBy(()->createRole("Synthetic duplicate role")).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+ }
+ @Test void sameReferenceInDifferentTenantsIsAllowedAndLookupIsScoped(){
+  var own=createLc("SHARED-SYNTHETIC-REFERENCE");LetterOfCredit foreign;
+  try(var scope=TenantContext.open(foreignTenant)){foreign=createLc("SHARED-SYNTHETIC-REFERENCE");assertThat(lcs.findByReference("SHARED-SYNTHETIC-REFERENCE")).get().extracting(LetterOfCredit::getId).isEqualTo(foreign.getId());}
+  assertThat(lcs.findByReference("SHARED-SYNTHETIC-REFERENCE")).get().extracting(LetterOfCredit::getId).isEqualTo(own.getId());
+ }
+ @Test void duplicateReferenceWithinTenantIsRejectedByDatabase(){
+  createLc("DUPLICATE-SYNTHETIC-REFERENCE");
+  assertThatThrownBy(()->createLc("DUPLICATE-SYNTHETIC-REFERENCE")).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+ }
  @Autowired LetterOfCreditRepository lcs;
  @Autowired AppRoleRepository roles;
  @Autowired AppUserRepository users;
