@@ -11,6 +11,7 @@ public class LetterOfCredit {
  @ElementCollection @CollectionTable(name="lc_condition",joinColumns=@JoinColumn(name="lc_id"))
  @MapKeyEnumerated(EnumType.STRING) @MapKeyColumn(name="condition_name",length=100)
  @Column(name="condition_value",columnDefinition="text") private Map<LcCondition,String> conditions=new EnumMap<>(LcCondition.class);
+ @com.fasterxml.jackson.annotation.JsonIgnore
  public Map<LcCondition,String> getConditions(){return conditions;}
  public void setConditions(Map<LcCondition,String> values){conditions=new EnumMap<>(LcCondition.class);if(values!=null)conditions.putAll(values);}
  private String ownBankReference;
