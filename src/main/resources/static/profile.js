@@ -27,6 +27,7 @@ function setupAvatarUi(){
     const section=document.createElement('section');section.id='profileSection';section.className='panel hidden';
     section.innerHTML='<div class="panelhead"><div><h2>Mein Profil</h2><p>Persönliche Angaben und Profilbild verwalten.</p></div></div><div class="profile-layout"><div class="profile-picture-card"><div id="profileAvatar" class="user-avatar profile-avatar"></div><form id="profileAvatarForm"><label>Profilbild auswählen<input name="file" type="file" accept="image/png,image/jpeg,.png,.jpg,.jpeg" required></label><small>PNG oder JPEG bis 5 MB. Das Bild wird mittig quadratisch zugeschnitten.</small><button type="submit">Profilbild hochladen</button></form><button type="button" id="removeProfileAvatar" class="secondary">Profilbild entfernen</button></div><div><p id="profileEmailNotice" role="status">Bitte hinterlegen Sie Ihre E-Mail-Adresse. Sie ist beim Speichern des Profils erforderlich.</p><form id="profileForm"><label>Anzeigename<input name="displayName" required maxlength="255" autocomplete="name"></label><label>E-Mail<input name="email" type="email" required maxlength="255" autocomplete="email"></label><dl class="profile-facts"><dt>Benutzername</dt><dd id="profileUsername"></dd><dt>Rolle</dt><dd id="profileRole"></dd></dl><button type="submit">Profil speichern</button></form><div class="profile-security"><h3>Anmeldung und Sicherheit</h3><button type="button" id="profilePassword" class="secondary">Passwort verwalten</button><button type="button" id="profileTotp" class="secondary">Zwei-Faktor-Anmeldung</button></div></div></div><div id="profileMessage" class="profile-message" role="status" aria-live="polite"></div>';
     $('#monitoringSection').before(section);
+    setupLanguagePreferences(section);
     for(const id of ['appNavPassword','appNavTotp','appNavLogout','logoutBtn'])$('#'+id)?.classList.add('account-action-relocated');
     const toggle=$('#avatarToggle'),menu=$('#avatarMenu');
     const openMenu=()=>{menu.classList.remove('hidden');toggle.setAttribute('aria-expanded','true');};
@@ -46,4 +47,16 @@ function setupAvatarUi(){
     auditLabels.USER_PROFILE_UPDATED='Eigenes Profil geändert';auditLabels.USER_AVATAR_UPDATED='Profilbild geändert';auditLabels.USER_AVATAR_DELETED='Profilbild entfernt';
     renderOwnProfile({username:currentUser.username,displayName:currentUser.displayName||currentUser.username,roleName:currentUser.role,totpEnabled:currentUser.totpEnabled,avatarUrl:null});
     loadOwnProfile();
+}
+function setupLanguagePreferences(section){
+    if(!globalThis.LcI18n)return;
+    const form=document.createElement('form');form.className='profile-language';
+    form.innerHTML='<label><span data-i18n="language.title">Language</span><select name="language"><option value="" data-i18n="language.tenantDefault">Use tenant default</option><option value="en">English</option><option value="de">Deutsch</option></select></label><button type="submit" data-i18n="language.save">Save language</button><small data-i18n="language.note"></small><p role="status"></p>';
+    section.querySelector('#profileForm').after(form);
+    const apply=async preference=>{form.elements.language.value=preference.preferredLanguage||'';await LcI18n.setLanguage(preference.language);};
+    json('/api/profile/language').then(apply).catch(error=>{form.querySelector('p').textContent=error.message;});
+    form.onsubmit=async event=>{event.preventDefault();const button=form.querySelector('button');button.disabled=true;
+        try{await apply(await json('/api/profile/language',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({language:form.elements.language.value||null})}));form.querySelector('p').textContent=LcI18n.t('language.saved');}
+        catch(error){form.querySelector('p').textContent=error.message;}finally{button.disabled=false;}
+    };
 }
