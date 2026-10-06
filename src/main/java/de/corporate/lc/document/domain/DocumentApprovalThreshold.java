@@ -6,8 +6,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "document_approval_threshold", uniqueConstraints =
-        @UniqueConstraint(columnNames = {"currency", "minimum_amount"}))
-public class DocumentApprovalThreshold {
+        @UniqueConstraint(columnNames = {"tenant_id", "currency", "minimum_amount"}))
+public class DocumentApprovalThreshold extends de.corporate.lc.tenant.domain.TenantOwnedEntity {
     @Id @GeneratedValue(strategy = GenerationType.UUID) private UUID id;
     @Column(nullable = false, length = 3) private String currency;
     @Column(name = "minimum_amount", nullable = false, precision = 19, scale = 2) private BigDecimal minimumAmount;

@@ -28,7 +28,7 @@ public class DocumentApprovalPolicyService {
             String key = currency + ":" + rule.minimumAmount().stripTrailingZeros().toPlainString();
             if (!unique.add(key)) throw new IllegalArgumentException("Doppelte Betragsgrenze für " + currency + " " + rule.minimumAmount() + ".");
         }
-        thresholds.deleteAllInBatch();
+        thresholds.deleteForCurrentTenant();
         List<DocumentApprovalThreshold> saved = rules.stream().map(rule -> {
             DocumentApprovalThreshold threshold = new DocumentApprovalThreshold();
             threshold.setCurrency(rule.currency().trim().toUpperCase(Locale.ROOT));

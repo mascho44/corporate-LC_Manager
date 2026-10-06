@@ -5,7 +5,7 @@ import java.time.*;
 import java.util.UUID;
 
 @Entity @Table(name="lc_task")
-public class LcTask {
+public class LcTask extends de.corporate.lc.tenant.domain.TenantOwnedEntity {
     @Id @GeneratedValue(strategy=GenerationType.UUID) private UUID id;
     @Column(name="letter_of_credit_id",nullable=false) private UUID letterOfCreditId;
     @Column(nullable=false,length=500) private String title;

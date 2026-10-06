@@ -6,7 +6,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "lc_note")
-public class LcNote {
+public class LcNote extends de.corporate.lc.tenant.domain.TenantOwnedEntity {
     @Id @GeneratedValue(strategy = GenerationType.UUID) private UUID id;
     @Column(name = "letter_of_credit_id", nullable = false) private UUID letterOfCreditId;
     @Column(nullable = false, length = 100) private String username;

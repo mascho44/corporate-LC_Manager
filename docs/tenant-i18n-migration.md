@@ -207,10 +207,6 @@ database was removed; production data was not changed.
 The complete regression suite passed: 310 Java tests with no failures (two
 skipped) and 30 passing JavaScript tests.
 
-Additional tenant activation remains gated. Rule-pack storage/activation, other
-remaining roots and inherited generic bulk/pagination operations still require
-conversion; multi-tenant identity/provisioning and background routing remain open.
-
 ## Access isolation stage 7: rule-pack storage and activation
 
 Stored versions and selections have immutable tenant ownership. Version lists,
@@ -234,3 +230,48 @@ bulk/pagination APIs, identities/provisioning and job dispatch need completion.
 Production was not changed by this stage.
 The complete regression suite passed: 312 Java tests without failures (two
 skipped) and 30 passing JavaScript tests.
+
+## Access isolation stage 8: LC case child records
+
+Notes, tasks, amendments, document-check decisions and requirement mappings now
+inherit immutable tenant ownership with lifecycle write/removal checks. LC-specific
+lists, direct IDs, amendment duplicate checks, open-task queues and review/mapping
+lookups are scoped. Note history retains its 100-item limit. Explicit decision
+deletion resolves only current-tenant records before removing them.
+
+V57 backfills each child from its LC and adds composite same-tenant LC links with
+the existing delete-cascade behavior. Other remaining roots, generic repository
+bulk/pagination operations, user membership/provisioning and background routing
+remain pending. Additional tenants are still gated.
+
+Verification: all 314 Java tests completed without failures (two skipped); all
+30 JavaScript tests passed. Two-tenant tests covered child lists/IDs, the open-task
+queue, amendment duplicates, review/mapping lookup and foreign decision deletion.
+A loaded foreign task could not be changed. Isolated PostgreSQL 17 migrations
+through V57 backfilled all five synthetic existing child types; every foreign LC
+link was rejected and LC deletion cascaded correctly. The temporary database was
+removed; production data and tenant gates were unchanged.
+
+## Access isolation stage 9: document drafts and approval policy
+
+Document drafts and approval thresholds inherit immutable tenant ownership.
+Draft lists and direct lookups are scoped, including the service paths for
+editing, submitting, finalizing and deleting. Existing maker/reviewer/approver
+rules remain unchanged. Replacing approval thresholds deletes only the current
+tenant's thresholds; identical currency/amount boundaries are valid independently
+in different tenants.
+
+V58 backfills draft ownership from each LC and enforces a same-tenant LC foreign
+key with cascading deletion. Approval thresholds receive tenant ownership and
+tenant-local uniqueness. Isolated PostgreSQL 17 migrations through V58 preserved
+a synthetic existing draft, rejected a foreign LC link, preserved another
+tenant's thresholds during deletion, and retained draft delete cascades. The
+temporary database was removed; production and the additional-tenant gate were
+not changed.
+
+Verification: 316 Java tests completed without failures (two skipped), and all
+30 JavaScript tests passed. Two-tenant tests cover inaccessible foreign drafts,
+rejected editing/status changes/deletion and independent policy replacement.
+Other remaining roots, inherited generic repository bulk/pagination APIs,
+identity/provisioning and background routing still need completion before
+additional tenants can be activated.
