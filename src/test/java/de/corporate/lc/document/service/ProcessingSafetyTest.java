@@ -23,7 +23,14 @@ class ProcessingSafetyTest {
     }
     @Test void terminatesTimedOutChild(){
         assertThatThrownBy(()->BoundedProcess.run(new ProcessBuilder("sh","-c","exec sleep 30"),1))
-            .isInstanceOf(java.io.IOException.class).hasMessageContaining("Zeitlimit");
+            .isInstanceOf(BoundedProcess.TimeoutException.class).hasMessageContaining("Zeitlimit");
+    }
+    @Test void allowsSlowerOcrPagesButBoundsConfiguration()throws Exception{
+        var service=new DocumentExtractionService();
+        assertThat(service.pageTimeoutSeconds()).isEqualTo(120);
+        var field=DocumentExtractionService.class.getDeclaredField("ocrPageTimeoutSeconds");field.setAccessible(true);
+        field.setLong(service,999);assertThat(service.pageTimeoutSeconds()).isEqualTo(300);
+        field.setLong(service,-1);assertThat(service.pageTimeoutSeconds()).isEqualTo(1);
     }
     @Test void ignoresLargeStandardOutputInsteadOfBlocking()throws Exception{
         BoundedProcess.run(new ProcessBuilder("sh","-c","i=0; while [ $i -lt 10000 ]; do printf 'abcdefghijklmnopqrstuvwxyz\\n'; i=$((i+1)); done"),5);

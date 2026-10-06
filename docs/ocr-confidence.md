@@ -32,6 +32,13 @@ OCR measurements. Server-side preservation prevents the client replacing scores.
 
 ## Configuration
 
+OCR processing permits 120 seconds per page by default, configurable via
+`lc.ocr.page-timeout-seconds` (bounded to 1–300 seconds). Each document has a
+300-second processing budget including rendering. A timed-out extraction is
+reported as `OCR_TIMEOUT`, not as a missing OCR installation. The upload dialog
+shows measured transfer progress and an indeterminate indicator during server
+processing; it does not claim a measured OCR percentage.
+
 `lc.ocr.confidence-threshold` (environment `LC_OCR_CONFIDENCE_THRESHOLD`) defaults
 to `0.8`. Values must be between 0 and 1. The threshold at extraction time is stored
 with the measurement; changing it applies to new imports, not historical evidence.
