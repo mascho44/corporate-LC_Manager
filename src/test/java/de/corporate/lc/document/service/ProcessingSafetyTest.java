@@ -4,6 +4,12 @@ import org.apache.pdfbox.pdmodel.*;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import static org.assertj.core.api.Assertions.*;
 class ProcessingSafetyTest {
+    @Test void distinguishesMissingProgramFromFailedProcessing(){
+        assertThatThrownBy(()->BoundedProcess.run(new ProcessBuilder("/nonexistent/lc-ocr-tool"),1))
+            .isInstanceOf(BoundedProcess.UnavailableException.class);
+        assertThatThrownBy(()->BoundedProcess.run(new ProcessBuilder("sh","-c","exit 7"),1))
+            .isExactlyInstanceOf(java.io.IOException.class).hasMessageContaining("Exit 7");
+    }
     @Test void acceptsStandardPageButRejectsHugePage()throws Exception{
         try(var pdf=new PDDocument()){pdf.addPage(new PDPage(PDRectangle.A4));PdfProcessingSafety.validate(pdf);
             pdf.addPage(new PDPage(new PDRectangle(10000,10000)));
