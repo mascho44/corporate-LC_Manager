@@ -44,9 +44,10 @@ class DocumentInboxServiceTest {
         doAnswer(call->{LcDocument doc=call.getArgument(0);doc.setExtractedReference("LC1234");doc.setExtractionStatus("EXTRACTED");return null;}).when(extraction).extract(any());
         when(inbox.save(any())).thenAnswer(call->call.getArgument(0));
         var result=service.receive(List.of(new MockMultipartFile("file","invoice.txt","text/plain",new byte[]{1})),"user");
-        assertThat(result.get(0).suggestedLcId()).isEqualTo(lcId);
+        assertThat(result.get(0).suggestedLcId()).isNull();
+        assertThat(result.get(0).extractionStatus()).isEqualTo("QUEUED");
         assertThat(result.get(0).status()).isEqualTo("OPEN");
-        verifyNoInteractions(documents,checks);
+        verifyNoInteractions(documents,checks,extraction);
     }
 
     @Test void confirmedAssignmentMovesContentAndInvalidatesOldChecks() {
@@ -101,4 +102,15 @@ class DocumentInboxServiceTest {
     }
 
     private DocumentInboxItem item(){DocumentInboxItem item=new DocumentInboxItem();item.setOriginalFilename("packing.txt");item.setContentType("text/plain");item.setFileSize(2);item.setContent(new byte[]{1,2});item.setExtractedText("original text");return item;}
+
+    @Test void pendingRecognitionBlocksAttachmentButNotDeletion(){
+        var id=UUID.randomUUID();var item=item();item.setExtractionStatus("PROCESSING");when(inbox.findForUpdate(id)).thenReturn(Optional.of(item));
+        assertThatThrownBy(()->service.attach(id,new DocumentInboxAttachRequest(UUID.randomUUID(),DocumentType.ANNEX,null))).isInstanceOf(IllegalStateException.class).hasMessageContaining("läuft noch");
+        service.delete(id);verify(inbox).delete(item);verifyNoInteractions(documents);
+    }
+    @Test void failedRecognitionCanRetryWithoutUploadingAgain(){
+        var id=UUID.randomUUID();var item=item();item.setExtractionStatus("OCR_TIMEOUT");when(inbox.findForUpdate(id)).thenReturn(Optional.of(item));when(inbox.save(any())).thenAnswer(call->call.getArgument(0));
+        assertThat(service.retryExtraction(id).extractionStatus()).isEqualTo("QUEUED");assertThat(item.getContent()).containsExactly(1,2);verifyNoInteractions(extraction);
+        assertThatThrownBy(()->service.retryExtraction(id)).isInstanceOf(IllegalStateException.class);
+    }
 }

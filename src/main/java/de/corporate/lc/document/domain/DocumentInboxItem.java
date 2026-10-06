@@ -25,6 +25,12 @@ public class DocumentInboxItem {
     @Column(nullable = false, length = 100) private String receivedBy;
     @Column(nullable = false) private LocalDateTime receivedAt = LocalDateTime.now();
     @Column(nullable = false, length = 30) private String extractionStatus = "NOT_PROCESSED";
+    private LocalDateTime extractionStartedAt;
+    private UUID extractionToken;
+    public LocalDateTime getExtractionStartedAt(){return extractionStartedAt;}
+    public void setExtractionStartedAt(LocalDateTime value){extractionStartedAt=value;}
+    public UUID getExtractionToken(){return extractionToken;}
+    public void setExtractionToken(UUID value){extractionToken=value;}
     @Column(length = 100) private String extractedReference;
     @Column(length = 100) private String extractedDocumentNumber;
     @Column(columnDefinition = "text") private String extractedText;

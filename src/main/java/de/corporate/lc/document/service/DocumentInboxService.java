@@ -62,7 +62,7 @@ public class DocumentInboxService {
     public record NewCaseResult(UUID lcId,DocumentInboxAttachResult attachment){}
     @Transactional
     public NewCaseResult createCase(UUID id,de.corporate.lc.document.api.InboxNewCaseRequest request){
-        lockedOpenItem(id);
+        requireProcessed(lockedOpenItem(id));
         String reference=request.reference().trim();
         if(lettersOfCredit.existsByReference(reference))throw new IllegalArgumentException("Eine Akte mit dieser Referenz besteht bereits. Bitte die bestehende Akte auswählen.");
         var lc=new de.corporate.lc.lc.domain.LetterOfCredit();
@@ -77,6 +77,7 @@ public class DocumentInboxService {
     @Transactional
     public DocumentInboxAttachResult attach(UUID id, DocumentInboxAttachRequest request) {
         DocumentInboxItem item = lockedOpenItem(id);
+        requireProcessed(item);
         var lc = lettersOfCredit.findById(request.lcId()).orElseThrow(() -> new NoSuchElementException("LC-Akte nicht gefunden."));
         LcDocument document = new LcDocument();
         document.setLetterOfCredit(lc);
@@ -125,32 +126,32 @@ public class DocumentInboxService {
             String filename = file.filename();
             String contentType = contentType(filename);
             byte[] bytes = file.content();
-            LcDocument extracted = new LcDocument();
-            extracted.setOriginalFilename(filename);
-            extracted.setContentType(contentType);
-            extracted.setContent(bytes);
-            extracted.setDocumentType(DocumentType.ANNEX);
-            extraction.extract(extracted);
-
             DocumentInboxItem item = new DocumentInboxItem();
             item.setOriginalFilename(filename);
             item.setContentType(contentType);
             item.setFileSize(bytes.length);
             item.setContent(bytes);
             item.setReceivedBy(username);
-            item.setExtractionStatus(extracted.getExtractionStatus());
-            item.setExtractedReference(extracted.getExtractedReference());
-            item.setExtractedDocumentNumber(extracted.getExtractedDocumentNumber());
-            item.setExtractedAmount(extracted.getExtractedAmount());
-            item.setExtractedCurrency(extracted.getExtractedCurrency());
-            item.setExtractedText(extracted.getExtractedText());
-            item.setOcrEvidenceJson(extracted.getOcrEvidenceJson());
-            item.setClassificationHistoryJson(extracted.getClassificationHistoryJson());
+            item.setExtractionStatus("QUEUED");
             return view(inbox.save(item),targets);
     }
 
     private DocumentInboxItemView view(DocumentInboxItem item) {
         return view(item,lettersOfCredit.findAssignmentTargets());
+    }
+
+    @Transactional
+    public DocumentInboxItemView retryExtraction(UUID id){
+        var item=lockedOpenItem(id);requireProcessed(item);
+        if(!List.of("FAILED","OCR_TIMEOUT","OCR_UNAVAILABLE","NO_TEXT","NOT_PROCESSED").contains(item.getExtractionStatus()))
+            throw new IllegalStateException("Die Dokumentenerkennung ist bereits abgeschlossen.");
+        item.setExtractionStatus("QUEUED");item.setExtractionStartedAt(null);item.setExtractionToken(null);
+        return view(inbox.save(item));
+    }
+
+    private void requireProcessed(DocumentInboxItem item){
+        if(List.of("QUEUED","PROCESSING").contains(item.getExtractionStatus()))
+            throw new IllegalStateException("Die Dokumentenerkennung läuft noch. Bitte auf den Abschluss warten.");
     }
 
     private DocumentInboxItemView view(DocumentInboxItem item,List<LetterOfCreditRepository.AssignmentTarget> targets) {

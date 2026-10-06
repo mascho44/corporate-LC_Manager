@@ -29,7 +29,7 @@ function uploadWithProgress(url,options={}) {
         dialog.addEventListener('cancel',event=>event.preventDefault());
         document.body.append(dialog);dialog.showModal();
         const progress=dialog.querySelector('progress'),stage=dialog.querySelector('.processing-stage');
-        const processing=()=>{progress.removeAttribute('value');progress.setAttribute('aria-label','Verarbeitung läuft');stage.textContent='Upload abgeschlossen. Dokumente werden ausgelesen, geprüft und gespeichert …';};
+        const processing=()=>{progress.removeAttribute('value');progress.setAttribute('aria-label','Verarbeitung läuft');stage.textContent=url==='/api/inbox'?'Upload abgeschlossen. Dateien werden sicher gespeichert; die Erkennung läuft anschließend im Hintergrund.':'Upload abgeschlossen. Dokumente werden ausgelesen, geprüft und gespeichert …';};
         const xhr=new XMLHttpRequest();
         const cleanup=()=>{options.signal?.removeEventListener('abort',abort);dialog.close();dialog.remove();previousFocus?.focus();};
         const abort=()=>xhr.abort();

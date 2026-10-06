@@ -20,4 +20,16 @@ class BrowserSecurityHeadersTest {
         assertThat(BrowserSecurityHeaders.POLICY)
             .contains("frame-src 'self' blob:","img-src 'self' data: blob:","style-src 'self' 'unsafe-inline'");
     }
+    @Test void allowsOnlyInternalDocumentFramesAndKeepsOtherPagesProtected(){
+        var id="00000000-0000-0000-0000-000000000001";
+        for(String path:java.util.List.of("/api/documents/"+id+"/preview","/api/inbox/"+id+"/content","/api/training/"+id+"/document")){
+            var request=new MockHttpServletRequest("GET",path);var response=new MockHttpServletResponse();
+            new BrowserSecurityHeaders().writeHeaders(request,response);
+            assertThat(response.getHeader("X-Frame-Options")).isEqualTo("SAMEORIGIN");
+            assertThat(response.getHeader("Content-Security-Policy")).contains("frame-ancestors 'self'","object-src 'none'");
+        }
+        var response=new MockHttpServletResponse();new BrowserSecurityHeaders().writeHeaders(new MockHttpServletRequest("GET","/"),response);
+        assertThat(response.getHeader("X-Frame-Options")).isEqualTo("DENY");
+        assertThat(response.getHeader("Content-Security-Policy")).contains("frame-ancestors 'none'");
+    }
 }

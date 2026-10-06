@@ -6,6 +6,7 @@ import de.corporate.lc.user.service.AppUserDetailsService; import jakarta.servle
  @Bean SecurityFilterChain security(HttpSecurity http,AppUserDetailsService users,de.corporate.lc.user.repository.AppUserRepository accounts)throws Exception{return http.userDetailsService(users)
   .authorizeHttpRequests(a->a
    .requestMatchers("/password-reset.html","/password-reset.js","/api/auth/password-reset/request","/api/auth/password-reset/complete","/login.html","/login.js","/login-background.css","/login-background-v1.png","/styles.css","/info.html","/info.css","/info.js","/license.txt","/oss-components.json","/oss-notices.txt","/api/auth/login","/api/auth/login/totp","/api/health","/actuator/health","/actuator/health/liveness","/actuator/health/readiness").permitAll()
+   .requestMatchers("/theme.css").permitAll()
    .requestMatchers("/actuator/**").hasRole("ADMIN")
    .requestMatchers("/api/admin/outbox/**").hasRole("ADMIN")
    .requestMatchers("/api/admin/monitoring/**").hasRole("ADMIN")
@@ -56,6 +57,6 @@ import de.corporate.lc.user.service.AppUserDetailsService; import jakarta.servle
   .addFilterAfter(new CredentialSessionFilter(accounts),org.springframework.security.web.context.SecurityContextHolderFilter.class)
   .exceptionHandling(e->e.defaultAuthenticationEntryPointFor(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),new AntPathRequestMatcher("/api/**")))
   .formLogin(f->f.loginPage("/login.html").permitAll()).logout(l->l.disable())
-  .headers(h->h.frameOptions(f->f.deny()).contentTypeOptions(c->{}).addHeaderWriter(new BrowserSecurityHeaders()))
+  .headers(h->h.frameOptions(f->f.disable()).contentTypeOptions(c->{}).addHeaderWriter(new BrowserSecurityHeaders()))
   .build();}
 }
