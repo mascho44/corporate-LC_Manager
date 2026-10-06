@@ -32,6 +32,7 @@ public class DocumentInboxController {
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.ACCEPTED)
     public List<DocumentInboxItemView> upload(@RequestPart("file") List<MultipartFile> files,
                                               Authentication authentication) throws IOException {
         List<DocumentInboxItemView> received = service.receive(files, authentication.getName());
@@ -58,6 +59,14 @@ public class DocumentInboxController {
                                 .filename(item.getOriginalFilename(), java.nio.charset.StandardCharsets.UTF_8).build().toString())
                 .header("X-Content-Type-Options", "nosniff")
                 .body(item.getContent());
+    }
+
+    @PostMapping("/{id}/retry")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public DocumentInboxItemView retry(@PathVariable UUID id,Authentication authentication){
+        var result=service.retryExtraction(id);
+        audit.record(authentication,"DOCUMENT_INBOX_EXTRACTION_RETRIED","DOCUMENT_INBOX",id,"Erkennung erneut in Warteschlange aufgenommen");
+        return result;
     }
 
     @PostMapping("/{id}/attach")
