@@ -25,6 +25,17 @@ class InboxExtractionQueueTest {
  @BeforeEach void setup(){inbox.deleteAll();extraction=mock(DocumentExtractionService.class);audit=mock(AuditService.class);queue=new InboxExtractionQueue(inbox,extraction,audit,manager);}
  @AfterEach void stop(){queue.shutdown();}
  DocumentInboxItem enqueue(String status){var item=new DocumentInboxItem();item.setOriginalFilename("synthetic.txt");item.setContentType("text/plain");item.setFileSize(1);item.setContent(new byte[]{1});item.setReceivedBy("synthetic-user");item.setExtractionStatus(status);return inbox.saveAndFlush(item);}
+ @Test void scheduledWorkerUsesDefaultTenantWithoutLeakingCallerContext()throws Exception{
+  var own=enqueue("QUEUED");var caller=UUID.randomUUID();DocumentInboxItem foreign;
+  try(var scope=de.corporate.lc.tenant.domain.TenantContext.open(caller)){foreign=enqueue("QUEUED");}
+  var completed=new java.util.concurrent.CountDownLatch(1);
+  doAnswer(call->{assertThat(de.corporate.lc.tenant.domain.TenantContext.currentId()).isEqualTo(de.corporate.lc.tenant.domain.Tenant.DEFAULT_ID);LcDocument doc=call.getArgument(0);doc.setExtractionStatus("EXTRACTED");return null;}).when(extraction).extractInBackground(any());
+  doAnswer(call->{completed.countDown();return null;}).when(audit).record(eq("synthetic-user"),eq("DOCUMENT_INBOX_EXTRACTED"),any(),eq(own.getId()),eq("EXTRACTED"),eq(true),isNull());
+  try{
+   try(var scope=de.corporate.lc.tenant.domain.TenantContext.open(caller)){queue.dispatch();assertThat(de.corporate.lc.tenant.domain.TenantContext.currentId()).isEqualTo(caller);assertThat(completed.await(10,java.util.concurrent.TimeUnit.SECONDS)).isTrue();assertThat(inbox.findById(foreign.getId()).orElseThrow().getExtractionStatus()).isEqualTo("QUEUED");}
+   assertThat(inbox.findById(own.getId()).orElseThrow().getExtractionStatus()).isEqualTo("EXTRACTED");
+  }finally{try(var scope=de.corporate.lc.tenant.domain.TenantContext.open(caller)){inbox.deleteById(foreign.getId());}}
+ }
  @Test void claimsCommittedFilesAndExtractsOutsideDatabaseTransaction(){
   var item=enqueue("QUEUED");
   doAnswer(call->{assertThat(TransactionSynchronizationManager.isActualTransactionActive()).isFalse();assertThat(inbox.findById(item.getId()).orElseThrow().getExtractionStatus()).isEqualTo("PROCESSING");LcDocument doc=call.getArgument(0);doc.setExtractionStatus("EXTRACTED");doc.setExtractedText("synthetic text");doc.setExtractedReference("SYNTHETIC-REF");return null;}).when(extraction).extractInBackground(any());

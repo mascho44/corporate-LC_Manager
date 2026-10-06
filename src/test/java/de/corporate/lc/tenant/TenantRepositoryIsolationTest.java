@@ -38,7 +38,79 @@ class TenantRepositoryIsolationTest {
  @Autowired de.corporate.lc.check.repository.LcRequirementMappingRepository mappings;
  @Autowired de.corporate.lc.document.repository.DocumentDraftRepository drafts;
  @Autowired de.corporate.lc.document.repository.DocumentApprovalThresholdRepository approvalThresholds;
+ @Autowired de.corporate.lc.document.repository.DocumentComparisonRepository comparisons;
+ @Autowired de.corporate.lc.email.repository.EmailDeliveryRepository deliveries;
  final UUID foreignTenant=UUID.fromString("00000000-0000-0000-0000-000000000099");
+ void createLearningControl(String ruleId,boolean active){var control=new de.corporate.lc.training.domain.TrainingLearningControl();control.setRuleId(ruleId);control.setActive(active);learningControls.saveAndFlush(control);}
+ @Test void standardDocumentReadsPagesAndReferencesAreTenantScoped(){
+  var own=createDocument(createLc("OWN-STANDARD-READ"));de.corporate.lc.document.domain.LcDocument foreign;
+  try(var scope=TenantContext.open(foreignTenant)){foreign=createDocument(createLc("FOREIGN-STANDARD-READ"));}
+  assertThat(documents.findAll()).extracting(de.corporate.lc.document.domain.LcDocument::getId).containsExactly(own.getId());
+  assertThat(documents.count()).isEqualTo(1);assertThat(documents.existsById(foreign.getId())).isFalse();
+  assertThat(documents.findAllById(java.util.List.of(own.getId(),foreign.getId(),own.getId()))).extracting(de.corporate.lc.document.domain.LcDocument::getId).containsExactly(own.getId());
+  assertThat(documents.findAll(org.springframework.data.domain.Sort.by("originalFilename"))).hasSize(1);
+  var page=documents.findAll(org.springframework.data.domain.PageRequest.of(0,1));assertThat(page.getTotalElements()).isEqualTo(1);assertThat(page.getContent()).extracting(de.corporate.lc.document.domain.LcDocument::getId).containsExactly(own.getId());
+  assertThat(documents.getReferenceById(own.getId()).getId()).isEqualTo(own.getId());assertThatThrownBy(()->documents.getReferenceById(foreign.getId())).hasRootCauseInstanceOf(jakarta.persistence.EntityNotFoundException.class);
+ }
+ @Test void scopedBulkDeletionPreservesForeignInboxRecords(){
+  var own=createInbox();de.corporate.lc.document.domain.DocumentInboxItem foreign;try(var scope=TenantContext.open(foreignTenant)){foreign=createInbox();}
+  assertThat(inbox.count()).isEqualTo(1);inbox.deleteAllById(java.util.List.of(own.getId(),foreign.getId()));inbox.flush();assertThat(inbox.count()).isZero();
+  createInbox();inbox.deleteAll();inbox.flush();assertThat(inbox.count()).isZero();
+  try(var scope=TenantContext.open(foreignTenant)){assertThat(inbox.findById(foreign.getId())).isPresent();assertThat(inbox.count()).isEqualTo(1);}
+ }
+ @Test void batchDeletionCannotBypassLifecycleOrAuditProtection(){
+  var own=createDocument(createLc("OWN-BATCH-SAFETY"));
+  assertThatThrownBy(documents::deleteAllInBatch).isInstanceOf(UnsupportedOperationException.class);
+  assertThatThrownBy(()->documents.deleteAllInBatch(java.util.List.of(own))).isInstanceOf(UnsupportedOperationException.class);
+  assertThatThrownBy(()->documents.deleteAllByIdInBatch(java.util.List.of(own.getId()))).isInstanceOf(UnsupportedOperationException.class);
+  assertThatThrownBy(auditEvents::deleteAllInBatch).isInstanceOf(UnsupportedOperationException.class);assertThat(documents.findById(own.getId())).isPresent();
+ }
+ @Test void genericReadsSupportIntegerAndCompositeTenantIdentities(){
+  createCompany(10);createLearningControl("same-rule",true);try(var scope=TenantContext.open(foreignTenant)){createCompany(20);createLearningControl("same-rule",false);}
+  assertThat(companies.findAllById(java.util.List.of(10,20))).hasSize(1);assertThat(companies.findAll(org.springframework.data.domain.PageRequest.of(0,1)).getTotalElements()).isEqualTo(1);
+  assertThat(learningControls.count()).isEqualTo(1);assertThat(learningControls.findAll(org.springframework.data.domain.PageRequest.of(0,1)).getTotalElements()).isEqualTo(1);
+  var foreignKey=new de.corporate.lc.training.domain.TrainingLearningControl.Key(foreignTenant,"same-rule");assertThat(learningControls.findAllById(java.util.List.of(foreignKey))).isEmpty();assertThat(learningControls.existsById(foreignKey)).isFalse();
+ }
+ @Test void queryByExampleAndFluentQueriesCannotBypassTenantFilters(){
+  var example=org.springframework.data.domain.Example.of(new de.corporate.lc.document.domain.DocumentInboxItem());
+  assertThatThrownBy(()->inbox.findOne(example)).isInstanceOf(UnsupportedOperationException.class);
+  assertThatThrownBy(()->inbox.findAll(example)).isInstanceOf(UnsupportedOperationException.class);
+  assertThatThrownBy(()->inbox.findAll(example,org.springframework.data.domain.Sort.unsorted())).isInstanceOf(UnsupportedOperationException.class);
+  assertThatThrownBy(()->inbox.findAll(example,org.springframework.data.domain.PageRequest.of(0,1))).isInstanceOf(UnsupportedOperationException.class);
+  assertThatThrownBy(()->inbox.count(example)).isInstanceOf(UnsupportedOperationException.class);
+  assertThatThrownBy(()->inbox.exists(example)).isInstanceOf(UnsupportedOperationException.class);
+  assertThatThrownBy(()->inbox.findBy(example,query->query.all())).isInstanceOf(UnsupportedOperationException.class);
+ }
+ de.corporate.lc.document.domain.DocumentComparison createComparison(LetterOfCredit lc){var c=new de.corporate.lc.document.domain.DocumentComparison();c.lcId=lc.getId();c.beforeDocumentId=UUID.randomUUID();c.afterDocumentId=UUID.randomUUID();c.resultJson="{}";c.createdBy="synthetic-user";c.createdAt=java.time.LocalDateTime.now();return comparisons.saveAndFlush(c);}
+ de.corporate.lc.email.domain.EmailDelivery createDelivery(LetterOfCredit lc){var e=new de.corporate.lc.email.domain.EmailDelivery();e.setLetterOfCredit(lc);e.setRecipients("recipient@example.invalid");e.setSubject("Synthetic subject");e.setStatus("FAILED");e.setSentBy("synthetic-user");return deliveries.saveAndFlush(e);}
+ @Test void comparisonAndEmailHistoryAreTenantLocal(){
+  var ownLc=createLc("OWN-HISTORY");var ownComparison=createComparison(ownLc);var ownEmail=createDelivery(ownLc);
+  LetterOfCredit foreignLc;de.corporate.lc.document.domain.DocumentComparison foreignComparison;de.corporate.lc.email.domain.EmailDelivery foreignEmail;
+  try(var scope=TenantContext.open(foreignTenant)){foreignLc=createLc("FOREIGN-HISTORY");foreignComparison=createComparison(foreignLc);foreignEmail=createDelivery(foreignLc);}
+  assertThat(comparisons.findById(foreignComparison.id)).isEmpty();assertThat(comparisons.findByLcIdOrderByCreatedAtDesc(foreignLc.getId())).isEmpty();assertThat(comparisons.findAll()).extracting(c->c.id).containsExactly(ownComparison.id);
+  assertThat(deliveries.findById(foreignEmail.getId())).isEmpty();assertThat(deliveries.findByLetterOfCreditIdOrderBySentAtDesc(foreignLc.getId())).isEmpty();assertThat(deliveries.findAll()).extracting(de.corporate.lc.email.domain.EmailDelivery::getId).containsExactly(ownEmail.getId());
+  var comparisonService=new de.corporate.lc.document.service.DocumentComparisonService(documents,comparisons,new com.fasterxml.jackson.databind.ObjectMapper());assertThat(comparisonService.history(foreignLc.getId())).isEmpty();assertThat(comparisonService.history(ownLc.getId())).hasSize(1);
+  var emailService=new de.corporate.lc.email.service.EmailService(null,lcs,documents,deliveries,false,"");assertThatThrownBy(()->emailService.history(foreignLc.getId())).isInstanceOf(java.util.NoSuchElementException.class);assertThat(emailService.history(ownLc.getId())).hasSize(1);
+ }
+ @Test void foreignAttachmentsCannotBeComparedOrSentAndDoNotContactMail(){
+  var ownLc=createLc("OWN-ATTACHMENT");var own=createDocument(ownLc);LetterOfCredit foreignLc;de.corporate.lc.document.domain.LcDocument foreign;
+  try(var scope=TenantContext.open(foreignTenant)){foreignLc=createLc("FOREIGN-ATTACHMENT");foreign=createDocument(foreignLc);}
+  var comparisonService=new de.corporate.lc.document.service.DocumentComparisonService(documents,comparisons,new com.fasterxml.jackson.databind.ObjectMapper());
+  assertThatThrownBy(()->comparisonService.compare(ownLc.getId(),own.getId(),foreign.getId(),"synthetic-user")).isInstanceOf(java.util.NoSuchElementException.class);assertThat(comparisons.findAll()).isEmpty();
+  var mail=org.mockito.Mockito.mock(org.springframework.mail.javamail.JavaMailSender.class);var emailService=new de.corporate.lc.email.service.EmailService(mail,lcs,documents,deliveries,true,"sender@example.invalid");
+  var request=new de.corporate.lc.email.api.EmailSendRequest(java.util.List.of("recipient@example.invalid"),"Synthetic subject","Synthetic body",java.util.List.of(own.getId(),foreign.getId()));
+  assertThatThrownBy(()->emailService.send(ownLc.getId(),request,"synthetic-user")).isInstanceOf(IllegalArgumentException.class);
+  assertThatThrownBy(()->emailService.send(foreignLc.getId(),request,"synthetic-user")).isInstanceOf(java.util.NoSuchElementException.class);
+  assertThat(deliveries.findAll()).isEmpty();org.mockito.Mockito.verifyNoInteractions(mail);
+ }
+ @Test void loadedForeignComparisonCannotBeChanged(){
+  de.corporate.lc.document.domain.DocumentComparison foreign;try(var scope=TenantContext.open(foreignTenant)){foreign=createComparison(createLc("FOREIGN-COMPARISON-WRITE"));}
+  foreign.resultJson="{\"forbidden\":true}";assertThatThrownBy(()->comparisons.saveAndFlush(foreign)).satisfies(error->{Throwable root=error;while(root.getCause()!=null)root=root.getCause();assertThat(root).isInstanceOf(AccessDeniedException.class);});
+ }
+ @Test void loadedForeignDeliveryCannotBeChanged(){
+  de.corporate.lc.email.domain.EmailDelivery foreign;try(var scope=TenantContext.open(foreignTenant)){foreign=createDelivery(createLc("FOREIGN-EMAIL-WRITE"));}
+  foreign.setSubject("Forbidden");assertThatThrownBy(()->deliveries.saveAndFlush(foreign)).satisfies(error->{Throwable root=error;while(root.getCause()!=null)root=root.getCause();assertThat(root).isInstanceOf(AccessDeniedException.class);});
+ }
  de.corporate.lc.document.domain.DocumentDraft createDraft(LetterOfCredit lc){var d=new de.corporate.lc.document.domain.DocumentDraft();d.setLcId(lc.getId());d.setDocumentType(de.corporate.lc.document.domain.DocumentType.COMMERCIAL_INVOICE);d.setDocumentNumber("SYNTHETIC-1");d.setDataJson("{}");d.setCreatedBy("synthetic-user");d.setUpdatedBy("synthetic-user");return drafts.saveAndFlush(d);}
  de.corporate.lc.document.domain.DocumentApprovalThreshold createThreshold(int approvals){var t=new de.corporate.lc.document.domain.DocumentApprovalThreshold();t.setCurrency("EUR");t.setMinimumAmount(java.math.BigDecimal.ZERO);t.setRequiredApprovals(approvals);return approvalThresholds.saveAndFlush(t);}
  @Test void foreignDraftCannotBeViewedChangedDeletedOrApproved(){

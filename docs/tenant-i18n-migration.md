@@ -275,3 +275,67 @@ rejected editing/status changes/deletion and independent policy replacement.
 Other remaining roots, inherited generic repository bulk/pagination APIs,
 identity/provisioning and background routing still need completion before
 additional tenants can be activated.
+
+## Access isolation stage 10: comparison and email history
+
+Document comparisons and email deliveries now inherit immutable tenant ownership.
+History lists, direct IDs and unpaged lists are scoped. Case exports use the
+same scoped comparison history. Mail attachments are resolved through scoped
+document lookups rather than inherited, unfiltered bulk lookup; a missing or
+foreign attachment is rejected before any mail interaction or delivery record
+is created. Existing LC ownership checks continue to reject foreign mail history
+and sending. Comparison snapshots remain available after source documents are
+deleted, as before; document identifiers are historical references, not new
+foreign keys to live documents.
+
+V59 backfills both histories from the parent LC and adds same-tenant composite
+LC foreign keys with the existing delete cascades. Isolated PostgreSQL 17
+migrations through V59 preserved synthetic existing history, rejected foreign
+LC links for both tables and retained cascading deletion. The temporary test
+database was removed. No production changes or mail configuration changes were
+made, and additional tenants remain gated.
+
+Verification: 320 Java tests completed without failures (two skipped); all
+30 JavaScript tests passed. Two-tenant tests cover history lists and IDs,
+comparison/mail rejection of foreign documents, absence of external mail
+interactions on rejection, and lifecycle rejection of foreign record updates.
+Remaining generic repository bulk/pagination APIs, identities/provisioning and
+background routing still need completion before additional tenants are enabled.
+
+## Access isolation stage 11: standard repository APIs and scheduled scopes
+
+All 23 business repositories now share `TenantScopedRepository`. Unpaged/sorted
+lists, paginated results and their total counts are scoped. Multi-ID reads use
+the concrete scoped ID lookup, including integer and composite identities, and
+deduplicate requested IDs. Existence checks and reference lookups use the same
+boundary; missing/foreign references fail before a lazy proxy can be returned.
+A repository without its own scoped ID lookup fails closed.
+
+ID-list deletion and all-record deletion resolve current-tenant records and
+retain entity lifecycle checks. Generic JPQL batch deletion is disabled rather
+than bypassing lifecycle ownership or append-only audit protection. Query-by-example
+and fluent example queries are unused by the application and explicitly disabled;
+new search features must use explicit scoped queries. Existing intentional scoped
+operations such as approval-threshold replacement remain available.
+
+Scheduled outbox dispatch explicitly opens the default-tenant context and restores
+the previous scope even on failure. The asynchronous inbox worker explicitly opens
+that context before claiming work, then retains the claimed record's tenant through
+OCR and completion. Internal `processNext` continues to honor an explicitly supplied
+scope for tests/future per-tenant dispatch. No tenant enumeration or provisioning is
+enabled: schedulers still serve only the gated bootstrap tenant in production.
+
+Identity/authentication repositories and the tenant registry are intentionally
+outside this business repository base. User membership/provisioning, identity
+repository APIs, multi-tenant job enumeration, global LC-reference uniqueness
+and remaining language/module work still require completion. Additional tenants
+remain forbidden by the bootstrap constraint. No new database migration is needed
+for this stage, and production is unchanged.
+
+Verification: the final complete suite ran 328 Java tests with zero failures or
+errors (two skipped), plus 30 passing JavaScript tests. Negative tests cover
+mixed-tenant ID lists, sorted/paginated reads and page totals, hidden references,
+scoped multi-ID/all-record deletion, blocked batch/example/fluent APIs, integer
+and composite identities, scheduled outbox scope restoration on success/failure,
+and asynchronous inbox dispatch without caller-context leakage. Existing OCR
+lease recovery and claimed-tenant propagation tests remain passing.

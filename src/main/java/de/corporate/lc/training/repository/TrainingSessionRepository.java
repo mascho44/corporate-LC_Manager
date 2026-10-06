@@ -1,4 +1,4 @@
-package de.corporate.lc.training.repository;import de.corporate.lc.training.domain.TrainingSession;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;public interface TrainingSessionRepository extends JpaRepository<TrainingSession,UUID>{
+package de.corporate.lc.training.repository;import de.corporate.lc.training.domain.TrainingSession;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;public interface TrainingSessionRepository extends de.corporate.lc.tenant.repository.TenantScopedRepository<TrainingSession,UUID>{
  default List<TrainingSession> findTop100ByOrderByCreatedAtDesc(){return findRecent(org.springframework.data.domain.PageRequest.of(0,100));}
  @org.springframework.data.jpa.repository.Query("select s from TrainingSession s where s.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()} order by s.createdAt desc")
  List<TrainingSession> findRecent(org.springframework.data.domain.Pageable pageable);

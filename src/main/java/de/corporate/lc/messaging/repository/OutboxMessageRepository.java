@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-public interface OutboxMessageRepository extends JpaRepository<OutboxMessage, UUID> {
+public interface OutboxMessageRepository extends de.corporate.lc.tenant.repository.TenantScopedRepository<OutboxMessage, UUID> {
     default List<OutboxMessage> findTop50ByStatusAndNextAttemptAtLessThanEqualOrderByCreatedAt(String status,LocalDateTime now){return findPending(status,now,org.springframework.data.domain.PageRequest.of(0,50));}
     @org.springframework.data.jpa.repository.Query("select m from OutboxMessage m where m.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()} and m.status=:status and m.nextAttemptAt<=:now order by m.createdAt asc")
     List<OutboxMessage> findPending(@org.springframework.data.repository.query.Param("status") String status,@org.springframework.data.repository.query.Param("now") LocalDateTime now,org.springframework.data.domain.Pageable pageable);
