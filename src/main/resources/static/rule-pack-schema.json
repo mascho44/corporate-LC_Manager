@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Corporate LC Manager – Rule Packs Schema 1, 2 und 3",
+  "title": "Corporate LC Manager – Rule Packs Schema 1 bis 4",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -19,7 +19,8 @@
       "enum": [
         1,
         2,
-        3
+        3,
+        4
       ]
     },
     "packId": {
@@ -141,7 +142,22 @@
             "DOCUMENT_INSURANCE_RISKS",
             "DOCUMENT_SIGNED",
             "DOCUMENT_ORIGINAL_COUNT",
-            "DOCUMENT_EXAMINATION_START_DATE"
+            "DOCUMENT_EXAMINATION_START_DATE",
+            "DOCUMENT_CARRIER",
+            "DOCUMENT_SIGNER_ROLE",
+            "DOCUMENT_SIGNED_FOR",
+            "DOCUMENT_LOADING_PORT",
+            "DOCUMENT_DISCHARGE_PORT",
+            "DOCUMENT_DEPARTURE_AIRPORT",
+            "DOCUMENT_DESTINATION_AIRPORT",
+            "DOCUMENT_VESSEL",
+            "DOCUMENT_TRANSPORT_NOTATION",
+            "DOCUMENT_ISSUED_ORIGINAL_COUNT",
+            "DOCUMENT_INSURANCE_TYPE",
+            "DOCUMENT_COVERAGE_FROM",
+            "DOCUMENT_COVERAGE_TO",
+            "DOCUMENT_UNIT_PRICE_AMOUNT",
+            "DOCUMENT_ORIGIN_COUNTRY"
           ]
         },
         "right": {
@@ -172,7 +188,22 @@
             "PEER_NET_WEIGHT",
             "PEER_GROSS_WEIGHT",
             "PEER_WEIGHT_UNIT",
-            "LC_EXAMINATION_DECISION_DATE"
+            "LC_EXAMINATION_DECISION_DATE",
+            "LC_CIF_CIP_VALUE_AMOUNT",
+            "LC_CLAIMED_AMOUNT",
+            "LC_GROSS_GOODS_AMOUNT",
+            "LC_INSURANCE_BASE_AMOUNT",
+            "LC_QUANTITY",
+            "LC_QUANTITY_UNIT",
+            "LC_UNIT_PRICE_AMOUNT",
+            "LC_LOADING_PORT",
+            "LC_DISCHARGE_PORT",
+            "LC_DEPARTURE_AIRPORT",
+            "LC_DESTINATION_AIRPORT",
+            "LC_COVERAGE_FROM",
+            "LC_COVERAGE_TO",
+            "LC_ORIGIN_COUNTRY",
+            "LC_DOCUMENT_ISSUED_ORIGINAL_COUNT"
           ]
         },
         "operator": {
@@ -269,7 +300,37 @@
                   "PEER_GROSS_WEIGHT",
                   "PEER_WEIGHT_UNIT",
                   "DOCUMENT_EXAMINATION_START_DATE",
-                  "LC_EXAMINATION_DECISION_DATE"
+                  "LC_EXAMINATION_DECISION_DATE",
+                  "DOCUMENT_CARRIER",
+                  "DOCUMENT_SIGNER_ROLE",
+                  "DOCUMENT_SIGNED_FOR",
+                  "DOCUMENT_LOADING_PORT",
+                  "DOCUMENT_DISCHARGE_PORT",
+                  "DOCUMENT_DEPARTURE_AIRPORT",
+                  "DOCUMENT_DESTINATION_AIRPORT",
+                  "DOCUMENT_VESSEL",
+                  "DOCUMENT_TRANSPORT_NOTATION",
+                  "DOCUMENT_ISSUED_ORIGINAL_COUNT",
+                  "DOCUMENT_INSURANCE_TYPE",
+                  "DOCUMENT_COVERAGE_FROM",
+                  "DOCUMENT_COVERAGE_TO",
+                  "DOCUMENT_UNIT_PRICE_AMOUNT",
+                  "DOCUMENT_ORIGIN_COUNTRY",
+                  "LC_CIF_CIP_VALUE_AMOUNT",
+                  "LC_CLAIMED_AMOUNT",
+                  "LC_GROSS_GOODS_AMOUNT",
+                  "LC_INSURANCE_BASE_AMOUNT",
+                  "LC_QUANTITY",
+                  "LC_QUANTITY_UNIT",
+                  "LC_UNIT_PRICE_AMOUNT",
+                  "LC_LOADING_PORT",
+                  "LC_DISCHARGE_PORT",
+                  "LC_DEPARTURE_AIRPORT",
+                  "LC_DESTINATION_AIRPORT",
+                  "LC_COVERAGE_FROM",
+                  "LC_COVERAGE_TO",
+                  "LC_ORIGIN_COUNTRY",
+                  "LC_DOCUMENT_ISSUED_ORIGINAL_COUNT"
                 ]
               },
               "operator": {
@@ -508,48 +569,6 @@
           "if": {
             "properties": {
               "left": {
-                "const": "DOCUMENT_QUANTITY"
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "right": {
-                "enum": [
-                  "PEER_QUANTITY"
-                ]
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "left": {
-                "const": "DOCUMENT_QUANTITY_UNIT"
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "right": {
-                "enum": [
-                  "PEER_QUANTITY_UNIT"
-                ]
-              },
-              "operator": {
-                "enum": [
-                  "EQ",
-                  "NE"
-                ]
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "left": {
                 "const": "DOCUMENT_NET_WEIGHT"
               }
             }
@@ -601,25 +620,6 @@
                 "enum": [
                   "EQ",
                   "NE"
-                ]
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "left": {
-                "const": "DOCUMENT_INSURED_AMOUNT"
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "right": {
-                "enum": [
-                  "LC_AMOUNT",
-                  "PEER_AMOUNT"
                 ]
               }
             }
@@ -726,24 +726,6 @@
           "if": {
             "properties": {
               "left": {
-                "const": "DOCUMENT_ORIGINAL_COUNT"
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "right": {
-                "enum": [
-                  "LC_REQUIRED_ORIGINAL_COUNT"
-                ]
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "left": {
                 "const": "DOCUMENT_EXAMINATION_START_DATE"
               }
             }
@@ -756,6 +738,311 @@
                 ]
               }
             }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "left": {
+                "const": "DOCUMENT_INSURED_AMOUNT"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "right": {
+                "enum": [
+                  "LC_AMOUNT",
+                  "PEER_AMOUNT",
+                  "LC_INSURANCE_BASE_AMOUNT"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "left": {
+                "const": "DOCUMENT_QUANTITY"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "right": {
+                "enum": [
+                  "PEER_QUANTITY",
+                  "LC_QUANTITY"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "left": {
+                "const": "DOCUMENT_QUANTITY_UNIT"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "right": {
+                "enum": [
+                  "PEER_QUANTITY_UNIT",
+                  "LC_QUANTITY_UNIT"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "left": {
+                "const": "DOCUMENT_ORIGINAL_COUNT"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "right": {
+                "enum": [
+                  "LC_REQUIRED_ORIGINAL_COUNT",
+                  "LC_DOCUMENT_ISSUED_ORIGINAL_COUNT"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "left": {
+                "const": "DOCUMENT_UNIT_PRICE_AMOUNT"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "right": {
+                "enum": [
+                  "LC_UNIT_PRICE_AMOUNT"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "left": {
+                "const": "DOCUMENT_LOADING_PORT"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "right": {
+                "enum": [
+                  "LC_LOADING_PORT"
+                ]
+              },
+              "mode": {
+                "const": "MANUAL"
+              },
+              "operator": {
+                "enum": [
+                  "EQ",
+                  "NE"
+                ]
+              }
+            },
+            "required": [
+              "mode"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "left": {
+                "const": "DOCUMENT_DISCHARGE_PORT"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "right": {
+                "enum": [
+                  "LC_DISCHARGE_PORT"
+                ]
+              },
+              "mode": {
+                "const": "MANUAL"
+              },
+              "operator": {
+                "enum": [
+                  "EQ",
+                  "NE"
+                ]
+              }
+            },
+            "required": [
+              "mode"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "left": {
+                "const": "DOCUMENT_DEPARTURE_AIRPORT"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "right": {
+                "enum": [
+                  "LC_DEPARTURE_AIRPORT"
+                ]
+              },
+              "mode": {
+                "const": "MANUAL"
+              },
+              "operator": {
+                "enum": [
+                  "EQ",
+                  "NE"
+                ]
+              }
+            },
+            "required": [
+              "mode"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "left": {
+                "const": "DOCUMENT_DESTINATION_AIRPORT"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "right": {
+                "enum": [
+                  "LC_DESTINATION_AIRPORT"
+                ]
+              },
+              "mode": {
+                "const": "MANUAL"
+              },
+              "operator": {
+                "enum": [
+                  "EQ",
+                  "NE"
+                ]
+              }
+            },
+            "required": [
+              "mode"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "left": {
+                "const": "DOCUMENT_COVERAGE_FROM"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "right": {
+                "enum": [
+                  "LC_COVERAGE_FROM"
+                ]
+              },
+              "mode": {
+                "const": "MANUAL"
+              },
+              "operator": {
+                "enum": [
+                  "EQ",
+                  "NE"
+                ]
+              }
+            },
+            "required": [
+              "mode"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "left": {
+                "const": "DOCUMENT_COVERAGE_TO"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "right": {
+                "enum": [
+                  "LC_COVERAGE_TO"
+                ]
+              },
+              "mode": {
+                "const": "MANUAL"
+              },
+              "operator": {
+                "enum": [
+                  "EQ",
+                  "NE"
+                ]
+              }
+            },
+            "required": [
+              "mode"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "left": {
+                "const": "DOCUMENT_ORIGIN_COUNTRY"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "right": {
+                "enum": [
+                  "LC_ORIGIN_COUNTRY"
+                ]
+              },
+              "mode": {
+                "const": "MANUAL"
+              },
+              "operator": {
+                "enum": [
+                  "EQ",
+                  "NE"
+                ]
+              }
+            },
+            "required": [
+              "mode"
+            ]
           }
         }
       ]
@@ -805,7 +1092,7 @@
         },
         "facts": {
           "type": "object",
-          "maxProperties": 60,
+          "maxProperties": 96,
           "propertyNames": {
             "enum": [
               "DOCUMENT_AMOUNT",
@@ -854,7 +1141,37 @@
               "PEER_GROSS_WEIGHT",
               "PEER_WEIGHT_UNIT",
               "DOCUMENT_EXAMINATION_START_DATE",
-              "LC_EXAMINATION_DECISION_DATE"
+              "LC_EXAMINATION_DECISION_DATE",
+              "DOCUMENT_CARRIER",
+              "DOCUMENT_SIGNER_ROLE",
+              "DOCUMENT_SIGNED_FOR",
+              "DOCUMENT_LOADING_PORT",
+              "DOCUMENT_DISCHARGE_PORT",
+              "DOCUMENT_DEPARTURE_AIRPORT",
+              "DOCUMENT_DESTINATION_AIRPORT",
+              "DOCUMENT_VESSEL",
+              "DOCUMENT_TRANSPORT_NOTATION",
+              "DOCUMENT_ISSUED_ORIGINAL_COUNT",
+              "DOCUMENT_INSURANCE_TYPE",
+              "DOCUMENT_COVERAGE_FROM",
+              "DOCUMENT_COVERAGE_TO",
+              "DOCUMENT_UNIT_PRICE_AMOUNT",
+              "DOCUMENT_ORIGIN_COUNTRY",
+              "LC_CIF_CIP_VALUE_AMOUNT",
+              "LC_CLAIMED_AMOUNT",
+              "LC_GROSS_GOODS_AMOUNT",
+              "LC_INSURANCE_BASE_AMOUNT",
+              "LC_QUANTITY",
+              "LC_QUANTITY_UNIT",
+              "LC_UNIT_PRICE_AMOUNT",
+              "LC_LOADING_PORT",
+              "LC_DISCHARGE_PORT",
+              "LC_DEPARTURE_AIRPORT",
+              "LC_DESTINATION_AIRPORT",
+              "LC_COVERAGE_FROM",
+              "LC_COVERAGE_TO",
+              "LC_ORIGIN_COUNTRY",
+              "LC_DOCUMENT_ISSUED_ORIGINAL_COUNT"
             ]
           },
           "additionalProperties": {
@@ -1093,6 +1410,201 @@
                       "LC_RULE_STANDARD",
                       "LC_TRANSFERRED",
                       "LC_SECOND_BENEFICIARY"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schemaVersion": {
+            "enum": [
+              1,
+              2,
+              3
+            ]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "rules": {
+            "items": {
+              "properties": {
+                "left": {
+                  "enum": [
+                    "DOCUMENT_AMOUNT",
+                    "DOCUMENT_CURRENCY",
+                    "DOCUMENT_DATE",
+                    "DOCUMENT_ISSUER",
+                    "DOCUMENT_RECIPIENT",
+                    "DOCUMENT_GOODS_DESCRIPTION",
+                    "DOCUMENT_SHIPMENT_DATE",
+                    "DOCUMENT_PRESENTATION_GROUP",
+                    "DOCUMENT_QUANTITY",
+                    "DOCUMENT_QUANTITY_UNIT",
+                    "DOCUMENT_NET_WEIGHT",
+                    "DOCUMENT_GROSS_WEIGHT",
+                    "DOCUMENT_WEIGHT_UNIT",
+                    "DOCUMENT_INSURED_AMOUNT",
+                    "DOCUMENT_INSURANCE_CURRENCY",
+                    "DOCUMENT_INSURANCE_EFFECTIVE_DATE",
+                    "DOCUMENT_INSURANCE_RISKS",
+                    "DOCUMENT_SIGNED",
+                    "DOCUMENT_ORIGINAL_COUNT",
+                    "DOCUMENT_EXAMINATION_START_DATE"
+                  ]
+                },
+                "right": {
+                  "enum": [
+                    "LC_AMOUNT",
+                    "LC_CURRENCY",
+                    "LC_EXPIRY_DATE",
+                    "LC_LATEST_SHIPMENT_DATE",
+                    "LC_BENEFICIARY",
+                    "LC_APPLICANT",
+                    "LC_GOODS_DESCRIPTION",
+                    "LC_RULE_STANDARD",
+                    "LC_TRANSFERRED",
+                    "LC_SECOND_BENEFICIARY",
+                    "LC_PRESENTATION_DATE",
+                    "LC_PRESENTATION_PERIOD_DAYS",
+                    "LC_INSURANCE_MIN_PERCENT",
+                    "LC_TOLERANCE_PERCENT",
+                    "LC_SIGNATURE_REQUIRED",
+                    "LC_REQUIRED_ORIGINAL_COUNT",
+                    "LC_INSURANCE_RISKS",
+                    "PEER_AMOUNT",
+                    "PEER_CURRENCY",
+                    "PEER_SHIPMENT_DATE",
+                    "PEER_GOODS_DESCRIPTION",
+                    "PEER_QUANTITY",
+                    "PEER_QUANTITY_UNIT",
+                    "PEER_NET_WEIGHT",
+                    "PEER_GROSS_WEIGHT",
+                    "PEER_WEIGHT_UNIT",
+                    "LC_EXAMINATION_DECISION_DATE"
+                  ]
+                },
+                "conditions": {
+                  "items": {
+                    "properties": {
+                      "field": {
+                        "enum": [
+                          "DOCUMENT_AMOUNT",
+                          "DOCUMENT_CURRENCY",
+                          "DOCUMENT_DATE",
+                          "LC_AMOUNT",
+                          "LC_CURRENCY",
+                          "LC_EXPIRY_DATE",
+                          "LC_LATEST_SHIPMENT_DATE",
+                          "DOCUMENT_ISSUER",
+                          "DOCUMENT_RECIPIENT",
+                          "DOCUMENT_GOODS_DESCRIPTION",
+                          "LC_BENEFICIARY",
+                          "LC_APPLICANT",
+                          "LC_GOODS_DESCRIPTION",
+                          "LC_RULE_STANDARD",
+                          "LC_TRANSFERRED",
+                          "LC_SECOND_BENEFICIARY",
+                          "DOCUMENT_SHIPMENT_DATE",
+                          "DOCUMENT_PRESENTATION_GROUP",
+                          "DOCUMENT_QUANTITY",
+                          "DOCUMENT_QUANTITY_UNIT",
+                          "DOCUMENT_NET_WEIGHT",
+                          "DOCUMENT_GROSS_WEIGHT",
+                          "DOCUMENT_WEIGHT_UNIT",
+                          "DOCUMENT_INSURED_AMOUNT",
+                          "DOCUMENT_INSURANCE_CURRENCY",
+                          "DOCUMENT_INSURANCE_EFFECTIVE_DATE",
+                          "DOCUMENT_INSURANCE_RISKS",
+                          "DOCUMENT_SIGNED",
+                          "DOCUMENT_ORIGINAL_COUNT",
+                          "LC_PRESENTATION_DATE",
+                          "LC_PRESENTATION_PERIOD_DAYS",
+                          "LC_INSURANCE_MIN_PERCENT",
+                          "LC_TOLERANCE_PERCENT",
+                          "LC_SIGNATURE_REQUIRED",
+                          "LC_REQUIRED_ORIGINAL_COUNT",
+                          "LC_INSURANCE_RISKS",
+                          "PEER_AMOUNT",
+                          "PEER_CURRENCY",
+                          "PEER_SHIPMENT_DATE",
+                          "PEER_GOODS_DESCRIPTION",
+                          "PEER_QUANTITY",
+                          "PEER_QUANTITY_UNIT",
+                          "PEER_NET_WEIGHT",
+                          "PEER_GROSS_WEIGHT",
+                          "PEER_WEIGHT_UNIT",
+                          "DOCUMENT_EXAMINATION_START_DATE",
+                          "LC_EXAMINATION_DECISION_DATE"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "tests": {
+            "items": {
+              "properties": {
+                "facts": {
+                  "maxProperties": 60,
+                  "propertyNames": {
+                    "enum": [
+                      "DOCUMENT_AMOUNT",
+                      "DOCUMENT_CURRENCY",
+                      "DOCUMENT_DATE",
+                      "LC_AMOUNT",
+                      "LC_CURRENCY",
+                      "LC_EXPIRY_DATE",
+                      "LC_LATEST_SHIPMENT_DATE",
+                      "DOCUMENT_ISSUER",
+                      "DOCUMENT_RECIPIENT",
+                      "DOCUMENT_GOODS_DESCRIPTION",
+                      "LC_BENEFICIARY",
+                      "LC_APPLICANT",
+                      "LC_GOODS_DESCRIPTION",
+                      "LC_RULE_STANDARD",
+                      "LC_TRANSFERRED",
+                      "LC_SECOND_BENEFICIARY",
+                      "DOCUMENT_SHIPMENT_DATE",
+                      "DOCUMENT_PRESENTATION_GROUP",
+                      "DOCUMENT_QUANTITY",
+                      "DOCUMENT_QUANTITY_UNIT",
+                      "DOCUMENT_NET_WEIGHT",
+                      "DOCUMENT_GROSS_WEIGHT",
+                      "DOCUMENT_WEIGHT_UNIT",
+                      "DOCUMENT_INSURED_AMOUNT",
+                      "DOCUMENT_INSURANCE_CURRENCY",
+                      "DOCUMENT_INSURANCE_EFFECTIVE_DATE",
+                      "DOCUMENT_INSURANCE_RISKS",
+                      "DOCUMENT_SIGNED",
+                      "DOCUMENT_ORIGINAL_COUNT",
+                      "LC_PRESENTATION_DATE",
+                      "LC_PRESENTATION_PERIOD_DAYS",
+                      "LC_INSURANCE_MIN_PERCENT",
+                      "LC_TOLERANCE_PERCENT",
+                      "LC_SIGNATURE_REQUIRED",
+                      "LC_REQUIRED_ORIGINAL_COUNT",
+                      "LC_INSURANCE_RISKS",
+                      "PEER_AMOUNT",
+                      "PEER_CURRENCY",
+                      "PEER_SHIPMENT_DATE",
+                      "PEER_GOODS_DESCRIPTION",
+                      "PEER_QUANTITY",
+                      "PEER_QUANTITY_UNIT",
+                      "PEER_NET_WEIGHT",
+                      "PEER_GROSS_WEIGHT",
+                      "PEER_WEIGHT_UNIT",
+                      "DOCUMENT_EXAMINATION_START_DATE",
+                      "LC_EXAMINATION_DECISION_DATE"
                     ]
                   }
                 }
