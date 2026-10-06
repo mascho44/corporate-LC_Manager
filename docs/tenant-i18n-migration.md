@@ -546,3 +546,27 @@ is introduced. Stages 19–20 remain local and not deployed.
 Verification: complete Java regression passed without failures/errors. The final
 role-inheritance tests were rerun successfully after adding the administrator
 TOTP assertion. Whitespace validation passed.
+
+## Stage 21: atomic administration change audit
+
+User/role create, update and delete endpoints now participate in a shared
+transaction with their successful audit event. `recordChangeInTransaction` uses
+MANDATORY propagation; an audit persistence failure rolls back the administration
+mutation instead of leaving a committed change without its event.
+
+Allowlisted JSON snapshots record role name/base type/system flag/sorted permission
+codes, or username/role ID/effective base type/activation. Update events capture
+previous and new values; creation/deletion capture the respective one-sided value.
+Entities and requests are never serialized. Email, display name, credential hashes,
+password inputs, TOTP secrets and recovery codes are excluded from these snapshots.
+Existing audit access protection and tenant attribution remain unchanged.
+
+Scoped service lookups supply the previous values. These snapshots do not claim
+serializable concurrent-edit protection, nor a complete security-event history;
+failed operations are not logged as successful changes. Tests cover mutation
+rollback on audit failure and safe, deterministic allowlisted serialization.
+No migration or tenant activation is introduced. This stage remains local.
+
+Verification: complete regression ran 354 Java tests with no failures/errors
+(two skipped). Administration rollback and allowlist snapshot tests passed;
+whitespace validation passed. Not deployed.
