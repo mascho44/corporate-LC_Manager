@@ -72,7 +72,7 @@ public class ProfileService {
     @Transactional
     public ProfileView deleteAvatar(String username){AppUser user=user(username);avatars.findById(user.getId()).ifPresent(avatars::delete);return new ProfileView(user.getUsername(),user.getDisplayName(),roleName(user),user.isTotpEnabled(),null,user.getEmail());}
 
-    private AppUser user(String username){return users.findByUsernameIgnoreCase(username).orElseThrow(()->new NoSuchElementException("Benutzer nicht gefunden."));}
+    private AppUser user(String username){var user=users.findByUsernameIgnoreCase(username).orElseThrow(()->new NoSuchElementException("Benutzer nicht gefunden."));de.corporate.lc.tenant.domain.TenantContext.require(user.getTenantId());return user;}
     private String roleName(AppUser user){return user.getAssignedRole()==null?user.getRole().name():user.getAssignedRole().getName();}
     private ProfileView view(AppUser user){String url=avatars.findById(user.getId()).map(avatar->"/api/profile/avatar?v="+avatar.getUpdatedAt().toEpochMilli()).orElse(null);return new ProfileView(user.getUsername(),user.getDisplayName(),roleName(user),user.isTotpEnabled(),url,user.getEmail());}
 }

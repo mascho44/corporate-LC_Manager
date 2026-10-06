@@ -13,6 +13,7 @@ public class LanguagePreferencesService {
  public LanguagePreferencesService(AppUserRepository users,TenantRepository tenants){this.users=users;this.tenants=tenants;}
  @Transactional(readOnly=true) public Preferences get(String username){
   var user=users.findByUsernameIgnoreCase(username).orElseThrow(()->new NoSuchElementException("User not found."));
+  de.corporate.lc.tenant.domain.TenantContext.require(user.getTenantId());
   if(!Tenant.DEFAULT_ID.equals(user.getTenantId()))throw new org.springframework.security.access.AccessDeniedException("Multi-tenant access is not enabled.");
   var tenant=tenants.findById(user.getTenantId()).orElseThrow(()->new IllegalStateException("Tenant configuration is missing."));
   String fallback=SUPPORTED.contains(tenant.getDefaultLanguage())?tenant.getDefaultLanguage():"en";
