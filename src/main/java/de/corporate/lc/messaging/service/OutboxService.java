@@ -49,6 +49,7 @@ public class OutboxService {
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void publish(OutboxMessage message) {
+        de.corporate.lc.tenant.domain.TenantContext.require(message.getTenantId());
         try {
             publisher.publish(message.getTopic(), message.getMessageKey(), message.getPayload());
             message.setStatus("PUBLISHED");

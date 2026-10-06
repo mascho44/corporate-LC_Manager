@@ -7,6 +7,10 @@ import java.util.UUID;
 @Entity
 @Table(name="training_session")
 public class TrainingSession {
+    @Column(nullable=false,updatable=false) @com.fasterxml.jackson.annotation.JsonIgnore
+    private UUID tenantId=de.corporate.lc.tenant.domain.TenantContext.currentId();
+    public UUID getTenantId(){return tenantId;}
+    @PrePersist @PreUpdate @PreRemove private void validateTenant(){de.corporate.lc.tenant.domain.TenantContext.require(tenantId);}
     @Column(columnDefinition="text") private String ocrConfidenceJson;
     public String getOcrConfidenceJson(){return ocrConfidenceJson;}
     public void setOcrConfidenceJson(String value){ocrConfidenceJson=value;}

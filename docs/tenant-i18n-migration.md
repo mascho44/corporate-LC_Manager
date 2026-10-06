@@ -105,3 +105,86 @@ All migrations through V51 passed on isolated PostgreSQL 17; a synthetic existin
 document received its LC owner. A cross-tenant link was rejected, a valid link was
 accepted and LC deletion cascaded correctly. The disposable test database was
 removed. Production data and tenant gates were not changed by these checks.
+
+## Access isolation stage 3: training and learned corrections
+
+Training sessions have immutable tenant ownership with lifecycle write/removal
+checks. History, ID/content/snippet/export lookups, edit locks, quality aggregates
+and the learning service's source-session reads use scoped repository queries.
+This covers SWIFT and advising-letter training. Existing draft ownership/permission
+checks remain; learned knowledge is shared across authorized users of the same
+tenant, not restricted to the creator of the source session.
+
+Learning controls now have a composite `(tenant_id, rule_id)` identity. Identical
+rule hashes can be activated independently in different tenants. V52 retains
+existing activation settings and prevents cross-tenant training/LC links. Deleting
+an LC clears only the training link, not the session's tenant or learned facts.
+The existing soft-delete of templates still retains learning source data.
+
+PostgreSQL verification with synthetic pre-existing sessions/controls confirmed
+preserved activation, independent same-hash controls, rejection of foreign LC links
+and preservation of training ownership after LC deletion. The isolated temporary
+database was removed. Repository/service tests exercise foreign history/ID/locks,
+write rejection, tenant-local corrections and activation, shared learning for a
+different user, and retained learning after template soft-delete.
+The complete Java and JavaScript regression suites passed with no failures.
+
+This remains an incremental bootstrap: audit and other roots, generic repository
+bulk/pagination operations, global uniqueness/singletons and multi-tenant job
+dispatch still need conversion. The single-tenant database/authentication gates
+remain mandatory; neither tenant creation nor switching is enabled by this stage.
+
+## Access isolation stage 4: audit and integration outbox
+
+Audit events carry immutable server-context tenant ownership. Recent history/CSV,
+entity timelines and case-package audit queries are scoped, including direct IDs
+and source lists. Existing limits (200 recent events, 100 per entity) remain in
+place. JPA also rejects event updates/removal; PostgreSQL's existing append-only
+UPDATE/DELETE/TRUNCATE triggers remain unchanged. V53 adds tenant-aware indexes
+without rewriting historical events or disabling triggers.
+
+Integration outbox records created by audit events inherit the same tenant.
+Pending candidates, status/dead-letter lists, counts and retry IDs are scoped.
+Publication verifies ownership before invoking the publisher, not after delivery.
+The scheduled dispatcher still processes only the bootstrap tenant; routing and
+multi-tenant dispatch are not enabled. Authentication events without an established
+tenant context still belong to the bootstrap tenant. These paths must be designed
+before enabling multiple tenants. Generic inherited bulk/pagination APIs also
+remain outside this incremental conversion.
+
+Negative repository/service tests cover identical entity IDs across tenants,
+CSV exclusion, audit write rejection, outbox ownership propagation, foreign retry
+and prevention of foreign publication before any publisher call. Isolated
+PostgreSQL 17 migrations through V53 preserved a synthetic historical event and
+confirmed its original tenant. UPDATE, DELETE and TRUNCATE were all rejected by
+the unchanged triggers. The disposable test database was removed; no production
+history or tenant gates were changed.
+The full regression suite passed: 305 Java tests with no failures (two skipped)
+and 30 passing JavaScript tests.
+
+## Access isolation stage 5: company profiles and document templates
+
+Company profiles and document templates have immutable tenant ownership and
+lifecycle write/removal checks. Company lists/choices, IDs and logo access use
+scoped lookups. The legacy default-profile route resolves the first profile by ID
+within the current tenant, not global company ID 1; an empty tenant fails closed.
+Default-profile audit events now use the actual selected company ID.
+
+Template lists, downloads, deletion, company-specific lookup and legacy-name or
+wildcard fallback are scoped. A supplied company ID must resolve in the current
+tenant before fallback. Word rendering rejects a foreign LC before selecting data
+or templates. V54 adds composite LC/company and template/company foreign keys
+and tenant-scoped template uniqueness, allowing independent wildcard templates.
+
+The single-tenant activation gates remain in force. Generic repository bulk and
+pagination APIs, remaining roots, tenant provisioning/default-profile creation and
+multi-tenant background dispatch are not completed by this stage.
+
+Verification: all migrations through V54 passed on isolated PostgreSQL 17.
+Two synthetic tenants could independently store wildcard invoice templates;
+cross-tenant LC/company and template/company links were rejected. The temporary
+database was removed without modifying production or discarding application data.
+Repository/service tests cover foreign IDs and updates, tenant-local default
+company/logo access, template downloads/deletion and scoped fallback selection.
+The complete regression suite passed: 307 Java tests without failures (two
+skipped) and 30 JavaScript tests passed.
