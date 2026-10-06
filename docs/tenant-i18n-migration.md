@@ -188,3 +188,49 @@ Repository/service tests cover foreign IDs and updates, tenant-local default
 company/logo access, template downloads/deletion and scoped fallback selection.
 The complete regression suite passed: 307 Java tests without failures (two
 skipped) and 30 JavaScript tests passed.
+
+## Access isolation stage 6: SWIFT import history and charges
+
+Import records, charge profiles and estimates carry immutable tenant ownership
+with lifecycle checks. Import history retains its 20-item limit; status counts and
+ID/source-list reads are scoped. Fee profiles and saved estimate lists/IDs are
+scoped, including profile selection when calculating charges for an owned LC.
+V55 attributes existing estimates through their LC and enforces composite links
+to both the LC and tariff profile. The existing LC-delete cascade remains intact.
+
+Two-tenant tests cover foreign import history/counts/IDs, tariff lists and IDs,
+estimate histories and rejection of using a foreign tariff for an owned LC.
+Foreign tariff modification is denied. PostgreSQL 17 migrations through V55 passed
+in isolation; existing synthetic estimates received their LC tenant, foreign LC
+and tariff links were rejected and deletion cascaded correctly. The temporary
+database was removed; production data was not changed.
+The complete regression suite passed: 310 Java tests with no failures (two
+skipped) and 30 passing JavaScript tests.
+
+Additional tenant activation remains gated. Rule-pack storage/activation, other
+remaining roots and inherited generic bulk/pagination operations still require
+conversion; multi-tenant identity/provisioning and background routing remain open.
+
+## Access isolation stage 7: rule-pack storage and activation
+
+Stored versions and selections have immutable tenant ownership. Version lists,
+ID tests, duplicate-version checks and activation/deactivation locks are scoped.
+Selections use composite `(tenant_id, id)` identities: identically named versions
+can be imported and activated independently in different tenants. Evaluation
+validates LC/document ownership before reading packs; version decoding also
+validates ownership. Rights acknowledgement, checksums and pack tests remain intact.
+
+V56 adds ownership to stored versions, tenant-scoped uniqueness and composite
+foreign keys requiring active/previous references to match both tenant and pack ID.
+Isolated PostgreSQL 17 migrations through V56 preserved a synthetic activation.
+Identically named versions/selections in another test tenant were accepted;
+foreign active/previous versions and another pack's version were rejected. The
+temporary database was removed. No ICC packs or source PDFs were used.
+
+Repository/service tests cover IDs/lists/duplicate checks/locks, foreign testing
+and activation, independent deactivation and rejection of foreign LC evaluation.
+Additional tenant activation remains gated: remaining roots, generic repository
+bulk/pagination APIs, identities/provisioning and job dispatch need completion.
+Production was not changed by this stage.
+The complete regression suite passed: 312 Java tests without failures (two
+skipped) and 30 passing JavaScript tests.

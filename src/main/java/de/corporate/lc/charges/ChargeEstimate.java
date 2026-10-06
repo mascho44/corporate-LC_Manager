@@ -3,6 +3,9 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
 @Entity @Table(name="charge_estimate") public class ChargeEstimate {
+ @Column(nullable=false,updatable=false) @com.fasterxml.jackson.annotation.JsonIgnore private UUID tenantId=de.corporate.lc.tenant.domain.TenantContext.currentId();
+ public UUID getTenantId(){return tenantId;}
+ @PrePersist @PreUpdate @PreRemove private void validateTenant(){de.corporate.lc.tenant.domain.TenantContext.require(tenantId);}
  @Id public UUID id=UUID.randomUUID();@Column(nullable=false) public UUID lcId;
  @Column(nullable=false) public UUID profileId;@Column(nullable=false,columnDefinition="text") public String resultJson;
  @Column(nullable=false,columnDefinition="text") public String profileSnapshot;

@@ -26,7 +26,54 @@ class TenantRepositoryIsolationTest {
  @Autowired de.corporate.lc.messaging.repository.OutboxMessageRepository outbox;
  @Autowired de.corporate.lc.company.repository.CompanyProfileRepository companies;
  @Autowired de.corporate.lc.document.repository.DocumentTemplateRepository templates;
+ @Autowired de.corporate.lc.imports.repository.SwiftImportRecordRepository imports;
+ @Autowired de.corporate.lc.charges.ChargeProfileRepository chargeProfiles;
+ @Autowired de.corporate.lc.charges.ChargeEstimateRepository chargeEstimates;
+ @Autowired de.corporate.lc.rulepack.PackVersionRepository packVersions;
+ @Autowired de.corporate.lc.rulepack.PackSelectionRepository packSelections;
  final UUID foreignTenant=UUID.fromString("00000000-0000-0000-0000-000000000099");
+ de.corporate.lc.rulepack.StoredPackVersion createPackVersion(String packId){var v=new de.corporate.lc.rulepack.StoredPackVersion();v.packId=packId;v.version="1.0";v.definitionJson="{}";v.checksum="synthetic";v.testsPassed=true;v.importedBy="synthetic-user";return packVersions.saveAndFlush(v);}
+ de.corporate.lc.rulepack.PackSelection createSelection(de.corporate.lc.rulepack.StoredPackVersion version){var s=new de.corporate.lc.rulepack.PackSelection();s.id=version.packId;s.activeVersionId=version.id;return packSelections.saveAndFlush(s);}
+ @Test void packVersionsIdsAndActivationLocksAreTenantLocal(){
+  var own=createPackVersion("same-pack");createSelection(own);de.corporate.lc.rulepack.StoredPackVersion foreign;
+  try(var scope=TenantContext.open(foreignTenant)){foreign=createPackVersion("same-pack");createSelection(foreign);createSelection(createPackVersion("foreign-only"));}
+  assertThat(packVersions.findAllByOrderByImportedAtDesc()).extracting(v->v.id).containsExactly(own.id);assertThat(packVersions.findById(foreign.id)).isEmpty();
+  assertThat(packVersions.existsByPackIdAndVersion("foreign-only","1.0")).isFalse();assertThat(packVersions.existsByPackIdAndVersion("same-pack","1.0")).isTrue();
+  assertThat(packSelections.locked("foreign-only")).isEmpty();assertThat(packSelections.existsById("foreign-only")).isFalse();assertThat(packSelections.findAll()).hasSize(1);
+  assertThat(packSelections.findById(new de.corporate.lc.rulepack.PackSelection.Key(foreignTenant,"same-pack"))).isEmpty();
+  var service=new de.corporate.lc.rulepack.InternalPackService(new de.corporate.lc.rulepack.PackCodec(new com.fasterxml.jackson.databind.ObjectMapper()),packVersions,packSelections,org.mockito.Mockito.mock(de.corporate.lc.audit.service.AuditService.class));
+  assertThatThrownBy(()->service.test(foreign.id)).isInstanceOf(java.util.NoSuchElementException.class);assertThatThrownBy(()->service.activate(foreign.id,true,null)).isInstanceOf(java.util.NoSuchElementException.class);
+  service.deactivate("same-pack",null);packSelections.flush();assertThat(packSelections.findById("same-pack").orElseThrow().activeVersionId).isNull();
+  try(var scope=TenantContext.open(foreignTenant)){assertThat(packSelections.findById("same-pack").orElseThrow().activeVersionId).isEqualTo(foreign.id);}
+ }
+ @Test void ruleEvaluationRejectsForeignLcBeforeReadingPacks(){
+  LetterOfCredit foreign;try(var scope=TenantContext.open(foreignTenant)){foreign=new LetterOfCredit();}
+  var service=new de.corporate.lc.rulepack.InternalPackService(null,packVersions,packSelections,org.mockito.Mockito.mock(de.corporate.lc.audit.service.AuditService.class));
+  assertThatThrownBy(()->service.evaluate(foreign,java.util.List.of())).isInstanceOf(AccessDeniedException.class);
+ }
+ de.corporate.lc.imports.domain.SwiftImportRecord createImport(String reference){var r=new de.corporate.lc.imports.domain.SwiftImportRecord();r.setFilename("synthetic.txt");r.setReference(reference);r.setStatus("SUCCESS");return imports.saveAndFlush(r);}
+ de.corporate.lc.charges.ChargeProfile createChargeProfile(){var p=new de.corporate.lc.charges.ChargeProfile();p.name="Synthetic tariff";p.currency="EUR";p.rulesJson="[]";p.createdBy="synthetic-user";return chargeProfiles.saveAndFlush(p);}
+ de.corporate.lc.charges.ChargeEstimate createEstimate(LetterOfCredit lc,de.corporate.lc.charges.ChargeProfile profile){var e=new de.corporate.lc.charges.ChargeEstimate();e.lcId=lc.getId();e.profileId=profile.id;e.resultJson="{}";e.profileSnapshot="{}";e.createdBy="synthetic-user";return chargeEstimates.saveAndFlush(e);}
+ @Test void importHistoryCountsAndIdsAreTenantLocal(){
+  var own=createImport("OWN-IMPORT");de.corporate.lc.imports.domain.SwiftImportRecord foreign;
+  try(var scope=TenantContext.open(foreignTenant)){foreign=createImport("FOREIGN-IMPORT");}
+  assertThat(imports.findTop20ByOrderByImportedAtDesc()).extracting(de.corporate.lc.imports.domain.SwiftImportRecord::getId).containsExactly(own.getId());
+  assertThat(imports.findById(foreign.getId())).isEmpty();assertThat(imports.findAll()).hasSize(1);assertThat(imports.countByStatus("SUCCESS")).isEqualTo(1);
+ }
+ @Test void chargesCannotListReadOrUseForeignProfilesOrEstimates(){
+  var ownLc=createLc("OWN-CHARGES");var ownProfile=createChargeProfile();var own=createEstimate(ownLc,ownProfile);
+  LetterOfCredit foreignLc;de.corporate.lc.charges.ChargeProfile foreignProfile;de.corporate.lc.charges.ChargeEstimate foreign;
+  try(var scope=TenantContext.open(foreignTenant)){foreignLc=createLc("FOREIGN-CHARGES");foreignProfile=createChargeProfile();foreign=createEstimate(foreignLc,foreignProfile);}
+  assertThat(chargeProfiles.findAll()).extracting(p->p.id).containsExactly(ownProfile.id);assertThat(chargeProfiles.findById(foreignProfile.id)).isEmpty();assertThat(chargeEstimates.findById(foreign.id)).isEmpty();
+  assertThat(chargeEstimates.findByLcIdOrderByCreatedAtDesc(foreignLc.getId())).isEmpty();assertThat(chargeEstimates.findAll()).extracting(e->e.id).containsExactly(own.id);
+  var controller=new de.corporate.lc.charges.ChargeController(chargeProfiles,chargeEstimates,lcs,new com.fasterxml.jackson.databind.ObjectMapper(),org.mockito.Mockito.mock(de.corporate.lc.audit.service.AuditService.class));
+  assertThatThrownBy(()->controller.history(foreignLc.getId())).isInstanceOf(java.util.NoSuchElementException.class);
+  assertThatThrownBy(()->controller.estimate(ownLc.getId(),new de.corporate.lc.charges.ChargeController.EstimateRequest(foreignProfile.id,java.util.Map.of()),null)).isInstanceOf(java.util.NoSuchElementException.class);
+ }
+ @Test void modifyingForeignTariffIsRejected(){
+  de.corporate.lc.charges.ChargeProfile foreign;try(var scope=TenantContext.open(foreignTenant)){foreign=createChargeProfile();}
+  foreign.name="Forbidden";assertThatThrownBy(()->chargeProfiles.saveAndFlush(foreign)).satisfies(error->{Throwable root=error;while(root.getCause()!=null)root=root.getCause();assertThat(root).isInstanceOf(AccessDeniedException.class);});
+ }
  de.corporate.lc.company.domain.CompanyProfile createCompany(int id){var c=new de.corporate.lc.company.domain.CompanyProfile();c.setId(id);c.setLegalName("Synthetic company "+id);c.setLogo(new byte[]{1});c.setLogoContentType("image/png");return companies.saveAndFlush(c);}
  de.corporate.lc.document.domain.DocumentTemplate createTemplate(Integer companyId,String name,byte content){var t=new de.corporate.lc.document.domain.DocumentTemplate();t.setCompanyId(companyId);t.setCompanyName(name);t.setDocumentType(de.corporate.lc.document.domain.DocumentType.COMMERCIAL_INVOICE);t.setOriginalFilename("synthetic.docx");t.setContentType("application/vnd.openxmlformats-officedocument.wordprocessingml.document");t.setContent(new byte[]{content});t.setFileSize(1);t.setUploadedBy("synthetic-user");return templates.saveAndFlush(t);}
  @Test void companyListsLogoLookupsAndDefaultAreTenantLocal(){

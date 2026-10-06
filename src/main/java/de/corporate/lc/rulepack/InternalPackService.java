@@ -65,6 +65,7 @@ public class InternalPackService {
   audit.recordInTransaction(auth,"LC_RULE_PACK_DEACTIVATED","RULE_PACK",packId,"Deaktivierte Version "+old);
  }
  private PackDefinition read(StoredPackVersion v){
+  de.corporate.lc.tenant.domain.TenantContext.require(v.getTenantId());
   if(!codec.digest(v.definitionJson).equals(v.checksum))throw new IllegalStateException("Prüfsumme des Rule Packs stimmt nicht.");
   var pack=codec.parse(v.definitionJson.getBytes(java.nio.charset.StandardCharsets.UTF_8));
   if(!pack.packId().equals(v.packId)||!pack.version().equals(v.version))throw new IllegalStateException("Pack-Identität stimmt nicht.");
@@ -72,6 +73,8 @@ public class InternalPackService {
  }
  @Transactional(readOnly=true)
  public List<CheckResult> evaluate(LetterOfCredit lc,List<LcDocument> documents){
+  de.corporate.lc.tenant.domain.TenantContext.require(lc.getTenantId());
+  documents.forEach(d->de.corporate.lc.tenant.domain.TenantContext.require(d.getTenantId()));
   var findings=new ArrayList<CheckResult>();
   for(var selection:selections.findAll().stream().sorted(Comparator.comparing(s->s.id)).toList()){
    if(selection.activeVersionId==null)continue;
