@@ -406,3 +406,38 @@ Verification: the final complete regression ran 333 Java tests without failures
 or errors (two skipped), and all 30 JavaScript tests passed. Membership tests
 cover foreign IDs/users/lists/page counts, role-permission inheritance including
 subsequent changes, and rejection of direct read-model deletion.
+
+## Stage 14: administrator membership overview
+
+The existing user administration now includes a collapsible, read-only tenant
+membership overview: tenant name, user, role, inherited permissions and active
+status. English and German labels are included. Changes still use the existing
+user administration; no independent membership write endpoint is introduced.
+
+`GET /api/users/memberships` requires `USER_MANAGE`, derives the tenant from the
+server-side context and returns a restricted DTO without credential fields.
+Tenant switching remains explicitly disabled. The bootstrap tenant constraint
+is unchanged, and no database migration is needed.
+
+The UI renders names as text, isolates overview loading failures from user
+management and ignores stale responses. Verification: 335 Java tests ran with
+zero failures/errors (two skipped); all 34 JavaScript tests passed. Tests cover
+anonymous and unauthorized requests, credential redaction, safe text rendering,
+loading failures and stale responses. This increment has not been deployed.
+
+## Stage 15: read-only tenant profile metadata
+
+The administrator overview also displays tenant code, default language and Bank/
+Corporate profile flags, labelled in English and German. These flags are metadata,
+not authorization grants. The existing endpoint resolves settings only from the
+server-side tenant context; client-supplied tenant parameters cannot select another
+tenant. No editing, switching, new tenant provisioning or SQL migration is added.
+
+All 35 JavaScript tests passed, including safe rendering of profile metadata. The
+API security suite additionally verifies server-side tenant selection and profile
+values. The preceding full Java regression remains the baseline; this increment
+uses targeted API tests. Production remains unchanged.
+
+Pre-release verification for stages 14–15: the complete Java regression passed
+without failures/errors, and all 35 JavaScript tests passed. Deployment retains
+the existing V60 schema and the bootstrap tenant gate.

@@ -408,7 +408,7 @@ $('#deleteLc').onclick=async()=>{if(!activeLc||!await confirmAction(`Akkreditiv 
 $('#uploadForm').onsubmit=async event=>{event.preventDefault();if(!activeLc)return;$('#uploadError').textContent='';const form=new FormData(event.target),file=form.get('file'),archive=file?.name?.toLowerCase().endsWith('.zip');try{await json(`/api/lcs/${activeLc.id}/documents${archive?'/archive':''}`,{method:'POST',body:form});$('#uploadDialog').close();await show(activeLc.id)}catch(e){$('#uploadError').textContent='Upload fehlgeschlagen: '+e.message}};
 function resetUserForm(){const f=$('#userForm');f.reset();f.elements.id.value='';f.elements.active.checked=true;f.elements.password.required=true;$('#userError').textContent=''}
 function renderUsers(){const role=x=>({ADMIN:'Administrator',EDITOR:'Sachbearbeiter',VIEWER:'Leser',USER:'Sachbearbeiter'})[x]||x;$('#userList').innerHTML=users.map(u=>`<div class="user-row" data-id="${u.id}"><div><b>${esc(u.displayName)}</b><small>${esc(u.username)} · ${role(u.role)}</small></div><span class="import-status ${u.active?'success':'rejected'}">${u.active?'Aktiv':'Gesperrt'}</span><button type="button" class="danger delete-user" data-id="${u.id}">Löschen</button></div>`).join('');document.querySelectorAll('.user-row').forEach(row=>row.onclick=e=>{if(e.target.classList.contains('delete-user'))return;const u=users.find(x=>x.id===row.dataset.id),f=$('#userForm');for(const k of ['id','username','displayName','email'])f.elements[k].value=u[k]||'';f.elements.role.value=u.role==='USER'?'EDITOR':u.role;f.elements.active.checked=u.active;f.elements.password.value='';f.elements.password.required=false;$('#userError').textContent=''});document.querySelectorAll('.delete-user').forEach(button=>button.onclick=async()=>{const u=users.find(x=>x.id===button.dataset.id);if(!await confirmAction(`Benutzer ${u.username} wirklich löschen?`))return;try{await json(`/api/users/${u.id}`,{method:'DELETE'});await loadUsers()}catch(e){$('#userError').textContent=e.message}})}
-async function loadUsers(){users=await json('/api/users');renderUsers()}
+async function loadUsers(){users=await json('/api/users');renderUsers();await loadMembershipOverview()}
 $('#usersBtn').onclick=async()=>{resetUserForm();$('#usersDialog').showModal();try{await loadUsers()}catch(e){$('#userError').textContent=e.message}};$('#closeUsers').onclick=()=>$('#usersDialog').close();$('#newUser').onclick=resetUserForm;
 const auditLabels={LC_CREATED:'LC-Akte angelegt',LOGIN:'Anmeldung',LOGIN_TOTP_REQUIRED:'Zweiter Faktor angefordert',LOGIN_TOTP_FAILED:'Zweiter Faktor abgelehnt',LOGOUT:'Abmeldung',PASSWORD_CHANGED:'Passwort geändert',PASSWORD_RESET_REQUESTED:'Passwort-Reset angefordert',PASSWORD_RESET_MAIL_FAILED:'Reset-Mail fehlgeschlagen',PASSWORD_RESET_FAILED:'Passwort-Reset abgelehnt',PASSWORD_RESET_COMPLETED:'Passwort zurückgesetzt',TOTP_SETUP_STARTED:'2FA-Einrichtung begonnen',TOTP_ENABLED:'2FA aktiviert',TOTP_DISABLED:'2FA deaktiviert',USER_CREATED:'Benutzer angelegt',USER_UPDATED:'Benutzer geändert',USER_DELETED:'Benutzer gelöscht',COMPANY_PROFILE_UPDATED:'Firmenstammdaten geändert',COMPANY_LOGO_UPDATED:'Firmenlogo geändert',COMPANY_LOGO_DELETED:'Firmenlogo gelöscht',LC_IMPORTED:'Akkreditiv importiert',LC_UPDATED:'Akkreditiv geändert',LC_DELETED:'Akkreditiv gelöscht',LC_ASSIGNED:'Akte zugewiesen',LC_NOTE_ADDED:'Aktennotiz',LC_FOLLOW_UP_COMPLETED:'Wiedervorlage erledigt',LC_TASK_CREATED:'Aufgabe angelegt',LC_TASK_COMPLETED:'Aufgabe erledigt',LC_TASK_REOPENED:'Aufgabe wieder geöffnet',LC_TASK_DELETED:'Aufgabe gelöscht',CALENDAR_EXPORTED:'Kalender exportiert',DOCUMENT_REQUIREMENT_MAPPED:'Dokumentenanforderung zugeordnet',DOCUMENT_REQUIREMENT_MAPPING_REMOVED:'Dokumentenzuordnung aufgehoben',DOCUMENT_TEMPLATE_SAVED:'Dokumentvorlage gespeichert',DOCUMENT_TEMPLATE_DELETED:'Dokumentvorlage gelöscht',SWIFT_IMPORTED:'SWIFT importiert',MT707_IMPORTED:'MT707-Amendment importiert',DOCUMENT_UPLOADED:'Dokument hochgeladen',DOCUMENT_ARCHIVE_UPLOADED:'ZIP-Akte hochgeladen',DOCUMENT_GENERATED:'Dokument erstellt',DOCUMENT_DRAFT_CREATED:'Dokumententwurf angelegt',DOCUMENT_DRAFT_UPDATED:'Dokumententwurf geändert',DOCUMENT_DRAFT_STATUS_CHANGED:'Entwurfsstatus geändert',DOCUMENT_DRAFT_GENERATED:'Finales Dokument erzeugt',DOCUMENT_DRAFT_DELETED:'Dokumententwurf gelöscht',DOCUMENT_UPDATED:'Dokumentdaten geändert',DOCUMENT_DELETED:'Dokument gelöscht',DOCUMENT_CHECK_DECIDED:'Prüfentscheidung gespeichert',DOCUMENT_CHECK_DECISIONS_RESET:'Prüfentscheidungen zurückgesetzt',DOCUMENT_CHECK_REPORT_CREATED:'Prüfbericht erstellt',LC_DOSSIER_EXPORTED:'LC-Akte exportiert',TRAINING_STARTED:'Training begonnen',TRAINING_PROGRESS_SAVED:'Trainingsstand gelernt',TRAINING_CONFIRMED:'Training abgeschlossen',TRAINING_RULE_ACTIVATED:'Lernregel aktiviert',TRAINING_RULE_DEACTIVATED:'Lernregel deaktiviert',TRAINING_DELETED:'Trainingsvorlage gelöscht',TRAINING_TEMPLATES_DELETED:'Trainingsvorlagen gesammelt gelöscht'};
 auditLabels.DOCUMENT_DRAFT_APPROVAL_RECORDED='Dokumentfreigabe erfasst';auditLabels.DOCUMENT_APPROVAL_POLICY_UPDATED='Freigabestufen geändert';let auditEvents=[];function auditArea(event){const action=event.action||'',type=event.entityType||'';if(action.startsWith('TRAINING'))return'TRAINING';if(action.startsWith('DOCUMENT')||type==='DOCUMENT')return'DOCUMENT';if(action.startsWith('USER')||action.startsWith('PASSWORD_'))return'USER';if(type==='SESSION'||['LOGIN','LOGOUT'].includes(action))return'SESSION';return'LC'}
@@ -784,3 +784,52 @@ document.addEventListener('click', event => {
     document.querySelector('#uploadDialog').close();
   }
 });
+
+/* Membership overview */
+let membershipOverviewGeneration=0;
+function membershipText(key,fallback){const value=globalThis.LcI18n?.t(key);return value&&value!==key?value:fallback;}
+function membershipNode(tag,text,className){const node=document.createElement(tag);node.textContent=text;if(className)node.className=className;return node;}
+function membershipMessage(key,fallback){const node=membershipNode('p',membershipText(key,fallback));node.dataset.i18n=key;return node;}
+function ensureMembershipOverview(){
+ let panel=$('#membershipOverview');if(panel)return panel;
+ panel=document.createElement('details');panel.id='membershipOverview';
+ const title=membershipNode('summary',membershipText('membership.title','Tenant memberships'));title.dataset.i18n='membership.title';panel.append(title);
+ const body=document.createElement('div');body.id='membershipOverviewBody';panel.append(body);$('#userForm').before(panel);return panel;
+}
+function renderMembershipOverview(overview){
+ const body=$('#membershipOverviewBody');body.replaceChildren();
+ body.append(membershipNode('p',overview.tenantName));
+ if(overview.settings){
+  const settings=overview.settings;
+  const metadata=document.createElement('dl');metadata.className='tenant-metadata';
+  const values=[['membership.code','Tenant code',settings.code],['membership.language','Default language',settings.defaultLanguage],['membership.bank','Bank profile',settings.bankEnabled],['membership.corporate','Corporate profile',settings.corporateEnabled]];
+  values.forEach(([key,label,value])=>{
+   const term=membershipNode('dt',membershipText(key,label));term.dataset.i18n=key;
+   const description=membershipNode('dd',typeof value==='boolean'?membershipText(value?'membership.enabled':'membership.disabled',value?'Enabled':'Disabled'):value);
+   if(typeof value==='boolean')description.dataset.i18n=value?'membership.enabled':'membership.disabled';
+   metadata.append(term,description);
+  });body.append(metadata);
+  body.append(membershipMessage('membership.metadataNotice','Profile settings are informational; they do not grant access permissions.'));
+ }
+ body.append(membershipMessage('membership.notice','Managed through user administration. Tenant switching is not enabled.'));
+ if(!overview.memberships.length){body.append(membershipMessage('membership.empty','No memberships available.'));return;}
+ overview.memberships.forEach(m=>{
+  const row=document.createElement('div');row.className='membership-row';
+  const identity=document.createElement('div');identity.append(membershipNode('b',m.username),membershipNode('small',m.roleName),membershipNode('small',m.permissions.join(' · ')));
+  const key=m.active?'membership.active':'membership.inactive';const status=membershipNode('span',membershipText(key,m.active?'Active':'Inactive'),'import-status '+(m.active?'success':'rejected'));status.dataset.i18n=key;
+  row.append(identity,status);body.append(row);
+ });
+}
+async function loadMembershipOverview(){
+ const generation=++membershipOverviewGeneration;
+ if(!can('USER_MANAGE')){$('#membershipOverview')?.remove();return;}
+ ensureMembershipOverview();const body=$('#membershipOverviewBody');body.replaceChildren(membershipMessage('membership.loading','Loading memberships…'));
+ try{
+  const overview=await json('/api/users/memberships');
+  if(generation!==membershipOverviewGeneration)return;
+  if(!can('USER_MANAGE')){$('#membershipOverview')?.remove();return;}
+  if(!Array.isArray(overview.memberships))throw new Error('Invalid membership response');
+  renderMembershipOverview(overview);
+ }catch(error){if(generation===membershipOverviewGeneration)body.replaceChildren(membershipMessage('membership.error','Membership overview unavailable. User administration remains available.'));}
+}
+/* End membership overview */

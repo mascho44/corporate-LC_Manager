@@ -1,4 +1,12 @@
 {
+  "membership.code": "Tenant code",
+  "membership.language": "Default language",
+  "membership.bank": "Bank profile",
+  "membership.corporate": "Corporate profile",
+  "membership.enabled": "Enabled",
+  "membership.disabled": "Disabled",
+  "membership.metadataNotice": "Profile settings are informational; they do not grant access permissions.",
+ "membership.title":"Tenant memberships", "membership.notice":"Managed through user administration. Tenant switching is not enabled.", "membership.empty":"No memberships available.", "membership.active":"Active", "membership.inactive":"Inactive", "membership.loading":"Loading memberships…", "membership.error":"Membership overview unavailable. User administration remains available.",
  "nav.workspace":"Bank workspace", "nav.cockpit":"Dashboard", "nav.myWork":"My work", "nav.lcs":"LC files",
  "nav.inbox":"Document inbox", "nav.training":"Training & recognition", "nav.import":"Import SWIFT", "nav.imports":"Import history",
  "nav.monitoring":"Operations monitor", "nav.company":"Company details", "nav.templates":"Document templates", "nav.users":"Users",
