@@ -11,7 +11,7 @@ function updateAdviceDeleteButton(){
 async function removeTrainingTemplates(ids,label){
  if(adviceTrainingSaving||(typeof advisingCaseBusy!=='undefined'&&advisingCaseBusy)){alert('Bitte warten, bis das Speichern abgeschlossen ist.');return;}
  if(!ids.length){alert('Bitte zuerst Trainingsvorlagen auswählen.');return;}
- if(!confirm(`${label} ausblenden? Bereits gespeicherte Lerninhalte und LC-Akten bleiben erhalten.`))return;
+ if(!await confirmAction(`${label} ausblenden? Bereits gespeicherte Lerninhalte und LC-Akten bleiben erhalten.`))return;
  const controls=[deleteAdviceButton,...adviceHistory.querySelectorAll('button')];controls.forEach(button=>button.disabled=true);
  try{
   await json('/api/training/templates',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify(ids)});

@@ -9,7 +9,7 @@ function fixture(){
  const elements={};const profile=element();profile.value='ADVISING_LETTER';
  const context=vm.createContext({document:{createElement:element,querySelector(selector){if(selector==='#trainingProfileSelect')return profile;if(selector==='#trainingHistory')return null;return elements[selector]??=element();},querySelectorAll(){return[];}},
   currentUser:{username:'owner',role:'EDITOR'},can:()=>true,advisingBody:element(),finishAdvice:element(),advisingTrainingItem:{id:'test-id',username:'owner'},trainingDialog:{open:true},advisingCaseBusy:false,
-  esc:value=>String(value),confirm:()=>true,alert:message=>calls.push(['alert',message]),
+  esc:value=>String(value),confirmAction:async()=>true,alert:message=>calls.push(['alert',message]),
   json:async(url,options)=>{calls.push([url,options]);return[];},openTraining(){},renderAdvisingTraining(){},saveAdvisingTraining:async()=>{},setTrainingProfile(){},openTrainingSession(){},loadDashboardDrafts:async()=>{},loadTrainingHistory:async()=>{}});
  vm.runInContext(fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/training-deletion.js'),'utf8'),context);
  return {context,calls,elements};
@@ -24,8 +24,8 @@ test('delete uses existing template endpoint and clears active advice only on su
  const call=calls.find(call=>call[0]==='/api/training/templates');assert.equal(call[1].method,'DELETE');assert.equal(call[1].body,'["test-id"]');assert.equal(context.advisingTrainingItem,null);
 });
 test('cancel and save-in-progress do not delete anything',async()=>{
- const {context,calls}=fixture();context.confirm=()=>false;await context.removeTrainingTemplates(['test-id'],'Vorlage');assert.equal(calls.length,0);
- context.confirm=()=>true;context.advisingCaseBusy=true;await context.removeTrainingTemplates(['test-id'],'Vorlage');assert.equal(calls.some(call=>call[0]==='/api/training/templates'),false);
+ const {context,calls}=fixture();context.confirmAction=async()=>false;await context.removeTrainingTemplates(['test-id'],'Vorlage');assert.equal(calls.length,0);
+ context.confirmAction=async()=>true;context.advisingCaseBusy=true;await context.removeTrainingTemplates(['test-id'],'Vorlage');assert.equal(calls.some(call=>call[0]==='/api/training/templates'),false);
 });
 test('failed delete retains draft and displays error',async()=>{
  const {context,elements}=fixture();context.json=async()=>{throw Error('Keine Berechtigung');};await context.removeTrainingTemplates(['test-id'],'Vorlage');
