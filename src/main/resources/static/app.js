@@ -27,6 +27,7 @@ document.addEventListener('click',async event=>{
     try{const history=await json(`/api/documents/${button.dataset.classificationHistory}/classification`);dialog.innerHTML=`<h2>Typerkennung & Korrekturen</h2>${history.length?history.map(entry=>`<article class="card"><b>${esc(entry.action==='MANUAL'?'Manuelle Auswahl':'Automatischer Vorschlag')} · ${esc(entry.selectedType||entry.suggestedType||'Unklar')}</b><small>${esc(entry.actor||entry.method||'')} · ${esc(entry.at)}</small>${entry.score!=null?`<p>Regelbasierte Bewertung: ${Math.round(entry.score*100)} / 100</p>`:''}<p>${esc((entry.evidence||[]).join(' · '))}</p></article>`).join(''):'<p>Altbestand: keine Klassifikationshistorie gespeichert.</p>'}<p>Korrektur über „Bearbeiten“ in der Dokumentenakte.</p><button type="button">Schließen</button>`;}catch(error){dialog.innerHTML=`<p class="error">${esc(error.message)}</p><button type="button">Schließen</button>`;}dialog.querySelector('button').onclick=()=>dialog.close();
 });
 function setupInboxUi(){
+    auditLabels.DOCUMENT_INBOX_SPLIT='Sammel-PDF aufgeteilt';auditLabels.DOCUMENT_INBOX_SPLIT_PART='Teil-Dokument aus Sammel-PDF erstellt';
     const section=document.createElement('section');section.id='inboxSection';section.className='panel hidden';
     section.innerHTML='<div class="panelhead"><div><h2>Dokumentenposteingang</h2><p>Dokument ansehen, LC-Akte und Dokumenttyp auswählen, anschließend die Zuordnung bestätigen.</p></div><button id="refreshInbox" type="button" class="secondary">Aktualisieren</button></div><form id="inboxUploadForm" class="inbox-upload"><label>Dateien oder ZIP-Archive auswählen<input name="file" type="file" multiple accept=".pdf,.xml,.txt,.csv,.jpg,.jpeg,.png,.zip,application/zip" required></label><small>Bis zu 100 entpackte Dateien · maximal 10 MB je Dokument und 50 MB insgesamt. ZIP-Archive bis 50 MB.</small><button type="submit">In den Posteingang laden</button></form><div id="inboxMessage" class="inbox-message" role="status" aria-live="polite"></div><div id="inboxList"></div>';
     $('#monitoringSection').before(section);
@@ -88,12 +89,36 @@ async function loadInbox(silent=false){
             const status=document.createElement('div');status.dataset.inboxStatus=item.id;status.innerHTML=inboxStatusHtml(item);article.querySelector('.inbox-item-head').after(status);
             article.addEventListener('input',()=>inboxEditedItems.add(item.id));article.addEventListener('change',()=>inboxEditedItems.add(item.id));
             article.dataset.pending=String(inboxPending(item));
+            if(item.sourceInboxId){const link=document.createElement('a');link.href=`/api/inbox/${item.sourceInboxId}/content#page=${item.sourceFromPage}`;link.target='_blank';link.rel='noopener';link.textContent=`Sammeloriginal ansehen · Seiten ${item.sourceFromPage}–${item.sourceToPage}`;article.querySelector('.inbox-item-head').after(link);}
+            if(item.contentType==='application/pdf'&&can('DOCUMENT_UPLOAD')&&!inboxPending(item)){const split=document.createElement('button');split.type='button';split.className='secondary';split.textContent='PDF aufteilen · Dokumenttypen prüfen';split.onclick=()=>openInboxSplit(item);article.querySelector('.inbox-item-head').after(split);}
             if(inboxPending(item))article.querySelectorAll('form input,form select,form button:not([data-inbox-delete])').forEach(control=>control.disabled=true);
         });
         bindInboxRetry(list);
     }catch(error){if(version!==inboxLoadVersion)return;if(!silent)list.textContent='Posteingang konnte nicht geladen werden: '+error.message;else $('#inboxMessage').textContent='Automatische Aktualisierung unterbrochen: '+error.message;}
 }
 function bindInboxRetry(list){list.querySelectorAll('[data-inbox-retry]').forEach(button=>button.onclick=async()=>{button.disabled=true;try{await json(`/api/inbox/${button.dataset.inboxRetry}/retry`,{method:'POST'});await loadInbox();}catch(error){$('#inboxMessage').textContent=error.message;button.disabled=false;}});}
+async function openInboxSplit(item){
+    const dialog=document.createElement('dialog');dialog.className='wide-dialog';
+    dialog.innerHTML='<p role="status">Seitengrenzen und Dokumenttypen werden geprüft …</p><button type="button">Schließen</button>';
+    dialog.querySelector('button').onclick=()=>dialog.close();dialog.onclose=()=>dialog.remove();document.body.append(dialog);dialog.showModal();
+    try{
+        const proposal=await json(`/api/inbox/${item.id}/split-proposal`);if(!dialog.isConnected)return;
+        if(proposal.pageCount<2)throw new Error('Diese PDF enthält nur eine Seite und kann nicht seitenweise aufgeteilt werden.');
+        dialog.innerHTML=`<div class="dialoghead"><h2>Sammel-PDF aufteilen</h2><button type="button" data-close>Schließen</button></div><p>${proposal.pageCount} Seiten · Vorschläge bitte prüfen. Das Original bleibt erhalten. Jede Seite muss genau einmal enthalten sein. Unklare Seiten werden separat vorgeschlagen.</p><a target="_blank" rel="noopener" href="/api/inbox/${item.id}/content">Original-PDF ansehen</a><details><summary>Erkennung je Seite</summary>${proposal.pages.map(page=>`<p>Seite ${page.number}: ${esc(inboxDocumentTypes.find(([type])=>type===page.classification.suggestedType)?.[1]||'Unklar')} · ${esc(page.classification.evidence.join(' · ')||'Keine eindeutige Überschrift erkannt')}</p>`).join('')}</details><form data-split-form><div data-parts></div><button type="button" class="secondary" data-add>Bereich hinzufügen</button><p data-error role="alert"></p><button type="submit">Aufteilung bestätigen</button></form>`;
+        dialog.querySelector('[data-close]').onclick=()=>dialog.close();
+        const rows=dialog.querySelector('[data-parts]'),form=dialog.querySelector('form');
+        const add=part=>{const row=document.createElement('div');row.className='inbox-assignment';row.innerHTML=`<label>Von Seite<input name="fromPage" type="number" min="1" max="${proposal.pageCount}" value="${part.fromPage}" required></label><label>Bis Seite<input name="toPage" type="number" min="1" max="${proposal.pageCount}" value="${part.toPage}" required></label><label>Dokumenttyp<select name="documentType" required>${inboxDocumentTypes.map(([type,label])=>`<option value="${type}"${type===part.documentType?' selected':''}>${label}</option>`).join('')}</select></label><button type="button" class="secondary">Bereich entfernen</button>`;row.querySelector('button').onclick=()=>row.remove();rows.append(row);};
+        proposal.parts.forEach(add);dialog.querySelector('[data-add]').onclick=()=>add({fromPage:1,toPage:proposal.pageCount,documentType:'OTHER'});
+        form.onsubmit=async event=>{event.preventDefault();const error=dialog.querySelector('[data-error]');error.textContent='';
+            const parts=[...rows.children].map(row=>({fromPage:Number(row.querySelector('[name=fromPage]').value),toPage:Number(row.querySelector('[name=toPage]').value),documentType:row.querySelector('select').value}));
+            let next=1;for(const part of parts){if(part.fromPage!==next||part.toPage<next||part.toPage>proposal.pageCount){error.textContent='Bitte alle Seiten lückenlos, ohne Überschneidungen und in Reihenfolge angeben.';return;}next=part.toPage+1;}
+            if(parts.length<2||parts.length>100||next!==proposal.pageCount+1){error.textContent='Bitte 2 bis 100 Bereiche angeben und alle Seiten abdecken.';return;}
+            const submit=form.querySelector('[type=submit]');submit.disabled=true;
+            try{const result=await json(`/api/inbox/${item.id}/split`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({parts})});dialog.close();$('#inboxMessage').textContent=`${result.length} Teil-Dokumente erstellt. Das Sammeloriginal ist über die Teil-Dokumente weiterhin erreichbar.`;await loadInbox();}
+            catch(failure){error.textContent=failure.message;submit.disabled=false;}
+        };
+    }catch(error){if(dialog.isConnected)dialog.querySelector('p').textContent=error.message;}
+}
 let appNavigate=null;
 function ensureInternalPackNav(){
     if($('#appNavRulePacks'))return;

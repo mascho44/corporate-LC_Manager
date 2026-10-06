@@ -10,6 +10,15 @@ import java.util.UUID;
 @Entity
 @Table(name = "document_inbox_item")
 public class DocumentInboxItem {
+    private UUID sourceInboxId;
+    private Integer sourceFromPage;
+    private Integer sourceToPage;
+    public UUID getSourceInboxId(){return sourceInboxId;}
+    public void setSourceInboxId(UUID value){sourceInboxId=value;}
+    public Integer getSourceFromPage(){return sourceFromPage;}
+    public void setSourceFromPage(Integer value){sourceFromPage=value;}
+    public Integer getSourceToPage(){return sourceToPage;}
+    public void setSourceToPage(Integer value){sourceToPage=value;}
     @Column(columnDefinition="text") @JsonIgnore private String classificationHistoryJson;
     @Column(columnDefinition="text") @JsonIgnore private String ocrEvidenceJson;
     public String getClassificationHistoryJson(){return classificationHistoryJson;}

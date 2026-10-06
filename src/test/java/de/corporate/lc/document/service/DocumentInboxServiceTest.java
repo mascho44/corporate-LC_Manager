@@ -16,6 +16,22 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class DocumentInboxServiceTest {
+    @Test void splitKeepsOriginalAndStoresSelectedTypesAndPageOrigins() throws Exception {
+        UUID id=UUID.randomUUID();var original=item();original.setContent(PdfDocumentSplitterTest.pdf("COMMERCIAL INVOICE","PACKING LIST"));original.setContentType("application/pdf");original.setOriginalFilename("bundle.pdf");
+        when(inbox.findForUpdate(id)).thenReturn(Optional.of(original));when(lcs.findAssignmentTargets()).thenReturn(List.of());
+        when(inbox.save(any())).thenAnswer(call->{DocumentInboxItem saved=call.getArgument(0);if(saved.getId()==null)ReflectionTestUtils.setField(saved,"id",UUID.randomUUID());return saved;});
+        var actual=new DocumentInboxService(inbox,lcs,documents,new DocumentExtractionService(),checks);
+        var result=actual.split(id,List.of(new PdfDocumentSplitter.Part(1,1,DocumentType.COMMERCIAL_INVOICE),new PdfDocumentSplitter.Part(2,2,DocumentType.PACKING_LIST)),"tester");
+        assertThat(result).hasSize(2);assertThat(original.getStatus()).isEqualTo("SPLIT");assertThat(original.getContent()).isNotEmpty();
+        assertThat(result.get(1).sourceInboxId()).isEqualTo(id);assertThat(result.get(1).sourceFromPage()).isEqualTo(2);assertThat(result.get(1).classification().suggestedType()).isEqualTo(DocumentType.PACKING_LIST);
+        assertThat(result.get(0).extractionStatus()).isEqualTo("EXTRACTED");verifyNoInteractions(documents,checks);
+        assertThatThrownBy(()->actual.split(id,List.of(new PdfDocumentSplitter.Part(1,1,DocumentType.OTHER),new PdfDocumentSplitter.Part(2,2,DocumentType.OTHER)),"tester")).isInstanceOf(IllegalStateException.class);
+    }
+    @Test void invalidSplitDoesNotChangeOriginalOrSaveParts() throws Exception {
+        UUID id=UUID.randomUUID();var original=item();original.setContent(PdfDocumentSplitterTest.pdf("A","B"));original.setContentType("application/pdf");when(inbox.findForUpdate(id)).thenReturn(Optional.of(original));
+        assertThatThrownBy(()->service.split(id,List.of(new PdfDocumentSplitter.Part(1,1,DocumentType.OTHER),new PdfDocumentSplitter.Part(1,2,DocumentType.OTHER)),"tester")).isInstanceOf(IllegalArgumentException.class);
+        assertThat(original.getStatus()).isEqualTo("OPEN");verify(inbox,never()).save(any());
+    }
     @Test void newCaseCreatesAndAttachesOnlyAfterExplicitRequest(){
         UUID id=UUID.randomUUID(),lcId=UUID.randomUUID();var item=item();when(inbox.findForUpdate(id)).thenReturn(Optional.of(item));
         when(lcs.saveAndFlush(any())).thenAnswer(call->{LetterOfCredit lc=call.getArgument(0);ReflectionTestUtils.setField(lc,"id",lcId);when(lcs.findById(lcId)).thenReturn(Optional.of(lc));assertThat(lc.getReference()).isEqualTo("NEW123");assertThat(lc.getAmount()).isNull();assertThat(lc.getOwnBankReference()).isEqualTo("OWN-123");assertThat(lc.getForeignBankReference()).isEqualTo("FOREIGN-123");return lc;});

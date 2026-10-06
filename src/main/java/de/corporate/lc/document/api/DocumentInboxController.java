@@ -69,6 +69,23 @@ public class DocumentInboxController {
         return result;
     }
 
+    @GetMapping("/{id}/split-proposal")
+    public de.corporate.lc.document.service.PdfDocumentSplitter.Proposal splitProposal(@PathVariable UUID id) throws Exception {
+        return service.splitProposal(id);
+    }
+
+    public record SplitRequest(@jakarta.validation.constraints.NotNull @jakarta.validation.constraints.Size(min=2,max=100)
+                               List<de.corporate.lc.document.service.PdfDocumentSplitter.Part> parts) {}
+
+    @PostMapping("/{id}/split")
+    public List<DocumentInboxItemView> split(@PathVariable UUID id,@Valid @RequestBody SplitRequest request,Authentication authentication) throws Exception {
+        var result=service.split(id,request.parts(),authentication.getName());
+        audit.record(authentication,"DOCUMENT_INBOX_SPLIT","DOCUMENT_INBOX",id,"Sammel-PDF aufgeteilt · "+result.size()+" Teile · Original erhalten");
+        result.forEach(item->audit.record(authentication,"DOCUMENT_INBOX_SPLIT_PART","DOCUMENT_INBOX",item.id(),
+            "Original "+id+" · Seiten "+item.sourceFromPage()+"–"+item.sourceToPage()+" · "+item.classification().suggestedType()));
+        return result;
+    }
+
     @PostMapping("/{id}/attach")
     public DocumentInboxAttachResult attach(@PathVariable UUID id,
                                              @Valid @RequestBody DocumentInboxAttachRequest request,

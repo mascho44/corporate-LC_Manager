@@ -55,8 +55,43 @@ public class DocumentInboxService {
     @Transactional(readOnly = true)
     public DocumentInboxItem openItem(UUID id) {
         DocumentInboxItem item = inbox.findById(id).orElseThrow(() -> new NoSuchElementException("Inbox-Datei nicht gefunden."));
-        if (!"OPEN".equals(item.getStatus()) || item.getContent() == null) throw new IllegalStateException("Diese Datei ist nicht mehr im offenen Eingang.");
+        if (!List.of("OPEN","SPLIT").contains(item.getStatus()) || item.getContent() == null) throw new IllegalStateException("Diese Datei ist nicht mehr verfügbar.");
         return item;
+    }
+
+    @Transactional(readOnly=true)
+    public PdfDocumentSplitter.Proposal splitProposal(UUID id) throws Exception {
+        var item=openItem(id);requireProcessed(item);requirePdf(item);
+        return PdfDocumentSplitter.propose(item.getContent(),item.getOcrEvidenceJson());
+    }
+
+    @Transactional(rollbackFor=Exception.class)
+    public List<DocumentInboxItemView> split(UUID id,List<PdfDocumentSplitter.Part> parts,String username) throws Exception {
+        var original=lockedOpenItem(id);requireProcessed(original);requirePdf(original);
+        // Validate and produce all files before persisting any part. Original is never deleted.
+        var outputs=PdfDocumentSplitter.split(original.getContent(),original.getOcrEvidenceJson(),parts);
+        var targets=lettersOfCredit.findAssignmentTargets();List<DocumentInboxItemView> result=new java.util.ArrayList<>();
+        for(var output:outputs) {
+            var item=new DocumentInboxItem();var part=output.part();
+            String base=original.getOriginalFilename().replaceFirst("(?i)\\.pdf$","");
+            if(base.length()>180)base=base.substring(0,180);
+            item.setOriginalFilename(base+"-Seiten-"+part.fromPage()+"-"+part.toPage()+".pdf");
+            item.setContentType("application/pdf");item.setContent(output.content());item.setFileSize(output.content().length);item.setReceivedBy(username);
+            item.setSourceInboxId(id);item.setSourceFromPage(part.fromPage());item.setSourceToPage(part.toPage());
+            var document=new LcDocument();document.setOriginalFilename(item.getOriginalFilename());
+            extraction.applyRecognizedText(document,output.text(),output.text().isBlank()?"QUEUED":output.evidence()!=null?"OCR_EXTRACTED":"EXTRACTED");
+            item.setExtractedText(document.getExtractedText());item.setExtractionStatus(document.getExtractionStatus());
+            item.setExtractedReference(document.getExtractedReference());item.setExtractedDocumentNumber(document.getExtractedDocumentNumber());
+            item.setExtractedAmount(document.getExtractedAmount());item.setExtractedCurrency(document.getExtractedCurrency());
+            if(output.evidence()!=null)item.setOcrEvidenceJson(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(output.evidence()));
+            item.setClassificationHistoryJson(ClassificationHistory.manual(document.getClassificationHistoryJson(),part.documentType(),username));
+            result.add(view(inbox.save(item),targets));
+        }
+        original.setStatus("SPLIT");inbox.save(original);return List.copyOf(result);
+    }
+
+    private void requirePdf(DocumentInboxItem item) {
+        if(!"application/pdf".equals(item.getContentType()))throw new IllegalArgumentException("Nur PDFs können aufgeteilt werden.");
     }
 
     public record NewCaseResult(UUID lcId,DocumentInboxAttachResult attachment){}
