@@ -11,6 +11,12 @@ import java.util.UUID;
 @Entity
 @Table(name = "lc_document")
 public class LcDocument {
+    @Column(nullable=false,updatable=false) @JsonIgnore private UUID tenantId=de.corporate.lc.tenant.domain.TenantContext.currentId();
+    public UUID getTenantId(){return tenantId;}
+    @PrePersist @PreUpdate @PreRemove private void validateTenant(){
+        de.corporate.lc.tenant.domain.TenantContext.require(tenantId);
+        if(letterOfCredit==null||!tenantId.equals(letterOfCredit.getTenantId()))throw new org.springframework.security.access.AccessDeniedException("Document and LC must belong to the same tenant.");
+    }
     @Column(columnDefinition="text") @JsonIgnore private String ruleFactsJson;
     public String getRuleFactsJson(){return ruleFactsJson;}
     public void setRuleFactsJson(String value){ruleFactsJson=value;}

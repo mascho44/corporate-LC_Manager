@@ -80,3 +80,28 @@ All SQL migrations through V50 passed on isolated PostgreSQL 17 with a synthetic
 existing user. A second tenant was enabled ONLY in that disposable test database
 to verify the composite role constraint: a cross-tenant assignment was rejected
 and a same-tenant assignment accepted. The test database was removed.
+
+## Access isolation stage 2: documents and inbox OCR
+
+Inbox lists, ID/content lookups, mutation locks and extraction candidates are
+scoped to `TenantContext`. Inbox ownership is immutable and lifecycle writes
+validate it. LC document lists, counts and ID/content lookups require both current
+tenant ownership and a matching LC owner. Document writes validate that parent
+relationship. V51 backfills document ownership from the existing LC and adds a
+composite PostgreSQL foreign key preventing cross-tenant LC/document links.
+
+Claimed inbox OCR work carries the stored tenant into extraction and completion;
+the scope is restored afterwards. The existing scheduled dispatcher still uses
+the default bootstrap tenant: this is not yet multi-tenant scheduling. Training
+sessions/learning storage, audit ownership/queries, exports and other roots remain
+pending. Inherited repository bulk/pagination APIs are not generally isolated.
+Authentication and the V49 single-tenant database gate remain unchanged.
+
+Verification: all 300 Java tests completed without failures (two skipped), and all
+30 JavaScript tests passed. Negative repository/service tests cover foreign inbox
+IDs/locks/queue candidates, foreign document downloads/lists and mismatched LC
+links. Worker tests cover foreign-job exclusion and claimed-tenant propagation.
+All migrations through V51 passed on isolated PostgreSQL 17; a synthetic existing
+document received its LC owner. A cross-tenant link was rejected, a valid link was
+accepted and LC deletion cascaded correctly. The disposable test database was
+removed. Production data and tenant gates were not changed by these checks.

@@ -35,6 +35,23 @@ class InboxExtractionQueueTest {
   var item=enqueue("QUEUED");doAnswer(call->{inbox.deleteById(item.getId());LcDocument doc=call.getArgument(0);doc.setExtractionStatus("EXTRACTED");return null;}).when(extraction).extractInBackground(any());
   queue.processNext();assertThat(inbox.findById(item.getId())).isEmpty();verifyNoInteractions(audit);
  }
+ @Test void workerCannotClaimAnotherTenantsQueuedDocument(){
+  var foreignTenant=UUID.randomUUID();DocumentInboxItem foreign;
+  try(var scope=de.corporate.lc.tenant.domain.TenantContext.open(foreignTenant)){foreign=enqueue("QUEUED");}
+  try{
+   queue.processNext();verifyNoInteractions(extraction,audit);
+   try(var scope=de.corporate.lc.tenant.domain.TenantContext.open(foreignTenant)){assertThat(inbox.findById(foreign.getId()).orElseThrow().getExtractionStatus()).isEqualTo("QUEUED");}
+  }finally{try(var scope=de.corporate.lc.tenant.domain.TenantContext.open(foreignTenant)){inbox.deleteById(foreign.getId());}}
+ }
+ @Test void workerCarriesClaimedTenantThroughExtractionAndCompletion(){
+  var foreignTenant=UUID.randomUUID();DocumentInboxItem foreign;
+  try(var scope=de.corporate.lc.tenant.domain.TenantContext.open(foreignTenant)){foreign=enqueue("QUEUED");}
+  doAnswer(call->{assertThat(de.corporate.lc.tenant.domain.TenantContext.currentId()).isEqualTo(foreignTenant);LcDocument doc=call.getArgument(0);assertThat(doc.getTenantId()).isEqualTo(foreignTenant);doc.setExtractionStatus("EXTRACTED");return null;}).when(extraction).extractInBackground(any());
+  try{
+   try(var scope=de.corporate.lc.tenant.domain.TenantContext.open(foreignTenant)){queue.processNext();assertThat(inbox.findById(foreign.getId()).orElseThrow().getExtractionStatus()).isEqualTo("EXTRACTED");}
+   assertThat(de.corporate.lc.tenant.domain.TenantContext.currentId()).isEqualTo(de.corporate.lc.tenant.domain.Tenant.DEFAULT_ID);
+  }finally{try(var scope=de.corporate.lc.tenant.domain.TenantContext.open(foreignTenant)){inbox.deleteById(foreign.getId());}}
+ }
  @Test void preservesDocumentTypeConfirmedDuringSplit(){
   var item=enqueue("QUEUED");item.setClassificationHistoryJson(ClassificationHistory.manual(null,DocumentType.PACKING_LIST,"synthetic-user"));inbox.saveAndFlush(item);
   doAnswer(call->{LcDocument doc=call.getArgument(0);doc.setExtractionStatus("EXTRACTED");doc.setClassificationHistoryJson(ClassificationHistory.automatic("synthetic.txt","COMMERCIAL INVOICE"));return null;}).when(extraction).extractInBackground(any());

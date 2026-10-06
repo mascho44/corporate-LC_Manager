@@ -18,9 +18,32 @@ class TenantRepositoryIsolationTest {
  @Autowired LetterOfCreditRepository lcs;
  @Autowired AppRoleRepository roles;
  @Autowired AppUserRepository users;
+ @Autowired de.corporate.lc.document.repository.DocumentInboxRepository inbox;
+ @Autowired de.corporate.lc.document.repository.LcDocumentRepository documents;
  final UUID foreignTenant=UUID.fromString("00000000-0000-0000-0000-000000000099");
  LetterOfCredit createLc(String reference){var lc=new LetterOfCredit();lc.setReference(reference);return lcs.saveAndFlush(lc);}
  AppRole createRole(String name){var role=new AppRole();role.setName(name);role.setBaseRole(UserRole.ADMIN);role.setSystemRole(true);return roles.saveAndFlush(role);}
+ de.corporate.lc.document.domain.DocumentInboxItem createInbox(){var item=new de.corporate.lc.document.domain.DocumentInboxItem();item.setOriginalFilename("synthetic.pdf");item.setContentType("application/pdf");item.setContent(new byte[]{1});item.setFileSize(1);item.setReceivedBy("synthetic-user");item.setExtractionStatus("QUEUED");return inbox.saveAndFlush(item);}
+ de.corporate.lc.document.domain.LcDocument createDocument(LetterOfCredit lc){var doc=new de.corporate.lc.document.domain.LcDocument();doc.setLetterOfCredit(lc);doc.setDocumentType(de.corporate.lc.document.domain.DocumentType.ANNEX);doc.setOriginalFilename("synthetic.pdf");doc.setContentType("application/pdf");doc.setContent(new byte[]{1});doc.setFileSize(1);return documents.saveAndFlush(doc);}
+ @Test void inboxListDownloadLookupLocksAndQueueCandidatesAreScoped(){
+  var own=createInbox();de.corporate.lc.document.domain.DocumentInboxItem foreign;try(var scope=TenantContext.open(foreignTenant)){foreign=createInbox();}
+  assertThat(inbox.findTop100ByStatusOrderByReceivedAtDesc("OPEN")).extracting(de.corporate.lc.document.domain.DocumentInboxItem::getId).containsExactly(own.getId());
+  assertThat(inbox.findById(foreign.getId())).isEmpty();assertThat(inbox.findForUpdate(foreign.getId())).isEmpty();
+  assertThat(inbox.findExtractionCandidates(java.time.LocalDateTime.now(),org.springframework.data.domain.PageRequest.of(0,10))).containsExactly(own.getId());
+ }
+ @Test void documentIdDownloadAndLcListingCannotReadForeignDocuments(){
+  var ownLc=createLc("OWN-DOCUMENT");var own=createDocument(ownLc);de.corporate.lc.document.domain.LcDocument foreign;LetterOfCredit foreignLc;
+  try(var scope=TenantContext.open(foreignTenant)){foreignLc=createLc("FOREIGN-DOCUMENT");foreign=createDocument(foreignLc);}
+  assertThat(documents.findById(foreign.getId())).isEmpty();assertThat(documents.findById(own.getId())).isPresent();
+  assertThat(documents.findByLetterOfCreditIdOrderByUploadedAtDesc(foreignLc.getId())).isEmpty();assertThat(documents.countByLetterOfCreditId(foreignLc.getId())).isZero();
+  var service=new de.corporate.lc.document.service.DocumentService(documents,lcs,org.mockito.Mockito.mock(de.corporate.lc.document.service.DocumentExtractionService.class));
+  assertThatThrownBy(()->service.one(foreign.getId())).isInstanceOf(java.util.NoSuchElementException.class);
+  assertThatThrownBy(()->service.forLc(foreignLc.getId())).isInstanceOf(java.util.NoSuchElementException.class);
+ }
+ @Test void documentCannotBeLinkedToAForeignLc(){
+  LetterOfCredit foreignLc;try(var scope=TenantContext.open(foreignTenant)){foreignLc=createLc("FOREIGN-PARENT");}
+  assertThatThrownBy(()->createDocument(foreignLc)).satisfies(error->{Throwable root=error;while(root.getCause()!=null)root=root.getCause();assertThat(root).isInstanceOf(AccessDeniedException.class);});
+ }
  @Test void guessedLcIdReferenceProjectionAndCountDoNotCrossTenantBoundary(){
   var own=createLc("OWN-REFERENCE");LetterOfCredit foreign;
   try(var scope=TenantContext.open(foreignTenant)){foreign=createLc("FOREIGN-REFERENCE");}
