@@ -1,0 +1,1106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Corporate LC Manager – Rule Packs Schema 1, 2 und 3",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "packId",
+    "version",
+    "name",
+    "origin",
+    "license",
+    "rightsStatement",
+    "rules",
+    "tests"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "enum": [
+        1,
+        2,
+        3
+      ]
+    },
+    "packId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{2,30}$"
+    },
+    "version": {
+      "$ref": "#/$defs/version"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "origin": {
+      "enum": [
+        "OWN_INTERNAL",
+        "ICC_LICENSED"
+      ]
+    },
+    "license": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100
+    },
+    "rightsStatement": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "rules": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 25,
+      "items": {
+        "$ref": "#/$defs/rule"
+      }
+    },
+    "tests": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 150,
+      "items": {
+        "$ref": "#/$defs/test"
+      }
+    },
+    "calendars": {
+      "type": "array",
+      "maxItems": 5,
+      "items": {
+        "$ref": "#/$defs/calendar"
+      }
+    }
+  },
+  "$defs": {
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}$"
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version",
+        "documentType",
+        "left",
+        "operator",
+        "right",
+        "severity",
+        "message",
+        "sourceReference"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{1,30}$"
+        },
+        "version": {
+          "$ref": "#/$defs/version"
+        },
+        "documentType": {
+          "enum": [
+            "COMMERCIAL_INVOICE",
+            "PACKING_LIST",
+            "BILL_OF_LADING",
+            "AIR_WAYBILL",
+            "ROAD_CONSIGNMENT_NOTE",
+            "CERTIFICATE_OF_ORIGIN",
+            "INSURANCE_CERTIFICATE",
+            "INSPECTION_CERTIFICATE",
+            "BILL_OF_EXCHANGE",
+            "BENEFICIARY_CERTIFICATE",
+            "QUALITY_CERTIFICATE",
+            "COURIER_RECEIPT",
+            "ADVISING_LETTER",
+            "SWIFT_MT700",
+            "ANNEX",
+            "OTHER"
+          ]
+        },
+        "left": {
+          "enum": [
+            "DOCUMENT_AMOUNT",
+            "DOCUMENT_CURRENCY",
+            "DOCUMENT_DATE",
+            "DOCUMENT_ISSUER",
+            "DOCUMENT_RECIPIENT",
+            "DOCUMENT_GOODS_DESCRIPTION",
+            "DOCUMENT_SHIPMENT_DATE",
+            "DOCUMENT_QUANTITY",
+            "DOCUMENT_QUANTITY_UNIT",
+            "DOCUMENT_NET_WEIGHT",
+            "DOCUMENT_GROSS_WEIGHT",
+            "DOCUMENT_WEIGHT_UNIT",
+            "DOCUMENT_INSURED_AMOUNT",
+            "DOCUMENT_INSURANCE_CURRENCY",
+            "DOCUMENT_INSURANCE_EFFECTIVE_DATE",
+            "DOCUMENT_INSURANCE_RISKS",
+            "DOCUMENT_SIGNED",
+            "DOCUMENT_ORIGINAL_COUNT",
+            "DOCUMENT_EXAMINATION_START_DATE"
+          ]
+        },
+        "right": {
+          "enum": [
+            "LC_AMOUNT",
+            "LC_CURRENCY",
+            "LC_EXPIRY_DATE",
+            "LC_LATEST_SHIPMENT_DATE",
+            "LC_BENEFICIARY",
+            "LC_APPLICANT",
+            "LC_GOODS_DESCRIPTION",
+            "LC_RULE_STANDARD",
+            "LC_TRANSFERRED",
+            "LC_SECOND_BENEFICIARY",
+            "LC_PRESENTATION_DATE",
+            "LC_PRESENTATION_PERIOD_DAYS",
+            "LC_INSURANCE_MIN_PERCENT",
+            "LC_TOLERANCE_PERCENT",
+            "LC_SIGNATURE_REQUIRED",
+            "LC_REQUIRED_ORIGINAL_COUNT",
+            "LC_INSURANCE_RISKS",
+            "PEER_AMOUNT",
+            "PEER_CURRENCY",
+            "PEER_SHIPMENT_DATE",
+            "PEER_GOODS_DESCRIPTION",
+            "PEER_QUANTITY",
+            "PEER_QUANTITY_UNIT",
+            "PEER_NET_WEIGHT",
+            "PEER_GROSS_WEIGHT",
+            "PEER_WEIGHT_UNIT",
+            "LC_EXAMINATION_DECISION_DATE"
+          ]
+        },
+        "operator": {
+          "enum": [
+            "EQ",
+            "NE",
+            "LTE",
+            "GTE",
+            "WITHIN_DAYS",
+            "PERCENT_GTE",
+            "PERCENT_LTE",
+            "WITHIN_TOLERANCE"
+          ]
+        },
+        "severity": {
+          "enum": [
+            "WARNING",
+            "DISCREPANCY"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "sourceReference": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "mode": {
+          "enum": [
+            "AUTOMATIC",
+            "MANUAL"
+          ]
+        },
+        "conditions": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "field",
+              "operator",
+              "value"
+            ],
+            "properties": {
+              "field": {
+                "enum": [
+                  "DOCUMENT_AMOUNT",
+                  "DOCUMENT_CURRENCY",
+                  "DOCUMENT_DATE",
+                  "LC_AMOUNT",
+                  "LC_CURRENCY",
+                  "LC_EXPIRY_DATE",
+                  "LC_LATEST_SHIPMENT_DATE",
+                  "DOCUMENT_ISSUER",
+                  "DOCUMENT_RECIPIENT",
+                  "DOCUMENT_GOODS_DESCRIPTION",
+                  "LC_BENEFICIARY",
+                  "LC_APPLICANT",
+                  "LC_GOODS_DESCRIPTION",
+                  "LC_RULE_STANDARD",
+                  "LC_TRANSFERRED",
+                  "LC_SECOND_BENEFICIARY",
+                  "DOCUMENT_SHIPMENT_DATE",
+                  "DOCUMENT_PRESENTATION_GROUP",
+                  "DOCUMENT_QUANTITY",
+                  "DOCUMENT_QUANTITY_UNIT",
+                  "DOCUMENT_NET_WEIGHT",
+                  "DOCUMENT_GROSS_WEIGHT",
+                  "DOCUMENT_WEIGHT_UNIT",
+                  "DOCUMENT_INSURED_AMOUNT",
+                  "DOCUMENT_INSURANCE_CURRENCY",
+                  "DOCUMENT_INSURANCE_EFFECTIVE_DATE",
+                  "DOCUMENT_INSURANCE_RISKS",
+                  "DOCUMENT_SIGNED",
+                  "DOCUMENT_ORIGINAL_COUNT",
+                  "LC_PRESENTATION_DATE",
+                  "LC_PRESENTATION_PERIOD_DAYS",
+                  "LC_INSURANCE_MIN_PERCENT",
+                  "LC_TOLERANCE_PERCENT",
+                  "LC_SIGNATURE_REQUIRED",
+                  "LC_REQUIRED_ORIGINAL_COUNT",
+                  "LC_INSURANCE_RISKS",
+                  "PEER_AMOUNT",
+                  "PEER_CURRENCY",
+                  "PEER_SHIPMENT_DATE",
+                  "PEER_GOODS_DESCRIPTION",
+                  "PEER_QUANTITY",
+                  "PEER_QUANTITY_UNIT",
+                  "PEER_NET_WEIGHT",
+                  "PEER_GROSS_WEIGHT",
+                  "PEER_WEIGHT_UNIT",
+                  "DOCUMENT_EXAMINATION_START_DATE",
+                  "LC_EXAMINATION_DECISION_DATE"
+                ]
+              },
+              "operator": {
+                "enum": [
+                  "EQ",
+                  "NE"
+                ]
+              },
+              "value": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              }
+            }
+          }
+        },
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "peerDocumentType": {
+              "enum": [
+                "COMMERCIAL_INVOICE",
+                "PACKING_LIST",
+                "BILL_OF_LADING",
+                "AIR_WAYBILL",
+                "ROAD_CONSIGNMENT_NOTE",
+                "CERTIFICATE_OF_ORIGIN",
+                "INSURANCE_CERTIFICATE",
+                "INSPECTION_CERTIFICATE",
+                "BILL_OF_EXCHANGE",
+                "BENEFICIARY_CERTIFICATE",
+                "QUALITY_CERTIFICATE",
+                "COURIER_RECEIPT",
+                "ADVISING_LETTER",
+                "SWIFT_MT700",
+                "ANNEX",
+                "OTHER"
+              ]
+            },
+            "days": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 3660
+            },
+            "daysField": {
+              "const": "LC_PRESENTATION_PERIOD_DAYS"
+            },
+            "calendarId": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]{1,30}$"
+            },
+            "percent": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1000,
+              "multipleOf": 0.0001
+            },
+            "percentField": {
+              "enum": [
+                "LC_INSURANCE_MIN_PERCENT",
+                "LC_TOLERANCE_PERCENT"
+              ]
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "left": {
+                "const": "DOCUMENT_AMOUNT"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "right": {
+                "enum": [
+                  "LC_AMOUNT",
+                  "PEER_AMOUNT"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "left": {
+                "const": "DOCUMENT_CURRENCY"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "right": {
+                "enum": [
+                  "LC_CURRENCY",
+                  "PEER_CURRENCY"
+                ]
+              },
+              "operator": {
+                "enum": [
+                  "EQ",
+                  "NE"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "left": {
+                "const": "DOCUMENT_DATE"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "right": {
+                "enum": [
+                  "LC_EXPIRY_DATE",
+                  "LC_LATEST_SHIPMENT_DATE",
+                  "LC_PRESENTATION_DATE",
+                  "PEER_SHIPMENT_DATE"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "left": {
+                "const": "DOCUMENT_ISSUER"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "right": {
+                "enum": [
+                  "LC_BENEFICIARY",
+                  "LC_SECOND_BENEFICIARY"
+                ]
+              },
+              "operator": {
+                "enum": [
+                  "EQ",
+                  "NE"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "left": {
+                "const": "DOCUMENT_RECIPIENT"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "right": {
+                "enum": [
+                  "LC_APPLICANT"
+                ]
+              },
+              "operator": {
+                "enum": [
+                  "EQ",
+                  "NE"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "left": {
+                "const": "DOCUMENT_GOODS_DESCRIPTION"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "right": {
+                "enum": [
+                  "LC_GOODS_DESCRIPTION",
+                  "PEER_GOODS_DESCRIPTION"
+                ]
+              },
+              "operator": {
+                "enum": [
+                  "EQ",
+                  "NE"
+                ]
+              },
+              "mode": {
+                "const": "MANUAL"
+              }
+            },
+            "required": [
+              "mode"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "left": {
+                "const": "DOCUMENT_SHIPMENT_DATE"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "right": {
+                "enum": [
+                  "LC_EXPIRY_DATE",
+                  "LC_LATEST_SHIPMENT_DATE",
+                  "LC_PRESENTATION_DATE",
+                  "PEER_SHIPMENT_DATE"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "left": {
+                "const": "DOCUMENT_QUANTITY"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "right": {
+                "enum": [
+                  "PEER_QUANTITY"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "left": {
+                "const": "DOCUMENT_QUANTITY_UNIT"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "right": {
+                "enum": [
+                  "PEER_QUANTITY_UNIT"
+                ]
+              },
+              "operator": {
+                "enum": [
+                  "EQ",
+                  "NE"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "left": {
+                "const": "DOCUMENT_NET_WEIGHT"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "right": {
+                "enum": [
+                  "PEER_NET_WEIGHT"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "left": {
+                "const": "DOCUMENT_GROSS_WEIGHT"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "right": {
+                "enum": [
+                  "PEER_GROSS_WEIGHT"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "left": {
+                "const": "DOCUMENT_WEIGHT_UNIT"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "right": {
+                "enum": [
+                  "PEER_WEIGHT_UNIT"
+                ]
+              },
+              "operator": {
+                "enum": [
+                  "EQ",
+                  "NE"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "left": {
+                "const": "DOCUMENT_INSURED_AMOUNT"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "right": {
+                "enum": [
+                  "LC_AMOUNT",
+                  "PEER_AMOUNT"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "left": {
+                "const": "DOCUMENT_INSURANCE_CURRENCY"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "right": {
+                "enum": [
+                  "LC_CURRENCY",
+                  "PEER_CURRENCY"
+                ]
+              },
+              "operator": {
+                "enum": [
+                  "EQ",
+                  "NE"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "left": {
+                "const": "DOCUMENT_INSURANCE_EFFECTIVE_DATE"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "right": {
+                "enum": [
+                  "PEER_SHIPMENT_DATE"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "left": {
+                "const": "DOCUMENT_INSURANCE_RISKS"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "right": {
+                "enum": [
+                  "LC_INSURANCE_RISKS"
+                ]
+              },
+              "operator": {
+                "enum": [
+                  "EQ",
+                  "NE"
+                ]
+              },
+              "mode": {
+                "const": "MANUAL"
+              }
+            },
+            "required": [
+              "mode"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "left": {
+                "const": "DOCUMENT_SIGNED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "right": {
+                "enum": [
+                  "LC_SIGNATURE_REQUIRED"
+                ]
+              },
+              "operator": {
+                "enum": [
+                  "EQ",
+                  "NE"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "left": {
+                "const": "DOCUMENT_ORIGINAL_COUNT"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "right": {
+                "enum": [
+                  "LC_REQUIRED_ORIGINAL_COUNT"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "left": {
+                "const": "DOCUMENT_EXAMINATION_START_DATE"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "right": {
+                "enum": [
+                  "LC_EXAMINATION_DECISION_DATE"
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "test": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "ruleId",
+        "left",
+        "right",
+        "expected"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "ruleId": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{1,30}$"
+        },
+        "left": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 100
+        },
+        "right": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 100
+        },
+        "expected": {
+          "enum": [
+            "PASS",
+            "FAIL",
+            "NOT_EVALUABLE",
+            "NOT_APPLICABLE",
+            "MANUAL_REVIEW"
+          ]
+        },
+        "facts": {
+          "type": "object",
+          "maxProperties": 60,
+          "propertyNames": {
+            "enum": [
+              "DOCUMENT_AMOUNT",
+              "DOCUMENT_CURRENCY",
+              "DOCUMENT_DATE",
+              "LC_AMOUNT",
+              "LC_CURRENCY",
+              "LC_EXPIRY_DATE",
+              "LC_LATEST_SHIPMENT_DATE",
+              "DOCUMENT_ISSUER",
+              "DOCUMENT_RECIPIENT",
+              "DOCUMENT_GOODS_DESCRIPTION",
+              "LC_BENEFICIARY",
+              "LC_APPLICANT",
+              "LC_GOODS_DESCRIPTION",
+              "LC_RULE_STANDARD",
+              "LC_TRANSFERRED",
+              "LC_SECOND_BENEFICIARY",
+              "DOCUMENT_SHIPMENT_DATE",
+              "DOCUMENT_PRESENTATION_GROUP",
+              "DOCUMENT_QUANTITY",
+              "DOCUMENT_QUANTITY_UNIT",
+              "DOCUMENT_NET_WEIGHT",
+              "DOCUMENT_GROSS_WEIGHT",
+              "DOCUMENT_WEIGHT_UNIT",
+              "DOCUMENT_INSURED_AMOUNT",
+              "DOCUMENT_INSURANCE_CURRENCY",
+              "DOCUMENT_INSURANCE_EFFECTIVE_DATE",
+              "DOCUMENT_INSURANCE_RISKS",
+              "DOCUMENT_SIGNED",
+              "DOCUMENT_ORIGINAL_COUNT",
+              "LC_PRESENTATION_DATE",
+              "LC_PRESENTATION_PERIOD_DAYS",
+              "LC_INSURANCE_MIN_PERCENT",
+              "LC_TOLERANCE_PERCENT",
+              "LC_SIGNATURE_REQUIRED",
+              "LC_REQUIRED_ORIGINAL_COUNT",
+              "LC_INSURANCE_RISKS",
+              "PEER_AMOUNT",
+              "PEER_CURRENCY",
+              "PEER_SHIPMENT_DATE",
+              "PEER_GOODS_DESCRIPTION",
+              "PEER_QUANTITY",
+              "PEER_QUANTITY_UNIT",
+              "PEER_NET_WEIGHT",
+              "PEER_GROSS_WEIGHT",
+              "PEER_WEIGHT_UNIT",
+              "DOCUMENT_EXAMINATION_START_DATE",
+              "LC_EXAMINATION_DECISION_DATE"
+            ]
+          },
+          "additionalProperties": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 100
+          }
+        }
+      }
+    },
+    "calendar": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "coveredFrom",
+        "coveredTo",
+        "closedWeekdays",
+        "closedDates"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{1,30}$"
+        },
+        "coveredFrom": {
+          "type": "string",
+          "format": "date"
+        },
+        "coveredTo": {
+          "type": "string",
+          "format": "date"
+        },
+        "closedWeekdays": {
+          "type": "array",
+          "maxItems": 7,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "MONDAY",
+              "TUESDAY",
+              "WEDNESDAY",
+              "THURSDAY",
+              "FRIDAY",
+              "SATURDAY",
+              "SUNDAY"
+            ]
+          }
+        },
+        "closedDates": {
+          "type": "array",
+          "maxItems": 500,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "schemaVersion": {
+            "const": 1
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "rules": {
+            "items": {
+              "properties": {
+                "left": {
+                  "enum": [
+                    "DOCUMENT_AMOUNT",
+                    "DOCUMENT_CURRENCY",
+                    "DOCUMENT_DATE"
+                  ]
+                },
+                "right": {
+                  "enum": [
+                    "LC_AMOUNT",
+                    "LC_CURRENCY",
+                    "LC_EXPIRY_DATE",
+                    "LC_LATEST_SHIPMENT_DATE"
+                  ]
+                }
+              },
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "mode"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "conditions"
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "tests": {
+            "items": {
+              "not": {
+                "required": [
+                  "facts"
+                ]
+              },
+              "properties": {
+                "expected": {
+                  "enum": [
+                    "PASS",
+                    "FAIL",
+                    "NOT_EVALUABLE"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "schemaVersion": {
+            "enum": [
+              1,
+              2
+            ]
+          }
+        }
+      },
+      "then": {
+        "not": {
+          "required": [
+            "calendars"
+          ]
+        },
+        "properties": {
+          "rules": {
+            "items": {
+              "not": {
+                "required": [
+                  "parameters"
+                ]
+              },
+              "properties": {
+                "left": {
+                  "enum": [
+                    "DOCUMENT_AMOUNT",
+                    "DOCUMENT_CURRENCY",
+                    "DOCUMENT_DATE",
+                    "DOCUMENT_ISSUER",
+                    "DOCUMENT_RECIPIENT",
+                    "DOCUMENT_GOODS_DESCRIPTION"
+                  ]
+                },
+                "right": {
+                  "enum": [
+                    "LC_AMOUNT",
+                    "LC_CURRENCY",
+                    "LC_EXPIRY_DATE",
+                    "LC_LATEST_SHIPMENT_DATE",
+                    "LC_BENEFICIARY",
+                    "LC_APPLICANT",
+                    "LC_GOODS_DESCRIPTION",
+                    "LC_SECOND_BENEFICIARY"
+                  ]
+                },
+                "operator": {
+                  "enum": [
+                    "EQ",
+                    "NE",
+                    "LTE",
+                    "GTE"
+                  ]
+                },
+                "conditions": {
+                  "items": {
+                    "properties": {
+                      "field": {
+                        "enum": [
+                          "DOCUMENT_AMOUNT",
+                          "DOCUMENT_CURRENCY",
+                          "DOCUMENT_DATE",
+                          "LC_AMOUNT",
+                          "LC_CURRENCY",
+                          "LC_EXPIRY_DATE",
+                          "LC_LATEST_SHIPMENT_DATE",
+                          "DOCUMENT_ISSUER",
+                          "DOCUMENT_RECIPIENT",
+                          "DOCUMENT_GOODS_DESCRIPTION",
+                          "LC_BENEFICIARY",
+                          "LC_APPLICANT",
+                          "LC_GOODS_DESCRIPTION",
+                          "LC_RULE_STANDARD",
+                          "LC_TRANSFERRED",
+                          "LC_SECOND_BENEFICIARY"
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "tests": {
+            "items": {
+              "properties": {
+                "facts": {
+                  "maxProperties": 20,
+                  "propertyNames": {
+                    "enum": [
+                      "DOCUMENT_AMOUNT",
+                      "DOCUMENT_CURRENCY",
+                      "DOCUMENT_DATE",
+                      "LC_AMOUNT",
+                      "LC_CURRENCY",
+                      "LC_EXPIRY_DATE",
+                      "LC_LATEST_SHIPMENT_DATE",
+                      "DOCUMENT_ISSUER",
+                      "DOCUMENT_RECIPIENT",
+                      "DOCUMENT_GOODS_DESCRIPTION",
+                      "LC_BENEFICIARY",
+                      "LC_APPLICANT",
+                      "LC_GOODS_DESCRIPTION",
+                      "LC_RULE_STANDARD",
+                      "LC_TRANSFERRED",
+                      "LC_SECOND_BENEFICIARY"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

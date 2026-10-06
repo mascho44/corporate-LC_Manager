@@ -2,6 +2,12 @@ package de.corporate.lc.lc.domain;
 import jakarta.persistence.*; import java.math.BigDecimal; import java.time.LocalDate; import java.util.*;
 @Entity @Table(name="letter_of_credit")
 public class LetterOfCredit {
+ @Column(columnDefinition="text") @com.fasterxml.jackson.annotation.JsonIgnore private String ruleFactsJson;
+ public String getRuleFactsJson(){return ruleFactsJson;}
+ public void setRuleFactsJson(String value){ruleFactsJson=value;}
+ @Column(columnDefinition="text") @com.fasterxml.jackson.annotation.JsonIgnore private String ruleRequirementsJson;
+ public String getRuleRequirementsJson(){return ruleRequirementsJson;}
+ public void setRuleRequirementsJson(String value){ruleRequirementsJson=value;}
  @ElementCollection @CollectionTable(name="lc_condition",joinColumns=@JoinColumn(name="lc_id"))
  @MapKeyEnumerated(EnumType.STRING) @MapKeyColumn(name="condition_name",length=100)
  @Column(name="condition_value",columnDefinition="text") private Map<LcCondition,String> conditions=new EnumMap<>(LcCondition.class);
