@@ -1,6 +1,6 @@
 package de.corporate.lc.lc.domain;
 import jakarta.persistence.*; import java.math.BigDecimal; import java.time.LocalDate; import java.util.*;
-@Entity @Table(name="letter_of_credit")
+@Entity @Table(name="letter_of_credit",uniqueConstraints=@UniqueConstraint(name="letter_of_credit_tenant_reference_unique",columnNames={"tenant_id","reference"}))
 public class LetterOfCredit {
  @Column(nullable=false,updatable=false) @com.fasterxml.jackson.annotation.JsonIgnore
  private UUID tenantId=de.corporate.lc.tenant.domain.TenantContext.currentId();
@@ -31,7 +31,7 @@ public class LetterOfCredit {
  public String getTemplateCompany(){return templateCompany;}
  public void setTemplateCompany(String value){templateCompany=value;}
  @Id @GeneratedValue(strategy=GenerationType.UUID) private UUID id;
- @Column(nullable=false,unique=true) private String reference;
+ @Column(nullable=false) private String reference;
  private String applicant; private String beneficiary; private String issuingBank; private String advisingBank;
  @Column(precision=19,scale=2) private BigDecimal amount; private String currency; private LocalDate issueDate; private LocalDate expiryDate; private String expiryPlace; private LocalDate latestShipmentDate; private String assignedTo; private LocalDate followUpDate;
  @Enumerated(EnumType.STRING) private LetterOfCreditStatus status=LetterOfCreditStatus.RECEIVED;

@@ -441,3 +441,63 @@ uses targeted API tests. Production remains unchanged.
 Pre-release verification for stages 14–15: the complete Java regression passed
 without failures/errors, and all 35 JavaScript tests passed. Deployment retains
 the existing V60 schema and the bootstrap tenant gate.
+
+## Stage 16: tenant-local LC reference uniqueness
+
+V61 replaces the global reference constraint with `(tenant_id, reference)`
+uniqueness. The replacement is added before removing the original V1 PostgreSQL
+constraint. Existing tenant-scoped lookup and duplicate checks now match database
+semantics; the JPA schema declaration uses the same composite constraint.
+Same references across tenants no longer conflict, while duplicates within one
+tenant remain rejected by the database, including concurrent writes.
+
+No tenant activation, identity switching or provisioning is introduced. The V49
+bootstrap gate remains intact. Repository tests cover shared references with
+scoped lookups and same-tenant rejection. All SQL migrations through V61 and
+`src/test/resources/tenant-reference-migration-check.sql` passed on disposable
+PostgreSQL 17. The test temporarily relaxed the gate only inside a rolled-back
+transaction and verified that it rejects second tenants beforehand. The
+disposable database was stopped and removed. Production is unchanged.
+
+Verification: the complete Java regression ran 338 tests with zero failures and
+errors (two skipped). No frontend changes were required in this increment.
+
+## Stage 17: tenant-local role name uniqueness
+
+V62 replaces the V22 global role-name constraint with `(tenant_id, name)`
+uniqueness, adding the replacement before removing the old constraint. The JPA
+mapping matches the migration. Existing case-insensitive application duplicate
+checks remain tenant-scoped; the database constraint, as before, compares exact
+names. No case-insensitive database guarantee is claimed.
+
+Identical role names can exist in separate tenants without sharing permissions.
+Usernames remain globally unique. Existing system roles, same-tenant role foreign
+keys, membership guards and the bootstrap tenant gate remain unchanged. Tests
+cover cross-tenant names/permissions/visibility and same-tenant duplicate rejection.
+All SQL migrations through V62 and the disposable PostgreSQL reference/role tests
+passed, including preservation of the bootstrap Administrator role. Temporary gate
+changes were rolled back. No additional tenant has been enabled in production.
+
+Verification: the complete Java regression ran 340 tests without failures or
+errors (two skipped). The disposable database was stopped and removed. Stages
+16 and 17 remain local, not deployed.
+
+## Stage 18: shared explicit background-job tenant boundary
+
+`TenantJobRunner` provides a shared entry point for scheduled Outbox dispatch and
+asynchronous inbox extraction dispatch. Its explicit tenant argument is checked
+before running work; missing and non-bootstrap tenants are rejected. Worker code
+does not select its tenant from a caller's request context. Scope cleanup restores
+the previous thread context on success or failure, and job exceptions propagate
+to the existing worker error handling.
+
+This consolidates the existing explicit bootstrap worker scopes; it does not add
+tenant enumeration, activate additional tenants or change processing budgets,
+claim fencing, retry semantics or publication transaction behavior. Inbox work
+retains its recorded ownership scope after claiming. Tests cover rejected jobs,
+scope restoration, propagated failures and separate worker-thread execution.
+There is no new SQL migration in this stage. Production is unchanged.
+
+Verification: the complete Java regression passed without failures/errors. All
+four job-runner tests passed in a subsequent targeted run including the final
+worker-thread test. Whitespace validation passed. Stages 16–18 remain local.
