@@ -11,6 +11,27 @@ import java.util.*;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 class CredentialSessionFilterTest {
+    @Test void browserTenantHeaderCannotChangeServerScopeAndScopeIsClearedOnFailure()throws Exception{
+        var users=mock(AppUserRepository.class);var user=new AppUser();user.setPasswordHash("hash");when(users.findByUsernameIgnoreCase("user")).thenReturn(Optional.of(user));
+        var request=new MockHttpServletRequest("GET","/api/lcs");request.addHeader("X-Tenant-ID",UUID.randomUUID().toString());
+        request.getSession().setAttribute(CredentialSessionFilter.STAMP,CredentialStamp.of("hash"));request.getSession().setAttribute(CredentialSessionFilter.AUTHENTICATED_AT,System.currentTimeMillis());
+        SecurityContextHolder.getContext().setAuthentication(UsernamePasswordAuthenticationToken.authenticated("user",null,List.of()));
+        assertThatThrownBy(()->new CredentialSessionFilter(users).doFilter(request,new MockHttpServletResponse(),(req,res)->{
+            assertThat(de.corporate.lc.tenant.domain.TenantContext.currentId()).isEqualTo(user.getTenantId());throw new jakarta.servlet.ServletException("synthetic");
+        })).isInstanceOf(jakarta.servlet.ServletException.class);
+        assertThat(de.corporate.lc.tenant.domain.TenantContext.currentId()).isEqualTo(de.corporate.lc.tenant.domain.Tenant.DEFAULT_ID);
+    }
+    @Test void inconsistentTenantRoleRevokesAnExistingSession()throws Exception{
+        var users=mock(AppUserRepository.class);var user=new AppUser();user.setPasswordHash("hash");var role=new de.corporate.lc.user.domain.AppRole();org.springframework.test.util.ReflectionTestUtils.setField(role,"tenantId",UUID.randomUUID());user.setAssignedRole(role);
+        when(users.findByUsernameIgnoreCase("user")).thenReturn(Optional.of(user));var request=new MockHttpServletRequest("GET","/api/lcs");request.getSession().setAttribute(CredentialSessionFilter.STAMP,CredentialStamp.of("hash"));request.getSession().setAttribute(CredentialSessionFilter.AUTHENTICATED_AT,System.currentTimeMillis());
+        SecurityContextHolder.getContext().setAuthentication(UsernamePasswordAuthenticationToken.authenticated("user",null,List.of()));var response=new MockHttpServletResponse();var chain=mock(FilterChain.class);
+        new CredentialSessionFilter(users).doFilter(request,response,chain);assertThat(response.getStatus()).isEqualTo(401);verifyNoInteractions(chain);
+    }
+    @Test void authenticatedContextWithoutVerifiedSessionIsRejected()throws Exception{
+        var request=new MockHttpServletRequest("GET","/api/lcs");SecurityContextHolder.getContext().setAuthentication(UsernamePasswordAuthenticationToken.authenticated("user",null,List.of()));
+        var response=new MockHttpServletResponse();var chain=mock(FilterChain.class);new CredentialSessionFilter(mock(AppUserRepository.class)).doFilter(request,response,chain);
+        assertThat(response.getStatus()).isEqualTo(401);verifyNoInteractions(chain);
+    }
     @AfterEach void clear(){SecurityContextHolder.clearContext();}
     @Test void changedPasswordRevokesSessionBeforeProtectedRequest()throws Exception{
         var users=mock(AppUserRepository.class);var user=new AppUser();user.setPasswordHash("new-hash");
