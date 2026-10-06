@@ -1,0 +1,9 @@
+{
+ "nav.workspace":"Bank-Arbeitsbereich", "nav.cockpit":"Cockpit", "nav.myWork":"Meine Arbeit", "nav.lcs":"LC-Akten",
+ "nav.inbox":"Dokumentenposteingang", "nav.training":"Training & Erkennung", "nav.import":"SWIFT importieren", "nav.imports":"Importhistorie",
+ "nav.monitoring":"Operationsmonitor", "nav.company":"Firmenstammdaten", "nav.templates":"Dokumentvorlagen", "nav.users":"Benutzer",
+ "nav.audit":"Audit-Protokoll", "nav.security":"Verbindungssicherheit", "nav.password":"Passwort ändern", "nav.logout":"Abmelden", "nav.info":"Info & Lizenzen",
+ "profile.title":"Mein Profil", "profile.password":"Passwort", "profile.totp":"Zwei-Faktor-Anmeldung",
+ "language.title":"Sprache", "language.tenantDefault":"Mandantenstandard verwenden", "language.save":"Sprache speichern", "language.saved":"Spracheinstellung gespeichert.",
+ "language.note":"Die Sprachumstellung läuft noch; einige Ansichten verwenden weiterhin ihre ursprüngliche Sprache.", "common.close":"Schließen", "common.cancel":"Abbrechen", "common.yes":"Ja", "common.no":"Nein"
+}
