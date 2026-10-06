@@ -2,6 +2,8 @@
 
 Diese Erweiterung schließt technische Teil-Lücken, nicht sämtliche fachlichen UCP-/ISBP-Regeln. Das öffentliche Beispiel enthält nur eigene synthetische Tests. Private lizenzbezogene Packs und Quellenunterlagen bleiben außerhalb des Repositorys.
 
+Ein einzelnes Pack darf bis zu 50 Regeln und 300 synthetische Tests enthalten. Das Uploadlimit bleibt 512 KiB. Dadurch lassen sich kleinere private Module zu einem Pack zusammenführen, ohne Quellenunterlagen öffentlich zu speichern. Beim Zusammenführen müssen Regel-IDs und Testnamen eindeutig bleiben; alte separat aktive Module sind nach Aktivierung der gemeinsamen Version zu deaktivieren, um doppelte Befunde zu vermeiden.
+
 ## Bearbeitbare Angaben
 
 Unter „Prüfdaten“ stehen jetzt zusätzlich Frachtführer, Unterzeichnerrolle, vertretenes Unternehmen, Lade-/Löschhafen, Abflug-/Zielflughafen, Schiff, Transportvermerk, ausgestellte Originalanzahl, Versicherungsdokumentart, Deckungsstrecke, Einheitspreis und Ursprungsland zur Verfügung. Im LC-Kontext werden entsprechende Ortsangaben, Mengen/Einheiten, Einheitspreise und finanzielle Bezugsbeträge erfasst. Speicherung benutzt weiterhin die vorhandenen JSON-Spalten, Rechte, CSRF-Prüfung, transaktionales Audit und Entwertung bestehender Prüfentscheidungen. Maximal 96 Felder bei unverändertem 64-KiB-Uploadlimit.
