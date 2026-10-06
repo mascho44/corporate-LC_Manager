@@ -17,6 +17,7 @@ public class DocumentTemplateService {
     public DocumentTemplateService(DocumentTemplateRepository repository,de.corporate.lc.company.service.CompanyProfileService companies){this.repository=repository;this.companies=companies;}
     @Transactional(readOnly=true) public List<DocumentTemplateView> list(){return repository.findAll().stream().map(DocumentTemplateView::from).sorted(Comparator.comparing(v->v.documentType().name())).toList();}
     private Optional<DocumentTemplate> resolve(DocumentType type,Integer companyId,String legacyName){
+        if(companyId!=null)companies.profile(companyId);
         var specific=companyId==null?repository.findByDocumentTypeAndCompanyIdIsNullAndCompanyNameIgnoreCase(type,company(legacyName)):repository.findByDocumentTypeAndCompanyId(type,companyId);
         return specific.or(()->repository.findByDocumentTypeAndCompanyIdIsNullAndCompanyNameIgnoreCase(type,"*"));
     }

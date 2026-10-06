@@ -7,6 +7,11 @@ import java.util.UUID;
 @Entity
 @Table(name = "audit_event")
 public class AuditEvent {
+    @Column(nullable=false,updatable=false) @com.fasterxml.jackson.annotation.JsonIgnore
+    private UUID tenantId=de.corporate.lc.tenant.domain.TenantContext.currentId();
+    public UUID getTenantId(){return tenantId;}
+    @PrePersist private void validateTenant(){de.corporate.lc.tenant.domain.TenantContext.require(tenantId);}
+    @PreUpdate @PreRemove private void rejectMutation(){throw new IllegalStateException("Audit events are append-only.");}
     @Id @GeneratedValue(strategy = GenerationType.UUID) private UUID id;
     @Column(nullable = false, length = 100) private String username;
     @Column(nullable = false, length = 80) private String action;

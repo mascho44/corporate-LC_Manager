@@ -81,7 +81,7 @@ public class TrainingLearningService {
 
     @Transactional public LearningRule setActive(String id,boolean active,String username){
         LearningRule rule=rules().stream().filter(r->r.id().equals(id)).findFirst().orElseThrow(()->new IllegalArgumentException("Lernregel wurde nicht gefunden."));
-        TrainingLearningControl control=controls.findById(id).orElseGet(TrainingLearningControl::new);control.setRuleId(id);control.setActive(active);control.setUpdatedBy(username);control.setUpdatedAt(LocalDateTime.now());controls.save(control);
+        TrainingLearningControl control=controls.findByRuleId(id).orElseGet(TrainingLearningControl::new);control.setRuleId(id);control.setActive(active);control.setUpdatedBy(username);control.setUpdatedAt(LocalDateTime.now());controls.save(control);
         return new LearningRule(rule.id(),rule.messageType(),rule.kind(),rule.sourceCode(),rule.sourceValue(),rule.targetCode(),rule.targetValue(),rule.rejected(),rule.examples(),active,rule.documents());
     }
 

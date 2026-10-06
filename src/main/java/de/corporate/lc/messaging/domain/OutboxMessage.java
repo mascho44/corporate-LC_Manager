@@ -6,6 +6,10 @@ import java.util.UUID;
 @Entity
 @Table(name = "integration_outbox")
 public class OutboxMessage {
+    @Column(nullable=false,updatable=false) @com.fasterxml.jackson.annotation.JsonIgnore
+    private UUID tenantId=de.corporate.lc.tenant.domain.TenantContext.currentId();
+    public UUID getTenantId(){return tenantId;}
+    @PrePersist @PreUpdate @PreRemove private void validateTenant(){de.corporate.lc.tenant.domain.TenantContext.require(tenantId);}
     @Id @GeneratedValue(strategy = GenerationType.UUID) private UUID id;
     @Column(nullable = false, length = 150) private String topic;
     @Column(name = "message_key", length = 255) private String messageKey;
