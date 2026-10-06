@@ -26,9 +26,9 @@ public class PackCodec {
   catch(Exception e){throw new IllegalStateException(e);}
  }
  public void validate(PackDefinition p){
-  if(p==null||p.schemaVersion()<1||p.schemaVersion()>3)bad("Schema-Version 1, 2 oder 3 erforderlich.");
+  if(p==null||p.schemaVersion()<1||p.schemaVersion()>4)bad("Schema-Version 1 bis 4 erforderlich.");
   if(p.calendars()!=null){
-   if(p.schemaVersion()!=3||p.calendars().size()>5)bad("Kalender benötigen Schema 3; maximal fünf Kalender erlaubt.");
+   if(p.schemaVersion()<3||p.calendars().size()>5)bad("Kalender benötigen Schema 3 oder neuer; maximal fünf Kalender erlaubt.");
    var calendarIds=new HashSet<String>();
    for(var c:p.calendars()){
     if(c==null)bad("Leerer Kalender.");
@@ -62,31 +62,43 @@ public class PackCodec {
     case DOCUMENT_ISSUER->r.right()==PackDefinition.Field.LC_BENEFICIARY||r.right()==PackDefinition.Field.LC_SECOND_BENEFICIARY;
     case DOCUMENT_RECIPIENT->r.right()==PackDefinition.Field.LC_APPLICANT;
     case DOCUMENT_GOODS_DESCRIPTION->Set.of(PackDefinition.Field.LC_GOODS_DESCRIPTION,PackDefinition.Field.PEER_GOODS_DESCRIPTION).contains(r.right());
-    case DOCUMENT_AMOUNT,DOCUMENT_INSURED_AMOUNT->Set.of(PackDefinition.Field.LC_AMOUNT,PackDefinition.Field.PEER_AMOUNT).contains(r.right());
+    case DOCUMENT_AMOUNT->Set.of(PackDefinition.Field.LC_AMOUNT,PackDefinition.Field.PEER_AMOUNT).contains(r.right());
+    case DOCUMENT_INSURED_AMOUNT->Set.of(PackDefinition.Field.LC_AMOUNT,PackDefinition.Field.PEER_AMOUNT,PackDefinition.Field.LC_INSURANCE_BASE_AMOUNT).contains(r.right());
     case DOCUMENT_CURRENCY,DOCUMENT_INSURANCE_CURRENCY->Set.of(PackDefinition.Field.LC_CURRENCY,PackDefinition.Field.PEER_CURRENCY).contains(r.right());
     case DOCUMENT_DATE,DOCUMENT_SHIPMENT_DATE->Set.of(PackDefinition.Field.LC_EXPIRY_DATE,PackDefinition.Field.LC_LATEST_SHIPMENT_DATE,PackDefinition.Field.LC_PRESENTATION_DATE,PackDefinition.Field.PEER_SHIPMENT_DATE).contains(r.right());
     case DOCUMENT_INSURANCE_EFFECTIVE_DATE->r.right()==PackDefinition.Field.PEER_SHIPMENT_DATE;
     case DOCUMENT_EXAMINATION_START_DATE->r.right()==PackDefinition.Field.LC_EXAMINATION_DECISION_DATE;
     case DOCUMENT_INSURANCE_RISKS->r.right()==PackDefinition.Field.LC_INSURANCE_RISKS;
     case DOCUMENT_SIGNED->r.right()==PackDefinition.Field.LC_SIGNATURE_REQUIRED;
-    case DOCUMENT_ORIGINAL_COUNT->r.right()==PackDefinition.Field.LC_REQUIRED_ORIGINAL_COUNT;
-    case DOCUMENT_QUANTITY->r.right()==PackDefinition.Field.PEER_QUANTITY;
-    case DOCUMENT_QUANTITY_UNIT->r.right()==PackDefinition.Field.PEER_QUANTITY_UNIT;
+    case DOCUMENT_ORIGINAL_COUNT->Set.of(PackDefinition.Field.LC_REQUIRED_ORIGINAL_COUNT,PackDefinition.Field.LC_DOCUMENT_ISSUED_ORIGINAL_COUNT).contains(r.right());
+    case DOCUMENT_QUANTITY->Set.of(PackDefinition.Field.PEER_QUANTITY,PackDefinition.Field.LC_QUANTITY).contains(r.right());
+    case DOCUMENT_QUANTITY_UNIT->Set.of(PackDefinition.Field.PEER_QUANTITY_UNIT,PackDefinition.Field.LC_QUANTITY_UNIT).contains(r.right());
     case DOCUMENT_NET_WEIGHT->r.right()==PackDefinition.Field.PEER_NET_WEIGHT;
     case DOCUMENT_GROSS_WEIGHT->r.right()==PackDefinition.Field.PEER_GROSS_WEIGHT;
     case DOCUMENT_WEIGHT_UNIT->r.right()==PackDefinition.Field.PEER_WEIGHT_UNIT;
+    case DOCUMENT_UNIT_PRICE_AMOUNT->r.right()==PackDefinition.Field.LC_UNIT_PRICE_AMOUNT;
+    case DOCUMENT_LOADING_PORT->r.right()==PackDefinition.Field.LC_LOADING_PORT;
+    case DOCUMENT_DISCHARGE_PORT->r.right()==PackDefinition.Field.LC_DISCHARGE_PORT;
+    case DOCUMENT_DEPARTURE_AIRPORT->r.right()==PackDefinition.Field.LC_DEPARTURE_AIRPORT;
+    case DOCUMENT_DESTINATION_AIRPORT->r.right()==PackDefinition.Field.LC_DESTINATION_AIRPORT;
+    case DOCUMENT_COVERAGE_FROM->r.right()==PackDefinition.Field.LC_COVERAGE_FROM;
+    case DOCUMENT_COVERAGE_TO->r.right()==PackDefinition.Field.LC_COVERAGE_TO;
+    case DOCUMENT_ORIGIN_COUNTRY->r.right()==PackDefinition.Field.LC_ORIGIN_COUNTRY;
     default->false;
    };
    if(!pair)bad("Unzulässige Kombination von Prüffeldern.");
    if(Set.of("TEXT","CURRENCY","BOOLEAN").contains(r.left().kind())&&r.operator()!=PackDefinition.Operator.EQ&&r.operator()!=PackDefinition.Operator.NE)bad("Textfelder erlauben nur EQ oder NE.");
    if(p.schemaVersion()==1&&(r.mode()!=null||r.conditions()!=null||r.left().ordinal()>6||r.right().ordinal()>6))bad("Erweiterte Regeln benötigen Schema-Version 2.");
    if(p.schemaVersion()<3&&(r.parameters()!=null||r.left().ordinal()>15||r.right().ordinal()>15||r.operator().ordinal()>3))bad("Diese Regel benötigt Schema 3.");
+   if(p.schemaVersion()<4&&(extended(r.left())||extended(r.right())))bad("Diese Prüffelder benötigen Schema 4.");
+   if(Set.of(PackDefinition.Field.DOCUMENT_LOADING_PORT,PackDefinition.Field.DOCUMENT_DISCHARGE_PORT,PackDefinition.Field.DOCUMENT_DEPARTURE_AIRPORT,PackDefinition.Field.DOCUMENT_DESTINATION_AIRPORT,PackDefinition.Field.DOCUMENT_COVERAGE_FROM,PackDefinition.Field.DOCUMENT_COVERAGE_TO,PackDefinition.Field.DOCUMENT_ORIGIN_COUNTRY).contains(r.left())&&r.effectiveMode()!=PackDefinition.Mode.MANUAL)bad("Geografische Angaben benötigen eine manuelle Kontextprüfung.");
    validateParameters(p,r);
    if(r.conditions()!=null){
     if(r.conditions().size()>8)bad("Maximal acht Anwendungsbedingungen erlaubt.");
     for(var c:r.conditions()){
      if(c==null||c.field()==null||(c.operator()!=PackDefinition.Operator.EQ&&c.operator()!=PackDefinition.Operator.NE))bad("Bedingungen benötigen ein Feld und EQ oder NE.");
      if(p.schemaVersion()<3&&c.field().ordinal()>15)bad("Dieses Bedingungsfeld benötigt Schema 3.");
+     if(p.schemaVersion()<4&&extended(c.field()))bad("Dieses Bedingungsfeld benötigt Schema 4.");
      text(c.value(),100,"Bedingungswert");
      var probe=new PackDefinition.Rule("probe","1.0.0",r.documentType(),c.field(),PackDefinition.Operator.EQ,c.field(),r.severity(),"probe","probe");
      if(PackEvaluator.compare(probe,c.value(),c.value())!=PackDefinition.Outcome.PASS)bad("Bedingungswert hat ein ungültiges Format.");
@@ -101,7 +113,8 @@ public class PackCodec {
    if(!ids.contains(t.ruleId()))bad("Testfall verweist auf unbekannte Regel.");
    if(t.left()!=null&&t.left().length()>100||t.right()!=null&&t.right().length()>100)bad("Testwerte zu lang.");
    if(t.facts()!=null){
-    if(p.schemaVersion()<2||t.facts().size()>(p.schemaVersion()==3?60:20))bad("Zu viele Test-Prüfdaten oder falsche Schema-Version.");
+    if(p.schemaVersion()<2||t.facts().size()>(p.schemaVersion()>=4?96:p.schemaVersion()==3?60:20))bad("Zu viele Test-Prüfdaten oder falsche Schema-Version.");
+    if(p.schemaVersion()<4&&t.facts().keySet().stream().anyMatch(this::extended))bad("Diese Test-Prüfdaten benötigen Schema 4.");
     if(p.schemaVersion()<3&&t.facts().keySet().stream().anyMatch(f->f.ordinal()>15))bad("Diese Test-Prüfdaten benötigen Schema 3.");
     var rule=p.rules().stream().filter(r->r.id().equals(t.ruleId())).findFirst().orElseThrow();
     if(t.facts().containsKey(rule.left())||t.facts().containsKey(rule.right()))bad("Vergleichswerte dürfen nicht zusätzlich unter facts stehen.");
@@ -121,12 +134,13 @@ public class PackCodec {
     boolean missingScope=p.tests().stream().filter(t->id.equals(t.ruleId())&&t.expected()==PackDefinition.Outcome.NOT_EVALUABLE).anyMatch(t->{
      var facts=PackEvaluator.testFacts(rule,t);
      return rule.conditions().stream().anyMatch(c->facts.get(c.field())==null||facts.get(c.field()).isBlank())
-      &&PackEvaluator.evaluate(rule,facts,p.calendars()==null?List.of():p.calendars(),p.schemaVersion()==3)==PackDefinition.Outcome.NOT_EVALUABLE;
+      &&PackEvaluator.evaluate(rule,facts,p.calendars()==null?List.of():p.calendars(),p.schemaVersion()>=3)==PackDefinition.Outcome.NOT_EVALUABLE;
     });
     if(!missingScope)bad("Bedingte Regeln benötigen einen Test mit fehlenden Anwendungsdaten.");
    }
   }
  }
+ private boolean extended(PackDefinition.Field field){return field.ordinal()>PackDefinition.Field.LC_EXAMINATION_DECISION_DATE.ordinal();}
  private void validateParameters(PackDefinition p,PackDefinition.Rule r){
   var options=r.parameters();
   boolean peer=r.right().peer()||(r.conditions()!=null&&r.conditions().stream().anyMatch(c->c!=null&&c.field()!=null&&c.field().peer()));

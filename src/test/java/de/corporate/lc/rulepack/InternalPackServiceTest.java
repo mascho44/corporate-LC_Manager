@@ -73,6 +73,25 @@ class InternalPackServiceTest {
   assertThat(service.evaluate(lc,List.of(insurance,invoice,duplicate)).get(0).severity().name()).isEqualTo("OK");
   invoice.setCurrency("USD");assertThat(service.evaluate(lc,List.of(insurance,invoice)).get(0).message()).contains("nicht prüfbar");
  }
+ @Test void schemaFourDerivesBasisAndChecksScopeBeforeMissingDocuments()throws Exception{
+  byte[] source;try(var input=getClass().getResourceAsStream("/static/rule-pack-example-v4.json")){source=input.readAllBytes();}
+  var demo=codec.parse(source);var base=demo.rules().get(0);
+  var rule=new PackDefinition.Rule(base.id(),base.version(),base.documentType(),base.left(),base.operator(),base.right(),base.severity(),base.message(),base.sourceReference(),base.mode(),List.of(new PackDefinition.Condition(PackDefinition.Field.LC_RULE_STANDARD,PackDefinition.Operator.EQ,"UCP600")),base.parameters());
+  var tests=new ArrayList<PackDefinition.TestCase>();for(var test:demo.tests().stream().filter(t->t.ruleId().equals(rule.id())).toList()){
+   var facts=new EnumMap<PackDefinition.Field,String>(PackDefinition.Field.class);facts.putAll(test.facts());facts.put(PackDefinition.Field.LC_RULE_STANDARD,"UCP600");tests.add(new PackDefinition.TestCase(test.name(),test.ruleId(),test.left(),test.right(),test.expected(),facts));
+  }
+  tests.add(new PackDefinition.TestCase("excluded",rule.id(),"1250","1000",PackDefinition.Outcome.NOT_APPLICABLE,Map.of(PackDefinition.Field.LC_RULE_STANDARD,"OTHER")));
+  tests.add(new PackDefinition.TestCase("unknown scope",rule.id(),"1250","1000",PackDefinition.Outcome.NOT_EVALUABLE,Map.of()));
+  var pack=new PackDefinition(4,demo.packId(),demo.version(),demo.name(),demo.origin(),demo.license(),demo.rightsStatement(),List.of(rule),tests);codec.validate(pack);
+  var v=new StoredPackVersion();v.packId=pack.packId();v.version=pack.version();v.definitionJson=codec.canonical(pack);v.checksum=codec.digest(v.definitionJson);v.testsPassed=true;
+  when(versions.findById(v.id)).thenReturn(Optional.of(v));var selection=new PackSelection();selection.id=v.packId;selection.activeVersionId=v.id;when(selections.findAll()).thenReturn(List.of(selection));
+  var lc=new LetterOfCredit();lc.setCurrency("EUR");
+  lc.setRuleFactsJson(RuleFacts.encode(Map.of(PackDefinition.Field.LC_RULE_STANDARD,"UCP600",PackDefinition.Field.LC_CLAIMED_AMOUNT,"1000",PackDefinition.Field.LC_GROSS_GOODS_AMOUNT,"1200"),false));
+  var doc=new LcDocument();doc.setDocumentType(DocumentType.INSURANCE_CERTIFICATE);doc.setOriginalFilename("synthetic-cover.pdf");doc.setRuleFactsJson(RuleFacts.encode(Map.of(PackDefinition.Field.DOCUMENT_INSURED_AMOUNT,"1500",PackDefinition.Field.DOCUMENT_INSURANCE_CURRENCY,"EUR"),true));
+  var first=service.evaluate(lc,List.of(doc)).get(0);assertThat(first.severity().name()).isEqualTo("OK");assertThat(first.documentEvidence()).contains("1200");
+  lc.setRuleFactsJson(RuleFacts.encode(Map.of(PackDefinition.Field.LC_RULE_STANDARD,"UCP600",PackDefinition.Field.LC_CLAIMED_AMOUNT,"1000"),false));assertThat(service.evaluate(lc,List.of(doc)).get(0).message()).contains("nicht prüfbar");
+  lc.setRuleFactsJson(RuleFacts.encode(Map.of(PackDefinition.Field.LC_RULE_STANDARD,"OTHER"),false));assertThat(service.evaluate(lc,List.of()).get(0).message()).contains("nicht anwendbar").doesNotContain("fehlt");
+ }
  @Test void corruptedPackNeverProducesSuccessfulFinding()throws Exception{
   var v=version();v.definitionJson+=" ";var selected=new PackSelection();selected.id=v.packId;selected.activeVersionId=v.id;
   when(selections.findAll()).thenReturn(List.of(selected));

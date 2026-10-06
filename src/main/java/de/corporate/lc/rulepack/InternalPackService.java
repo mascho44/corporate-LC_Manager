@@ -90,6 +90,15 @@ public class InternalPackService {
      rule.message(),"Deklarativer Metadatenvergleich. Keine vollständige Dokumentenprüfung oder Rechtsfreigabe.",null);
     var matching=documents.stream().filter(d->d.getDocumentType()==rule.documentType()).toList();
     if(matching.isEmpty()){
+     if(definition.schemaVersion()>=4){
+      var scopeFacts=new EnumMap<Field,String>(Field.class);var placeholder=new LcDocument();placeholder.setDocumentType(rule.documentType());
+      try{for(var field:Field.values())if(!field.document()&&!field.peer())scopeFacts.put(field,value(field,lc,placeholder));}
+      catch(RuntimeException invalidScope){scopeFacts.clear();}
+      if(PackEvaluator.evaluate(rule,scopeFacts,definition.calendars()==null?List.of():definition.calendars(),true)==Outcome.NOT_APPLICABLE){
+       findings.add(new CheckResult(CheckResult.Severity.WARNING,code,"Regel nicht anwendbar: "+rule.message(),metadata.basis(),null,"Ergebnis NOT_APPLICABLE · SHA-256 "+stored.checksum+" · Prüfdaten "+scopeFacts).withRule(metadata));
+       continue;
+      }
+     }
      findings.add(new CheckResult(CheckResult.Severity.WARNING,code,"Interne Pack-Regel nicht prüfbar: passendes Dokument fehlt.",
       metadata.basis(),null,"Erforderlicher Typ: "+rule.documentType()+" · SHA-256 "+stored.checksum).withRule(metadata));
     }
@@ -97,7 +106,8 @@ public class InternalPackService {
      var facts=new EnumMap<Field,String>(Field.class);
      try{
       if(definition.schemaVersion()==1){facts.put(rule.left(),value(rule.left(),lc,document));facts.put(rule.right(),value(rule.right(),lc,document));}
-      else for(var field:Field.values())if(!field.peer()&&(definition.schemaVersion()>=3||field.ordinal()<=15))facts.put(field,value(field,lc,document));
+      else for(var field:Field.values())if(!field.peer()&&(definition.schemaVersion()>=4||(definition.schemaVersion()==3?field.ordinal()<=Field.LC_EXAMINATION_DECISION_DATE.ordinal():field.ordinal()<=15)))facts.put(field,value(field,lc,document));
+      if(definition.schemaVersion()>=4)facts.put(Field.LC_INSURANCE_BASE_AMOUNT,ExtendedRuleFacts.insuranceBasis(facts));
       if(rule.parameters()!=null&&rule.parameters().peerDocumentType()!=null){
        var peer=uniquePeer(rule,document,documents);
        for(var field:Field.values())if(field.peer())facts.put(field,peer==null?null:value(peerSource(field),lc,peer));
@@ -122,6 +132,7 @@ public class InternalPackService {
    case DOCUMENT_AMOUNT->doc.getAmount();case DOCUMENT_CURRENCY->doc.getCurrency();case DOCUMENT_DATE->doc.getDocumentDate();
    case LC_AMOUNT->lc.getAmount();case LC_CURRENCY->lc.getCurrency();case LC_EXPIRY_DATE->lc.getExpiryDate();case LC_LATEST_SHIPMENT_DATE->lc.getLatestShipmentDate();
    case LC_BENEFICIARY->lc.getBeneficiary();case LC_APPLICANT->lc.getApplicant();
+   case LC_DOCUMENT_ISSUED_ORIGINAL_COUNT->RuleFacts.read(doc.getRuleFactsJson()).get(Field.DOCUMENT_ISSUED_ORIGINAL_COUNT);
    case LC_SIGNATURE_REQUIRED,LC_REQUIRED_ORIGINAL_COUNT->RuleRequirements.read(lc.getRuleRequirementsJson()).getOrDefault(doc.getDocumentType(),Map.of()).get(field);
    default->field.peer()?null:RuleFacts.read(field.document()?doc.getRuleFactsJson():lc.getRuleFactsJson()).get(field);
   };

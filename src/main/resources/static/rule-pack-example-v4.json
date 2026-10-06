@@ -1,0 +1,222 @@
+{
+  "schemaVersion": 4,
+  "packId": "own-context-demo",
+  "version": "1.0.0",
+  "name": "Eigene synthetische Tests: Schema 4",
+  "origin": "OWN_INTERNAL",
+  "license": "INTERNAL_TEST_ONLY",
+  "rightsStatement": "Eigene synthetische Funktionstests ohne normative Aussage oder ICC-Regelkatalog.",
+  "rules": [
+    {
+      "id": "coverage-basis",
+      "version": "1.0.0",
+      "documentType": "INSURANCE_CERTIFICATE",
+      "left": "DOCUMENT_INSURED_AMOUNT",
+      "operator": "PERCENT_GTE",
+      "right": "LC_INSURANCE_BASE_AMOUNT",
+      "severity": "WARNING",
+      "message": "Synthetischer Test: coverage-basis",
+      "sourceReference": "Eigene Testdaten, keine normative Regel",
+      "parameters": {
+        "percent": 125
+      }
+    },
+    {
+      "id": "quantity-context",
+      "version": "1.0.0",
+      "documentType": "COMMERCIAL_INVOICE",
+      "left": "DOCUMENT_QUANTITY",
+      "operator": "WITHIN_TOLERANCE",
+      "right": "LC_QUANTITY",
+      "severity": "WARNING",
+      "message": "Synthetischer Test: quantity-context",
+      "sourceReference": "Eigene Testdaten, keine normative Regel",
+      "parameters": {
+        "percent": 7
+      }
+    },
+    {
+      "id": "unit-price",
+      "version": "1.0.0",
+      "documentType": "COMMERCIAL_INVOICE",
+      "left": "DOCUMENT_UNIT_PRICE_AMOUNT",
+      "operator": "EQ",
+      "right": "LC_UNIT_PRICE_AMOUNT",
+      "severity": "WARNING",
+      "message": "Synthetischer Test: unit-price",
+      "sourceReference": "Eigene Testdaten, keine normative Regel"
+    },
+    {
+      "id": "issued-originals",
+      "version": "1.0.0",
+      "documentType": "BILL_OF_LADING",
+      "left": "DOCUMENT_ORIGINAL_COUNT",
+      "operator": "GTE",
+      "right": "LC_DOCUMENT_ISSUED_ORIGINAL_COUNT",
+      "severity": "WARNING",
+      "message": "Synthetischer Test: issued-originals",
+      "sourceReference": "Eigene Testdaten, keine normative Regel"
+    },
+    {
+      "id": "loading-place",
+      "version": "1.0.0",
+      "documentType": "BILL_OF_LADING",
+      "left": "DOCUMENT_LOADING_PORT",
+      "operator": "EQ",
+      "right": "LC_LOADING_PORT",
+      "severity": "WARNING",
+      "message": "Synthetischer Test: loading-place",
+      "sourceReference": "Eigene Testdaten, keine normative Regel",
+      "mode": "MANUAL"
+    }
+  ],
+  "tests": [
+    {
+      "name": "coverage-basis gleich",
+      "ruleId": "coverage-basis",
+      "left": "1250",
+      "right": "1000",
+      "expected": "PASS",
+      "facts": {
+        "DOCUMENT_INSURANCE_CURRENCY": "EUR",
+        "LC_CURRENCY": "EUR"
+      }
+    },
+    {
+      "name": "coverage-basis abweichend",
+      "ruleId": "coverage-basis",
+      "left": "1249",
+      "right": "1000",
+      "expected": "FAIL",
+      "facts": {
+        "DOCUMENT_INSURANCE_CURRENCY": "EUR",
+        "LC_CURRENCY": "EUR"
+      }
+    },
+    {
+      "name": "coverage-basis fehlt",
+      "ruleId": "coverage-basis",
+      "left": null,
+      "right": "1000",
+      "expected": "NOT_EVALUABLE",
+      "facts": {
+        "DOCUMENT_INSURANCE_CURRENCY": "EUR",
+        "LC_CURRENCY": "EUR"
+      }
+    },
+    {
+      "name": "quantity-context gleich",
+      "ruleId": "quantity-context",
+      "left": "107",
+      "right": "100",
+      "expected": "PASS",
+      "facts": {
+        "DOCUMENT_QUANTITY_UNIT": "PCS",
+        "LC_QUANTITY_UNIT": "PCS"
+      }
+    },
+    {
+      "name": "quantity-context abweichend",
+      "ruleId": "quantity-context",
+      "left": "108",
+      "right": "100",
+      "expected": "FAIL",
+      "facts": {
+        "DOCUMENT_QUANTITY_UNIT": "PCS",
+        "LC_QUANTITY_UNIT": "PCS"
+      }
+    },
+    {
+      "name": "quantity-context fehlt",
+      "ruleId": "quantity-context",
+      "left": null,
+      "right": "100",
+      "expected": "NOT_EVALUABLE",
+      "facts": {
+        "DOCUMENT_QUANTITY_UNIT": "PCS",
+        "LC_QUANTITY_UNIT": "PCS"
+      }
+    },
+    {
+      "name": "unit-price gleich",
+      "ruleId": "unit-price",
+      "left": "10",
+      "right": "10",
+      "expected": "PASS",
+      "facts": {
+        "DOCUMENT_CURRENCY": "EUR",
+        "LC_CURRENCY": "EUR"
+      }
+    },
+    {
+      "name": "unit-price abweichend",
+      "ruleId": "unit-price",
+      "left": "11",
+      "right": "10",
+      "expected": "FAIL",
+      "facts": {
+        "DOCUMENT_CURRENCY": "EUR",
+        "LC_CURRENCY": "EUR"
+      }
+    },
+    {
+      "name": "unit-price fehlt",
+      "ruleId": "unit-price",
+      "left": null,
+      "right": "10",
+      "expected": "NOT_EVALUABLE",
+      "facts": {
+        "DOCUMENT_CURRENCY": "EUR",
+        "LC_CURRENCY": "EUR"
+      }
+    },
+    {
+      "name": "issued-originals gleich",
+      "ruleId": "issued-originals",
+      "left": "3",
+      "right": "3",
+      "expected": "PASS",
+      "facts": {}
+    },
+    {
+      "name": "issued-originals abweichend",
+      "ruleId": "issued-originals",
+      "left": "2",
+      "right": "3",
+      "expected": "FAIL",
+      "facts": {}
+    },
+    {
+      "name": "issued-originals fehlt",
+      "ruleId": "issued-originals",
+      "left": null,
+      "right": "3",
+      "expected": "NOT_EVALUABLE",
+      "facts": {}
+    },
+    {
+      "name": "loading-place gleich",
+      "ruleId": "loading-place",
+      "left": "Demo port",
+      "right": "Demo port",
+      "expected": "MANUAL_REVIEW",
+      "facts": {}
+    },
+    {
+      "name": "loading-place abweichend",
+      "ruleId": "loading-place",
+      "left": "Other port",
+      "right": "Demo port",
+      "expected": "MANUAL_REVIEW",
+      "facts": {}
+    },
+    {
+      "name": "loading-place fehlt",
+      "ruleId": "loading-place",
+      "left": null,
+      "right": "Demo port",
+      "expected": "NOT_EVALUABLE",
+      "facts": {}
+    }
+  ]
+}

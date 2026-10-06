@@ -13,10 +13,18 @@ public final class RuleFacts {
   Field.DOCUMENT_SHIPMENT_DATE,Field.DOCUMENT_PRESENTATION_GROUP,Field.DOCUMENT_QUANTITY,Field.DOCUMENT_QUANTITY_UNIT,
   Field.DOCUMENT_NET_WEIGHT,Field.DOCUMENT_GROSS_WEIGHT,Field.DOCUMENT_WEIGHT_UNIT,
   Field.DOCUMENT_INSURED_AMOUNT,Field.DOCUMENT_INSURANCE_CURRENCY,Field.DOCUMENT_INSURANCE_EFFECTIVE_DATE,
-  Field.DOCUMENT_INSURANCE_RISKS,Field.DOCUMENT_SIGNED,Field.DOCUMENT_ORIGINAL_COUNT,Field.DOCUMENT_EXAMINATION_START_DATE);
+  Field.DOCUMENT_INSURANCE_RISKS,Field.DOCUMENT_SIGNED,Field.DOCUMENT_ORIGINAL_COUNT,Field.DOCUMENT_EXAMINATION_START_DATE,
+  Field.DOCUMENT_CARRIER,Field.DOCUMENT_SIGNER_ROLE,Field.DOCUMENT_SIGNED_FOR,Field.DOCUMENT_LOADING_PORT,Field.DOCUMENT_DISCHARGE_PORT,
+  Field.DOCUMENT_DEPARTURE_AIRPORT,Field.DOCUMENT_DESTINATION_AIRPORT,Field.DOCUMENT_VESSEL,Field.DOCUMENT_TRANSPORT_NOTATION,
+  Field.DOCUMENT_ISSUED_ORIGINAL_COUNT,Field.DOCUMENT_INSURANCE_TYPE,Field.DOCUMENT_COVERAGE_FROM,Field.DOCUMENT_COVERAGE_TO,
+  Field.DOCUMENT_UNIT_PRICE_AMOUNT,Field.DOCUMENT_ORIGIN_COUNTRY);
  public static final Set<Field> LC=Set.of(Field.LC_RULE_STANDARD,Field.LC_TRANSFERRED,Field.LC_SECOND_BENEFICIARY,Field.LC_GOODS_DESCRIPTION,
   Field.LC_PRESENTATION_DATE,Field.LC_PRESENTATION_PERIOD_DAYS,Field.LC_INSURANCE_MIN_PERCENT,Field.LC_TOLERANCE_PERCENT,
-  Field.LC_INSURANCE_RISKS,Field.LC_EXAMINATION_DECISION_DATE);
+  Field.LC_INSURANCE_RISKS,Field.LC_EXAMINATION_DECISION_DATE,
+  Field.LC_CIF_CIP_VALUE_AMOUNT,Field.LC_CLAIMED_AMOUNT,Field.LC_GROSS_GOODS_AMOUNT,
+  Field.LC_QUANTITY,Field.LC_QUANTITY_UNIT,Field.LC_UNIT_PRICE_AMOUNT,
+  Field.LC_LOADING_PORT,Field.LC_DISCHARGE_PORT,Field.LC_DEPARTURE_AIRPORT,Field.LC_DESTINATION_AIRPORT,
+  Field.LC_COVERAGE_FROM,Field.LC_COVERAGE_TO,Field.LC_ORIGIN_COUNTRY);
  public static final Set<Field> REQUIREMENTS=Set.of(Field.LC_SIGNATURE_REQUIRED,Field.LC_REQUIRED_ORIGINAL_COUNT);
  public static Map<Field,String> read(String source){
   if(source==null||source.isBlank())return Map.of();
@@ -28,7 +36,7 @@ public final class RuleFacts {
  }
  public static String encodeRequirements(Map<Field,String> facts){return encodeFor(facts,REQUIREMENTS);}
  private static String encodeFor(Map<Field,String> facts,Set<Field> allowed){
-  if(facts==null||facts.size()>32)throw new IllegalArgumentException("Ungültige Prüfdaten.");
+  if(facts==null||facts.size()>96)throw new IllegalArgumentException("Ungültige Prüfdaten.");
   var values=new EnumMap<Field,String>(Field.class);
   for(var e:facts.entrySet()){
    if(!allowed.contains(e.getKey()))throw new IllegalArgumentException("Dieses Prüffeld ist hier nicht zulässig.");
@@ -67,7 +75,7 @@ public final class RuleFacts {
   if(source.length>MAX_BYTES)throw new IllegalArgumentException("Prüfdaten überschreiten 64 KB.");
   try{
    var root=JSON.readTree(source);
-   if(root==null||!root.isObject()||root.size()>32)throw new IllegalArgumentException("Prüfdaten müssen ein JSON-Objekt mit höchstens 32 Feldern sein.");
+   if(root==null||!root.isObject()||root.size()>96)throw new IllegalArgumentException("Prüfdaten müssen ein JSON-Objekt mit höchstens 96 Feldern sein.");
    var facts=new EnumMap<Field,String>(Field.class);
    var fields=root.fields();
    while(fields.hasNext()){
@@ -99,7 +107,7 @@ public final class RuleFacts {
    Map.entry(Field.LC_INSURANCE_RISKS,"Geforderte Versicherungsrisiken"));
   return fields.stream().sorted(Comparator.comparingInt(Enum::ordinal)).map(field->{
    List<String> choices=field.kind().equals("BOOLEAN")?List.of("true","false"):field==Field.LC_RULE_STANDARD?List.of("UCP600","OTHER"):field==Field.DOCUMENT_WEIGHT_UNIT?List.of("KG","T","LB"):List.of();
-   return new Definition(field,labels.get(field),field.kind(),choices,maxLength(field));
+   return new Definition(field,labels.getOrDefault(field,ExtendedRuleFacts.label(field)),field.kind(),choices,maxLength(field));
   }).toList();
  }
  public static String fingerprint(String source){
