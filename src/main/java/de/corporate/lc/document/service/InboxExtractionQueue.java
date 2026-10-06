@@ -24,7 +24,7 @@ public class InboxExtractionQueue {
     private final TransactionTemplate transaction;
     private final ExecutorService executor=Executors.newSingleThreadExecutor(task->{var thread=new Thread(task,"inbox-extraction");thread.setDaemon(true);return thread;});
     private final AtomicBoolean busy=new AtomicBoolean();
-    record Work(UUID id,UUID token,LcDocument document,String username){}
+    record Work(UUID id,UUID token,UUID tenantId,LcDocument document,String username){}
     public InboxExtractionQueue(DocumentInboxRepository inbox,DocumentExtractionService extraction,AuditService audit,PlatformTransactionManager manager){
         this.inbox=inbox;this.extraction=extraction;this.audit=audit;transaction=new TransactionTemplate(manager);
     }
@@ -37,11 +37,13 @@ public class InboxExtractionQueue {
     void processNext(){
         Work work=transaction.execute(status->claim());
         if(work==null)return;
+        try(var scope=de.corporate.lc.tenant.domain.TenantContext.open(work.tenantId())){
         try{extraction.extractInBackground(work.document());}catch(Exception failure){work.document().setExtractionStatus("FAILED");}
         if(work.document().getExtractionStatus()==null)work.document().setExtractionStatus("FAILED");
         if(Thread.currentThread().isInterrupted())return; // Leave claim recoverable after shutdown.
         Boolean completed=transaction.execute(status->finish(work));
         if(Boolean.TRUE.equals(completed))audit.record(work.username(),"DOCUMENT_INBOX_EXTRACTED","DOCUMENT_INBOX",work.id(),work.document().getExtractionStatus(),!List.of("FAILED","OCR_TIMEOUT","OCR_UNAVAILABLE").contains(work.document().getExtractionStatus()),null);
+        }
     }
     private Work claim(){
         // Longer than the maximum configured document budget (30 min), plus margin.
@@ -55,14 +57,14 @@ public class InboxExtractionQueue {
             var token=UUID.randomUUID();item.setExtractionStatus("PROCESSING");item.setExtractionStartedAt(LocalDateTime.now());item.setExtractionToken(token);
             inbox.save(item);
             var document=new LcDocument();document.setOriginalFilename(item.getOriginalFilename());document.setContentType(item.getContentType());document.setContent(item.getContent());document.setDocumentType(DocumentType.ANNEX);
-            return new Work(id,token,document,item.getReceivedBy());
+            return new Work(id,token,item.getTenantId(),document,item.getReceivedBy());
         }
         return null;
     }
     private boolean finish(Work work){
         var item=inbox.findForUpdate(work.id()).orElse(null);
         // Deletion or a reclaimed lease must not resurrect or overwrite an item.
-        if(item==null||!"OPEN".equals(item.getStatus())||!"PROCESSING".equals(item.getExtractionStatus())||!work.token().equals(item.getExtractionToken()))return false;
+        if(item==null||!work.tenantId().equals(item.getTenantId())||!"OPEN".equals(item.getStatus())||!"PROCESSING".equals(item.getExtractionStatus())||!work.token().equals(item.getExtractionToken()))return false;
         var result=work.document();item.setExtractionStatus(result.getExtractionStatus()==null?"FAILED":result.getExtractionStatus());
         item.setExtractedReference(result.getExtractedReference());item.setExtractedDocumentNumber(result.getExtractedDocumentNumber());
         item.setExtractedAmount(result.getExtractedAmount());item.setExtractedCurrency(result.getExtractedCurrency());item.setExtractedText(result.getExtractedText());
