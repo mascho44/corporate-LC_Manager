@@ -37,14 +37,15 @@ public class InboxExtractionQueue {
     void processNext(){
         Work work=transaction.execute(status->claim());
         if(work==null)return;
-        try{extraction.extract(work.document());}catch(Exception failure){work.document().setExtractionStatus("FAILED");}
+        try{extraction.extractInBackground(work.document());}catch(Exception failure){work.document().setExtractionStatus("FAILED");}
         if(work.document().getExtractionStatus()==null)work.document().setExtractionStatus("FAILED");
         if(Thread.currentThread().isInterrupted())return; // Leave claim recoverable after shutdown.
         Boolean completed=transaction.execute(status->finish(work));
         if(Boolean.TRUE.equals(completed))audit.record(work.username(),"DOCUMENT_INBOX_EXTRACTED","DOCUMENT_INBOX",work.id(),work.document().getExtractionStatus(),!List.of("FAILED","OCR_TIMEOUT","OCR_UNAVAILABLE").contains(work.document().getExtractionStatus()),null);
     }
     private Work claim(){
-        var expired=LocalDateTime.now().minusMinutes(15);
+        // Longer than the maximum configured document budget (30 min), plus margin.
+        var expired=LocalDateTime.now().minusMinutes(35);
         for(UUID id:inbox.findExtractionCandidates(expired,PageRequest.of(0,10))){
             var item=inbox.findForUpdate(id).orElse(null);
             if(item==null||!"OPEN".equals(item.getStatus())||item.getContent()==null)continue;

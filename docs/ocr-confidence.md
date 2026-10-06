@@ -34,7 +34,11 @@ OCR measurements. Server-side preservation prevents the client replacing scores.
 
 OCR processing permits 120 seconds per page by default, configurable via
 `lc.ocr.page-timeout-seconds` (bounded to 1–300 seconds). Each document has a
-300-second processing budget including rendering. A timed-out extraction is
+900-second background processing budget including rendering, configurable through
+`lc.ocr.document-timeout-seconds` (bounded to 60–1800 seconds). Page limits remain
+independent; increasing the document budget does not disable them. Synchronous
+training/preview extraction retains its previous maximum of 300 seconds.
+A timed-out extraction is
 reported as `OCR_TIMEOUT`, not as a missing OCR installation. The upload dialog
 shows measured transfer progress and an indeterminate indicator during server
 processing; it does not claim a measured OCR percentage.

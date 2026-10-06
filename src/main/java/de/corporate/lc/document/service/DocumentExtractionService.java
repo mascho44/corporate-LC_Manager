@@ -20,6 +20,8 @@ public class DocumentExtractionService {
     private double ocrThreshold=0.8;
     @org.springframework.beans.factory.annotation.Value("${lc.ocr.page-timeout-seconds:120}")
     private long ocrPageTimeoutSeconds=120;
+    @org.springframework.beans.factory.annotation.Value("${lc.ocr.document-timeout-seconds:900}")
+    private long ocrDocumentTimeoutSeconds=900;
     private static final int MAX_TEXT_LENGTH = 100_000;
     private static final int MAX_OCR_PAGES = 20;
     private static final Pattern DOCUMENT_NUMBER = Pattern.compile("(?im)^(?:invoice|commercial invoice|document)\\s*(?:no\\.?|number|#)?\\s*[:#-]?\\s*([A-Z0-9][A-Z0-9./_-]{2,})\\s*$");
@@ -30,6 +32,11 @@ public class DocumentExtractionService {
     public TextExtraction extractFile(byte[] content,String filename,String contentType) { LcDocument document=new LcDocument();document.setContent(content);document.setOriginalFilename(filename==null?"document":filename);document.setContentType(contentType==null?"application/octet-stream":contentType);extract(document);return new TextExtraction(document.getExtractedText(),document.getExtractionStatus(),readEvidence(document.getOcrEvidenceJson())); }
 
     public void extract(LcDocument document) {
+        extract(document,Math.min(300,documentTimeoutSeconds()));
+    }
+    public void extractInBackground(LcDocument document){extract(document,documentTimeoutSeconds());}
+
+    private void extract(LcDocument document,long documentBudget) {
         document.setOcrEvidenceJson(null);
         try (var slot=PdfProcessingSafety.acquire()) {
             String text = readText(document);
@@ -40,7 +47,7 @@ public class DocumentExtractionService {
             boolean ocrUsed = false;
             text = normalize(text);
             if (text.isBlank() && isPdf(document)) {
-                text = normalize(readPdfWithOcr(document));
+                text = normalize(readPdfWithOcr(document,documentBudget));
                 ocrUsed = !text.isBlank();
             }
             document.setExtractedText(limit(text));
@@ -86,7 +93,7 @@ public class DocumentExtractionService {
         return null;
     }
 
-    private String readPdfWithOcr(LcDocument document) throws Exception {
+    private String readPdfWithOcr(LcDocument document,long documentBudget) throws Exception {
         long started=System.nanoTime();
         Path directory = Files.createTempDirectory("lc-ocr-");
         try {
@@ -111,9 +118,14 @@ public class DocumentExtractionService {
                 ocr = new ProcessBuilder("tesseract", pages.get(index).toString(), output.toString(), "-l", "deu+eng",
                     "-c", "tessedit_create_txt=1", "-c", "tessedit_create_tsv=1")
                     .redirectOutput(ProcessBuilder.Redirect.DISCARD).redirectErrorStream(true);
-                long remaining=300-java.util.concurrent.TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()-started);
+                long elapsed=java.util.concurrent.TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()-started);
+                long remaining=documentBudget-elapsed;
                 if(remaining<=0)throw new BoundedProcess.TimeoutException("OCR");
-                runOcrStep(ocr,Math.min(pageTimeoutSeconds(),remaining));
+                long pageBudget=Math.min(pageTimeoutSeconds(),remaining);
+                try{runOcrStep(ocr,pageBudget);}catch(BoundedProcess.TimeoutException timeout){
+                    log.warn("OCR timeout: page={}, pages={}, pageBudgetSeconds={}, documentBudgetSeconds={}, elapsedSeconds={}",index+1,pages.size(),pageBudget,documentBudget,java.util.concurrent.TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()-started));
+                    throw timeout;
+                }
                 Path textFile = Path.of(output + ".txt");
                 if(!Files.isRegularFile(textFile))throw new IOException("OCR produced no text file");
                 if(Files.exists(textFile)&&Files.size(textFile)>10*1024*1024)throw new IOException("OCR-Ausgabe zu groß");
@@ -134,6 +146,7 @@ public class DocumentExtractionService {
     public static OcrEvidence readEvidence(String json){if(json==null)return null;try{return new com.fasterxml.jackson.databind.ObjectMapper().readValue(json,OcrEvidence.class);}catch(Exception e){return null;}}
 
     long pageTimeoutSeconds(){return Math.max(1,Math.min(300,ocrPageTimeoutSeconds));}
+    long documentTimeoutSeconds(){return Math.max(60,Math.min(1800,ocrDocumentTimeoutSeconds));}
 
     private String tesseractVersion(Path directory){
         try{Path file=directory.resolve("version.txt");BoundedProcess.run(new ProcessBuilder("tesseract","--version").redirectErrorStream(true).redirectOutput(file.toFile()),5);return Files.readAllLines(file).stream().findFirst().orElse("unknown");}catch(Exception e){return "unknown";}

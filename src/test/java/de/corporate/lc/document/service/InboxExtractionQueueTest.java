@@ -27,24 +27,24 @@ class InboxExtractionQueueTest {
  DocumentInboxItem enqueue(String status){var item=new DocumentInboxItem();item.setOriginalFilename("synthetic.txt");item.setContentType("text/plain");item.setFileSize(1);item.setContent(new byte[]{1});item.setReceivedBy("synthetic-user");item.setExtractionStatus(status);return inbox.saveAndFlush(item);}
  @Test void claimsCommittedFilesAndExtractsOutsideDatabaseTransaction(){
   var item=enqueue("QUEUED");
-  doAnswer(call->{assertThat(TransactionSynchronizationManager.isActualTransactionActive()).isFalse();assertThat(inbox.findById(item.getId()).orElseThrow().getExtractionStatus()).isEqualTo("PROCESSING");LcDocument doc=call.getArgument(0);doc.setExtractionStatus("EXTRACTED");doc.setExtractedText("synthetic text");doc.setExtractedReference("SYNTHETIC-REF");return null;}).when(extraction).extract(any());
+  doAnswer(call->{assertThat(TransactionSynchronizationManager.isActualTransactionActive()).isFalse();assertThat(inbox.findById(item.getId()).orElseThrow().getExtractionStatus()).isEqualTo("PROCESSING");LcDocument doc=call.getArgument(0);doc.setExtractionStatus("EXTRACTED");doc.setExtractedText("synthetic text");doc.setExtractedReference("SYNTHETIC-REF");return null;}).when(extraction).extractInBackground(any());
   queue.processNext();var saved=inbox.findById(item.getId()).orElseThrow();assertThat(saved.getExtractionStatus()).isEqualTo("EXTRACTED");assertThat(saved.getExtractedText()).isEqualTo("synthetic text");assertThat(saved.getContent()).containsExactly(1);assertThat(saved.getExtractionToken()).isNull();
-  queue.processNext();verify(extraction,times(1)).extract(any());verify(audit).record(eq("synthetic-user"),eq("DOCUMENT_INBOX_EXTRACTED"),any(),eq(item.getId()),eq("EXTRACTED"),eq(true),isNull());
+  queue.processNext();verify(extraction,times(1)).extractInBackground(any());verify(audit).record(eq("synthetic-user"),eq("DOCUMENT_INBOX_EXTRACTED"),any(),eq(item.getId()),eq("EXTRACTED"),eq(true),isNull());
  }
  @Test void deletionDuringExtractionDoesNotResurrectFile(){
-  var item=enqueue("QUEUED");doAnswer(call->{inbox.deleteById(item.getId());LcDocument doc=call.getArgument(0);doc.setExtractionStatus("EXTRACTED");return null;}).when(extraction).extract(any());
+  var item=enqueue("QUEUED");doAnswer(call->{inbox.deleteById(item.getId());LcDocument doc=call.getArgument(0);doc.setExtractionStatus("EXTRACTED");return null;}).when(extraction).extractInBackground(any());
   queue.processNext();assertThat(inbox.findById(item.getId())).isEmpty();verifyNoInteractions(audit);
  }
  @Test void recoversExpiredClaimButDoesNotStealActiveWork(){
   var item=enqueue("PROCESSING");item.setExtractionToken(UUID.randomUUID());item.setExtractionStartedAt(LocalDateTime.now());inbox.saveAndFlush(item);
   queue.processNext();verifyNoInteractions(extraction);
-  item.setExtractionStartedAt(LocalDateTime.now().minusMinutes(16));inbox.saveAndFlush(item);
-  doAnswer(call->{LcDocument doc=call.getArgument(0);doc.setExtractionStatus("OCR_TIMEOUT");return null;}).when(extraction).extract(any());queue.processNext();
+  item.setExtractionStartedAt(LocalDateTime.now().minusMinutes(36));inbox.saveAndFlush(item);
+  doAnswer(call->{LcDocument doc=call.getArgument(0);doc.setExtractionStatus("OCR_TIMEOUT");return null;}).when(extraction).extractInBackground(any());queue.processNext();
   assertThat(inbox.findById(item.getId()).orElseThrow().getExtractionStatus()).isEqualTo("OCR_TIMEOUT");
  }
  @Test void reclaimedLeaseCannotBeOverwrittenByOldWorker(){
   var item=enqueue("QUEUED");var replacement=UUID.randomUUID();
-  doAnswer(call->{new TransactionTemplate(manager).execute(status->{var current=inbox.findForUpdate(item.getId()).orElseThrow();current.setExtractionToken(replacement);return null;});LcDocument doc=call.getArgument(0);doc.setExtractionStatus("EXTRACTED");return null;}).when(extraction).extract(any());
+  doAnswer(call->{new TransactionTemplate(manager).execute(status->{var current=inbox.findForUpdate(item.getId()).orElseThrow();current.setExtractionToken(replacement);return null;});LcDocument doc=call.getArgument(0);doc.setExtractionStatus("EXTRACTED");return null;}).when(extraction).extractInBackground(any());
   queue.processNext();assertThat(inbox.findById(item.getId()).orElseThrow().getExtractionToken()).isEqualTo(replacement);verifyNoInteractions(audit);
  }
 }

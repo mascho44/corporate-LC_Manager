@@ -21,7 +21,8 @@ erneuten Upload wiederholen (`POST /api/inbox/{id}/retry`, Upload-Berechtigung
 und CSRF-Schutz). Erfolgreiche Dateien werden nicht automatisch erneut gelesen.
 
 Nach einem Prozessabbruch bleiben Aufträge gespeichert. Verwaiste
-`PROCESSING`-Aufträge können nach 15 Minuten neu übernommen werden. Ein
+`PROCESSING`-Aufträge können nach 35 Minuten neu übernommen werden. Dieser
+Zeitraum liegt über dem maximalen Dokumentzeitbudget von 30 Minuten. Ein
 Auftragstoken verhindert, dass ein alter Worker das Ergebnis eines neu
 übernommenen Auftrags überschreibt. Löschen während OCR führt nicht zur
 Wiederherstellung der Datei. Abschluss und erneute Einreihung werden auditiert.
