@@ -51,7 +51,10 @@ public class InboxExtractionQueue {
         var expired=LocalDateTime.now().minusMinutes(35);
         for(UUID id:inbox.findExtractionCandidates(expired,PageRequest.of(0,10))){
             var item=inbox.findForUpdate(id).orElse(null);
-            if(item==null||!"OPEN".equals(item.getStatus())||item.getContent()==null)continue;
+            if(item==null||!"OPEN".equals(item.getStatus()))continue;
+            // Defense in depth: validate ownership before claiming or reading payload data.
+            de.corporate.lc.tenant.domain.TenantContext.require(item.getTenantId());
+            if(item.getContent()==null)continue;
             boolean queued="QUEUED".equals(item.getExtractionStatus());
             boolean stale="PROCESSING".equals(item.getExtractionStatus())&&(item.getExtractionStartedAt()==null||item.getExtractionStartedAt().isBefore(expired));
             if(!queued&&!stale)continue;
