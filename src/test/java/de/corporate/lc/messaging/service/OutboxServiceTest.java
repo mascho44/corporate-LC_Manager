@@ -14,6 +14,28 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 class OutboxServiceTest {
+    @Test void retryRejectsForeignMessageBeforeChangingItsFailureState(){
+        var repository=mock(OutboxMessageRepository.class);var publisher=mock(MessagePublisher.class);var service=new OutboxService(repository,new ObjectMapper(),publisher,3);OutboxMessage foreign;
+        try(var scope=de.corporate.lc.tenant.domain.TenantContext.open(UUID.randomUUID())){foreign=new OutboxMessage();foreign.setStatus("DEAD_LETTER");foreign.setAttempts(3);foreign.setLastError("Synthetic failure");}
+        var id=UUID.randomUUID();when(repository.findById(id)).thenReturn(Optional.of(foreign));
+        assertThatThrownBy(()->service.retry(id)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+        assertThat(foreign.getStatus()).isEqualTo("DEAD_LETTER");assertThat(foreign.getAttempts()).isEqualTo(3);assertThat(foreign.getLastError()).isEqualTo("Synthetic failure");verify(repository,never()).save(any());verifyNoInteractions(publisher);
+    }
+    @Test void deadLetterOverviewRejectsForeignRepositoryResults(){
+        var repository=mock(OutboxMessageRepository.class);var publisher=mock(MessagePublisher.class);var service=new OutboxService(repository,new ObjectMapper(),publisher,3);OutboxMessage foreign;
+        try(var scope=de.corporate.lc.tenant.domain.TenantContext.open(UUID.randomUUID())){foreign=new OutboxMessage();}
+        when(repository.findTop100ByStatusOrderByCreatedAtDesc("DEAD_LETTER")).thenReturn(java.util.List.of(new OutboxMessage(),foreign));
+        assertThatThrownBy(service::deadLetters).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);verifyNoInteractions(publisher);verify(repository,never()).save(any());
+    }
+    @Test void selectedTenantCanViewAndRetryOwnDeadLetterWithoutPublishingImmediately(){
+        var repository=mock(OutboxMessageRepository.class);var publisher=mock(MessagePublisher.class);var service=new OutboxService(repository,new ObjectMapper(),publisher,3);var tenant=UUID.randomUUID();
+        try(var scope=de.corporate.lc.tenant.domain.TenantContext.open(tenant)){
+            var own=new OutboxMessage();own.setStatus("DEAD_LETTER");own.setAttempts(3);var id=UUID.randomUUID();
+            when(repository.findTop100ByStatusOrderByCreatedAtDesc("DEAD_LETTER")).thenReturn(java.util.List.of(own));when(repository.findById(id)).thenReturn(Optional.of(own));when(repository.save(own)).thenReturn(own);
+            assertThat(service.deadLetters()).containsExactly(own);assertThat(service.retry(id).getStatus()).isEqualTo("PENDING");assertThat(own.getAttempts()).isZero();assertThat(de.corporate.lc.tenant.domain.TenantContext.currentId()).isEqualTo(tenant);verifyNoInteractions(publisher);
+        }
+        assertThat(de.corporate.lc.tenant.domain.TenantContext.currentId()).isEqualTo(de.corporate.lc.tenant.domain.Tenant.DEFAULT_ID);
+    }
     @Test void scheduledDispatchUsesExplicitDefaultTenantAndRestoresCallerScope() {
         var repository=mock(OutboxMessageRepository.class);var publisher=mock(MessagePublisher.class);
         var service=new OutboxService(repository,new ObjectMapper(),publisher,3);var message=new OutboxMessage();message.setTopic("synthetic.topic");message.setPayload("{}");

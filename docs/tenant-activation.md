@@ -137,8 +137,19 @@ technical identifier. It hides labels without rebuilding or disabling checkboxes
 so selected permissions remain part of the save payload even when filtered out.
 Resetting the role form clears the search; a live status reports the match count.
 
-Local follow-up: OCR queue claims validate the inbox item's tenant before reading
+Deployed via PR #122: OCR queue claims validate the inbox item's tenant before reading
 its content or changing its claim. Regression coverage includes a faulty repository
 returning a foreign item, a foreign OCR failure followed by successful default-
 tenant processing, and preservation of the caller's scope. Failed OCR does not
 change another tenant's queued work or its completion state.
+
+Local follow-up: the outbox service explicitly checks ownership of every returned
+dead-letter message before exposing the list, and checks ownership before resetting
+a failed message for retry. These checks supplement tenant-scoped repository queries
+and persistence guards. A retry queues the same message; it does not immediately
+publish it. Cross-tenant failure states remain unchanged on rejection.
+
+Local follow-up: direct document extraction, background extraction and application
+of page-local recognition explicitly validate document ownership before reading
+content or changing extraction metadata. Ownership failures propagate as access
+denials rather than being converted into an OCR failure on a foreign document.
