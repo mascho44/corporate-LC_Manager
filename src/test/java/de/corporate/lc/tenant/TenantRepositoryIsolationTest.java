@@ -27,10 +27,12 @@ class TenantRepositoryIsolationTest {
   assertThat(explicitDetails.loadForTenant(user.getUsername(),foreignTenant).isEnabled()).isTrue();
   assertThat(TenantContext.currentId()).isEqualTo(Tenant.DEFAULT_ID);
   var view=access.forUser(user.getId()).orElseThrow();assertThat(view.suspended()).isTrue();assertThat(view.identityActive()).isTrue();assertThat(view.active()).isFalse();
+  assertThat(memberships.countAccessibleMembers()).isZero();
   assertThat(users.countByRoleAndActiveTrue(UserRole.ADMIN)).isZero();assertThat(users.countByAssignedRoleIdAndActiveTrue(role.getId())).isZero();assertThat(users.findAllByActiveTrueOrderByDisplayNameAsc()).isEmpty();assertThat(users.existsAssignableUsername(user.getUsername())).isFalse();assertThat(user.isActive()).isTrue();
   UUID foreignStateId;
   try(var scope=TenantContext.open(foreignTenant)){
    assertThat(access.requireActiveAccess(user.getId()).userId()).isEqualTo(user.getId());assertThat(suspensions.findById(homeState.getId())).isEmpty();
+   assertThat(memberships.countAccessibleMembers()).isEqualTo(1);
    var state=new TenantMembershipSuspension(user.getId());state.setSuspended(true);foreignStateId=suspensions.saveAndFlush(state).getId();
   }
   homeState.setSuspended(false);suspensions.flush();assertThat(access.requireActiveAccess(user.getId()).userId()).isEqualTo(user.getId());assertThat(users.countByRoleAndActiveTrue(UserRole.ADMIN)).isEqualTo(1);assertThat(users.existsAssignableUsername(user.getUsername().toUpperCase(java.util.Locale.ROOT))).isTrue();assertThat(suspensions.findById(foreignStateId)).isEmpty();

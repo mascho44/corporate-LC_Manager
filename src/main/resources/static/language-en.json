@@ -85,6 +85,14 @@
   "tenant.existingUsername": "Existing username",
   "tenant.assign": "Assign existing user",
   "tenant.settings": "Current tenant settings",
+  "tenant.readiness": "Tenant setup",
+  "tenant.readinessNote": "Presence checks only. These do not confirm the completeness or validity of company data and templates.",
+  "tenant.companies": "Company records",
+  "tenant.templates": "Document templates",
+  "tenant.members": "Active members",
+  "tenant.present": "Present",
+  "tenant.missing": "Not yet configured",
+  "tenant.configure": "Open administration",
   "tenant.saveSettings": "Save settings",
   "tenant.settingsSaved": "Settings saved. The default language applies to users without a personal language preference."
 }

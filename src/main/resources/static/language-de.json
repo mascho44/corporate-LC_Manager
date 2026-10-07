@@ -85,6 +85,14 @@
   "tenant.existingUsername": "Vorhandener Benutzername",
   "tenant.assign": "Vorhandenen Benutzer zuordnen",
   "tenant.settings": "Einstellungen des aktuellen Mandanten",
+  "tenant.readiness": "Mandanteneinrichtung",
+  "tenant.readinessNote": "Nur eine Bestandsprüfung. Sie bestätigt nicht die Vollständigkeit oder Gültigkeit der Firmenstammdaten und Vorlagen.",
+  "tenant.companies": "Firmenstammdaten",
+  "tenant.templates": "Dokumentvorlagen",
+  "tenant.members": "Aktive Mitglieder",
+  "tenant.present": "Vorhanden",
+  "tenant.missing": "Noch nicht eingerichtet",
+  "tenant.configure": "Verwaltung öffnen",
   "tenant.saveSettings": "Einstellungen speichern",
   "tenant.settingsSaved": "Einstellungen gespeichert. Die Standardsprache gilt für Benutzer ohne persönliche Sprachpräferenz."
 }

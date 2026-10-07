@@ -11,6 +11,7 @@ import de.corporate.lc.user.service.AppUserDetailsService; import jakarta.servle
    .requestMatchers("/api/admin/monitoring/**").hasRole("ADMIN")
    .requestMatchers("/api/audit/**").hasAuthority("PERM_AUDIT_VIEW")
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/tenants").hasRole("ADMIN")
+   .requestMatchers("/api/tenants/current/readiness").hasRole("ADMIN")
    .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/lcs/*/document-checks/decisions/history").hasAuthority("PERM_AUDIT_VIEW")
    .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/lcs/*/dossier").hasAuthority("PERM_AUDIT_VIEW")
    .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/companies/choices").authenticated()
