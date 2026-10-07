@@ -28,5 +28,12 @@ test('role events have their own filter and formatter loads before the app',()=>
  const app=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/app.js'),'utf8');
  const source=app.match(/function auditArea\(event\)\{[^\n]*?return'LC'\}/)[0];const area=vm.runInNewContext('('+source+')');
  assert.equal(area({action:'ROLE_UPDATED'}),'ROLE');assert.equal(area({entityType:'ROLE'}),'ROLE');assert.equal(area({action:'USER_UPDATED'}),'USER');
+ assert.equal(area({action:'TENANT_CREATED'}),'TENANT');assert.equal(area({action:'TENANT_SELECTED'}),'TENANT');assert.equal(area({entityType:'TENANT'}),'TENANT');assert.equal(area({action:'LOGIN',entityType:'SESSION'}),'SESSION');
  const html=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/index.html'),'utf8');assert.match(html,/<option value="ROLE"/);assert.ok(html.indexOf('/audit-changes.js?')<html.indexOf('/app.js?'));
+});
+test('tenant settings show allowlisted name and language changes without role labels or credentials',()=>{
+ const html=fixture().render({entityType:'TENANT',previousValue:JSON.stringify({name:'Synthetic old',defaultLanguage:'en'}),newValue:JSON.stringify({name:'<script>synthetic</script>',defaultLanguage:'de',passwordHash:'secret-not-rendered',token:'hidden-token'})});
+ assert.match(html,/<table/);assert.match(html,/Tenant name/);assert.match(html,/Default language/);assert.doesNotMatch(html,/Role name|secret-not-rendered|hidden-token|<script>/);assert.match(html,/&lt;script&gt;/);assert.equal((html.match(/class="audit-field-changed"/g)||[]).length,2);
+ const translated=fixture({'audit.change.tenantName':'Mandantenname','audit.change.defaultLanguage':'Standardsprache'}).render({entityType:'TENANT',newValue:JSON.stringify({name:'Synthetic',defaultLanguage:'en'})});assert.match(translated,/Mandantenname/);assert.match(translated,/Standardsprache/);
+ const page=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/index.html'),'utf8');assert.match(page,/<option value="TENANT"/);
 });
