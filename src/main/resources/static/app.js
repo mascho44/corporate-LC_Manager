@@ -791,9 +791,10 @@ function renderMembershipAssignment(body,roles){
  const username=document.createElement('input');username.required=true;username.maxLength=100;username.placeholder=membershipText('tenant.existingUsername','Existing username');username.setAttribute('aria-label',username.placeholder);
  const select=document.createElement('select');select.required=true;select.setAttribute('aria-label',membershipText('membership.role','Membership role'));
  roles.forEach(role=>{const option=membershipNode('option',role.name);option.value=role.id;select.append(option);});
+ const preview=membershipNode('small','');preview.setAttribute('role','status');const showPermissions=()=>{preview.textContent=membershipRolePermissions(roles,select.value);};select.onchange=showPermissions;select.value=roles[0]?.id||'';showPermissions();
  const button=membershipNode('button',membershipText('tenant.assign','Assign existing user'));button.type='submit';
  const error=membershipNode('small','','error');error.setAttribute('role','alert');let busy=false;
- form.append(username,select,button,error);body.append(form);
+ form.append(username,select,preview,button,error);body.append(form);
  form.onsubmit=async event=>{event.preventDefault();if(busy||!can('USER_MANAGE'))return;busy=true;button.disabled=true;error.textContent='';
   try{await json('/api/users/memberships/shared',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:username.value.trim(),roleId:select.value})});await loadUsers();}
   catch(failure){error.textContent=failure.message;}finally{busy=false;button.disabled=false;}
@@ -803,6 +804,7 @@ let membershipOverviewGeneration=0;
 function membershipText(key,fallback){const value=globalThis.LcI18n?.t(key);return value&&value!==key?value:fallback;}
 function membershipNode(tag,text,className){const node=document.createElement(tag);node.textContent=text;if(className)node.className=className;return node;}
 function membershipMessage(key,fallback){const node=membershipNode('p',membershipText(key,fallback));node.dataset.i18n=key;return node;}
+function membershipRolePermissions(roles,id){const permissions=roles.find(role=>role.id===id)?.permissions;return membershipText('membership.rolePermissions','Selected role permissions: ')+(Array.isArray(permissions)?permissions.length?permissions.slice().sort().join(' · '):membershipText('membership.noPermissions','No additional permissions'):membershipText('membership.permissionsUnavailable','Unavailable — reload before assigning.'));}
 function ensureMembershipOverview(){
  let panel=$('#membershipOverview');if(panel)return panel;
  panel=document.createElement('details');panel.id='membershipOverview';
@@ -843,8 +845,9 @@ function renderMembershipOverview(overview){
    overview.roleChoices.forEach(role=>{const option=membershipNode('option',role.name);option.value=role.id;select.append(option);});select.value=m.roleId;
    const save=membershipNode('button',membershipText('membership.saveRole','Save role'),'secondary');save.type='button';save.dataset.i18n='membership.saveRole';save.disabled=true;
    const error=membershipNode('small','','error membership-role-error');error.setAttribute('role','alert');
+   const preview=membershipNode('small',membershipRolePermissions(overview.roleChoices,select.value));preview.setAttribute('role','status');
    const generation=membershipOverviewGeneration;let busy=false;
-   select.onchange=()=>{save.disabled=busy||select.value===m.roleId;error.textContent='';};
+   select.onchange=()=>{save.disabled=busy||select.value===m.roleId;error.textContent='';preview.textContent=membershipRolePermissions(overview.roleChoices,select.value);};
    save.onclick=async()=>{
     if(busy||!can('USER_MANAGE')||select.value===m.roleId)return;
     busy=true;save.disabled=true;select.disabled=true;error.textContent='';
@@ -854,7 +857,7 @@ function renderMembershipOverview(overview){
     }catch(failure){if(generation===membershipOverviewGeneration)error.textContent=failure.message||membershipText('membership.saveError','The membership role could not be saved.');}
     finally{busy=false;select.disabled=false;save.disabled=select.value===m.roleId;}
    };
-   controls.append(label,select,save,error);row.append(controls);
+   controls.append(label,select,preview,save,error);row.append(controls);
   }
   if(overview.accessEditingEnabled&&can('USER_MANAGE')){
    const controls=document.createElement('div');controls.className='membership-access-controls';

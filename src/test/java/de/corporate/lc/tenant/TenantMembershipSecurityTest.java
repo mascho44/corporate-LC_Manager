@@ -32,6 +32,11 @@ class TenantMembershipSecurityTest {
  @MockitoBean de.corporate.lc.audit.service.AuditService audit;
  @MockitoBean AppUserDetailsService details;
  @MockitoBean AppUserRepository users;
+ @Test void roleChoicesIncludeOnlyRoleMetadataAndPermissions()throws Exception{
+  when(tenants.findById(Tenant.DEFAULT_ID)).thenReturn(Optional.of(new Tenant()));
+  when(roles.all()).thenReturn(List.of(new de.corporate.lc.user.api.RoleView(UUID.randomUUID(),"Synthetic reviewer",de.corporate.lc.user.domain.UserRole.VIEWER,false,Set.of(UserPermission.DOCUMENT_REVIEW))));
+  mvc.perform(get("/api/users/memberships").session(session(true))).andExpect(status().isOk()).andExpect(jsonPath("$.roleChoices[0].permissions[0]").value("DOCUMENT_REVIEW")).andExpect(jsonPath("$.roleChoices[0].passwordHash").doesNotExist());
+ }
  @Test void membershipSuspensionIsProtectedValidatedAndAudited()throws Exception{
   var id=UUID.randomUUID();var roleId=UUID.randomUUID();
   when(tenants.findById(Tenant.DEFAULT_ID)).thenReturn(Optional.of(new Tenant()));

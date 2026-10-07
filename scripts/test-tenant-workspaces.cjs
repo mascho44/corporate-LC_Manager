@@ -1,5 +1,6 @@
 // Disposable localhost installation ONLY. Never point this synthetic smoke test at production.
 // Requires a fresh database and a synthetic initial admin password as configured below.
+// The local app must have TOTP_ENCRYPTION_KEY set to a disposable value of at least 32 characters.
 const assert=require('node:assert/strict'),crypto=require('node:crypto');
 const base='http://127.0.0.1:18086',cookies=new Map();let csrf='';
 async function call(path,method='GET',body,expected=200,type='application/json'){
@@ -21,6 +22,8 @@ function swift(reference){return `:20:${reference}\n:31C:261001\n:31D:271231SYNT
  const created=await call('/api/tenants','POST',{code:'synthetic-smoke',name:'Synthetic smoke workspace',defaultLanguage:'en',bankEnabled:true,corporateEnabled:false});
  await call('/api/tenants/'+created.id+'/select','POST');csrf=(await call('/api/auth/me')).csrfToken;
  assert.equal((await call('/api/tenants')).selectedTenantId,created.id);assert.deepEqual(await call('/api/lcs'),[]);
+ const initialRoles=await call('/api/roles');assert.deepEqual(initialRoles.map(r=>r.baseRole).sort(),['ADMIN','EDITOR','VIEWER']);assert.equal(initialRoles.find(r=>r.baseRole==='VIEWER').permissions.length,0);
+ const readiness=await call('/api/tenants/current/readiness');assert.equal(readiness.tenantId,created.id);assert.equal(readiness.companies,0);assert.equal(readiness.templates,0);assert.equal(readiness.activeMembers,1);
  await call('/api/tenants/current/settings','PUT',{name:'Synthetic renamed workspace',defaultLanguage:'de'});assert.equal((await call('/api/tenants/current/settings')).name,'Synthetic renamed workspace');
  await call('/api/lcs/'+homeLc.id,'GET',undefined,404);
  const localLc=await call('/api/lcs/import/mt700','POST',swift('SYNTHETIC-LOCAL'),200,'text/plain');assert.equal((await call('/api/lcs')).length,1);
@@ -44,6 +47,14 @@ function swift(reference){return `:20:${reference}\n:31C:261001\n:31D:271231SYNT
  await call('/api/auth/login','POST',{username:isolated.username,password:'SyntheticOnly456!'},401);
  await call('/api/auth/login','POST',{username:isolated.username,password:'SyntheticOnly456!',tenantCode:'synthetic-smoke'});csrf=(await call('/api/auth/me')).csrfToken;
  assert.equal((await call('/api/tenants')).selectedTenantId,created.id);assert.deepEqual((await call('/api/lcs')).map(l=>l.reference),['SYNTHETIC-LOCAL']);await call('/api/lcs/'+homeLc.id,'GET',undefined,404);
+ assert.equal((await call('/api/tenants')).creationEnabled,false);assert.equal((await call('/api/tenants/current/settings')).editingEnabled,false);
  await call('/api/tenants/current/settings','PUT',{name:'Forbidden',defaultLanguage:'en'},403);
- console.log('PASS: TOTP login, native PostgreSQL tenant creation, settings, selection, local roles, stale-session revocation, two-way LC isolation and explicit tenant login with suspended default access.');
+ await call('/api/tenants/current/readiness','GET',undefined,403);
+ await call('/api/roles','POST',{name:'Forbidden administrator',baseRole:'ADMIN',permissions:['USER_MANAGE']},403);
+ await call('/api/tenants','POST',{code:'forbidden-tenant',name:'Forbidden',defaultLanguage:'en',bankEnabled:true,corporateEnabled:false},403);
+ await call('/api/lcs/import/mt700','POST',swift('SYNTHETIC-FORBIDDEN'),403,'text/plain');
+ await call('/api/lcs/'+localLc.id,'DELETE',undefined,403);
+ await call('/api/tenants/'+home+'/select','POST',undefined,403);
+ assert.equal((await call('/api/tenants')).selectedTenantId,created.id);assert.deepEqual((await call('/api/lcs')).map(l=>l.reference),['SYNTHETIC-LOCAL']);assert.equal((await call('/api/tenants/current/settings')).name,'Synthetic renamed workspace');
+ console.log('PASS: TOTP login, PostgreSQL tenant provisioning and default roles, empty setup counts, settings, stale-session revocation, two-way LC isolation, explicit tenant login with suspended default access, viewer write denial and failed-switch session preservation.');
 })().catch(error=>{console.error(error.message);process.exitCode=1;});
