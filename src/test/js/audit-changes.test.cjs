@@ -5,12 +5,12 @@ test('administration snapshots display before/after fields and highlight changed
  assert.match(html,/<table/);assert.match(html,/Before/);assert.match(html,/After/);assert.match(html,/EDITOR/);assert.match(html,/VIEWER/);assert.equal((html.match(/class="audit-field-changed"/g)||[]).length,2);
 });
 test('untrusted names and permission strings cannot inject markup',()=>{
- const html=fixture().render({entityType:'ROLE',newValue:JSON.stringify({name:'<img src=x onerror=alert(1)>',permissions:['<script>bad</script>'],passwordHash:'should-not-render'})});
- assert.doesNotMatch(html,/<img|<script>|should-not-render/);assert.match(html,/&lt;img/);assert.match(html,/&lt;script/);
+ const html=fixture().render({entityType:'ROLE',newValue:JSON.stringify({name:'<IMG src=x onerror=alert(1)>',permissions:['<SCRIPT>bad</SCRIPT>'],passwordHash:'should-not-render'})});
+ assert.doesNotMatch(html,/<img|<script>|should-not-render/i);assert.match(html,/&lt;img/i);assert.match(html,/&lt;script/i);
 });
 test('creation/deletion and malformed or legacy snapshots remain readable',()=>{
  const api=fixture();assert.equal(api.render({}), '');assert.match(api.render({entityType:'USER',previousValue:JSON.stringify({username:'Synthetic'}),newValue:null}),/Synthetic/);
- const html=api.render({entityType:'ROLE',previousValue:'not JSON <script>',newValue:'{"name":'});assert.doesNotMatch(html,/<table|<script>/);assert.match(html,/not JSON &lt;script&gt;/);
+ const html=api.render({entityType:'ROLE',previousValue:'not JSON <SCRIPT>',newValue:'{"name":'});assert.doesNotMatch(html,/<table|<script>/i);assert.match(html,/not JSON &lt;script&gt;/i);
  assert.match(api.render({entityType:'LETTER_OF_CREDIT',newValue:'Amount=100'}),/Amount=100/);
 });
 test('labels support translations without changing stored role values',()=>{
