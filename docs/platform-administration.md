@@ -1,5 +1,9 @@
 # Platform accounts, invitations and grants
 
+Platform administration also manages [tenant creation, suspension and module
+profiles](tenant-lifecycle.md). Local tenant roles cannot create tenants or change
+global lifecycle/profile flags.
+
 Platform administration is distinct from a tenant's ADMIN role and USER_MANAGE
 permission. V67 grants the separate platform_administrator flag only to the
 existing home identity named `admin`, as explicitly selected by the operator.

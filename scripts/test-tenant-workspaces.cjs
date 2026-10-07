@@ -27,7 +27,7 @@ function swift(reference){return `:20:${reference}\n:31C:261001\n:31D:271231SYNT
  const homeContent='SYNTHETIC HOME ATTACHMENT ONLY';
  const homeDocument=await call('/api/lcs/'+homeLc.id+'/documents?type=ANNEX','POST',attachment(homeContent),200,'multipart');
  assert.equal(await call('/api/documents/'+homeDocument.id+'/content','GET',undefined,200,'application/json',true),homeContent);
- const created=await call('/api/tenants','POST',{code:'synthetic-smoke',name:'Synthetic smoke workspace',defaultLanguage:'en',bankEnabled:true,corporateEnabled:false});
+ const created=await call('/api/platform/tenants','POST',{code:'synthetic-smoke',name:'Synthetic smoke workspace',defaultLanguage:'en',bankEnabled:true,corporateEnabled:true},201);
  await call('/api/tenants/'+created.id+'/select','POST');csrf=(await call('/api/auth/me')).csrfToken;
  assert.equal((await call('/api/tenants')).selectedTenantId,created.id);assert.deepEqual(await call('/api/lcs'),[]);
  const initialRoles=await call('/api/roles');assert.deepEqual(initialRoles.map(r=>r.baseRole).sort(),['ADMIN','EDITOR','VIEWER']);assert.equal(initialRoles.find(r=>r.baseRole==='VIEWER').permissions.length,0);
@@ -163,5 +163,34 @@ function swift(reference){return `:20:${reference}\n:31C:261001\n:31D:271231SYNT
  await call('/api/auth/login','POST',{username:isolated.username,password:'SyntheticOnly456!'},401); // Global activation must not lift the local home suspension.
  await call('/api/auth/login','POST',{username:isolated.username,password:'SyntheticOnly456!',tenantCode:'synthetic-smoke'});csrf=(await call('/api/auth/me')).csrfToken;
  assert.equal((await call('/api/tenants')).selectedTenantId,created.id);
- console.log('PASS: TOTP login, PostgreSQL tenant provisioning and default roles, setup counts and settings, stale sessions, two-way LC/company/attachment isolation, local write denial, retired legacy creation, global access and central creation, real synthetic SMTP invitations with replaced/revoked/single-use tokens, explicit foreign/default memberships and live platform-grant revocation.');
+ // Central lifecycle: no tenant-role shortcut, profile gates and live suspension.
+ const suspensionViewerSession=[...cookies],suspensionViewerCsrf=csrf;
+ await call('/api/platform/tenants','GET',undefined,403);
+ cookies.clear();adminSession.forEach(([k,v])=>cookies.set(k,v));csrf=adminCsrf;
+ // Restore the explicitly assigned full local role for module tests: platform
+ // authority alone must not bypass SETTINGS_MANAGE on business endpoints.
+ await call('/api/users/memberships/shared/'+own.userId+'/role','PUT',{roleId:initialRoles.find(r=>r.baseRole==='ADMIN').id});
+ await call('/api/tenants','GET',undefined,401);cookies.clear();csrf='';
+ const lifecycleLogin=await call('/api/auth/login','POST',{username:'admin',password:'SyntheticOnly123!',tenantCode:'synthetic-smoke'});assert.equal(lifecycleLogin.requiresTotp,true);
+ await call('/api/auth/login/totp','POST',{code:totp(setup.secret)});csrf=(await call('/api/auth/me')).csrfToken;
+ await call('/api/tenants','POST',{code:'legacy-blocked',name:'Blocked',defaultLanguage:'en',bankEnabled:true,corporateEnabled:true},403);
+ await call('/api/platform/tenants/'+created.id,'PUT',{active:false,bankEnabled:true,corporateEnabled:true},400); // Current workspace protection.
+ await call('/api/tenants/'+home+'/select','POST');csrf=(await call('/api/auth/me')).csrfToken;
+ await call('/api/platform/tenants/'+home,'PUT',{active:false,bankEnabled:true,corporateEnabled:false},400);
+ await call('/api/platform/tenants/'+created.id,'PUT',{active:true,bankEnabled:false,corporateEnabled:true});
+ await call('/api/tenants/'+created.id+'/select','POST');csrf=(await call('/api/auth/me')).csrfToken;
+ await call('/api/settings/approval-thresholds','GET',undefined,403);
+ assert.ok(Array.isArray(await call('/api/document-templates')));assert.ok(Array.isArray(await call('/api/lcs')));
+ await call('/api/platform/tenants/'+created.id,'PUT',{active:true,bankEnabled:true,corporateEnabled:false});
+ await call('/api/document-templates','GET',undefined,403);assert.ok(Array.isArray(await call('/api/settings/approval-thresholds')));
+ await call('/api/tenants/'+home+'/select','POST');csrf=(await call('/api/auth/me')).csrfToken;
+ await call('/api/platform/tenants/'+created.id,'PUT',{active:false,bankEnabled:true,corporateEnabled:true});
+ assert.equal((await call('/api/tenants')).workspaces.some(t=>t.id===created.id),false);
+ const lifecycleAdminSession=[...cookies],lifecycleAdminCsrf=csrf;cookies.clear();suspensionViewerSession.forEach(([k,v])=>cookies.set(k,v));csrf=suspensionViewerCsrf;
+ await call('/api/lcs','GET',undefined,401);cookies.clear();csrf='';
+ await call('/api/auth/login','POST',{username:isolated.username,password:'SyntheticOnly456!',tenantCode:'synthetic-smoke'},401);
+ cookies.clear();lifecycleAdminSession.forEach(([k,v])=>cookies.set(k,v));csrf=lifecycleAdminCsrf;
+ await call('/api/platform/tenants/'+created.id,'PUT',{active:true,bankEnabled:true,corporateEnabled:true});
+ await call('/api/tenants/'+created.id+'/select','POST');csrf=(await call('/api/auth/me')).csrfToken;assert.equal((await call('/api/lcs')).length,1);
+ console.log('PASS: existing tenant/invitation regressions, central tenant creation, profile API gates, self/default suspension protection, suspended login/session denial and reactivation without data loss.');
 })().catch(error=>{console.error(error.message);process.exitCode=1;}).finally(async()=>{if(syntheticSmtp)await syntheticSmtp.close();});

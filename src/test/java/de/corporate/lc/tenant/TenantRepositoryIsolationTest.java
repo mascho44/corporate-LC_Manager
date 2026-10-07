@@ -15,10 +15,12 @@ import static org.assertj.core.api.Assertions.*;
 @DataJpaTest(properties={"spring.flyway.enabled=false","spring.jpa.hibernate.ddl-auto=create-drop","spring.datasource.url=jdbc:h2:mem:tenantisolation;MODE=PostgreSQL;DB_CLOSE_DELAY=-1","spring.datasource.driver-class-name=org.h2.Driver"},showSql=false)
 @AutoConfigureTestDatabase(replace=AutoConfigureTestDatabase.Replace.NONE)
 class TenantRepositoryIsolationTest {
+ @Autowired de.corporate.lc.tenant.repository.TenantRepository tenants;
+ @org.junit.jupiter.api.BeforeEach void seedTenants(){tenants.saveAndFlush(new Tenant());var foreign=new Tenant("foreign","Foreign","en",true,true);org.springframework.test.util.ReflectionTestUtils.setField(foreign,"id",foreignTenant);tenants.saveAndFlush(foreign);}
  @Autowired de.corporate.lc.tenant.repository.TenantMembershipSuspensionRepository suspensions;
  @Test void suspensionIsTenantLocalAndExcludedFromAdministratorAndAssignmentCounts(){
   var role=createRole("Synthetic suspended administrator");var user=createTenantUser("synthetic-suspended-user",role);seedMembership(user,role,Tenant.DEFAULT_ID);
-  var access=new de.corporate.lc.tenant.service.TenantMembershipService(memberships,suspensions);
+  var access=new de.corporate.lc.tenant.service.TenantMembershipService(memberships,suspensions,tenants);
   try(var scope=TenantContext.open(foreignTenant)){seedMembership(user,createRole("Synthetic foreign access role"),foreignTenant);}
   var homeState=new TenantMembershipSuspension(user.getId());homeState.setSuspended(true);suspensions.saveAndFlush(homeState);
   assertThatThrownBy(()->access.requireActiveAccess(user.getId())).isInstanceOf(AccessDeniedException.class);
@@ -40,7 +42,7 @@ class TenantRepositoryIsolationTest {
  }
  @Test void suspensionRejectsLoginAndInvalidatesAnExistingVerifiedSession()throws Exception{
   var role=createRole("Synthetic session viewer");role.setBaseRole(UserRole.VIEWER);roles.flush();var user=createTenantUser("synthetic-suspension-session",role);seedMembership(user,role,Tenant.DEFAULT_ID);
-  var access=new de.corporate.lc.tenant.service.TenantMembershipService(memberships,suspensions);var details=new de.corporate.lc.user.service.AppUserDetailsService(users,access);
+  var access=new de.corporate.lc.tenant.service.TenantMembershipService(memberships,suspensions,tenants);var details=new de.corporate.lc.user.service.AppUserDetailsService(users,access);
   assertThat(details.loadUserByUsername(user.getUsername()).isEnabled()).isTrue();
   var state=new TenantMembershipSuspension(user.getId());state.setSuspended(true);suspensions.saveAndFlush(state);
   assertThatThrownBy(()->details.loadUserByUsername(user.getUsername())).isInstanceOf(org.springframework.security.authentication.DisabledException.class);
@@ -56,7 +58,7 @@ class TenantRepositoryIsolationTest {
  }
  @Test void oneIdentityCanHaveIndependentMembershipRolesAcrossTenants(){
   var homeRole=createRole("Synthetic identity home admin");homeRole.setPermissions(java.util.Set.of(UserPermission.USER_MANAGE));roles.flush();var identity=createTenantUser("synthetic-shared-identity",homeRole);seedMembership(identity,homeRole,Tenant.DEFAULT_ID);
-  var access=new de.corporate.lc.tenant.service.TenantMembershipService(memberships,suspensions);var home=access.requireActiveAccess(identity.getId());assertThat(home.permissions()).containsExactly(UserPermission.USER_MANAGE);assertThat(users.countForeignMemberships(identity.getId())).isZero();
+  var access=new de.corporate.lc.tenant.service.TenantMembershipService(memberships,suspensions,tenants);var home=access.requireActiveAccess(identity.getId());assertThat(home.permissions()).containsExactly(UserPermission.USER_MANAGE);assertThat(users.countForeignMemberships(identity.getId())).isZero();
   UUID foreignMembership;
   try(var scope=TenantContext.open(foreignTenant)){
    var foreignRole=createRole("Synthetic identity foreign reviewer");foreignRole.setBaseRole(UserRole.VIEWER);foreignRole.setPermissions(java.util.Set.of(UserPermission.DOCUMENT_REVIEW));roles.flush();foreignMembership=seedMembership(identity,foreignRole,foreignTenant);
@@ -66,7 +68,7 @@ class TenantRepositoryIsolationTest {
   assertThat(access.requireActiveAccess(identity.getId()).permissions()).containsExactly(UserPermission.USER_MANAGE);assertThat(memberships.findById(foreignMembership)).isEmpty();assertThat(users.countForeignMemberships(identity.getId())).isEqualTo(1);
  }
  @Test void membershipAccessRequiresBothActiveIdentityAndActiveMembership(){
-  var role=createRole("Synthetic access role");var user=createTenantUser("synthetic-access-user",role);var id=seedMembership(user,role,Tenant.DEFAULT_ID);var access=new de.corporate.lc.tenant.service.TenantMembershipService(memberships,suspensions);
+  var role=createRole("Synthetic access role");var user=createTenantUser("synthetic-access-user",role);var id=seedMembership(user,role,Tenant.DEFAULT_ID);var access=new de.corporate.lc.tenant.service.TenantMembershipService(memberships,suspensions,tenants);
   assertThatThrownBy(()->access.requireActiveAccess(null)).isInstanceOf(AccessDeniedException.class);assertThatThrownBy(()->access.requireActiveAccess(UUID.randomUUID())).isInstanceOf(AccessDeniedException.class);
   user.setActive(false);users.flush();assertThatThrownBy(()->access.requireActiveAccess(user.getId())).isInstanceOf(AccessDeniedException.class);user.setActive(true);users.flush();
   entityManager.createNativeQuery("update tenant_membership set active=false where id=:id").setParameter("id",id).executeUpdate();entityManager.clear();assertThatThrownBy(()->access.requireActiveAccess(user.getId())).isInstanceOf(AccessDeniedException.class);
@@ -141,7 +143,7 @@ class TenantRepositoryIsolationTest {
  @Test void membershipsExposeOnlyCurrentTenantAndInheritRolePermissions(){
   var ownRole=createRole("Own membership role");ownRole.setPermissions(java.util.Set.of(UserPermission.USER_MANAGE));roles.flush();var own=createTenantUser("own-membership",ownRole);var ownId=seedMembership(own,ownRole,Tenant.DEFAULT_ID);
   AppUser foreign;UUID foreignId;try(var scope=TenantContext.open(foreignTenant)){var role=createRole("Foreign membership role");foreign=createTenantUser("foreign-membership",role);foreignId=seedMembership(foreign,role,foreignTenant);}
-  var service=new de.corporate.lc.tenant.service.TenantMembershipService(memberships,suspensions);assertThat(service.list()).hasSize(1);assertThat(service.forUser(own.getId()).orElseThrow().permissions()).containsExactly(UserPermission.USER_MANAGE);assertThat(service.forUser(foreign.getId())).isEmpty();assertThat(memberships.findById(foreignId)).isEmpty();assertThat(memberships.findAllById(java.util.List.of(ownId,foreignId))).hasSize(1);assertThat(memberships.findAll(org.springframework.data.domain.PageRequest.of(0,1)).getTotalElements()).isEqualTo(1);
+  var service=new de.corporate.lc.tenant.service.TenantMembershipService(memberships,suspensions,tenants);assertThat(service.list()).hasSize(1);assertThat(service.forUser(own.getId()).orElseThrow().permissions()).containsExactly(UserPermission.USER_MANAGE);assertThat(service.forUser(foreign.getId())).isEmpty();assertThat(memberships.findById(foreignId)).isEmpty();assertThat(memberships.findAllById(java.util.List.of(ownId,foreignId))).hasSize(1);assertThat(memberships.findAll(org.springframework.data.domain.PageRequest.of(0,1)).getTotalElements()).isEqualTo(1);
   ownRole.setPermissions(java.util.Set.of(UserPermission.AUDIT_VIEW));roles.flush();assertThat(service.forUser(own.getId()).orElseThrow().permissions()).containsExactly(UserPermission.AUDIT_VIEW);
  }
  @Test void membershipCannotBeDeletedThroughTheReadModel(){

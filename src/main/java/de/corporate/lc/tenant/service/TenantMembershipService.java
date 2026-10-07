@@ -17,11 +17,13 @@ public class TenantMembershipService {
  public record Access(UUID tenantId,UUID userId,UUID membershipId,UUID roleId,UserRole baseRole,Set<UserPermission> permissions){}
  private final TenantMembershipRepository memberships;
  private final de.corporate.lc.tenant.repository.TenantMembershipSuspensionRepository suspensions;
- public TenantMembershipService(TenantMembershipRepository memberships,de.corporate.lc.tenant.repository.TenantMembershipSuspensionRepository suspensions){this.memberships=memberships;this.suspensions=suspensions;}
+ private final de.corporate.lc.tenant.repository.TenantRepository tenants;
+ public TenantMembershipService(TenantMembershipRepository memberships,de.corporate.lc.tenant.repository.TenantMembershipSuspensionRepository suspensions,de.corporate.lc.tenant.repository.TenantRepository tenants){this.memberships=memberships;this.suspensions=suspensions;this.tenants=tenants;}
  public List<Membership> list(){return memberships.findAll().stream().map(this::view).toList();}
  public Optional<Membership> forUser(UUID userId){return memberships.findByUserId(userId).map(this::view);}
  /** User identity is global; authorization comes only from the selected tenant membership. */
  public Access requireActiveAccess(UUID userId){
+  if(!tenants.findById(TenantContext.currentId()).map(Tenant::isActive).orElse(false))throw new AccessDeniedException("Tenant access is suspended.");
   if(userId==null)throw new AccessDeniedException("Active tenant membership is required.");
   var membership=memberships.findByUserId(userId).orElseThrow(()->new AccessDeniedException("Active tenant membership is required."));
   validate(membership);

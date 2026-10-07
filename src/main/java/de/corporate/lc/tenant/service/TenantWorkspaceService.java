@@ -27,13 +27,19 @@ public class TenantWorkspaceService {
  }
  @Transactional(readOnly=true) public Overview overview(Authentication auth){
   var user=identity(auth);var current=access.requireActiveAccess(user.getId());
-  var choices=memberships.findWorkspaceMemberships(user.getId()).stream().map(m->tenants.findById(m.getTenantId()).map(t->new Workspace(t.getId(),t.getCode(),t.getName())).orElseThrow()).sorted(Comparator.comparing(Workspace::name)).toList();
-  return new Overview(TenantContext.currentId(),choices,Tenant.DEFAULT_ID.equals(current.tenantId())&&current.baseRole()==UserRole.ADMIN&&current.permissions().contains(UserPermission.USER_MANAGE)&&user.isTotpEnabled());
+  var choices=memberships.findWorkspaceMemberships(user.getId()).stream().map(m->tenants.findById(m.getTenantId()).orElseThrow()).filter(Tenant::isActive).map(t->new Workspace(t.getId(),t.getCode(),t.getName())).sorted(Comparator.comparing(Workspace::name)).toList();
+  return new Overview(TenantContext.currentId(),choices,false);
  }
  @Transactional public Workspace create(String code,String name,String language,boolean bank,boolean corporate,Authentication auth){
+  throw new AccessDeniedException("Tenant creation is available only in platform administration.");
+ }
+ @Transactional public Workspace createForPlatform(String code,String name,String language,boolean bank,boolean corporate,Authentication auth){
   if(!Tenant.DEFAULT_ID.equals(TenantContext.currentId()))throw new AccessDeniedException("Tenant creation is restricted to the identity administration tenant.");
-  lock.acquire();var user=identity(auth);var current=access.requireActiveAccess(user.getId());
-  if(current.baseRole()!=UserRole.ADMIN||!current.permissions().contains(UserPermission.USER_MANAGE)||!user.isTotpEnabled())throw new AccessDeniedException("An administrator with two-factor authentication is required.");
+  var checked=identity(auth);if(!checked.isPlatformAdministrator()||!checked.isTotpEnabled()||checked.isInvitationPending())throw new AccessDeniedException("Platform access required.");
+  lock.acquire();var user=identity(auth);
+  if(!users.hasLivePlatformAccess(user.getId()))throw new AccessDeniedException("Platform access unavailable.");
+  if(!user.isPlatformAdministrator()||!user.isTotpEnabled()||user.isInvitationPending())throw new AccessDeniedException("A platform administrator with two-factor authentication is required.");
+  if(!bank&&!corporate)throw new IllegalArgumentException("Select at least one profile.");
   code=code==null?"":code.trim().toLowerCase(Locale.ROOT);name=name==null?"":name.trim();
   if(!code.matches("[a-z][a-z0-9-]{1,49}")||name.isEmpty()||name.length()>255||name.chars().anyMatch(Character::isISOControl)||language==null||!List.of("en","de").contains(language))throw new IllegalArgumentException("Provide a tenant code, name and supported language.");
   if(tenants.existsByCodeIgnoreCase(code))throw new IllegalArgumentException("Tenant code already exists.");

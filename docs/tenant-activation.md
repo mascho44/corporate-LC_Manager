@@ -1,5 +1,10 @@
 # Tenant creation and workspace selection
 
+Current lifecycle behavior is documented in [central tenant lifecycle](tenant-lifecycle.md).
+Creation has moved exclusively to Platform administration; profiles now gate
+modules and can be changed centrally. The release history below describes the
+earlier stages, including presentation-only profiles and default-tenant creation.
+
 Tenant creation and selection deployed via PR #112. Migration V66 removes the single-tenant
 bootstrap constraint. Membership write guards and same-tenant foreign keys remain.
 

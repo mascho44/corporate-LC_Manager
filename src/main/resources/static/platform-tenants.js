@@ -1,0 +1,25 @@
+/* Central tenant lifecycle, accessible only after live platform authorization. */
+async function setupPlatformTenants(section){
+ const t=(key,fallback)=>{const value=globalThis.LcI18n?.t(key);return value&&value!==key?value:fallback;};
+ const node=(tag,value)=>{const n=document.createElement(tag);n.textContent=value;return n;};
+ const form=document.createElement('form');form.className='form-grid';form.append(node('h3',t('platformTenants.title','Tenant administration')));
+ const fields={};for(const [key,label] of [['code','Tenant code'],['name','Tenant name']]){const wrapper=node('label',t('tenant.'+key,label)),input=document.createElement('input');input.required=true;input.maxLength=key==='code'?50:255;if(key==='code')input.pattern='[a-z][a-z0-9-]{1,49}';wrapper.append(input);form.append(wrapper);fields[key]=input;}
+ const makeSelect=(label,options)=>{const wrapper=node('label',label),select=document.createElement('select');options.forEach(([value,text])=>{const o=node('option',text);o.value=value;select.append(o);});wrapper.append(select);return [wrapper,select];};
+ const profileOptions=[['bank',t('tenant.profileBank','Bank')],['corporate',t('tenant.profileCorporate','Corporate')],['combined',t('tenant.profileCombined','Bank & Corporate')]];
+ const [languageLabel,language]=makeSelect(t('tenant.language','Default language'),[['en','English'],['de','Deutsch']]);const [profileLabel,profile]=makeSelect(t('tenant.profile','Tenant profile'),profileOptions);
+ const create=node('button',t('tenant.create','Create tenant'));create.type='submit';form.append(languageLabel,profileLabel,create);
+ const status=node('p','');status.setAttribute('role','status');const list=document.createElement('div');const reload=node('button',t('tenant.retry','Reload tenant information'));reload.type='button';reload.className='secondary';
+ section.append(form,status,reload,list);let generation=0,creating=false;
+ const flags=value=>({bankEnabled:value!=='corporate',corporateEnabled:value!=='bank'});
+ async function refresh(){const version=++generation;status.textContent=t('platformTenants.loading','Loading tenants…');list.setAttribute('aria-busy','true');try{const tenants=await json('/api/platform/tenants');if(version!==generation)return;list.replaceChildren();
+  tenants.forEach(tenant=>{const row=document.createElement('article');row.className='membership-row';row.append(node('b',tenant.name+' · '+tenant.code),node('span',tenant.active?t('platformTenants.active','Active'):t('platformTenants.suspended','Suspended')));
+   const [label,select]=makeSelect(t('tenant.profile','Tenant profile'),profileOptions);select.value=tenant.bankEnabled&&tenant.corporateEnabled?'combined':tenant.bankEnabled?'bank':'corporate';
+   const save=node('button',t('platformTenants.saveProfile','Save profile'));save.type='button';save.className='secondary';const toggle=node('button',tenant.active?t('platformTenants.suspend','Suspend tenant'):t('platformTenants.activate','Activate tenant'));toggle.type='button';toggle.className=tenant.active?'danger':'secondary';const protectedTenant=tenant.code==='default'||tenant.id===globalThis.LcSelectedTenantId;toggle.disabled=tenant.active&&protectedTenant;
+   const error=node('small','');error.setAttribute('role','alert');let busy=false;
+   async function update(active){if(busy)return;busy=true;save.disabled=true;toggle.disabled=true;try{if(!await confirmAction(t('platformTenants.confirm','Change tenant access/profile? Existing data is retained. Module changes take effect on subsequent requests.')+'\n\n'+tenant.name))return;await json('/api/platform/tenants/'+encodeURIComponent(tenant.id),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({active,...flags(select.value)})});if(version===generation){await refresh();if(tenant.id===globalThis.LcSelectedTenantId)location.reload();}}catch(failure){if(version===generation)error.textContent=failure.message;}finally{busy=false;save.disabled=false;toggle.disabled=tenant.active&&protectedTenant;}}
+   save.onclick=()=>update(tenant.active);toggle.onclick=()=>update(!tenant.active);row.append(label,save,toggle,error);list.append(row);
+  });status.textContent=t('platformTenants.notice','Profiles limit modules in addition to role permissions. Switch workspace before suspending it. The default tenant cannot be suspended.');
+ }catch(failure){if(version===generation)status.textContent=failure.message;}finally{if(version===generation)list.setAttribute('aria-busy','false');}}
+ form.onsubmit=async event=>{event.preventDefault();if(creating||!form.reportValidity())return;creating=true;create.disabled=true;try{await json('/api/platform/tenants',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:fields.code.value,name:fields.name.value,defaultLanguage:language.value,...flags(profile.value)})});form.reset();await refresh();}catch(failure){status.textContent=failure.message;}finally{creating=false;create.disabled=false;}};
+ reload.onclick=refresh;return refresh;
+}

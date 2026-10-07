@@ -11,10 +11,14 @@ public class Tenant {
  @Column(nullable=false,length=20) private String defaultLanguage="en";
  @Column(nullable=false) private boolean bankEnabled=true;
  @Column(nullable=false) private boolean corporateEnabled=false;
+ @Column(nullable=false) private boolean active=true;
  public Tenant(){}
  public Tenant(String code,String name,String language,boolean bank,boolean corporate){this.id=UUID.randomUUID();this.code=code;this.name=name;this.defaultLanguage=language;this.bankEnabled=bank;this.corporateEnabled=corporate;}
  public UUID getId(){return id;} public String getCode(){return code;} public String getName(){return name;}
  public String getDefaultLanguage(){return defaultLanguage;}
  public boolean isBankEnabled(){return bankEnabled;} public boolean isCorporateEnabled(){return corporateEnabled;}
  public void updatePresentation(String name,String language){this.name=name;this.defaultLanguage=language;}
+ public boolean isActive(){return active;}
+ public void setActive(boolean active){this.active=active;}
+ public void updateProfile(boolean bank,boolean corporate){if(!bank&&!corporate)throw new IllegalArgumentException("Select at least one profile.");this.bankEnabled=bank;this.corporateEnabled=corporate;}
 }

@@ -32,7 +32,7 @@ async function setupTenants(){
   try{const status=await json('/api/tenants/current/readiness');if(generation!==refreshGeneration)return;
    [['companies','tenant.companies','Company records','#appNavCompany'],['templates','tenant.templates','Document templates','#appNavTemplates'],['activeMembers','tenant.members','Active members','#appNavUsers']].forEach(([key,label,fallback,target])=>{
     const count=Number(status[key])||0,row=document.createElement('article');row.className='membership-row';row.append(node('b',text(label,fallback)),node('span',(count>0?text('tenant.present','Present'):text('tenant.missing','Not yet configured'))+' · '+count));
-    const open=node('button',text('tenant.configure','Open administration'));open.type='button';open.className='secondary';open.onclick=()=>document.querySelector(target)?.click?.();row.append(open);readiness.append(row);
+    const open=node('button',text('tenant.configure','Open administration'));open.type='button';open.className='secondary';open.disabled=key==='templates'&&settings?.corporateEnabled!==true;open.onclick=()=>{if(!open.disabled)document.querySelector(target)?.click?.();};row.append(open);readiness.append(row);
    });
   }catch(error){if(generation!==refreshGeneration)return;const notice=node('p',error.message);notice.setAttribute('role','alert');readiness.append(notice);}
  }
