@@ -1,5 +1,13 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 function fixture(translations){const context=vm.createContext({LcI18n:translations?{t:key=>translations[key]||key}:undefined});vm.runInContext(fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/audit-changes.js'),'utf8'),context);return context.LcAuditChanges;}
+test('membership audit shows role and permissions without identity credentials',()=>{
+ const html=fixture().render({entityType:'MEMBERSHIP',previousValue:JSON.stringify({username:'Synthetic',roleId:'old',permissions:['LC_EDIT'],active:true}),newValue:JSON.stringify({username:'Synthetic',roleId:'new',permissions:['DOCUMENT_REVIEW'],active:true,passwordHash:'secret-not-rendered'})});
+ assert.match(html,/<table/);assert.match(html,/DOCUMENT_REVIEW/);assert.match(html,/old/);assert.match(html,/new/);assert.doesNotMatch(html,/secret-not-rendered/);
+});
+test('membership access audit displays suspension independently of global activation',()=>{
+ const html=fixture().render({entityType:'MEMBERSHIP',previousValue:JSON.stringify({active:true,suspended:false}),newValue:JSON.stringify({active:false,suspended:true})});
+ assert.match(html,/Membership suspended/);assert.equal((html.match(/class="audit-field-changed"/g)||[]).length,2);
+});
 test('administration snapshots display before/after fields and highlight changed values',()=>{
  const api=fixture(),html=api.render({entityType:'USER',previousValue:JSON.stringify({username:'Synthetic',role:'EDITOR',active:true}),newValue:JSON.stringify({username:'Synthetic',role:'VIEWER',active:false})});
  assert.match(html,/<table/);assert.match(html,/Before/);assert.match(html,/After/);assert.match(html,/EDITOR/);assert.match(html,/VIEWER/);assert.equal((html.match(/class="audit-field-changed"/g)||[]).length,2);

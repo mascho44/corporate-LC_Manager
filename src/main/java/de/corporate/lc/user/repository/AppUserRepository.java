@@ -6,16 +6,18 @@ public interface AppUserRepository extends de.corporate.lc.tenant.repository.Ten
  // Internal identity mutation guard; never expose cross-tenant membership details.
  @org.springframework.data.jpa.repository.Query("select count(m) from TenantMembership m where m.user.id=:userId and m.tenantId<>:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()}")
  long countForeignMemberships(UUID userId);
- @org.springframework.data.jpa.repository.Query("select count(u) from AppUser u left join u.assignedRole r where coalesce(r.baseRole,u.role)=:role and u.active=true and u.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()}")
+ @org.springframework.data.jpa.repository.Query("select count(u) from AppUser u left join u.assignedRole r where coalesce(r.baseRole,u.role)=:role and u.active=true and not exists(select s.id from TenantMembershipSuspension s where s.tenantId=u.tenantId and s.userId=u.id and s.suspended=true) and u.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()}")
  long countByRoleAndActiveTrue(UserRole role);
  @org.springframework.data.jpa.repository.Query("select count(u) from AppUser u where u.assignedRole.id=:roleId and u.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()}")
  long countByAssignedRoleId(UUID roleId);
- @org.springframework.data.jpa.repository.Query("select count(u) from AppUser u where u.assignedRole.id=:roleId and u.active=true and u.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()}")
+ @org.springframework.data.jpa.repository.Query("select count(u) from AppUser u where u.assignedRole.id=:roleId and u.active=true and not exists(select s.id from TenantMembershipSuspension s where s.tenantId=u.tenantId and s.userId=u.id and s.suspended=true) and u.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()}")
  long countByAssignedRoleIdAndActiveTrue(UUID roleId);
  @org.springframework.data.jpa.repository.Query("select u from AppUser u where u.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()} order by u.username")
  List<AppUser> findAllByOrderByUsernameAsc();
- @org.springframework.data.jpa.repository.Query("select u from AppUser u where u.active=true and u.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()} order by u.displayName")
+ @org.springframework.data.jpa.repository.Query("select u from AppUser u where u.active=true and not exists(select s.id from TenantMembershipSuspension s where s.tenantId=u.tenantId and s.userId=u.id and s.suspended=true) and u.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()} order by u.displayName")
  List<AppUser> findAllByActiveTrueOrderByDisplayNameAsc();
+ @org.springframework.data.jpa.repository.Query("select count(u)>0 from AppUser u where lower(u.username)=lower(:username) and u.active=true and not exists(select s.id from TenantMembershipSuspension s where s.tenantId=u.tenantId and s.userId=u.id and s.suspended=true) and u.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()}")
+ boolean existsAssignableUsername(String username);
  @Override @org.springframework.data.jpa.repository.Query("select u from AppUser u where u.id=:id and u.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()}")
  Optional<AppUser> findById(UUID id);
  @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)

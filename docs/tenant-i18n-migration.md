@@ -702,3 +702,82 @@ Verification: full regression passed 361 tests (two skipped); the updated
 repository isolation suite and five new identity-boundary tests passed in a
 subsequent targeted run. Combined reports: 366 tests, no failures/errors, two
 skipped. Whitespace validation passed. Local only; not deployed.
+
+## Stage 27: role-only membership administration
+
+The membership overview now includes tenant-scoped role choices and an inline
+role editor (English baseline, German translation). Only roleId is submitted to
+PUT /api/users/memberships/{userId}/role. Identity fields and global activation
+are not part of the request. Controls require USER_MANAGE; the server enforces
+the same permission and CSRF protection, scoped membership/role lookups, own
+administration-right retention and the last-active-administrator safeguard.
+
+The service requires an enclosing transaction and uses the shared per-tenant
+administration lock before taking the before snapshot. Role change and allowlisted
+before/after audit commit atomically; audit failure rolls the mutation back.
+Membership audit changes are readable under the existing user audit filter.
+Duplicate submissions and stale UI refreshes are suppressed, errors allow retry.
+
+This is a bootstrap bridge, not independent membership persistence. It changes
+only the home AppUser role; V60's existing PostgreSQL trigger remains the sole
+membership writer. Shared identity fields, global activation and foreign
+memberships remain unchanged. Membership entities remain immutable and database
+direct-write guards stay enabled. Editing is explicitly limited to the default
+tenant/home identity; other tenant contexts remain read-only.
+
+Independent membership activation/removal/provisioning requires a subsequent
+controlled-write migration and membership-based administrator counts before the
+bridge can be retired. Tenant switching and the database single-tenant gate remain
+unchanged. No production change or SQL migration in this stage.
+
+Verification: full regression passed 366 Java tests (two skipped), followed by
+the new/updated role, HTTP security and audit-rollback suites and a final role
+service rerun. Combined reports: 376 Java tests, zero failures/errors, two
+skipped. All 46 JavaScript tests passed. All migrations through V62 plus the
+extended disposable PostgreSQL identity/role-sync fixture passed; the temporary
+database was removed. Whitespace validation passed. Browser visual QA was not
+performed. Local only; not deployed.
+
+## Stage 28: independent membership access suspension
+
+V63 adds tenant_membership_suspension: one tenant-local restriction per existing
+membership, with a composite (tenant_id,user_id) foreign key and cascade cleanup.
+Absent/false restriction means no additional block; true blocks only that tenant
+membership. The global account active flag and V60 membership projection remain
+untouched. Home-role or global activation sync cannot clear a saved restriction.
+Original membership write guards and tenant_bootstrap_single remain intact.
+
+Effective access now requires active identity, active compatibility membership and
+no tenant suspension. Login, TOTP user-details refresh and session verification use
+this decision; an existing session is invalidated on its next protected request.
+Administrator counts and assignee lists/validation exclude suspended home users.
+Global inactivity still denies access and cannot be undone by this endpoint.
+
+PUT /api/users/memberships/{userId}/access accepts only a required suspended
+boolean. USER_MANAGE, CSRF, server-owned scope and the existing home/default
+editing boundary remain enforced. The service takes the shared administration
+lock; self-suspension and removing the last accessible administrator are rejected.
+Suspension/activation and allowlisted before/after audit commit atomically.
+
+The overview reports effective active, local suspended and identityActive
+separately. Inline controls confirm suspension, display tenant-only impact and
+prevent activating a globally inactive account. English/German text and readable
+membership audit fields cover both role and access changes.
+
+This is independent access restriction storage, not full membership provisioning
+or arbitrary role assignment across tenants. Foreign home identities and other
+tenant contexts remain read-only through administration. The remaining milestones
+include identity/member provisioning, retiring home-role compatibility and verified
+tenant switching before the single-tenant gate can be removed.
+
+Tests cover tenant-local restrictions for a shared identity, actual login denial
+and verified session revocation, assignee/admin counts, role updates preserving
+restrictions, audit rollback and concurrent administrator suspension. PostgreSQL
+migrations through V63 and the rolled-back fixture verify retained foreign state,
+composite FK rejection, unchanged membership write guards and cascade cleanup.
+The disposable database was removed. Production is unchanged.
+
+Verification: full regression ran 387 Java tests, no failures/errors, two skipped.
+All 52 JavaScript tests passed. PostgreSQL migrations through V63 and the extended
+fixture passed; whitespace validation passed. Browser visual QA was not performed.
+Local only; not deployed.

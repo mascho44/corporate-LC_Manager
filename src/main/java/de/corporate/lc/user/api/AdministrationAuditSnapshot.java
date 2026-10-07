@@ -13,5 +13,8 @@ public final class AdministrationAuditSnapshot {
  public static String user(UserView user){
   var values=new LinkedHashMap<String,Object>();values.put("username",user.username());values.put("roleId",user.roleId());values.put("role",user.role());values.put("active",user.active());return encode(values);
  }
+ public static String membership(de.corporate.lc.tenant.service.TenantMembershipService.Membership membership){
+  var values=new LinkedHashMap<String,Object>();values.put("username",membership.username());values.put("roleId",membership.roleId());values.put("permissions",membership.permissions().stream().map(Enum::name).sorted().toList());values.put("active",membership.active());values.put("suspended",membership.suspended());return encode(values);
+ }
  private static String encode(Object values){try{return JSON.writeValueAsString(values);}catch(JsonProcessingException e){throw new IllegalStateException("Administration audit snapshot could not be created.",e);}}
 }
