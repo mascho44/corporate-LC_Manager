@@ -184,3 +184,13 @@ the hosted runner after cancellation or a job timeout.
 Adding the job does not automatically make it a required branch-protection check.
 That repository setting must be configured separately if merges should be blocked
 until this check passes.
+
+The acceptance script also creates a synthetic company in each workspace. It
+checks empty company lists/choices in the newly created tenant, setup counts after
+company creation, foreign-ID read and update rejection in both directions, and
+unchanged home-company data after a rejected foreign update. Viewer company
+creation and updates must fail; the authenticated company-choice list must still
+contain only the selected tenant's unchanged company. No real company data is used.
+The expanded local PostgreSQL run passed on 2026-10-07, including automatic removal
+of the disposable test containers and network. The application/API behavior was
+not changed; unavailable company IDs retain the existing HTTP 400 response.
