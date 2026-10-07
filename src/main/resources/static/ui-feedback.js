@@ -1,5 +1,5 @@
 // Shared feedback for long document uploads and accessible destructive confirmations.
-function confirmAction(message) {
+function confirmAction(message, labels={}) {
     return new Promise(resolve => {
         const previousFocus=document.activeElement;
         const dialog=document.createElement('dialog');
@@ -8,6 +8,9 @@ function confirmAction(message) {
         dialog.setAttribute('aria-describedby','deleteConfirmationMessage');
         dialog.innerHTML='<h2 id="deleteConfirmationTitle">Bitte bestätigen</h2><p id="deleteConfirmationMessage"></p><div class="feedback-actions"><button type="button" class="feedback-no" autofocus>Nein</button><button type="button" class="feedback-yes">Ja</button></div>';
         dialog.querySelector('p').textContent=message;
+        if(labels.title)dialog.querySelector('h2').textContent=labels.title;
+        if(labels.cancel)dialog.querySelector('.feedback-no').textContent=labels.cancel;
+        if(labels.confirm)dialog.querySelector('.feedback-yes').textContent=labels.confirm;
         let settled=false;
         const finish=value=>{if(settled)return;settled=true;dialog.close();dialog.remove();previousFocus?.focus();resolve(value);};
         dialog.querySelector('.feedback-no').onclick=()=>finish(false);
