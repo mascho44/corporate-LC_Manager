@@ -58,12 +58,16 @@ class TenantWorkspaceSecurityTest {
   mvc.perform(post("/api/tenants/"+target+"/select").session(session).header(token.getHeaderName(),token.getToken())).andExpect(status().isForbidden());assertThat(session.getAttribute(CredentialSessionFilter.TENANT)).isNull();assertThat(session.getAttribute(CredentialSessionFilter.AUTHORIZATION_STAMP)).isEqualTo(before);
  }
  @Test void anonymousCannotReadSettings()throws Exception{mvc.perform(get("/api/tenants/current/settings")).andExpect(status().isUnauthorized());verifyNoInteractions(settings);}
+ @Test void memberCanReadProfileMetadataWithoutEditingPermission()throws Exception{
+  when(settings.get(any())).thenReturn(new TenantSettingsService.Settings(Tenant.DEFAULT_ID,"default","Synthetic","en",false,false,true));
+  mvc.perform(get("/api/tenants/current/settings").session(session())).andExpect(status().isOk()).andExpect(jsonPath("$.editingEnabled").value(false)).andExpect(jsonPath("$.bankEnabled").value(false)).andExpect(jsonPath("$.corporateEnabled").value(true));
+ }
  @Test void anonymousCannotReadSetupCounts()throws Exception{mvc.perform(get("/api/tenants/current/readiness")).andExpect(status().isUnauthorized());verifyNoInteractions(readiness);}
  @Test void ordinaryUserCannotReadSetupCounts()throws Exception{mvc.perform(get("/api/tenants/current/readiness").session(session())).andExpect(status().isForbidden());verifyNoInteractions(readiness);}
  @Test void settingsUpdateRequiresCsrfAndPassesOnlyPresentationFields()throws Exception{
   var session=session();var token=token(session);var body="{\"name\":\"Synthetic renamed\",\"defaultLanguage\":\"de\"}";
   mvc.perform(put("/api/tenants/current/settings").session(session).contentType("application/json").content(body)).andExpect(status().isForbidden());verifyNoInteractions(settings);
-  when(settings.update(eq("Synthetic renamed"),eq("de"),any())).thenReturn(new TenantSettingsService.Settings(Tenant.DEFAULT_ID,"default","Synthetic renamed","de",true));
+  when(settings.update(eq("Synthetic renamed"),eq("de"),any())).thenReturn(new TenantSettingsService.Settings(Tenant.DEFAULT_ID,"default","Synthetic renamed","de",true,true,false));
   mvc.perform(put("/api/tenants/current/settings").session(session).header(token.getHeaderName(),token.getToken()).contentType("application/json").content(body)).andExpect(status().isOk()).andExpect(jsonPath("$.name").value("Synthetic renamed"));
  }
  @Test void settingsServiceDenialReturnsForbidden()throws Exception{

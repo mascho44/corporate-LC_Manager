@@ -13,7 +13,7 @@ import org.springframework.security.access.AccessDeniedException;
 import java.util.*;
 
 @Service public class TenantSettingsService {
- public record Settings(UUID tenantId,String code,String name,String defaultLanguage,boolean editingEnabled){}
+ public record Settings(UUID tenantId,String code,String name,String defaultLanguage,boolean editingEnabled,boolean bankEnabled,boolean corporateEnabled){}
  private final TenantRepository tenants;private final AppUserRepository users;private final TenantMembershipService access;private final TenantAdministrationLock lock;private final AuditService audit;
  public TenantSettingsService(TenantRepository tenants,AppUserRepository users,TenantMembershipService access,TenantAdministrationLock lock,AuditService audit){this.tenants=tenants;this.users=users;this.access=access;this.lock=lock;this.audit=audit;}
  private boolean canEdit(Authentication auth){
@@ -24,7 +24,7 @@ import java.util.*;
   return membership.baseRole()==UserRole.ADMIN&&membership.permissions().contains(UserPermission.USER_MANAGE)&&user.isTotpEnabled();
  }
  private Tenant tenant(){return tenants.findById(TenantContext.currentId()).orElseThrow(()->new AccessDeniedException("Tenant not available."));}
- private Settings view(Tenant t,boolean editable){return new Settings(t.getId(),t.getCode(),t.getName(),t.getDefaultLanguage(),editable);}
+ private Settings view(Tenant t,boolean editable){return new Settings(t.getId(),t.getCode(),t.getName(),t.getDefaultLanguage(),editable,t.isBankEnabled(),t.isCorporateEnabled());}
  @Transactional(readOnly=true) public Settings get(Authentication auth){boolean editable=canEdit(auth);return view(tenant(),editable);}
  @Transactional public Settings update(String name,String language,Authentication auth){
   lock.acquire();if(!canEdit(auth))throw new AccessDeniedException("An administrator with user-management permission and two-factor authentication is required.");
