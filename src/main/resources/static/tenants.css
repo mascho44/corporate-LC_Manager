@@ -1,9 +1,10 @@
-.tenant-workspace-selector{display:grid;gap:3px;color:#475467;font-size:11px;font-weight:700}
-.tenant-workspace-selector select{min-width:130px;max-width:220px;border:1px solid #d8dee8;border-radius:10px;background:#fff;color:#14213d;padding:6px 10px}
+.tenant-workspace-selector{display:flex;align-items:center;position:relative;min-width:0;color:#475467;font-size:13px;font-weight:600}
+.tenant-workspace-selector>span{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+.tenant-workspace-selector select{width:168px;min-width:0;max-width:100%;height:var(--control-height,44px);border:1px solid #d8dee8;border-radius:10px;background:#f8fafc;color:#14213d;padding:6px 26px 6px 10px;font:inherit;text-overflow:ellipsis}
 #tenantSection{padding:22px}#tenantSection>p{margin:12px 0;line-height:1.5}
 #tenantSection form{margin-top:22px;padding-top:18px;border-top:1px solid #e5e9ef}
 #tenantSection form[hidden],#userForm.hidden,#newUser.hidden{display:none!important}
 #tenantSection input{width:100%}#tenantSection label{display:grid;gap:6px}#tenantSection button[type=submit]{align-self:end}
 #membershipOverviewBody>form{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}#membershipOverviewBody>form input{max-width:260px}
 .tenant-readiness{margin-top:24px;padding:18px;border:1px solid #d8dee8;border-radius:12px;background:#f7f9fc}.tenant-readiness[hidden]{display:none!important}.tenant-readiness>p{color:#475467;line-height:1.5}.tenant-readiness .membership-row{padding:12px 0}
-@media(max-width:650px){.tenant-workspace-selector select{max-width:160px}#tenantSection .form-grid{grid-template-columns:1fr}}
+@media(max-width:650px){.tenant-workspace-selector{flex:0 1 120px}.tenant-workspace-selector select{width:120px;max-width:28vw}#tenantSection .form-grid{grid-template-columns:1fr}}

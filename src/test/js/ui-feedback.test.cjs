@@ -29,6 +29,11 @@ test('Escape cancels deletion without confirming',async()=>{
  f.dialogs[0].events.cancel({preventDefault(){prevented=true;}});
  assert.equal(await result,false);assert.equal(prevented,true);
 });
+test('confirmation accepts translated labels as text without injecting HTML',async()=>{
+ const f=fixture(),result=f.context.confirmAction('Switch?',{title:'<script>title</script>',cancel:'Stay here',confirm:'Switch workspace'}),d=f.dialogs[0];
+ assert.equal(d.querySelector('h2').textContent,'<script>title</script>');assert.equal(d.querySelector('.feedback-no').textContent,'Stay here');assert.equal(d.querySelector('.feedback-yes').textContent,'Switch workspace');
+ d.querySelector('.feedback-no').onclick();assert.equal(await result,false);assert.equal(f.focused(),1);
+});
 test('upload reports real transfer progress then indeterminate processing',async()=>{
  const f=fixture(),result=f.context.uploadWithProgress('/api/training/preview',{method:'POST',headers:{'X-CSRF-TOKEN':'token'},body:'test-body'}),xhr=f.requests[0],d=f.dialogs[0];
  xhr.upload.events.progress({lengthComputable:true,loaded:25,total:100});

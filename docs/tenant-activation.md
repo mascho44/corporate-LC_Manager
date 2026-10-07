@@ -41,11 +41,30 @@ ADMIN membership, TOTP, USER_MANAGE and SETTINGS_MANAGE. No arbitrary tenant ID 
 accepted and all counts use tenant-scoped repository queries. Other users do not
 request these counts. A setup-summary error leaves normal tenant navigation usable.
 
-Local follow-up: the Tenants page shows the selected workspace's name and login
+Deployed via PR #118: the Tenants page shows the selected workspace's name and login
 code to all of its authenticated members, including read-only users. Guidance
 explains explicit tenant login, existing global credentials, role assignment and
 the default-tenant behavior of an empty login code. It uses the existing authorized
 workspace list; there is no public tenant discovery or extra administrative access.
+
+Local follow-up: selecting another workspace requires an explicit confirmation
+showing its name and code and warning about unsaved changes before reloading.
+Cancel/Escape leaves the selected workspace and session unchanged; concurrent
+switch requests are suppressed while confirmation is pending. This is a general
+warning, not unsaved-change detection or automatic draft saving.
+
+After successful creation, a local follow-up displays an explicit open-workspace
+action and setup guidance, only when the refreshed authorized workspace list
+contains the new tenant. Creation itself does not select or reload the workspace.
+The action uses the same confirmed, server-authorized selection flow.
+
+Refresh responses are generation-checked: only the latest requested page refresh
+may update workspace choices, settings, setup counts or loading errors. A late
+response does not reinstate stale editing controls or overwrite newer values.
+
+Loading has an accessible status and busy indicator. A failed workspace/settings
+request offers a reload button; success clears the old error and restores the
+workspace selector. Older requests cannot end the latest request's busy state.
 
 The selected tenant's administrators with
 USER_MANAGE and active TOTP can change its name and default language on the Tenants
