@@ -199,3 +199,12 @@ contain only the selected tenant's unchanged company. No real company data is us
 The expanded local PostgreSQL run passed on 2026-10-07, including automatic removal
 of the disposable test containers and network. The application/API behavior was
 not changed; unavailable company IDs retain the existing HTTP 400 response.
+
+Attachment acceptance coverage uploads a synthetic text annex into each tenant's
+LC file. It checks the owner's exact content, denied foreign content/preview reads
+and deletion in both directions, and retained attachment lists/content after those
+attempts. A Viewer can read its own tenant's attachment but cannot upload or delete
+one. These are file-access tests, not PDF-rendering or OCR-quality tests; no real
+documents, ICC materials or production data are used.
+The full expanded PostgreSQL acceptance run passed locally on 2026-10-07; its
+disposable containers and network were automatically removed afterward.
