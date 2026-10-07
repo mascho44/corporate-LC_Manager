@@ -28,6 +28,14 @@ rejected. No credentials or global user fields are modified. The allowlisted aud
 event USER_MEMBERSHIP_CREATED joins the same transaction as provisioning.
 There is still no endpoint, UI or configuration flag enabling this service.
 
+Stage 31 (local, not deployed) prepares access suspension for shared identities in
+non-bootstrap tenants. It checks live actor permissions and current ownership,
+protects self-access and the last reachable tenant administrator, and audits before
+and after in the same transaction. Administrator counts use the selected membership
+role, active global account, active membership and tenant-local suspension, rather
+than the identity's home role. Only the current tenant's suspension is written;
+global identity fields and other memberships are untouched. No public API is added.
+
 Before exposing this capability, implement membership-based administration for foreign identities,
 and shared identity lifecycle handling. Only after isolation and authentication tests
 pass should tenant creation and tenant selection be enabled. SQL provisioning must

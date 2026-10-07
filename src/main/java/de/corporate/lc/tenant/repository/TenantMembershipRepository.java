@@ -7,4 +7,6 @@ public interface TenantMembershipRepository extends TenantScopedRepository<Tenan
  Optional<TenantMembership> findById(UUID id);
  @Query("select m from TenantMembership m where m.user.id=:userId and m.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()}")
  Optional<TenantMembership> findByUserId(UUID userId);
+ @Query("select count(m) from TenantMembership m where m.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()} and m.active=true and m.user.active=true and m.role.baseRole=de.corporate.lc.user.domain.UserRole.ADMIN and not exists(select s.id from TenantMembershipSuspension s where s.tenantId=m.tenantId and s.userId=m.user.id and s.suspended=true)")
+ long countAccessibleAdministrators();
 }
