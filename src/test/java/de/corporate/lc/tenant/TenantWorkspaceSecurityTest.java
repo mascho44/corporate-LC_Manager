@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest({de.corporate.lc.user.api.PlatformAccountCreationController.class,de.corporate.lc.user.api.PlatformAdministrationController.class,TenantWorkspaceController.class,de.corporate.lc.tenant.api.TenantSettingsController.class,de.corporate.lc.tenant.api.TenantReadinessController.class}) @Import(SecurityConfig.class)
+@WebMvcTest({de.corporate.lc.user.api.PlatformInvitationController.class,de.corporate.lc.user.api.InvitationAcceptanceController.class,de.corporate.lc.user.api.PlatformAccountCreationController.class,de.corporate.lc.user.api.PlatformAdministrationController.class,TenantWorkspaceController.class,de.corporate.lc.tenant.api.TenantSettingsController.class,de.corporate.lc.tenant.api.TenantReadinessController.class}) @Import(SecurityConfig.class)
 class TenantWorkspaceSecurityTest {
  @Autowired MockMvc mvc;
  @MockitoBean TenantWorkspaceService workspaces;
@@ -31,6 +31,8 @@ class TenantWorkspaceSecurityTest {
  @MockitoBean TenantReadinessService readiness;
  @MockitoBean PlatformAdministrationService platform;
  @MockitoBean PlatformAccountCreationService accountCreation;
+ @MockitoBean PlatformInvitationService invitations;
+ @MockitoBean PasswordResetLimiter invitationLimiter;
  @MockitoBean TenantMembershipService memberships;
  @MockitoBean AppUserDetailsService details;
  @MockitoBean AppUserRepository users;
@@ -61,6 +63,22 @@ class TenantWorkspaceSecurityTest {
  }
  @Test void anonymousCannotReadSettings()throws Exception{mvc.perform(get("/api/tenants/current/settings")).andExpect(status().isUnauthorized());verifyNoInteractions(settings);}
  @Test void anonymousCannotReadGlobalAccounts()throws Exception{mvc.perform(get("/api/platform/users")).andExpect(status().isUnauthorized());verifyNoInteractions(platform);}
+ @Test void invitationAndGrantMutationsRequireCsrfAndValidateRequiredFields()throws Exception{
+  var session=session();var token=token(session);String body="{\"username\":\"new\",\"displayName\":\"New\",\"email\":\"new@example.invalid\",\"tenantId\":\""+target+"\",\"roleId\":\""+target+"\"}";
+  mvc.perform(post("/api/platform/invitations").session(session).contentType("application/json").content(body)).andExpect(status().isForbidden());verifyNoInteractions(invitations);
+  mvc.perform(post("/api/platform/invitations").session(session).header(token.getHeaderName(),token.getToken()).contentType("application/json").content(body.replace("new@example.invalid",""))).andExpect(status().isBadRequest());verifyNoInteractions(invitations);
+  mvc.perform(post("/api/platform/invitations").session(session).header(token.getHeaderName(),token.getToken()).contentType("application/json").content(body)).andExpect(status().isCreated());verify(invitations).invite(eq("new"),eq("New"),eq("new@example.invalid"),eq(target),eq(target),any());
+  String url="/api/platform/users/"+target+"/platform-grant";
+  mvc.perform(put(url).session(session).contentType("application/json").content("{\"granted\":true}")).andExpect(status().isForbidden());verify(platform,never()).changePlatformGrant(any(),anyBoolean(),any());
+  mvc.perform(put(url).session(session).header(token.getHeaderName(),token.getToken()).contentType("application/json").content("{}")).andExpect(status().isBadRequest());
+  mvc.perform(put(url).session(session).header(token.getHeaderName(),token.getToken()).contentType("application/json").content("{\"granted\":true}")).andExpect(status().isOk());verify(platform).changePlatformGrant(eq(target),eq(true),any());
+ }
+ @Test void anonymousAcceptanceRequiresSecretAndIsRateLimited()throws Exception{
+  when(invitationLimiter.allow(eq("invite-accept"),any(),eq(""))).thenReturn(true,false);String body="{\"token\":\""+"A".repeat(43)+"\",\"password\":\"Synthetic123!\"}";
+  mvc.perform(post("/api/auth/invitation/accept").contentType("application/json").content(body)).andExpect(status().isOk());verify(invitations).accept("A".repeat(43),"Synthetic123!");
+  mvc.perform(post("/api/auth/invitation/accept").contentType("application/json").content(body)).andExpect(status().isBadRequest());verify(invitations,times(1)).accept(any(),any());
+  mvc.perform(post("/api/auth/invitation/accept").contentType("application/json").content(body.replace("A".repeat(43),"invalid"))).andExpect(status().isBadRequest());verify(invitations,times(1)).accept(any(),any());
+ }
  @Test void accountCreationRequiresCsrfAndValidEmail()throws Exception{
   var session=session();var token=token(session);String body="{\"username\":\"new\",\"displayName\":\"New\",\"email\":\"new@example.invalid\",\"password\":\"Synthetic123!\"}";
   mvc.perform(post("/api/platform/users").session(session).contentType("application/json").content(body)).andExpect(status().isForbidden());verifyNoInteractions(accountCreation);

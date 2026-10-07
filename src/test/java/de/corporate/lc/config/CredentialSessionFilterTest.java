@@ -11,6 +11,14 @@ import java.util.*;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 class CredentialSessionFilterTest {
+    @Test void totpEnrollmentCannotUpgradeConcurrentPasswordOnlySession()throws Exception{
+        var users=mock(AppUserRepository.class);var user=new AppUser();user.setPasswordHash("hash");user.setTotpEnabled(true);user.setPlatformAdministrator(true);when(users.findByUsernameIgnoreCase("user")).thenReturn(Optional.of(user));
+        var request=new MockHttpServletRequest("GET","/api/platform/users");var session=request.getSession();session.setAttribute(CredentialSessionFilter.STAMP,CredentialStamp.of("hash"));session.setAttribute(CredentialSessionFilter.AUTHENTICATED_AT,System.currentTimeMillis());session.setAttribute(CredentialSessionFilter.AUTHORIZATION_STAMP,de.corporate.lc.user.service.AuthorizationStamp.of(user));
+        SecurityContextHolder.getContext().setAuthentication(UsernamePasswordAuthenticationToken.authenticated("user",null,List.of()));var response=new MockHttpServletResponse();var chain=mock(FilterChain.class);new CredentialSessionFilter(users,memberships(users)).doFilter(request,response,chain);assertThat(response.getStatus()).isEqualTo(401);verifyNoInteractions(chain);assertThat(((MockHttpSession)session).isInvalid()).isTrue();
+    }
+    @Test void verifiedTwoFactorSessionRetainsAccess()throws Exception{
+        var users=mock(AppUserRepository.class);var user=new AppUser();user.setPasswordHash("hash");user.setTotpEnabled(true);when(users.findByUsernameIgnoreCase("user")).thenReturn(Optional.of(user));var request=new MockHttpServletRequest("GET","/api/lcs");var session=request.getSession();session.setAttribute(CredentialSessionFilter.STAMP,CredentialStamp.of("hash"));session.setAttribute(CredentialSessionFilter.AUTHENTICATED_AT,System.currentTimeMillis());session.setAttribute(CredentialSessionFilter.AUTHORIZATION_STAMP,de.corporate.lc.user.service.AuthorizationStamp.of(user));session.setAttribute(CredentialSessionFilter.TOTP_VERIFIED,true);SecurityContextHolder.getContext().setAuthentication(UsernamePasswordAuthenticationToken.authenticated("user",null,List.of()));var chain=mock(FilterChain.class);new CredentialSessionFilter(users,memberships(users)).doFilter(request,new MockHttpServletResponse(),chain);verify(chain).doFilter(any(),any());
+    }
     private de.corporate.lc.tenant.service.TenantMembershipService memberships(AppUserRepository users){
         var service=mock(de.corporate.lc.tenant.service.TenantMembershipService.class);
         when(service.requireActiveAccess(org.mockito.ArgumentMatchers.nullable(UUID.class))).thenAnswer(call->{

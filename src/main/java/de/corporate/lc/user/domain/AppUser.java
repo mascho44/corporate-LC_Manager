@@ -17,6 +17,9 @@ import jakarta.persistence.*; import java.time.LocalDateTime; import java.util.U
  @Enumerated(EnumType.STRING) @Column(nullable=false) private UserRole role=UserRole.USER;
  @Column(nullable=false) private boolean active=true;
  @Column(nullable=false) private boolean platformAdministrator=false;
+ @Column(nullable=false) private boolean invitationPending=false;
+ public boolean isInvitationPending(){return invitationPending;}
+ public void setInvitationPending(boolean value){invitationPending=value;}
  public boolean isPlatformAdministrator(){return platformAdministrator;}
  public void setPlatformAdministrator(boolean value){platformAdministrator=value;}
  private boolean totpEnabled=false;

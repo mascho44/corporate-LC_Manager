@@ -22,7 +22,15 @@ services:
       ADMIN_PASSWORD: SyntheticOnly123!
       TOTP_ENCRYPTION_KEY: SyntheticTestEncryptionKeyOnly20261007
       SESSION_COOKIE_SECURE: "false"
-      SMTP_ENABLED: "false"
+      SMTP_ENABLED: "true"
+      SMTP_HOST: host.docker.internal
+      SMTP_PORT: "18087"
+      SMTP_AUTH: "false"
+      SMTP_STARTTLS: "false"
+      SMTP_FROM: synthetic@example.invalid
+      PUBLIC_BASE_URL: https://lc.example.invalid
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "127.0.0.1:18086:8080"
     depends_on:

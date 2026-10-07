@@ -1,0 +1,12 @@
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+function fixture(token='A'.repeat(43)){
+ const calls=[],historyCalls=[],message={textContent:''},button={disabled:false};
+ const form={hidden:false,elements:{password:{value:'Synthetic123!'},confirmation:{value:'Synthetic123!'}},reportValidity:()=>true,querySelector:()=>button,reset(){this.elements.password.value='';this.elements.confirmation.value='';}};
+ let failure=false;const context=vm.createContext({document:{querySelector:s=>s==='#invitationForm'?form:message},location:{hash:token?'#token='+token:'',pathname:'/invitation.html'},history:{replaceState:(...a)=>historyCalls.push(a)},URLSearchParams,fetch:async(url,options)=>{calls.push({url,options});return{ok:!failure,json:async()=>failure?{error:'Synthetic rejection'}:{message:'Accepted'}};}});
+ vm.runInContext(fs.readFileSync('src/main/resources/static/invitation.js','utf8'),context);return{calls,historyCalls,form,message,button,setFailure:v=>failure=v};
+}
+test('invitation token is removed from browser history immediately and never stored',()=>{const f=fixture();assert.deepEqual(f.historyCalls[0],[null,'','/invitation.html']);assert.equal(f.form.hidden,false);});
+test('acceptance sends secret only in POST body and clears credentials afterward',async()=>{const f=fixture();await f.form.onsubmit({preventDefault(){}});assert.equal(f.calls[0].url,'/api/auth/invitation/accept');assert.equal(f.calls[0].options.cache,'no-store');assert.deepEqual(JSON.parse(f.calls[0].options.body),{token:'A'.repeat(43),password:'Synthetic123!'});assert.equal(f.form.hidden,true);assert.equal(f.form.elements.password.value,'');});
+test('missing or malformed invitation cannot submit',()=>{for(const token of ['', 'invalid']){const f=fixture(token);assert.equal(f.form.hidden,true);assert.equal(f.form.onsubmit,undefined);assert.equal(f.calls.length,0);}});
+test('failed acceptance clears passwords but remains retryable',async()=>{const f=fixture();f.setFailure(true);await f.form.onsubmit({preventDefault(){}});assert.equal(f.message.textContent,'Synthetic rejection');assert.equal(f.form.elements.password.value,'');assert.equal(f.button.disabled,false);assert.equal(f.form.hidden,false);});
+test('mismatching passwords never reach the server',async()=>{const f=fixture();f.form.elements.confirmation.value='different';await f.form.onsubmit({preventDefault(){}});assert.equal(f.calls.length,0);});

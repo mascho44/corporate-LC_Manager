@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class PasswordResetServiceTest {
+    @Test void pendingInvitationCannotUsePasswordResetEvenIfAccidentallyActivated(){user.setInvitationPending(true);service.request("user","user@example.com");verify(mail,never()).send(any(SimpleMailMessage.class));user.setInvitationPending(false);service.request("user","user@example.com");user.setInvitationPending(true);assertThatThrownBy(()->service.complete(secret,"NewPassword123")).isInstanceOf(IllegalArgumentException.class);verify(users,never()).save(any());}
     final AppUserRepository users=mock(AppUserRepository.class);
     final PasswordResetTokenRepository tokens=mock(PasswordResetTokenRepository.class);
     final PasswordEncoder encoder=mock(PasswordEncoder.class);

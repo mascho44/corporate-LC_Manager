@@ -25,9 +25,9 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 /** Real Spring transactions/repositories; the PostgreSQL function itself is tested separately. */
-@DataJpaTest(properties={"spring.flyway.enabled=false","spring.jpa.hibernate.ddl-auto=create-drop","spring.datasource.url=jdbc:h2:mem:sharedidentityaudit;MODE=PostgreSQL;DB_CLOSE_DELAY=-1","spring.datasource.driver-class-name=org.h2.Driver"},showSql=false)
+@DataJpaTest(properties={"app.mail.enabled=true","app.mail.from=synthetic@example.invalid","spring.flyway.enabled=false","spring.jpa.hibernate.ddl-auto=create-drop","spring.datasource.url=jdbc:h2:mem:sharedidentityaudit;MODE=PostgreSQL;DB_CLOSE_DELAY=-1","spring.datasource.driver-class-name=org.h2.Driver"},showSql=false)
 @AutoConfigureTestDatabase(replace=AutoConfigureTestDatabase.Replace.NONE)
-@Import({de.corporate.lc.user.service.PlatformAccountCreationService.class,de.corporate.lc.user.service.PlatformAdministrationService.class,TenantSettingsService.class,TenantWorkspaceService.class,TenantSharedIdentityRoleService.class,TenantSharedIdentityAccessService.class,TenantMembershipService.class,TenantAdministrationLock.class,TenantSharedIdentityTransactionTest.Beans.class})
+@Import({de.corporate.lc.user.service.PlatformInvitationService.class,de.corporate.lc.user.service.PlatformAccountCreationService.class,de.corporate.lc.user.service.PlatformAdministrationService.class,TenantSettingsService.class,TenantWorkspaceService.class,TenantSharedIdentityRoleService.class,TenantSharedIdentityAccessService.class,TenantMembershipService.class,TenantAdministrationLock.class,TenantSharedIdentityTransactionTest.Beans.class})
 @Transactional(propagation=Propagation.NOT_SUPPORTED)
 class TenantSharedIdentityTransactionTest {
  @TestConfiguration static class Beans {
@@ -51,6 +51,8 @@ class TenantSharedIdentityTransactionTest {
  @Autowired TenantSettingsService settingsService;
  @Autowired de.corporate.lc.user.service.PlatformAdministrationService platform;
  @Autowired de.corporate.lc.user.service.PlatformAccountCreationService creation;
+ @Autowired de.corporate.lc.user.service.PlatformInvitationService invitations;
+ @Autowired PlatformInvitationRepository invitationTokens;
  @Autowired TenantRepository tenants;
  @Autowired AppRoleRepository roles;
  @Autowired AppUserRepository users;
@@ -61,7 +63,7 @@ class TenantSharedIdentityTransactionTest {
  final UsernamePasswordAuthenticationToken authentication=UsernamePasswordAuthenticationToken.authenticated("synthetic-shared-admin",null,List.of());
  @BeforeEach void setup(){
   AuditService target=AopTestUtils.getUltimateTargetObject(audit);reset(target);jdbc=new JdbcTemplate(source);
-  jdbc.update("delete from tenant_membership_suspension");jdbc.update("delete from tenant_membership");jdbc.update("delete from app_user");jdbc.update("delete from app_role_permission");jdbc.update("delete from app_role");jdbc.update("delete from tenant");
+  jdbc.update("delete from platform_invitation");jdbc.update("delete from tenant_membership_suspension");jdbc.update("delete from tenant_membership");jdbc.update("delete from app_user");jdbc.update("delete from app_role_permission");jdbc.update("delete from app_role");jdbc.update("delete from tenant");
   tenants.saveAndFlush(new Tenant());tenantId=UUID.randomUUID();var tenant=new Tenant();ReflectionTestUtils.setField(tenant,"id",tenantId);ReflectionTestUtils.setField(tenant,"code","synthetic-shared");tenants.saveAndFlush(tenant);
   var home=role("Synthetic home",UserRole.VIEWER,Set.of());homeRoleId=home.getId();
   var actor=user("synthetic-shared-admin",role("Synthetic home admin",UserRole.ADMIN,Set.of(UserPermission.USER_MANAGE)));actor.setTotpEnabled(true);users.saveAndFlush(actor);seed(Tenant.DEFAULT_ID,actor.getId(),actor.getAssignedRole().getId());
@@ -87,6 +89,16 @@ class TenantSharedIdentityTransactionTest {
   var actor=users.findByUsernameIgnoreCase(authentication.getName()).orElseThrow();actor.setPlatformAdministrator(true);users.saveAndFlush(actor);failAudit();
   try(var scope=TenantContext.open(tenantId)){assertThatThrownBy(()->platform.changeAccess(userId,false,authentication)).isInstanceOf(IllegalStateException.class);assertThat(TenantContext.currentId()).isEqualTo(tenantId);}
   assertThat(users.findById(userId).orElseThrow().isActive()).isTrue();
+ }
+ @Test void platformGrantRollsBackOnAuditFailure(){var actor=users.findByUsernameIgnoreCase(authentication.getName()).orElseThrow();actor.setPlatformAdministrator(true);users.saveAndFlush(actor);var target=users.findById(userId).orElseThrow();target.setTotpEnabled(true);users.saveAndFlush(target);failAudit();assertThatThrownBy(()->platform.changePlatformGrant(userId,true,authentication)).isInstanceOf(IllegalStateException.class);assertThat(users.findById(userId).orElseThrow().isPlatformAdministrator()).isFalse();}
+ @Test void invitationIssuanceRollsBackIdentityTokenAndSuspensionOnAuditFailure(){
+  var actor=users.findByUsernameIgnoreCase(authentication.getName()).orElseThrow();actor.setPlatformAdministrator(true);users.saveAndFlush(actor);var viewer=roles.findById(homeRoleId).orElseThrow();viewer.setSystemRole(true);roles.saveAndFlush(viewer);failAudit();long count=users.count();
+  assertThatThrownBy(()->invitations.invite("synthetic-invited","Synthetic invited","invited@example.invalid",tenantId,replacementId,authentication)).isInstanceOf(IllegalStateException.class).hasMessage("Synthetic audit unavailable");assertThat(users.count()).isEqualTo(count);assertThat(invitationTokens.count()).isZero();assertThat(users.existsByUsernameIgnoreCase("synthetic-invited")).isFalse();assertThat(jdbc.queryForObject("select count(*) from tenant_membership_suspension",Long.class)).isZero();
+ }
+ @Test void invitationAcceptanceRollsBackPasswordActivationAndMembershipOnAuditFailure(){
+  var actor=users.findByUsernameIgnoreCase(authentication.getName()).orElseThrow();actor.setPlatformAdministrator(true);users.saveAndFlush(actor);var viewer=roles.findById(homeRoleId).orElseThrow();viewer.setSystemRole(true);roles.saveAndFlush(viewer);var pending=creation.createPending("synthetic-pending","Synthetic pending","pending@example.invalid","Synthetic123!",authentication);var identity=users.findById(pending.id()).orElseThrow();String originalHash=identity.getPasswordHash();AppRole targetRole;try(var scope=TenantContext.open(tenantId)){targetRole=roles.findById(replacementId).orElseThrow();}
+  String token="A".repeat(43);String stamp=de.corporate.lc.user.service.CredentialStamp.of(targetRole.getId()+":"+targetRole.getBaseRole()+":"+targetRole.getPermissions().stream().map(Enum::name).sorted().toList());invitationTokens.saveAndFlush(new PlatformInvitation(de.corporate.lc.user.service.CredentialStamp.of(token),identity.getId(),actor.getId(),tenantId,replacementId,stamp,de.corporate.lc.user.service.CredentialStamp.of(originalHash),identity.getEmail(),java.time.Instant.now().plusSeconds(3600)));failAudit();
+  assertThatThrownBy(()->invitations.accept(token,"SyntheticNew123!")).isInstanceOf(IllegalStateException.class).hasMessage("Synthetic audit unavailable");identity=users.findById(pending.id()).orElseThrow();assertThat(identity.isActive()).isFalse();assertThat(identity.isInvitationPending()).isTrue();assertThat(identity.getPasswordHash()).isEqualTo(originalHash);assertThat(invitationTokens.count()).isEqualTo(1);assertThat(jdbc.queryForObject("select count(*) from tenant_membership where tenant_id=? and user_id=?",Long.class,tenantId,identity.getId())).isZero();
  }
  @Test void platformSuspensionLeavesLocalMembershipsAndRolesUnchanged(){
   var actor=users.findByUsernameIgnoreCase(authentication.getName()).orElseThrow();actor.setPlatformAdministrator(true);users.saveAndFlush(actor);

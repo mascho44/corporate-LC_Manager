@@ -14,6 +14,7 @@ public class CredentialSessionFilter extends OncePerRequestFilter {
     public static final String AUTHORIZATION_STAMP="LC_AUTHORIZATION_STAMP";
     public static final String AUTHENTICATED_AT="LC_AUTHENTICATED_AT";
     public static final String TENANT="LC_SELECTED_TENANT";
+    public static final String TOTP_VERIFIED="LC_TOTP_VERIFIED";
     private final AppUserRepository users;
     private final de.corporate.lc.tenant.service.TenantMembershipService memberships;
     public CredentialSessionFilter(AppUserRepository users,de.corporate.lc.tenant.service.TenantMembershipService memberships){this.users=users;this.memberships=memberships;}
@@ -27,10 +28,12 @@ public class CredentialSessionFilter extends OncePerRequestFilter {
             var account=users.findByUsernameIgnoreCase(auth.getName()).orElse(null);
             Object selected=session==null?null:session.getAttribute(TENANT);
             java.util.UUID tenantId=selected instanceof java.util.UUID id?id:de.corporate.lc.tenant.domain.Tenant.DEFAULT_ID;
-            boolean valid=withinLifetime&&account!=null&&account.isActive()&&CredentialStamp.of(account.getPasswordHash()).equals(stamp)&&
+            boolean valid=withinLifetime&&account!=null&&account.isActive()&&!account.isInvitationPending()&&CredentialStamp.of(account.getPasswordHash()).equals(stamp)&&
                 de.corporate.lc.tenant.domain.Tenant.DEFAULT_ID.equals(account.getTenantId())&&
                 (account.getAssignedRole()==null||account.getTenantId().equals(account.getAssignedRole().getTenantId()));
             valid=valid&&(selected==null||selected instanceof java.util.UUID);
+            // Enrollment alone never upgrades a concurrent password-only session.
+            valid=valid&&(account==null||!account.isTotpEnabled()||Boolean.TRUE.equals(session==null?null:session.getAttribute(TOTP_VERIFIED)));
             if(valid){
                 try(var scope=de.corporate.lc.tenant.domain.TenantContext.open(tenantId)){
                     var access=memberships.requireActiveAccess(account.getId());

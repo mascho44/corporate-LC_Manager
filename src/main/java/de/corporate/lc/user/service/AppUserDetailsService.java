@@ -18,6 +18,7 @@ import java.util.stream.Stream;
   if(tenantId==null)throw new org.springframework.security.authentication.DisabledException("Tenant access is not enabled.");
   try(var scope=TenantContext.open(tenantId)){
    var u=repo.findByUsernameIgnoreCase(username).orElseThrow(()->new UsernameNotFoundException("User not found"));
+   if(u.isInvitationPending())throw new org.springframework.security.authentication.DisabledException("Invitation must be accepted.");
    u.validateRoleTenant();
    if(!Tenant.DEFAULT_ID.equals(u.getTenantId()))throw new org.springframework.security.authentication.DisabledException("Tenant access is not enabled.");
    TenantMembershipService.Access access;
