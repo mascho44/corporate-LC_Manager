@@ -613,3 +613,92 @@ and reject unavailable tenants. Stages 22–23 remain local, not deployed.
 Pre-release verification on 2026-10-07: full Java regression passed without
 failures/errors, including the parallel administrator test and transaction/tenant
 negative tests. All 40 JavaScript tests passed; whitespace validation passed.
+
+## Stage 24: independent membership access for a shared identity
+
+Membership evaluation no longer requires the referenced identity's legacy home
+tenant to equal the membership tenant. Both the membership owner and assigned
+membership role must still match the server-owned current context. One stable
+AppUser ID can therefore be evaluated through separate memberships with separate
+roles; a home administrator role does not grant rights in another membership.
+
+`requireActiveAccess` resolves an immutable identity/membership/tenant/role snapshot
+from the current tenant and rejects absent membership, inactive membership or
+inactive global account. Its permissions and base type come only from the selected
+membership role, not the legacy home user assignment. The read-only administrator
+membership DTO retains only its existing allowlisted metadata.
+
+This is an internal access-model step, not complete identity migration or switching.
+Authentication/profile/credential operations and existing user administration still
+use their bootstrap home-user compatibility paths. No new membership writes,
+tenant selection API, tenant provisioning or additional tenant activation is enabled.
+The V60 compatibility sync and direct-write guards remain intact. The next stage
+must integrate membership-based authorization into verified login/session context,
+then define global identity administration separately from tenant-member management.
+
+Repository tests cover one identity with independent home/foreign membership roles,
+scoped visibility and active-account/membership requirements. All migrations through
+V62 and a disposable PostgreSQL shared-identity fixture passed: home-role updates
+preserved foreign membership data, and identity deletion cascaded memberships. Gate
+and guard relaxation was confined to the rolled-back disposable fixture. No SQL
+migration is required; production has not changed.
+
+Verification: full regression ran 358 Java tests with no failures/errors (two
+skipped). PostgreSQL fixture passed and its disposable database was removed.
+Whitespace validation passed. Not deployed.
+
+## Stage 25: membership-based authentication and session verification
+
+Login now requires active membership in the server-selected default tenant.
+Authorities come exclusively from the membership role. Missing or inactive
+membership denies authentication, including the user-details refresh during TOTP.
+The credential/session filter resolves membership on every authenticated request;
+revoked access or changed effective authorities invalidates the session. The
+administrator second-factor requirement uses the membership base role.
+
+Resolution opens an explicit server-owned default scope and restores the previous
+context even on denial. Client headers do not select a tenant. Credential stamps,
+absolute session lifetime, home-role integrity checks and the bootstrap home-user
+gate remain in place. No tenant provisioning, membership mutation or switching is
+enabled; global identity administration and tenant-member management remain the
+next migration steps. Existing equivalent authority stamps remain compatible.
+
+Regression coverage includes membership-only login rights, login denial and
+revocation of an existing session, alongside role-change, credential, CSRF,
+scope-restoration and second-factor tests. No database migration is required.
+Local implementation only; not deployed.
+
+Verification: full regression passed 358 tests (two skipped), followed by three
+new membership-authentication tests passing separately: 361 total, no failures
+or errors. Whitespace validation passed.
+
+## Stage 26: identity credential boundary and shared-identity protection
+
+Self-service password changes now belong to IdentityCredentialService, separately
+from tenant user administration. The existing authenticated endpoint and audit
+behavior remain unchanged; UserService delegates for compatibility. Current
+password verification, password policy, reuse prevention and the bootstrap home
+scope guard remain enforced. This does not enable foreign-tenant self-service.
+
+Before deleting a home identity or changing its username, display name, contact
+email, global active flag or password, legacy tenant administration checks for
+memberships outside the current tenant. Shared identities reject those mutations
+without disclosing membership details. Home role-only changes remain permitted
+under the existing tenant administration lock and administrator safety checks.
+The internal cross-tenant count is a mutation guard, not a listing endpoint.
+
+This is a transition boundary, not complete global identity administration.
+There is no new global-administrator permission or endpoint, no membership
+provisioning or independent membership activation API. Compatibility sync and
+the single-tenant database gate remain intact. Before those restrictions are
+removed, global lifecycle authorization and concurrent identity/member mutation
+locking must be defined. No database migration or production change is required.
+
+Tests cover rejected shared deletion, global field/password/state changes,
+permitted role-only changes, self-service password verification and the real
+repository foreign-membership guard in both tenant scopes.
+
+Verification: full regression passed 361 tests (two skipped); the updated
+repository isolation suite and five new identity-boundary tests passed in a
+subsequent targeted run. Combined reports: 366 tests, no failures/errors, two
+skipped. Whitespace validation passed. Local only; not deployed.

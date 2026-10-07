@@ -14,7 +14,8 @@ public class CredentialSessionFilter extends OncePerRequestFilter {
     public static final String AUTHORIZATION_STAMP="LC_AUTHORIZATION_STAMP";
     public static final String AUTHENTICATED_AT="LC_AUTHENTICATED_AT";
     private final AppUserRepository users;
-    public CredentialSessionFilter(AppUserRepository users){this.users=users;}
+    private final de.corporate.lc.tenant.service.TenantMembershipService memberships;
+    public CredentialSessionFilter(AppUserRepository users,de.corporate.lc.tenant.service.TenantMembershipService memberships){this.users=users;this.memberships=memberships;}
     @Override protected void doFilterInternal(HttpServletRequest request,HttpServletResponse response,FilterChain chain)throws ServletException,IOException {
         var auth=SecurityContextHolder.getContext().getAuthentication();
         var session=request.getSession(false);
@@ -24,10 +25,15 @@ public class CredentialSessionFilter extends OncePerRequestFilter {
             boolean withinLifetime=started instanceof Long&&System.currentTimeMillis()-(Long)started<28_800_000;
             var account=users.findByUsernameIgnoreCase(auth.getName()).orElse(null);
             boolean valid=withinLifetime&&account!=null&&account.isActive()&&CredentialStamp.of(account.getPasswordHash()).equals(stamp)&&
-                (account.getRole()!=de.corporate.lc.user.domain.UserRole.ADMIN||account.isTotpEnabled())&&
                 de.corporate.lc.tenant.domain.Tenant.DEFAULT_ID.equals(account.getTenantId())&&
-                (account.getAssignedRole()==null||account.getTenantId().equals(account.getAssignedRole().getTenantId()))&&
-                de.corporate.lc.user.service.AuthorizationStamp.of(account).equals(session.getAttribute(AUTHORIZATION_STAMP));
+                (account.getAssignedRole()==null||account.getTenantId().equals(account.getAssignedRole().getTenantId()));
+            if(valid){
+                try(var scope=de.corporate.lc.tenant.domain.TenantContext.open(de.corporate.lc.tenant.domain.Tenant.DEFAULT_ID)){
+                    var access=memberships.requireActiveAccess(account.getId());
+                    valid=(access.baseRole()!=de.corporate.lc.user.domain.UserRole.ADMIN||account.isTotpEnabled())&&
+                        de.corporate.lc.user.service.AuthorizationStamp.of(access).equals(session.getAttribute(AUTHORIZATION_STAMP));
+                }catch(org.springframework.security.access.AccessDeniedException denied){valid=false;}
+            }
             if(!valid){if(session!=null)session.invalidate();SecurityContextHolder.clearContext();
                 if(request.getRequestURI().startsWith("/api/")){response.setStatus(401);response.setContentType("application/json");response.getWriter().write("{\"error\":\"Bitte erneut anmelden.\"}");}
                 else response.sendRedirect("/login.html");

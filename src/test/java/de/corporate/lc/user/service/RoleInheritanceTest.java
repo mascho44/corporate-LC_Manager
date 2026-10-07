@@ -12,7 +12,8 @@ class RoleInheritanceTest {
   var stamp=AuthorizationStamp.of(user);role.setBaseRole(UserRole.ADMIN);
   assertThat(user.getRole()).isEqualTo(UserRole.ADMIN);assertThat(AuthorizationStamp.of(user)).isNotEqualTo(stamp);
   var repo=mock(AppUserRepository.class);when(repo.findByUsernameIgnoreCase(user.getUsername())).thenReturn(Optional.of(user));
-  assertThat(new AppUserDetailsService(repo).loadUserByUsername(user.getUsername()).getAuthorities()).extracting("authority").contains("ROLE_ADMIN");
+  var memberships=mock(de.corporate.lc.tenant.service.TenantMembershipService.class);when(memberships.requireActiveAccess(org.mockito.ArgumentMatchers.nullable(UUID.class))).thenReturn(new de.corporate.lc.tenant.service.TenantMembershipService.Access(user.getTenantId(),user.getId(),UUID.randomUUID(),UUID.randomUUID(),role.getBaseRole(),role.getPermissions()));
+  assertThat(new AppUserDetailsService(repo,memberships).loadUserByUsername(user.getUsername()).getAuthorities()).extracting("authority").contains("ROLE_ADMIN");
   var passwords=mock(org.springframework.security.crypto.password.PasswordEncoder.class);var totp=new TotpService(repo,passwords,"");
   assertThatThrownBy(()->totp.disable(user.getUsername(),"synthetic-password","123456")).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("verpflichtend");verifyNoInteractions(passwords);
   role.setBaseRole(UserRole.VIEWER);assertThat(user.getRole()).isEqualTo(UserRole.VIEWER);
