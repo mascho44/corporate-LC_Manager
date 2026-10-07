@@ -111,6 +111,19 @@ class TenantSharedIdentityTransactionTest {
   assertThat(TenantContext.currentId()).isEqualTo(Tenant.DEFAULT_ID);assertThat(created.id()).isNotEqualTo(Tenant.DEFAULT_ID);
   var selected=workspaceService.select(created.id(),authentication);assertThat(selected.baseRole()).isEqualTo(UserRole.ADMIN);assertThat(selected.permissions()).contains(UserPermission.USER_MANAGE);
   assertThat(workspaceService.overview(authentication).workspaces()).extracting(TenantWorkspaceService.Workspace::id).contains(created.id());
+  try(var scope=TenantContext.open(created.id())){
+   var standard=roles.findAllByOrderByNameAsc();assertThat(standard).hasSize(3);assertThat(standard).allMatch(AppRole::isSystemRole);
+   assertThat(standard).extracting(AppRole::getBaseRole).containsExactlyInAnyOrder(UserRole.ADMIN,UserRole.EDITOR,UserRole.VIEWER);
+   for(var role:standard)assertThat(role.getPermissions()).containsExactlyInAnyOrderElementsOf(UserPermission.defaults(role.getBaseRole()));
+  }
+ }
+ @Test void newTenantStandardRolesDoNotChangeExistingTenantRoles(){
+  var homeIds=roles.findAllByOrderByNameAsc().stream().map(AppRole::getId).toList();
+  java.util.List<UUID> existingIds;try(var scope=TenantContext.open(tenantId)){existingIds=roles.findAllByOrderByNameAsc().stream().map(AppRole::getId).toList();}
+  var created=workspaceService.create("synthetic-roles","Synthetic roles workspace","en",true,false,authentication);
+  assertThat(roles.findAllByOrderByNameAsc()).extracting(AppRole::getId).containsExactlyElementsOf(homeIds);
+  try(var scope=TenantContext.open(tenantId)){assertThat(roles.findAllByOrderByNameAsc()).extracting(AppRole::getId).containsExactlyElementsOf(existingIds);}
+  try(var scope=TenantContext.open(created.id())){assertThat(roles.findAllByOrderByNameAsc()).allMatch(r->r.getTenantId().equals(created.id()));}
  }
  @Test void creationAuditFailureRollsBackTenantRoleAndMembership(){
   long beforeTenants=tenants.count(),beforeRoles=roles.count();

@@ -10,6 +10,10 @@ bootstrap constraint. Membership write guards and same-tenant foreign keys remai
 2. Open **Tenants** in the left menu. Enter a unique lowercase code, a name and the
    default language. Create the tenant. It starts with no business data and its own
    administrator role; the creator receives that role in the new tenant.
+   Local follow-up: new tenants also receive Editor and Viewer system roles using
+   the existing permission defaults. No users are automatically assigned these
+   roles. Existing tenants and customized roles remain unchanged. All three roles
+   are created within the same audited tenant-creation transaction.
 3. Select the workspace using the header selector or **Open workspace**. The page
    reloads. Only this tenant's records and roles are accessible.
 4. Under **Users**, assign an explicitly named existing identity to a local role.
