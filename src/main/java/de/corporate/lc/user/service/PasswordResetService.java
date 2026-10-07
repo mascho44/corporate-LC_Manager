@@ -42,7 +42,7 @@ public class PasswordResetService {
         if(match.isEmpty())return;
         var user=users.findForPasswordReset(match.get().getId()).orElse(null);
         if(user!=null&&!de.corporate.lc.tenant.domain.Tenant.DEFAULT_ID.equals(user.getTenantId()))return;
-        if(user==null||!user.isActive()||user.getEmail()==null||!user.getEmail().equalsIgnoreCase(email))return;
+        if(user==null||!user.isActive()||user.isInvitationPending()||user.getEmail()==null||!user.getEmail().equalsIgnoreCase(email))return;
         if(!enabled||from.isBlank()){audit.record(user.getUsername(),"PASSWORD_RESET_MAIL_FAILED","USER",user.getId(),"Reset-Versand nicht eingerichtet",false,null);return;}
         tokens.deleteExpired(clock.instant());tokens.deleteForUser(user.getId());
         byte[] bytes=new byte[32];random.nextBytes(bytes);
@@ -64,7 +64,7 @@ public class PasswordResetService {
         if(!de.corporate.lc.tenant.domain.Tenant.DEFAULT_ID.equals(user.getTenantId()))throw invalid();
         if(!tokens.existsById(hash))throw invalid();
         var saved=tokens.findById(hash).orElseThrow(PasswordResetService::invalid);
-        if(!user.isActive()||!saved.getExpiresAt().isAfter(clock.instant())||!saved.getCredentialStamp().equals(CredentialStamp.of(user.getPasswordHash()))||!saved.getEmail().equals(user.getEmail()))throw invalid();
+        if(!user.isActive()||user.isInvitationPending()||!saved.getExpiresAt().isAfter(clock.instant())||!saved.getCredentialStamp().equals(CredentialStamp.of(user.getPasswordHash()))||!saved.getEmail().equals(user.getEmail()))throw invalid();
         UserService.validatePassword(password);
         if(password.getBytes(java.nio.charset.StandardCharsets.UTF_8).length>72)throw new IllegalArgumentException("Das Passwort darf höchstens 72 UTF-8-Bytes enthalten.");
         if(password.length()>200||encoder.matches(password,user.getPasswordHash()))throw new IllegalArgumentException("Bitte ein neues Passwort mit höchstens 200 Zeichen wählen.");

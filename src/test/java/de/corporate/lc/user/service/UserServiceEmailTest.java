@@ -17,7 +17,7 @@ class UserServiceEmailTest {
         assertThatThrownBy(()->service.update(id,new UserRequest("admin","Admin","admin@example.invalid","ChangedPassword123",UUID.randomUUID(),true),"local-admin")).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
         assertThatThrownBy(()->service.delete(id,"local-admin")).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);verify(users,never()).delete(any());verifyNoInteractions(encoder);
     }
-    @Test void newUsersRequireAndPersistContactEmail() {
+    @Test void legacyAccountCreationIsRetiredEvenForDefaultTenant() {
         var users=mock(AppUserRepository.class);
         var roles=mock(AppRoleRepository.class);
         var encoder=mock(PasswordEncoder.class);
@@ -28,10 +28,8 @@ class UserServiceEmailTest {
         when(encoder.encode(anyString())).thenReturn("hash");
         when(users.save(any())).thenAnswer(call->call.getArgument(0));
         assertThatThrownBy(()->service.create(new UserRequest("user","User",null,"Password123",roleId,true)))
-            .isInstanceOf(IllegalArgumentException.class);
+            .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
         verify(users,never()).save(any());
-        var saved=service.create(new UserRequest("user","User"," Contact@example.com ","Password123",roleId,true));
-        assertThat(saved.email()).isEqualTo("Contact@example.com");
-        assertThat(saved.username()).isEqualTo("user");
+        assertThatThrownBy(()->service.create(new UserRequest("user","User"," Contact@example.com ","Password123",roleId,true))).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);verifyNoInteractions(encoder);verify(users,never()).save(any());
     }
 }

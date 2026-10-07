@@ -23,7 +23,7 @@ bootstrap constraint. Membership write guards and same-tenant foreign keys remai
    Local role changes and suspension do not change global credentials or other
    tenants. The last accessible administrator and self-access are protected.
 
-Global accounts are created in the default tenant. Creating another tenant does not
+Global accounts are stored in the default tenant and created only through platform administration. Creating another tenant does not
 copy existing LC files, training documents, templates, companies or other business
 data. Each tenant must configure its own companies/templates. Profile settings,
 password and TOTP remain own-identity self-service. Disabling TOTP is forbidden if
@@ -31,13 +31,13 @@ the identity has active administrator access in any tenant. The deployed login
 initially uses the default tenant. This release adds an optional tenant
 code to login: blank uses the default tenant; an explicit code requires active access
 in that tenant, but not in the default tenant. Credentials remain global and accounts
-are still created centrally. Global IAM lifecycle administration remains open.
+are still created centrally. New invitations activate only the explicitly selected tenant membership after password acceptance.
 
-The first dedicated [platform-administration stage](platform-administration.md)
-adds global activation/suspension from any accessible workspace, using a separate
+The dedicated [platform administration](platform-administration.md)
+provides global activation/suspension, invitations with target tenant/role and protected platform-grant management from any accessible workspace, using a separate
 platform flag and mandatory TOTP. The explicitly selected initial platform account
 is `admin`; local ADMIN roles do not imply platform authority. Global account
-creation and invitations are still follow-up work.
+creation no longer uses the legacy tenant-user endpoint. Local role and membership administration remains under Users.
 
 ## Security and verification
 

@@ -14,7 +14,7 @@ async function setupTenants(){
  [['bank','tenant.profileBank','Bank'],['corporate','tenant.profileCorporate','Corporate'],['combined','tenant.profileCombined','Bank & Corporate']].forEach(([value,key,label])=>{const option=node('option',text(key,label));option.value=value;profile.append(option);});profile.value='bank';profileLabel.append(profile);form.append(profileLabel);
  const profileNotice=node('p',text('tenant.profileNotice','The profile is informational. It does not enable modules or grant permissions. It cannot currently be changed after creation.'));profileNotice.id='tenantProfileNotice';profile.setAttribute('aria-describedby',profileNotice.id);form.append(profileNotice);
  const submit=node('button',text('tenant.create','Create tenant'));submit.type='submit';form.append(submit);
- const notice=node('p',text('tenant.identityNotice','Create global user accounts in the default tenant, then assign them to another tenant under Users. New tenants start with no business data.'));
+ const notice=node('p',text('tenant.identityNotice','Global accounts and invitations are managed in Platform administration. Local roles and memberships are managed under Users. New tenants start without business data.'));
  section.append(heading,notice,message,list,form);document.querySelector('main').append(section);
  const retry=node('button',text('tenant.retry','Reload tenant information'));retry.id='tenantRetry';retry.type='button';retry.className='secondary';retry.hidden=true;retry.onclick=()=>refresh();section.append(retry);
  const createdInfo=document.createElement('section');createdInfo.id='tenantCreatedInfo';createdInfo.className='tenant-readiness';createdInfo.hidden=true;section.append(createdInfo);

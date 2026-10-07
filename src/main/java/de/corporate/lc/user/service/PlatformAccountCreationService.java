@@ -25,6 +25,13 @@ public class PlatformAccountCreationService {
  private void authorize(Authentication auth){if(!platform.enabled(auth))throw new AccessDeniedException("An active platform administrator with two-factor authentication is required.");}
  @Transactional
  public PlatformAdministrationService.Account create(String username,String displayName,String email,String password,Authentication auth){
+  return createIdentity(username,displayName,email,password,false,auth);
+ }
+ @Transactional
+ public PlatformAdministrationService.Account createPending(String username,String displayName,String email,String password,Authentication auth){
+  return createIdentity(username,displayName,email,password,true,auth);
+ }
+ private PlatformAdministrationService.Account createIdentity(String username,String displayName,String email,String password,boolean pending,Authentication auth){
   try(var scope=TenantContext.open(Tenant.DEFAULT_ID)){
    authorize(auth);lock.acquire();authorize(auth);
    String name=username==null?"":username.trim().toLowerCase(java.util.Locale.ROOT);
@@ -37,11 +44,11 @@ public class PlatformAccountCreationService {
    if(users.existsByUsernameIgnoreCase(name))throw new IllegalArgumentException("Username already exists.");
    var role=roles.findByBaseRoleAndSystemRoleTrue(UserRole.VIEWER).orElseThrow(()->new IllegalStateException("Bootstrap viewer role is missing."));
    if(!Tenant.DEFAULT_ID.equals(role.getTenantId())||!role.getPermissions().isEmpty())throw new IllegalStateException("Bootstrap viewer role must have no write permissions.");
-   var user=new AppUser();user.setUsername(name);user.setDisplayName(display);user.setEmail(address);user.setAssignedRole(role);user.setPasswordHash(encoder.encode(password));user.setActive(true);
+   var user=new AppUser();user.setUsername(name);user.setDisplayName(display);user.setEmail(address);user.setAssignedRole(role);user.setPasswordHash(encoder.encode(password));user.setActive(!pending);user.setInvitationPending(pending);
    users.saveAndFlush(user);
    var suspension=new TenantMembershipSuspension(user.getId());suspension.setSuspended(true);suspensions.saveAndFlush(suspension);
-   audit.recordChangeInTransaction(auth,"PLATFORM_ACCOUNT_CREATED","USER",user.getId(),"Global identity created without tenant access",null,"{\"active\":true}");
-   return new PlatformAdministrationService.Account(user.getId(),name,display,address,true,false,false);
+   audit.recordChangeInTransaction(auth,"PLATFORM_ACCOUNT_CREATED","USER",user.getId(),"Global identity created without tenant access",null,"{\"active\":"+!pending+"}");
+   return new PlatformAdministrationService.Account(user.getId(),name,display,address,!pending,false,false,pending);
   }
  }
 }

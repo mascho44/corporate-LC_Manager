@@ -814,9 +814,9 @@ function ensureMembershipOverview(){
 }
 function renderMembershipOverview(overview){
  const shared=overview.tenantId&&overview.tenantId!=='00000000-0000-0000-0000-000000000001';
- if(shared&&$('#membershipOverview'))$('#membershipOverview').open=true;
+ if($('#membershipOverview'))$('#membershipOverview').open=true;
  const route=shared?'/api/users/memberships/shared/':'/api/users/memberships/';
- $('#userForm')?.classList?.toggle('hidden',Boolean(shared));$('#newUser')?.classList?.toggle('hidden',Boolean(shared));
+ $('#userForm')?.classList?.toggle('hidden',true);$('#newUser')?.classList?.toggle('hidden',true);$('#userList')?.classList?.toggle('hidden',true);
  const body=$('#membershipOverviewBody');body.replaceChildren();
  if(shared&&can('USER_MANAGE'))renderMembershipAssignment(body,overview.roleChoices||[]);
  body.append(membershipNode('p',overview.tenantName));
