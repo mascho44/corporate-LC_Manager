@@ -31,10 +31,11 @@ class TenantMembershipSecurityTest {
  @MockitoBean AppUserRepository users;
  MockHttpSession session(boolean allowed){
   var user=new AppUser();user.setUsername("synthetic-user");user.setPasswordHash("synthetic-hash");user.setRole(UserRole.EDITOR);when(users.findByUsernameIgnoreCase(user.getUsername())).thenReturn(Optional.of(user));
+  when(memberships.requireActiveAccess(org.mockito.ArgumentMatchers.nullable(UUID.class))).thenReturn(new de.corporate.lc.tenant.service.TenantMembershipService.Access(user.getTenantId(),user.getId(),UUID.randomUUID(),UUID.randomUUID(),user.getRole(),Set.copyOf(user.effectivePermissions())));
   var session=new MockHttpSession();session.setAttribute("SPRING_SECURITY_CONTEXT",new SecurityContextImpl(new UsernamePasswordAuthenticationToken(user.getUsername(),null,List.of(new SimpleGrantedAuthority(allowed?"PERM_USER_MANAGE":"PERM_LC_EDIT")))));session.setAttribute(CredentialSessionFilter.STAMP,CredentialStamp.of(user.getPasswordHash()));session.setAttribute(CredentialSessionFilter.AUTHORIZATION_STAMP,AuthorizationStamp.of(user));session.setAttribute(CredentialSessionFilter.AUTHENTICATED_AT,System.currentTimeMillis());return session;
  }
  @Test void anonymousAndOrdinaryUsersCannotReadMemberships()throws Exception{
-  mvc.perform(get("/api/users/memberships")).andExpect(status().isUnauthorized());mvc.perform(get("/api/users/memberships").session(session(false))).andExpect(status().isForbidden());verifyNoInteractions(memberships,tenants);
+  mvc.perform(get("/api/users/memberships")).andExpect(status().isUnauthorized());mvc.perform(get("/api/users/memberships").session(session(false))).andExpect(status().isForbidden());verify(memberships,never()).list();verifyNoInteractions(tenants);
  }
  @Test void authorizedOverviewIsRedactedAndSwitchingRemainsDisabled()throws Exception{
   when(tenants.findById(Tenant.DEFAULT_ID)).thenReturn(Optional.of(new Tenant()));when(memberships.list()).thenReturn(List.of(new TenantMembershipService.Membership(Tenant.DEFAULT_ID,UUID.randomUUID(),"synthetic-user",UUID.randomUUID(),"Synthetic role",Set.of(UserPermission.USER_MANAGE),true)));

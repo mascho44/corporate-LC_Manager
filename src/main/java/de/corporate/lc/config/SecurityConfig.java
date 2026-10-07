@@ -3,7 +3,7 @@ import de.corporate.lc.user.service.AppUserDetailsService; import jakarta.servle
 @Configuration public class SecurityConfig {
  @Bean PasswordEncoder passwordEncoder(){return new BCryptPasswordEncoder();}
  @Bean AuthenticationManager authenticationManager(AuthenticationConfiguration c)throws Exception{return c.getAuthenticationManager();}
- @Bean SecurityFilterChain security(HttpSecurity http,AppUserDetailsService users,de.corporate.lc.user.repository.AppUserRepository accounts)throws Exception{return http.userDetailsService(users)
+ @Bean SecurityFilterChain security(HttpSecurity http,AppUserDetailsService users,de.corporate.lc.user.repository.AppUserRepository accounts,de.corporate.lc.tenant.service.TenantMembershipService memberships)throws Exception{return http.userDetailsService(users)
   .authorizeHttpRequests(a->a
    .requestMatchers("/password-reset.html","/password-reset.js","/api/auth/password-reset/request","/api/auth/password-reset/complete","/login.html","/login.js","/login-background.css","/login-background-v1.png","/styles.css","/info.html","/info.css","/info.js","/license.txt","/oss-components.json","/oss-notices.txt","/api/auth/login","/api/auth/login/totp","/api/health","/actuator/health","/actuator/health/liveness","/actuator/health/readiness").permitAll()
    .requestMatchers("/actuator/**").hasRole("ADMIN")
@@ -53,7 +53,7 @@ import de.corporate.lc.user.service.AppUserDetailsService; import jakarta.servle
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/lcs/*/charges").hasAuthority("PERM_LC_EDIT")
    .anyRequest().authenticated())
   .csrf(c->c.ignoringRequestMatchers("/api/auth/login","/api/auth/login/totp","/api/auth/password-reset/request","/api/auth/password-reset/complete"))
-  .addFilterAfter(new CredentialSessionFilter(accounts),org.springframework.security.web.context.SecurityContextHolderFilter.class)
+  .addFilterAfter(new CredentialSessionFilter(accounts,memberships),org.springframework.security.web.context.SecurityContextHolderFilter.class)
   .exceptionHandling(e->e.defaultAuthenticationEntryPointFor(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),new AntPathRequestMatcher("/api/**")))
   .formLogin(f->f.loginPage("/login.html").permitAll()).logout(l->l.disable())
   .headers(h->h.frameOptions(f->f.disable()).contentTypeOptions(c->{}).addHeaderWriter(new BrowserSecurityHeaders()))

@@ -15,6 +15,23 @@ import static org.assertj.core.api.Assertions.*;
 @DataJpaTest(properties={"spring.flyway.enabled=false","spring.jpa.hibernate.ddl-auto=create-drop","spring.datasource.url=jdbc:h2:mem:tenantisolation;MODE=PostgreSQL;DB_CLOSE_DELAY=-1","spring.datasource.driver-class-name=org.h2.Driver"},showSql=false)
 @AutoConfigureTestDatabase(replace=AutoConfigureTestDatabase.Replace.NONE)
 class TenantRepositoryIsolationTest {
+ @Test void oneIdentityCanHaveIndependentMembershipRolesAcrossTenants(){
+  var homeRole=createRole("Synthetic identity home admin");homeRole.setPermissions(java.util.Set.of(UserPermission.USER_MANAGE));roles.flush();var identity=createTenantUser("synthetic-shared-identity",homeRole);seedMembership(identity,homeRole,Tenant.DEFAULT_ID);
+  var access=new de.corporate.lc.tenant.service.TenantMembershipService(memberships);var home=access.requireActiveAccess(identity.getId());assertThat(home.permissions()).containsExactly(UserPermission.USER_MANAGE);assertThat(users.countForeignMemberships(identity.getId())).isZero();
+  UUID foreignMembership;
+  try(var scope=TenantContext.open(foreignTenant)){
+   var foreignRole=createRole("Synthetic identity foreign reviewer");foreignRole.setBaseRole(UserRole.VIEWER);foreignRole.setPermissions(java.util.Set.of(UserPermission.DOCUMENT_REVIEW));roles.flush();foreignMembership=seedMembership(identity,foreignRole,foreignTenant);
+   var selected=access.requireActiveAccess(identity.getId());assertThat(selected.userId()).isEqualTo(home.userId());assertThat(selected.membershipId()).isEqualTo(foreignMembership);assertThat(selected.baseRole()).isEqualTo(UserRole.VIEWER);assertThat(selected.permissions()).containsExactly(UserPermission.DOCUMENT_REVIEW).doesNotContain(UserPermission.USER_MANAGE);
+   assertThat(access.list()).hasSize(1);assertThat(access.forUser(identity.getId())).isPresent();assertThat(users.countForeignMemberships(identity.getId())).isEqualTo(1);
+  }
+  assertThat(access.requireActiveAccess(identity.getId()).permissions()).containsExactly(UserPermission.USER_MANAGE);assertThat(memberships.findById(foreignMembership)).isEmpty();assertThat(users.countForeignMemberships(identity.getId())).isEqualTo(1);
+ }
+ @Test void membershipAccessRequiresBothActiveIdentityAndActiveMembership(){
+  var role=createRole("Synthetic access role");var user=createTenantUser("synthetic-access-user",role);var id=seedMembership(user,role,Tenant.DEFAULT_ID);var access=new de.corporate.lc.tenant.service.TenantMembershipService(memberships);
+  assertThatThrownBy(()->access.requireActiveAccess(null)).isInstanceOf(AccessDeniedException.class);assertThatThrownBy(()->access.requireActiveAccess(UUID.randomUUID())).isInstanceOf(AccessDeniedException.class);
+  user.setActive(false);users.flush();assertThatThrownBy(()->access.requireActiveAccess(user.getId())).isInstanceOf(AccessDeniedException.class);user.setActive(true);users.flush();
+  entityManager.createNativeQuery("update tenant_membership set active=false where id=:id").setParameter("id",id).executeUpdate();entityManager.clear();assertThatThrownBy(()->access.requireActiveAccess(user.getId())).isInstanceOf(AccessDeniedException.class);
+ }
  @Test void administratorCountUsesCurrentAssignedRoleAndTenant(){
   var role=createRole("Synthetic inherited administrator");var user=createTenantUser("synthetic-count-user",role);
   assertThat(users.countByRoleAndActiveTrue(UserRole.ADMIN)).isEqualTo(1);
@@ -92,7 +109,7 @@ class TenantRepositoryIsolationTest {
   AppUser foreign;try(var scope=TenantContext.open(foreignTenant)){foreign=createTenantUser("foreign-profile",createRole("Foreign profile role"));}
   var avatars=org.mockito.Mockito.mock(de.corporate.lc.user.repository.UserAvatarRepository.class);var profile=new de.corporate.lc.user.service.ProfileService(users,avatars);var encoder=org.mockito.Mockito.mock(org.springframework.security.crypto.password.PasswordEncoder.class);
   assertThatThrownBy(()->profile.profile(foreign.getUsername())).isInstanceOf(AccessDeniedException.class);assertThatThrownBy(()->profile.avatar(foreign.getUsername())).isInstanceOf(AccessDeniedException.class);assertThatThrownBy(()->profile.deleteAvatar(foreign.getUsername())).isInstanceOf(AccessDeniedException.class);org.mockito.Mockito.verifyNoInteractions(avatars);
-  var service=new de.corporate.lc.user.service.UserService(users,roles,encoder,org.mockito.Mockito.mock(de.corporate.lc.user.service.TenantAdministrationLock.class));assertThatThrownBy(()->service.changePassword(foreign.getUsername(),"old","NewPassword123")).isInstanceOf(AccessDeniedException.class);
+  var service=new de.corporate.lc.user.service.UserService(users,roles,encoder,org.mockito.Mockito.mock(de.corporate.lc.user.service.TenantAdministrationLock.class),new de.corporate.lc.user.service.IdentityCredentialService(users,encoder));assertThatThrownBy(()->service.changePassword(foreign.getUsername(),"old","NewPassword123")).isInstanceOf(AccessDeniedException.class);
   var totp=new de.corporate.lc.user.service.TotpService(users,encoder,"");assertThatThrownBy(()->totp.enabled(foreign.getUsername())).isInstanceOf(AccessDeniedException.class);assertThatThrownBy(()->totp.setup(foreign.getUsername())).isInstanceOf(AccessDeniedException.class);assertThatThrownBy(()->totp.verifyLogin(foreign.getUsername(),"123456")).isInstanceOf(AccessDeniedException.class);org.mockito.Mockito.verifyNoInteractions(encoder);
  }
  @Test void disabledTenantPasswordResetCreatesNoTokenOrMail(){

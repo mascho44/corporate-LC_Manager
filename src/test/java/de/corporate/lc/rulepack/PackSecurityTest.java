@@ -24,6 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(SecurityConfig.class)
 class PackSecurityTest {
  @Autowired MockMvc mvc;
+ @MockitoBean de.corporate.lc.tenant.service.TenantMembershipService memberships;
  @MockitoBean InternalPackService service;
  @MockitoBean AppUserDetailsService details;
  @MockitoBean AppUserRepository users;
@@ -36,6 +37,7 @@ class PackSecurityTest {
   when(users.findByUsernameIgnoreCase(user.getUsername())).thenReturn(Optional.of(user));
   var authority=new SimpleGrantedAuthority(allowed?"PERM_SETTINGS_MANAGE":"PERM_DOCUMENT_REVIEW");
   var authentication=new UsernamePasswordAuthenticationToken(user.getUsername(),null,List.of(authority));
+  when(memberships.requireActiveAccess(org.mockito.ArgumentMatchers.nullable(UUID.class))).thenReturn(new de.corporate.lc.tenant.service.TenantMembershipService.Access(user.getTenantId(),user.getId(),UUID.randomUUID(),UUID.randomUUID(),user.getRole(),Set.copyOf(user.effectivePermissions())));
   var session=new MockHttpSession();session.setAttribute("SPRING_SECURITY_CONTEXT",new SecurityContextImpl(authentication));
   session.setAttribute(CredentialSessionFilter.STAMP,CredentialStamp.of(user.getPasswordHash()));
   session.setAttribute(CredentialSessionFilter.AUTHORIZATION_STAMP,AuthorizationStamp.of(user));session.setAttribute(CredentialSessionFilter.AUTHENTICATED_AT,System.currentTimeMillis());return session;

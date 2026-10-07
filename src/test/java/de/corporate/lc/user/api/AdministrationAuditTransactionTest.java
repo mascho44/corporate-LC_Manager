@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.*;
 
 @DataJpaTest(properties={"spring.flyway.enabled=false","spring.jpa.hibernate.ddl-auto=create-drop","spring.datasource.url=jdbc:h2:mem:administrationaudit;MODE=PostgreSQL;DB_CLOSE_DELAY=-1","spring.datasource.driver-class-name=org.h2.Driver"},showSql=false)
 @AutoConfigureTestDatabase(replace=AutoConfigureTestDatabase.Replace.NONE)
-@Import({RoleController.class,UserController.class,RoleService.class,UserService.class,TenantAdministrationLock.class,AdministrationAuditTransactionTest.Beans.class})
+@Import({RoleController.class,UserController.class,RoleService.class,UserService.class,IdentityCredentialService.class,TenantAdministrationLock.class,AdministrationAuditTransactionTest.Beans.class})
 @Transactional(propagation=Propagation.NOT_SUPPORTED)
 class AdministrationAuditTransactionTest {
  @TestConfiguration static class Beans{

@@ -3,6 +3,9 @@ import de.corporate.lc.user.domain.*; import org.springframework.data.jpa.reposi
 public interface AppUserRepository extends de.corporate.lc.tenant.repository.TenantScopedRepository<AppUser,UUID>{
  // Global identity lookup is reserved for authentication/password reset; administration is scoped below.
  Optional<AppUser> findByUsernameIgnoreCase(String username);boolean existsByUsernameIgnoreCase(String username);
+ // Internal identity mutation guard; never expose cross-tenant membership details.
+ @org.springframework.data.jpa.repository.Query("select count(m) from TenantMembership m where m.user.id=:userId and m.tenantId<>:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()}")
+ long countForeignMemberships(UUID userId);
  @org.springframework.data.jpa.repository.Query("select count(u) from AppUser u left join u.assignedRole r where coalesce(r.baseRole,u.role)=:role and u.active=true and u.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()}")
  long countByRoleAndActiveTrue(UserRole role);
  @org.springframework.data.jpa.repository.Query("select count(u) from AppUser u where u.assignedRole.id=:roleId and u.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()}")

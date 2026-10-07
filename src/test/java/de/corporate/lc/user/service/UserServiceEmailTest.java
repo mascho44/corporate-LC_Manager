@@ -14,7 +14,7 @@ class UserServiceEmailTest {
         var users=mock(AppUserRepository.class);
         var roles=mock(AppRoleRepository.class);
         var encoder=mock(PasswordEncoder.class);
-        var service=new UserService(users,roles,encoder,mock(TenantAdministrationLock.class));
+        var service=new UserService(users,roles,encoder,mock(TenantAdministrationLock.class),new IdentityCredentialService(users,encoder));
         UUID roleId=UUID.randomUUID();
         var role=new AppRole();role.setName("Reader");role.setBaseRole(UserRole.VIEWER);
         when(roles.findById(roleId)).thenReturn(Optional.of(role));
