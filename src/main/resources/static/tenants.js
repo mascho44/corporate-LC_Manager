@@ -18,6 +18,17 @@ async function setupTenants(){
  const nameLabel=node('label',text('tenant.name','Tenant name')),settingsName=document.createElement('input');settingsName.name='name';settingsName.required=true;settingsName.maxLength=255;nameLabel.append(settingsName);
  const languageLabel=node('label',text('tenant.language','Default language')),settingsLanguage=document.createElement('select');settingsLanguage.name='defaultLanguage';[['en','English'],['de','Deutsch']].forEach(([value,label])=>{const option=node('option',label);option.value=value;settingsLanguage.append(option);});languageLabel.append(settingsLanguage);
  const saveSettings=node('button',text('tenant.saveSettings','Save settings'));saveSettings.type='submit';settingsForm.append(settingsTitle,nameLabel,languageLabel,saveSettings);section.append(settingsForm);
+ const readiness=document.createElement('section');readiness.id='tenantReadiness';readiness.className='tenant-readiness';readiness.hidden=true;section.append(readiness);
+ async function refreshReadiness(){
+  readiness.replaceChildren();readiness.hidden=!(settings?.editingEnabled&&typeof can==='function'&&can('USER_MANAGE')&&can('SETTINGS_MANAGE'));if(readiness.hidden)return;
+  readiness.append(node('h3',text('tenant.readiness','Tenant setup')),node('p',text('tenant.readinessNote','Presence checks only. These do not confirm the completeness or validity of company data and templates.')));
+  try{const status=await json('/api/tenants/current/readiness');
+   [['companies','tenant.companies','Company records','#appNavCompany'],['templates','tenant.templates','Document templates','#appNavTemplates'],['activeMembers','tenant.members','Active members','#appNavUsers']].forEach(([key,label,fallback,target])=>{
+    const count=Number(status[key])||0,row=document.createElement('article');row.className='membership-row';row.append(node('b',text(label,fallback)),node('span',(count>0?text('tenant.present','Present'):text('tenant.missing','Not yet configured'))+' · '+count));
+    const open=node('button',text('tenant.configure','Open administration'));open.type='button';open.className='secondary';open.onclick=()=>document.querySelector(target)?.click?.();row.append(open);readiness.append(row);
+   });
+  }catch(error){const notice=node('p',error.message);notice.setAttribute('role','alert');readiness.append(notice);}
+ }
  nav.onclick=()=>{appNavigate('tenants',nav);refresh();};
  const header=document.createElement('label');header.className='tenant-workspace-selector';header.append(node('span',text('tenant.workspace','Workspace')));
  const chooser=document.createElement('select');chooser.setAttribute('aria-label',text('tenant.workspace','Workspace'));header.append(chooser);document.querySelector('.header-actions').prepend(header);
@@ -36,6 +47,7 @@ async function setupTenants(){
     const button=node('button',workspace.id===overview.selectedTenantId?text('tenant.selected','Selected'):text('tenant.open','Open workspace'));button.type='button';button.className='secondary';button.disabled=workspace.id===overview.selectedTenantId;button.onclick=()=>switchTo(workspace.id);row.append(button);list.append(row);
    });chooser.value=overview.selectedTenantId;
    settings=await json('/api/tenants/current/settings');settingsForm.hidden=!settings.editingEnabled;settingsName.value=settings.name;settingsLanguage.value=settings.defaultLanguage;
+   await refreshReadiness();
   }catch(error){message.textContent=error.message;form.hidden=true;chooser.disabled=true;}
  }
  form.onsubmit=async event=>{event.preventDefault();if(busy||!overview?.creationEnabled)return;busy=true;submit.disabled=true;message.textContent='';

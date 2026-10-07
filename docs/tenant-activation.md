@@ -32,6 +32,15 @@ are still created centrally. Global IAM lifecycle administration remains open.
 
 ## Security and verification
 
+Local follow-up (not deployed): Tenants includes a selected-tenant setup summary
+showing company-record, document-template and active-member counts, with explicit
+buttons opening the existing administration forms. It is a presence check, not a
+certification of data completeness or document-template validity. Suspended and
+globally inactive members are excluded. The read-only endpoint requires an active
+ADMIN membership, TOTP, USER_MANAGE and SETTINGS_MANAGE. No arbitrary tenant ID is
+accepted and all counts use tenant-scoped repository queries. Other users do not
+request these counts. A setup-summary error leaves normal tenant navigation usable.
+
 The selected tenant's administrators with
 USER_MANAGE and active TOTP can change its name and default language on the Tenants
 page. Code, ID and Bank/Corporate profile flags remain unchanged. Updates and

@@ -5,4 +5,5 @@
 #tenantSection form[hidden],#userForm.hidden,#newUser.hidden{display:none!important}
 #tenantSection input{width:100%}#tenantSection label{display:grid;gap:6px}#tenantSection button[type=submit]{align-self:end}
 #membershipOverviewBody>form{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}#membershipOverviewBody>form input{max-width:260px}
+.tenant-readiness{margin-top:24px;padding:18px;border:1px solid #d8dee8;border-radius:12px;background:#f7f9fc}.tenant-readiness[hidden]{display:none!important}.tenant-readiness>p{color:#475467;line-height:1.5}.tenant-readiness .membership-row{padding:12px 0}
 @media(max-width:650px){.tenant-workspace-selector select{max-width:160px}#tenantSection .form-grid{grid-template-columns:1fr}}
