@@ -90,5 +90,25 @@ function swift(reference){return `:20:${reference}\n:31C:261001\n:31D:271231SYNT
  assert.deepEqual((await call('/api/lcs/'+localLc.id+'/documents')).map(d=>d.id),[localDocument.id]);
  await call('/api/tenants/'+home+'/select','POST',undefined,403);
  assert.equal((await call('/api/tenants')).selectedTenantId,created.id);assert.deepEqual((await call('/api/lcs')).map(l=>l.reference),['SYNTHETIC-LOCAL']);assert.equal((await call('/api/tenants/current/settings')).name,'Synthetic renamed workspace');
- console.log('PASS: TOTP login, PostgreSQL tenant provisioning and default roles, empty setup counts, settings, stale-session revocation, two-way LC, company and attachment isolation, explicit tenant login with suspended default access, viewer write denial and failed-switch session preservation.');
+ // Local membership grants never imply platform authority.
+ assert.equal((await call('/api/platform/access')).enabled,false);
+ await call('/api/platform/users','GET',undefined,403);
+ await call('/api/platform/users/'+isolated.id+'/access','PUT',{active:false},403);
+ const viewerSession=[...cookies],viewerCsrf=csrf;cookies.clear();csrf='';
+ const platformLogin=await call('/api/auth/login','POST',{username:'admin',password:'SyntheticOnly123!',tenantCode:'synthetic-smoke'});assert.equal(platformLogin.requiresTotp,true);
+ await call('/api/auth/login/totp','POST',{code:totp(setup.secret)});csrf=(await call('/api/auth/me')).csrfToken;
+ assert.equal((await call('/api/platform/access')).enabled,true);
+ const globalAccounts=await call('/api/platform/users');const platformAdmin=globalAccounts.find(a=>a.username==='admin');assert.equal(platformAdmin.platformAdministrator,true);
+ assert.ok(globalAccounts.every(a=>!('passwordHash' in a)&&!('totpSecretEncrypted' in a)&&!('recoveryCodeHashes' in a)));
+ await call('/api/platform/users/'+platformAdmin.id+'/access','PUT',{active:false},400);
+ await call('/api/platform/users/'+isolated.id+'/access','PUT',{active:false});
+ const adminSession=[...cookies],adminCsrf=csrf;cookies.clear();viewerSession.forEach(([k,v])=>cookies.set(k,v));csrf=viewerCsrf;
+ await call('/api/tenants','GET',undefined,401); // Revoke the already-open viewer session.
+ cookies.clear();adminSession.forEach(([k,v])=>cookies.set(k,v));csrf=adminCsrf;
+ await call('/api/platform/users/'+isolated.id+'/access','PUT',{active:true});
+ cookies.clear();csrf='';
+ await call('/api/auth/login','POST',{username:isolated.username,password:'SyntheticOnly456!'},401); // Global activation must not lift the local home suspension.
+ await call('/api/auth/login','POST',{username:isolated.username,password:'SyntheticOnly456!',tenantCode:'synthetic-smoke'});csrf=(await call('/api/auth/me')).csrfToken;
+ assert.equal((await call('/api/tenants')).selectedTenantId,created.id);
+ console.log('PASS: TOTP login, PostgreSQL tenant provisioning and default roles, empty setup counts, settings, stale-session revocation, two-way LC, company and attachment isolation, explicit tenant login with suspended default access, viewer write denial, failed-switch session preservation and global platform access/suspension with stale-session revocation.');
 })().catch(error=>{console.error(error.message);process.exitCode=1;});

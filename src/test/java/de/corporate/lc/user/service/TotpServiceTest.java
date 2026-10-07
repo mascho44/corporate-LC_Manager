@@ -1,6 +1,10 @@
 package de.corporate.lc.user.service;
 import de.corporate.lc.user.domain.AppUser;import de.corporate.lc.user.repository.AppUserRepository;import org.junit.jupiter.api.Test;import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;import java.util.Optional;import static org.assertj.core.api.Assertions.assertThat;import static org.mockito.Mockito.*;
 class TotpServiceTest {
+ @Test void platformAdministratorsCannotDisableTotpEvenWithViewerRole(){
+  var user=new AppUser();user.setRole(de.corporate.lc.user.domain.UserRole.VIEWER);user.setPlatformAdministrator(true);user.setTotpEnabled(true);var repo=mock(AppUserRepository.class);when(repo.findByUsernameIgnoreCase("admin")).thenReturn(Optional.of(user));
+  var service=new TotpService(repo,new BCryptPasswordEncoder(),"0123456789abcdef0123456789abcdef");org.assertj.core.api.Assertions.assertThatThrownBy(()->service.disable("admin","password","123456")).isInstanceOf(IllegalArgumentException.class);assertThat(user.isTotpEnabled()).isTrue();
+ }
  @Test void administratorsCannotDisableTotp(){
    AppUser user=new AppUser();user.setRole(de.corporate.lc.user.domain.UserRole.ADMIN);user.setTotpEnabled(true);
    AppUserRepository repo=mock(AppUserRepository.class);when(repo.findByUsernameIgnoreCase("admin")).thenReturn(Optional.of(user));

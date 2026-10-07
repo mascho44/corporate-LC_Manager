@@ -27,7 +27,7 @@ import static org.mockito.Mockito.*;
 /** Real Spring transactions/repositories; the PostgreSQL function itself is tested separately. */
 @DataJpaTest(properties={"spring.flyway.enabled=false","spring.jpa.hibernate.ddl-auto=create-drop","spring.datasource.url=jdbc:h2:mem:sharedidentityaudit;MODE=PostgreSQL;DB_CLOSE_DELAY=-1","spring.datasource.driver-class-name=org.h2.Driver"},showSql=false)
 @AutoConfigureTestDatabase(replace=AutoConfigureTestDatabase.Replace.NONE)
-@Import({TenantSettingsService.class,TenantWorkspaceService.class,TenantSharedIdentityRoleService.class,TenantSharedIdentityAccessService.class,TenantMembershipService.class,TenantAdministrationLock.class,TenantSharedIdentityTransactionTest.Beans.class})
+@Import({de.corporate.lc.user.service.PlatformAdministrationService.class,TenantSettingsService.class,TenantWorkspaceService.class,TenantSharedIdentityRoleService.class,TenantSharedIdentityAccessService.class,TenantMembershipService.class,TenantAdministrationLock.class,TenantSharedIdentityTransactionTest.Beans.class})
 @Transactional(propagation=Propagation.NOT_SUPPORTED)
 class TenantSharedIdentityTransactionTest {
  @TestConfiguration static class Beans {
@@ -48,6 +48,7 @@ class TenantSharedIdentityTransactionTest {
  @Autowired TenantSharedIdentityAccessService accessService;
  @Autowired TenantWorkspaceService workspaceService;
  @Autowired TenantSettingsService settingsService;
+ @Autowired de.corporate.lc.user.service.PlatformAdministrationService platform;
  @Autowired TenantRepository tenants;
  @Autowired AppRoleRepository roles;
  @Autowired AppUserRepository users;
@@ -75,6 +76,16 @@ class TenantSharedIdentityTransactionTest {
  void seed(UUID tenant,UUID user,UUID role){jdbc.update("insert into tenant_membership(id,tenant_id,user_id,role_id,active) values(?,?,?,?,true)",UUID.randomUUID(),tenant,user,role);}
  UUID selectedRole(){return jdbc.queryForObject("select role_id from tenant_membership where tenant_id=? and user_id=?",UUID.class,tenantId,userId);}
  void failAudit(){AuditService target=AopTestUtils.getUltimateTargetObject(audit);doThrow(new IllegalStateException("Synthetic audit unavailable")).when(target).recordChangeInTransaction(any(),anyString(),anyString(),any(),anyString(),nullable(String.class),nullable(String.class));}
+ @Test void platformSuspensionRollsBackOnAuditFailureAndPreservesCallerScope(){
+  var actor=users.findByUsernameIgnoreCase(authentication.getName()).orElseThrow();actor.setPlatformAdministrator(true);users.saveAndFlush(actor);failAudit();
+  try(var scope=TenantContext.open(tenantId)){assertThatThrownBy(()->platform.changeAccess(userId,false,authentication)).isInstanceOf(IllegalStateException.class);assertThat(TenantContext.currentId()).isEqualTo(tenantId);}
+  assertThat(users.findById(userId).orElseThrow().isActive()).isTrue();
+ }
+ @Test void platformSuspensionLeavesLocalMembershipsAndRolesUnchanged(){
+  var actor=users.findByUsernameIgnoreCase(authentication.getName()).orElseThrow();actor.setPlatformAdministrator(true);users.saveAndFlush(actor);
+  try(var scope=TenantContext.open(tenantId)){assertThat(platform.changeAccess(userId,false,authentication).active()).isFalse();assertThat(TenantContext.currentId()).isEqualTo(tenantId);}
+  assertThat(selectedRole()).isEqualTo(roleId);assertThat(jdbc.queryForObject("select active from tenant_membership where tenant_id=? and user_id=?",Boolean.class,tenantId,userId)).isTrue();
+ }
  @Test void auditFailureRollsBackNativeRoleUpdate(){
   failAudit();try(var scope=TenantContext.open(tenantId)){
    assertThatThrownBy(()->roleService.changeRole(userId,replacementId,authentication)).isInstanceOf(IllegalStateException.class);

@@ -33,6 +33,12 @@ code to login: blank uses the default tenant; an explicit code requires active a
 in that tenant, but not in the default tenant. Credentials remain global and accounts
 are still created centrally. Global IAM lifecycle administration remains open.
 
+The first dedicated [platform-administration stage](platform-administration.md)
+adds global activation/suspension from any accessible workspace, using a separate
+platform flag and mandatory TOTP. The explicitly selected initial platform account
+is `admin`; local ADMIN roles do not imply platform authority. Global account
+creation and invitations are still follow-up work.
+
 ## Security and verification
 
 Profile presentation: the authenticated current-settings response exposes the

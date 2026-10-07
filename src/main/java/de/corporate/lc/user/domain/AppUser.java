@@ -16,6 +16,9 @@ import jakarta.persistence.*; import java.time.LocalDateTime; import java.util.U
  @Column(nullable=false) private String passwordHash;
  @Enumerated(EnumType.STRING) @Column(nullable=false) private UserRole role=UserRole.USER;
  @Column(nullable=false) private boolean active=true;
+ @Column(nullable=false) private boolean platformAdministrator=false;
+ public boolean isPlatformAdministrator(){return platformAdministrator;}
+ public void setPlatformAdministrator(boolean value){platformAdministrator=value;}
  private boolean totpEnabled=false;
  @Column(columnDefinition="text") private String totpSecretEncrypted;
  @Column(columnDefinition="text") private String recoveryCodeHashes;
