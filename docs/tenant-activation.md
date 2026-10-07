@@ -8,7 +8,10 @@ bootstrap constraint. Membership write guards and same-tenant foreign keys remai
 1. Sign in to the default tenant as an administrator with user-management permission
    and two-factor authentication.
 2. Open **Tenants** in the left menu. Enter a unique lowercase code, a name and the
-   default language. Create the tenant. It starts with no business data and its own
+   default language. The creation form offers Bank (default), Corporate and
+   Bank & Corporate profiles using the existing boolean metadata fields. These
+   profiles do not enable modules or change permissions and cannot currently be
+   edited after creation. Create the tenant. It starts with no business data and its own
    administrator role; the creator receives that role in the new tenant.
    New tenants also receive Editor and Viewer system roles using
    the existing permission defaults. No users are automatically assigned these
