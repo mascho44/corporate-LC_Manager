@@ -10,6 +10,20 @@ function fixture(){
 }
 function texts(node){return[node.textContent,...node.children.flatMap(texts)].join('\n');}
 function descendants(node){return[node,...node.children.flatMap(descendants)];}
+test('member search matches username, role and translated status without mutations',()=>{
+ const f=fixture();f.context.ensureMembershipOverview();f.context.renderMembershipOverview({tenantName:'Synthetic',memberships:[{username:'Alice',roleName:'Editor',permissions:[],active:true},{username:'Bob',roleName:'Viewer',permissions:[],active:false,suspended:true}]});
+ const search=f.nodes.get('membershipSearch'),rows=descendants(f.nodes.get('membershipOverviewBody')).filter(n=>n.className==='membership-row');
+ for(const query of [' alice ','EDITOR','active']){search.value=query;search.oninput();assert.equal(rows[0].hidden,false);assert.equal(rows[1].hidden,true);}
+ search.value='suspended';search.oninput();assert.equal(rows[0].hidden,true);assert.equal(rows[1].hidden,false);
+ assert.equal(f.nodes.get('membershipSearchStatus').textContent,'Matching members: 1 / 2');assert.equal(f.requests.length,0);
+ search.value='';search.oninput();assert.ok(rows.every(r=>!r.hidden));assert.equal(f.nodes.get('membershipSearchStatus').textContent,'Matching members: 2 / 2');
+});
+test('member search treats special characters literally and resets on refreshed overview',()=>{
+ const f=fixture();f.context.ensureMembershipOverview();const overview={tenantName:'Synthetic',memberships:[{username:'<script>',roleName:'Viewer',permissions:[],active:true}]};f.context.renderMembershipOverview(overview);
+ const search=f.nodes.get('membershipSearch');search.value='[';search.oninput();assert.equal(f.nodes.get('membershipSearchStatus').textContent,'Matching members: 0 / 1');
+ search.value='<script>';search.oninput();assert.equal(f.nodes.get('membershipSearchStatus').textContent,'Matching members: 1 / 1');
+ f.context.renderMembershipOverview(overview);assert.equal(f.nodes.get('membershipSearch').value,'');assert.equal(f.nodes.get('membershipSearchStatus').textContent,'Matching members: 1 / 1');
+});
 test('permission labels use English fallback and active translation without changing identifiers',()=>{const f=fixture();assert.equal(f.context.membershipPermissionLabel('LC_EDIT'),'Edit LC files');f.context.LcI18n={t:key=>key==='permission.LC_EDIT'?'LC-Akten bearbeiten':key};assert.equal(f.context.membershipPermissionLabel('LC_EDIT'),'LC-Akten bearbeiten');assert.equal(f.context.membershipPermissionLabel('DOCUMENT_APPROVE'),'Approve documents (Approver)');assert.equal(f.context.membershipPermissionLabel('<unknown>'),'<unknown>');assert.equal(f.context.membershipPermissionLabel('toString'),'toString');});
 test('every backend permission has English and German labels',()=>{const root=path.resolve(__dirname,'../../main/resources/static'),en=JSON.parse(fs.readFileSync(path.join(root,'language-en.json'))),de=JSON.parse(fs.readFileSync(path.join(root,'language-de.json'))),java=fs.readFileSync(path.resolve(__dirname,'../../main/java/de/corporate/lc/user/domain/UserPermission.java'),'utf8');for(const [,permission]of java.matchAll(/([A-Z][A-Z_]+)\("/g)){assert.ok(en['permission.'+permission]);assert.ok(de['permission.'+permission]);}});
 test('new-user assignment previews permissions and posts only username and roleId',async()=>{const f=fixture();f.context.ensureMembershipOverview();const body=f.nodes.get('membershipOverviewBody');f.context.renderMembershipAssignment(body,[{id:'viewer',name:'Viewer',permissions:[]},{id:'reviewer',name:'Reviewer',permissions:['DOCUMENT_REVIEW']}]);const nodes=descendants(body),select=nodes.find(n=>n.tag==='select'),form=nodes.find(n=>n.tag==='form');assert.match(texts(body),/No additional permissions/);select.value='reviewer';select.onchange();assert.match(texts(body),/Review documents \(Checker\)/);assert.equal(f.requests.length,0);nodes.find(n=>n.tag==='input').value=' synthetic-user ';await form.onsubmit({preventDefault(){}});assert.deepEqual(JSON.parse(f.requests[0].options.body),{username:'synthetic-user',roleId:'reviewer'});});

@@ -834,10 +834,16 @@ function renderMembershipOverview(overview){
  }
  body.append(membershipMessage('membership.notice','Membership roles and access are managed here. Global identity data remains separate.'));
  if(!overview.memberships.length){body.append(membershipMessage('membership.empty','No memberships available.'));return;}
+ const searchLabel=membershipNode('label',membershipText('membership.search','Find members (username, role, status)'));searchLabel.htmlFor='membershipSearch';
+ const search=document.createElement('input');search.id='membershipSearch';search.type='search';search.maxLength=100;search.value='';search.setAttribute('aria-describedby','membershipSearchStatus');
+ const searchStatus=membershipNode('small','');searchStatus.id='membershipSearchStatus';searchStatus.setAttribute('role','status');
+ const searchBar=document.createElement('div');searchBar.className='membership-search';searchBar.append(searchLabel,search,searchStatus);body.append(searchBar);
+ const searchableRows=[];
  overview.memberships.forEach(m=>{
   const row=document.createElement('div');row.className='membership-row';
   const identity=document.createElement('div');identity.append(membershipNode('b',m.username),membershipNode('small',m.roleName),membershipNode('small',m.permissions.map(membershipPermissionLabel).join(' · ')));
   const key=m.suspended?'membership.suspended':m.active?'membership.active':'membership.inactive';const status=membershipNode('span',membershipText(key,m.suspended?'Suspended':m.active?'Active':'Inactive'),'import-status '+(m.active?'success':'rejected'));status.dataset.i18n=key;
+  searchableRows.push({row,text:[m.username,m.roleName,status.textContent].join(' ').toLocaleLowerCase()});
   row.append(identity,status);
   if(overview.roleEditingEnabled&&Array.isArray(overview.roleChoices)&&overview.roleChoices.length&&can('USER_MANAGE')){
    const controls=document.createElement('div');controls.className='membership-role-controls';
@@ -883,6 +889,7 @@ function renderMembershipOverview(overview){
   }
   body.append(row);
  });
+ search.oninput=()=>{const query=search.value.trim().toLocaleLowerCase();let count=0;searchableRows.forEach(item=>{item.row.hidden=!item.text.includes(query);if(!item.row.hidden)count++;});searchStatus.textContent=membershipText('membership.searchMatches','Matching members: ')+count+' / '+searchableRows.length;};search.oninput();
 }
 async function loadMembershipOverview(){
  const generation=++membershipOverviewGeneration;

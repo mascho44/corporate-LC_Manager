@@ -1,4 +1,6 @@
 {
+  "membership.search": "Find members (username, role, status)",
+  "membership.searchMatches": "Matching members: ",
   "membership.suspended": "Suspended",
   "membership.suspend": "Suspend membership",
   "membership.activate": "Activate membership",

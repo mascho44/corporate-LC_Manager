@@ -171,6 +171,11 @@ Compose-labeled containers, networks or volumes remained for its unique project.
 
 ## Continuous acceptance checks
 
+The membership overview offers a local username, role-name and translated-status
+search with a live match count. Filtering never submits a write or searches other
+tenants. Clearing the search restores every row; refreshing the overview resets
+the filter. Role/access controls are preserved when rows are hidden.
+
 The CI workflow runs the same disposable PostgreSQL acceptance test as a separate
 **Tenant acceptance (PostgreSQL)** job on pull requests, pushes to main and manual
 workflow runs. It checks the actual database migrations, tenant provisioning,

@@ -1,4 +1,6 @@
 {
+  "membership.search": "Mitglieder suchen (Benutzername, Rolle, Status)",
+  "membership.searchMatches": "Gefundene Mitglieder: ",
   "membership.suspended": "Mandantenzugang gesperrt",
   "membership.suspend": "Mitgliedschaft sperren",
   "membership.activate": "Mitgliedschaft aktivieren",
