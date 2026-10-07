@@ -136,3 +136,9 @@ The role editor's local search filters by the translated permission label or
 technical identifier. It hides labels without rebuilding or disabling checkboxes,
 so selected permissions remain part of the save payload even when filtered out.
 Resetting the role form clears the search; a live status reports the match count.
+
+Local follow-up: OCR queue claims validate the inbox item's tenant before reading
+its content or changing its claim. Regression coverage includes a faulty repository
+returning a foreign item, a foreign OCR failure followed by successful default-
+tenant processing, and preservation of the caller's scope. Failed OCR does not
+change another tenant's queued work or its completion state.

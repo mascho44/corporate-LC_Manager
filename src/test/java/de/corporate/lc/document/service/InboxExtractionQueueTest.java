@@ -68,6 +68,27 @@ class InboxExtractionQueueTest {
   doAnswer(call->{LcDocument doc=call.getArgument(0);doc.setExtractionStatus("EXTRACTED");doc.setClassificationHistoryJson(ClassificationHistory.automatic("synthetic.txt","COMMERCIAL INVOICE"));return null;}).when(extraction).extractInBackground(any());
   queue.processNext();assertThat(ClassificationHistory.selectedType(inbox.findById(item.getId()).orElseThrow().getClassificationHistoryJson())).isEqualTo(DocumentType.PACKING_LIST);
  }
+ @Test void failedForeignExtractionRestoresContextAndDoesNotChangeNextTenantsQueue(){
+  var own=enqueue("QUEUED");var foreignTenant=UUID.randomUUID();DocumentInboxItem foreign;
+  try(var scope=de.corporate.lc.tenant.domain.TenantContext.open(foreignTenant)){foreign=enqueue("QUEUED");}
+  doAnswer(call->{assertThat(de.corporate.lc.tenant.domain.TenantContext.currentId()).isEqualTo(foreignTenant);throw new IllegalStateException("Synthetic OCR failure");}).when(extraction).extractInBackground(any());
+  try{
+   try(var scope=de.corporate.lc.tenant.domain.TenantContext.open(foreignTenant)){queue.processNext();assertThat(inbox.findById(foreign.getId()).orElseThrow().getExtractionStatus()).isEqualTo("FAILED");}
+   assertThat(de.corporate.lc.tenant.domain.TenantContext.currentId()).isEqualTo(de.corporate.lc.tenant.domain.Tenant.DEFAULT_ID);
+   assertThat(inbox.findById(own.getId()).orElseThrow().getExtractionStatus()).isEqualTo("QUEUED");
+   doAnswer(call->{assertThat(de.corporate.lc.tenant.domain.TenantContext.currentId()).isEqualTo(de.corporate.lc.tenant.domain.Tenant.DEFAULT_ID);LcDocument doc=call.getArgument(0);assertThat(doc.getTenantId()).isEqualTo(de.corporate.lc.tenant.domain.Tenant.DEFAULT_ID);doc.setExtractionStatus("EXTRACTED");return null;}).when(extraction).extractInBackground(any());
+   queue.processNext();assertThat(inbox.findById(own.getId()).orElseThrow().getExtractionStatus()).isEqualTo("EXTRACTED");
+   try(var scope=de.corporate.lc.tenant.domain.TenantContext.open(foreignTenant)){assertThat(inbox.findById(foreign.getId()).orElseThrow().getExtractionStatus()).isEqualTo("FAILED");}
+  }finally{try(var scope=de.corporate.lc.tenant.domain.TenantContext.open(foreignTenant)){inbox.deleteById(foreign.getId());}}
+ }
+ @Test void claimRejectsForeignItemBeforeReadingContentEvenIfRepositoryReturnsIt(){
+  var brokenRepository=mock(DocumentInboxRepository.class);var candidate=UUID.randomUUID();DocumentInboxItem foreign;
+  try(var scope=de.corporate.lc.tenant.domain.TenantContext.open(UUID.randomUUID())){foreign=spy(new DocumentInboxItem());foreign.setExtractionStatus("QUEUED");}
+  when(brokenRepository.findExtractionCandidates(any(),any())).thenReturn(List.of(candidate));when(brokenRepository.findForUpdate(candidate)).thenReturn(Optional.of(foreign));
+  var isolated=new InboxExtractionQueue(brokenRepository,extraction,audit,manager);
+  try{assertThatThrownBy(isolated::processNext).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);verify(foreign,never()).getContent();verify(brokenRepository,never()).save(any());verifyNoInteractions(extraction,audit);}
+  finally{isolated.shutdown();}
+ }
  @Test void recoversExpiredClaimButDoesNotStealActiveWork(){
   var item=enqueue("PROCESSING");item.setExtractionToken(UUID.randomUUID());item.setExtractionStartedAt(LocalDateTime.now());inbox.saveAndFlush(item);
   queue.processNext();verifyNoInteractions(extraction);
