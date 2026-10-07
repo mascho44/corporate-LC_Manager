@@ -1,0 +1,8 @@
+.tenant-workspace-selector{display:grid;gap:3px;color:#475467;font-size:11px;font-weight:700}
+.tenant-workspace-selector select{min-width:130px;max-width:220px;border:1px solid #d8dee8;border-radius:10px;background:#fff;color:#14213d;padding:6px 10px}
+#tenantSection{padding:22px}#tenantSection>p{margin:12px 0;line-height:1.5}
+#tenantSection form{margin-top:22px;padding-top:18px;border-top:1px solid #e5e9ef}
+#tenantSection form[hidden],#userForm.hidden,#newUser.hidden{display:none!important}
+#tenantSection input{width:100%}#tenantSection label{display:grid;gap:6px}#tenantSection button[type=submit]{align-self:end}
+#membershipOverviewBody>form{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}#membershipOverviewBody>form input{max-width:260px}
+@media(max-width:650px){.tenant-workspace-selector select{max-width:160px}#tenantSection .form-grid{grid-template-columns:1fr}}

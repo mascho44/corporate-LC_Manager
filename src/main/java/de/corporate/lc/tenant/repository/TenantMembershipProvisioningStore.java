@@ -16,4 +16,9 @@ public class TenantMembershipProvisioningStore {
    .setParameter("tenant",tenantId).setParameter("identity",userId).setParameter("role",roleId).getSingleResult();
   return result instanceof UUID uuid?uuid:UUID.fromString(result.toString());
  }
+ @Transactional(propagation=Propagation.MANDATORY)
+ public void updateRole(UUID tenantId,UUID userId,UUID roleId){
+  entityManager.createNativeQuery("select update_tenant_membership_role(:tenant,:identity,:role)")
+   .setParameter("tenant",tenantId).setParameter("identity",userId).setParameter("role",roleId).getSingleResult();
+ }
 }

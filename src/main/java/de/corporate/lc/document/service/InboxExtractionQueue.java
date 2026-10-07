@@ -24,6 +24,7 @@ public class InboxExtractionQueue {
     private final TransactionTemplate transaction;
     private final ExecutorService executor=Executors.newSingleThreadExecutor(task->{var thread=new Thread(task,"inbox-extraction");thread.setDaemon(true);return thread;});
     private final AtomicBoolean busy=new AtomicBoolean();
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private de.corporate.lc.tenant.service.TenantWorkers tenantWorkers;
     record Work(UUID id,UUID token,UUID tenantId,LcDocument document,String username){}
     public InboxExtractionQueue(DocumentInboxRepository inbox,DocumentExtractionService extraction,AuditService audit,PlatformTransactionManager manager){
         this.inbox=inbox;this.extraction=extraction;this.audit=audit;transaction=new TransactionTemplate(manager);
@@ -31,7 +32,7 @@ public class InboxExtractionQueue {
     @Scheduled(fixedDelayString="${lc.inbox.extraction-interval-ms:2000}")
     public void dispatch(){
         if(!busy.compareAndSet(false,true))return;
-        try{executor.execute(()->{try{de.corporate.lc.tenant.service.TenantJobRunner.run(de.corporate.lc.tenant.domain.Tenant.DEFAULT_ID,this::processNext);}catch(Exception failure){log.warn("Inbox extraction worker failed: type={}",failure.getClass().getSimpleName());}finally{busy.set(false);}});}
+        try{executor.execute(()->{try{if(tenantWorkers!=null)tenantWorkers.forEach(this::processNext);else de.corporate.lc.tenant.service.TenantJobRunner.run(de.corporate.lc.tenant.domain.Tenant.DEFAULT_ID,this::processNext);}catch(Exception failure){log.warn("Inbox extraction worker failed: type={}",failure.getClass().getSimpleName());}finally{busy.set(false);}});}
         catch(RejectedExecutionException stopped){busy.set(false);}
     }
     void processNext(){

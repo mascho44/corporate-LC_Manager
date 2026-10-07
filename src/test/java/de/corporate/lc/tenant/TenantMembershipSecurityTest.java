@@ -76,9 +76,9 @@ class TenantMembershipSecurityTest {
  @Test void anonymousAndOrdinaryUsersCannotReadMemberships()throws Exception{
   mvc.perform(get("/api/users/memberships")).andExpect(status().isUnauthorized());mvc.perform(get("/api/users/memberships").session(session(false))).andExpect(status().isForbidden());verify(memberships,never()).list();verifyNoInteractions(tenants);
  }
- @Test void authorizedOverviewIsRedactedAndSwitchingRemainsDisabled()throws Exception{
+ @Test void authorizedOverviewIsRedactedAndSwitchingEnabled()throws Exception{
   when(tenants.findById(Tenant.DEFAULT_ID)).thenReturn(Optional.of(new Tenant()));when(memberships.list()).thenReturn(List.of(new TenantMembershipService.Membership(Tenant.DEFAULT_ID,UUID.randomUUID(),"synthetic-user",UUID.randomUUID(),"Synthetic role",Set.of(UserPermission.USER_MANAGE),true)));
-  mvc.perform(get("/api/users/memberships").session(session(true))).andExpect(status().isOk()).andExpect(jsonPath("$.switchingEnabled").value(false)).andExpect(jsonPath("$.tenantId").value(Tenant.DEFAULT_ID.toString())).andExpect(jsonPath("$.memberships[0].permissions[0]").value("USER_MANAGE")).andExpect(jsonPath("$.memberships[0].passwordHash").doesNotExist()).andExpect(jsonPath("$.memberships[0].totpSecretEncrypted").doesNotExist());verify(tenants).findById(Tenant.DEFAULT_ID);
+  mvc.perform(get("/api/users/memberships").session(session(true))).andExpect(status().isOk()).andExpect(jsonPath("$.switchingEnabled").value(true)).andExpect(jsonPath("$.tenantId").value(Tenant.DEFAULT_ID.toString())).andExpect(jsonPath("$.memberships[0].permissions[0]").value("USER_MANAGE")).andExpect(jsonPath("$.memberships[0].passwordHash").doesNotExist()).andExpect(jsonPath("$.memberships[0].totpSecretEncrypted").doesNotExist());verify(tenants).findById(Tenant.DEFAULT_ID);
  }
  @Test void tenantSettingsCannotBeSelectedByClientParameters()throws Exception{
   when(tenants.findById(Tenant.DEFAULT_ID)).thenReturn(Optional.of(new Tenant()));when(memberships.list()).thenReturn(List.of());

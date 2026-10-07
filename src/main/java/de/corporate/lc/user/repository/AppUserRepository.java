@@ -1,6 +1,11 @@
 package de.corporate.lc.user.repository;
 import de.corporate.lc.user.domain.*; import org.springframework.data.jpa.repository.JpaRepository; import java.util.*;
 public interface AppUserRepository extends de.corporate.lc.tenant.repository.TenantScopedRepository<AppUser,UUID>{
+ // Own-identity 2FA protection only, not a cross-tenant administration directory.
+ @org.springframework.data.jpa.repository.Query("select count(m)>0 from TenantMembership m where m.user.id=:userId and m.active=true and m.user.active=true and m.role.baseRole=de.corporate.lc.user.domain.UserRole.ADMIN and not exists(select s.id from TenantMembershipSuspension s where s.tenantId=m.tenantId and s.userId=m.user.id and s.suspended=true)")
+ boolean hasActiveAdministratorMembership(UUID userId);
+ @org.springframework.data.jpa.repository.Query("select m.user from TenantMembership m where m.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()} and m.active=true and m.user.active=true and not exists(select s.id from TenantMembershipSuspension s where s.tenantId=m.tenantId and s.userId=m.user.id and s.suspended=true) order by m.user.displayName")
+ List<AppUser> findAssignableMembershipUsers();
  // Global identity lookup is reserved for authentication/password reset; administration is scoped below.
  Optional<AppUser> findByUsernameIgnoreCase(String username);boolean existsByUsernameIgnoreCase(String username);
  // Internal identity mutation guard; never expose cross-tenant membership details.

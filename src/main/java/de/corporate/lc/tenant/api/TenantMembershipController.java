@@ -21,7 +21,7 @@ public class TenantMembershipController {
  public TenantMembershipController(TenantMembershipService memberships,TenantRepository tenants,de.corporate.lc.user.service.RoleService roles,de.corporate.lc.tenant.service.TenantMembershipAdministrationService administration,de.corporate.lc.audit.service.AuditService audit){this.memberships=memberships;this.tenants=tenants;this.roles=roles;this.administration=administration;this.audit=audit;}
  @GetMapping public Overview overview(){
   var id=TenantContext.currentId();var tenant=tenants.findById(id).orElseThrow(()->new NoSuchElementException("Tenant not found."));
-  return new Overview(id,tenant.getName(),false,new TenantSettings(tenant.getCode(),tenant.getDefaultLanguage(),tenant.isBankEnabled(),tenant.isCorporateEnabled()),memberships.list(),de.corporate.lc.tenant.domain.Tenant.DEFAULT_ID.equals(id),de.corporate.lc.tenant.domain.Tenant.DEFAULT_ID.equals(id),roles.all().stream().map(r->new RoleChoice(r.id(),r.name())).toList());
+  return new Overview(id,tenant.getName(),true,new TenantSettings(tenant.getCode(),tenant.getDefaultLanguage(),tenant.isBankEnabled(),tenant.isCorporateEnabled()),memberships.list(),true,true,roles.all().stream().map(r->new RoleChoice(r.id(),r.name())).toList());
  }
  @org.springframework.transaction.annotation.Transactional @PutMapping("/{userId}/role")
  public TenantMembershipService.Membership assignRole(@PathVariable UUID userId,@jakarta.validation.Valid @RequestBody RoleAssignment request,org.springframework.security.core.Authentication authentication){
