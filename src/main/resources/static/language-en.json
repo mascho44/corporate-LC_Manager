@@ -80,5 +80,8 @@
   "tenant.open": "Open workspace",
   "tenant.created": "Tenant created: ",
   "tenant.existingUsername": "Existing username",
-  "tenant.assign": "Assign existing user"
+  "tenant.assign": "Assign existing user",
+  "tenant.settings": "Current tenant settings",
+  "tenant.saveSettings": "Save settings",
+  "tenant.settingsSaved": "Settings saved. The default language applies to users without a personal language preference."
 }

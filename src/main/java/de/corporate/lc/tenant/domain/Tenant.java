@@ -16,4 +16,5 @@ public class Tenant {
  public UUID getId(){return id;} public String getCode(){return code;} public String getName(){return name;}
  public String getDefaultLanguage(){return defaultLanguage;}
  public boolean isBankEnabled(){return bankEnabled;} public boolean isCorporateEnabled(){return corporateEnabled;}
+ public void updatePresentation(String name,String language){this.name=name;this.defaultLanguage=language;}
 }

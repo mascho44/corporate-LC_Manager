@@ -27,7 +27,7 @@ import static org.mockito.Mockito.*;
 /** Real Spring transactions/repositories; the PostgreSQL function itself is tested separately. */
 @DataJpaTest(properties={"spring.flyway.enabled=false","spring.jpa.hibernate.ddl-auto=create-drop","spring.datasource.url=jdbc:h2:mem:sharedidentityaudit;MODE=PostgreSQL;DB_CLOSE_DELAY=-1","spring.datasource.driver-class-name=org.h2.Driver"},showSql=false)
 @AutoConfigureTestDatabase(replace=AutoConfigureTestDatabase.Replace.NONE)
-@Import({TenantWorkspaceService.class,TenantSharedIdentityRoleService.class,TenantSharedIdentityAccessService.class,TenantMembershipService.class,TenantAdministrationLock.class,TenantSharedIdentityTransactionTest.Beans.class})
+@Import({TenantSettingsService.class,TenantWorkspaceService.class,TenantSharedIdentityRoleService.class,TenantSharedIdentityAccessService.class,TenantMembershipService.class,TenantAdministrationLock.class,TenantSharedIdentityTransactionTest.Beans.class})
 @Transactional(propagation=Propagation.NOT_SUPPORTED)
 class TenantSharedIdentityTransactionTest {
  @TestConfiguration static class Beans {
@@ -47,6 +47,7 @@ class TenantSharedIdentityTransactionTest {
  @Autowired TenantSharedIdentityRoleService roleService;
  @Autowired TenantSharedIdentityAccessService accessService;
  @Autowired TenantWorkspaceService workspaceService;
+ @Autowired TenantSettingsService settingsService;
  @Autowired TenantRepository tenants;
  @Autowired AppRoleRepository roles;
  @Autowired AppUserRepository users;
@@ -123,5 +124,22 @@ class TenantSharedIdentityTransactionTest {
  @Test void duplicateCodesAndForeignTenantCreationAreRejected(){
   assertThatThrownBy(()->workspaceService.create("DEFAULT","Duplicate","en",true,false,authentication)).isInstanceOf(IllegalArgumentException.class);
   try(var scope=TenantContext.open(tenantId)){assertThatThrownBy(()->workspaceService.create("blocked","Blocked","en",true,false,authentication)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);}
+ }
+ @Test void settingsUpdateChangesOnlySelectedTenantAndAuditsValues(){
+  try(var scope=TenantContext.open(tenantId)){var changed=settingsService.update("Synthetic renamed","de",authentication);assertThat(changed.name()).isEqualTo("Synthetic renamed");assertThat(changed.defaultLanguage()).isEqualTo("de");assertThat(changed.code()).isEqualTo("synthetic-shared");}
+  assertThat(tenants.findById(Tenant.DEFAULT_ID).orElseThrow().getName()).isEqualTo("Default tenant");
+  verify(AopTestUtils.<AuditService>getUltimateTargetObject(audit)).recordChangeInTransaction(eq(authentication),eq("TENANT_SETTINGS_UPDATED"),eq("TENANT"),eq(tenantId),anyString(),contains("Default tenant"),contains("Synthetic renamed"));
+ }
+ @Test void settingsAuditFailureRollsBackChanges(){
+  failAudit();try(var scope=TenantContext.open(tenantId)){assertThatThrownBy(()->settingsService.update("Synthetic rejected","de",authentication)).isInstanceOf(IllegalStateException.class);}
+  assertThat(tenants.findById(tenantId).orElseThrow().getName()).isEqualTo("Default tenant");
+ }
+ @Test void ordinaryMembershipCannotChangeSettings(){
+  var ordinary=UsernamePasswordAuthenticationToken.authenticated("synthetic-shared-target",null,List.of());
+  try(var scope=TenantContext.open(tenantId)){assertThat(settingsService.get(ordinary).editingEnabled()).isFalse();assertThatThrownBy(()->settingsService.update("Blocked","de",ordinary)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);}
+ }
+ @Test void invalidSettingsAreRejectedWithoutAuditOrChanges(){
+  try(var scope=TenantContext.open(tenantId)){for(String name:List.of("","bad\nname","x".repeat(256)))assertThatThrownBy(()->settingsService.update(name,"en",authentication)).isInstanceOf(IllegalArgumentException.class);assertThatThrownBy(()->settingsService.update("Synthetic","unknown",authentication)).isInstanceOf(IllegalArgumentException.class);}
+  verifyNoInteractions(AopTestUtils.<AuditService>getUltimateTargetObject(audit));
  }
 }
