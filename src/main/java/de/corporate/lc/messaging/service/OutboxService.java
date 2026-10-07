@@ -78,11 +78,16 @@ public class OutboxService {
     }
 
     @Transactional(readOnly = true)
-    public List<OutboxMessage> deadLetters() { return repo.findTop100ByStatusOrderByCreatedAtDesc("DEAD_LETTER"); }
+    public List<OutboxMessage> deadLetters() {
+        var messages=repo.findTop100ByStatusOrderByCreatedAtDesc("DEAD_LETTER");
+        messages.forEach(message->de.corporate.lc.tenant.domain.TenantContext.require(message.getTenantId()));
+        return messages;
+    }
 
     @Transactional
     public OutboxMessage retry(UUID id) {
         OutboxMessage message = repo.findById(id).orElseThrow(() -> new NoSuchElementException("Outbox-Nachricht nicht gefunden."));
+        de.corporate.lc.tenant.domain.TenantContext.require(message.getTenantId());
         if (!"DEAD_LETTER".equals(message.getStatus())) throw new IllegalStateException("Nur Nachrichten aus der Dead-Letter-Queue können erneut gestartet werden.");
         message.setStatus("PENDING");
         message.setAttempts(0);

@@ -37,6 +37,8 @@ public class DocumentExtractionService {
     public void extractInBackground(LcDocument document){extract(document,documentTimeoutSeconds());}
 
     private void extract(LcDocument document,long documentBudget) {
+        // Authorization errors must escape, not become an extraction failure on a foreign object.
+        de.corporate.lc.tenant.domain.TenantContext.require(document.getTenantId());
         document.setOcrEvidenceJson(null);
         try (var slot=PdfProcessingSafety.acquire()) {
             String text = readText(document);
@@ -73,6 +75,7 @@ public class DocumentExtractionService {
 
     /** Reuse page-local recognition without rerunning OCR or copying aggregate metadata. */
     public void applyRecognizedText(LcDocument document,String recognized,String status) {
+            de.corporate.lc.tenant.domain.TenantContext.require(document.getTenantId());
             String text=limit(normalize(recognized));document.setExtractedText(text);
             match(DOCUMENT_NUMBER, text, 1).ifPresent(document::setExtractedDocumentNumber);
             match(LC_REFERENCE, text, 1).ifPresent(document::setExtractedReference);
