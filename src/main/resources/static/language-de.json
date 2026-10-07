@@ -70,7 +70,7 @@
   "tenant.profileBank": "Bank",
   "tenant.profileCorporate": "Corporate",
   "tenant.profileCombined": "Bank & Corporate",
-  "tenant.profileNotice": "Das Profil ist eine Kennzeichnung. Es aktiviert keine Module und erteilt keine Berechtigungen. Nach dem Anlegen kann es derzeit nicht geändert werden.",
+  "tenant.profileNotice": "Profile schalten Module zusätzlich zu Rollenrechten frei. Änderungen erfolgen in der Plattformadministration.",
   "membership.search": "Mitglieder suchen (Benutzername, Rolle, Status)",
   "membership.searchMatches": "Gefundene Mitglieder: ",
   "membership.suspended": "Mandantenzugang gesperrt",
@@ -197,5 +197,17 @@
   "tenant.missing": "Noch nicht eingerichtet",
   "tenant.configure": "Verwaltung öffnen",
   "tenant.saveSettings": "Einstellungen speichern",
-  "tenant.settingsSaved": "Einstellungen gespeichert. Die Standardsprache gilt für Benutzer ohne persönliche Sprachpräferenz."
+  "tenant.settingsSaved": "Einstellungen gespeichert. Die Standardsprache gilt für Benutzer ohne persönliche Sprachpräferenz.",
+  "workspace.moduleLimits": "Das Mandantenprofil begrenzt verfügbare Module zusätzlich zu Ihren Rollenrechten.",
+  "platformTenants.title": "Mandantenverwaltung",
+  "platformTenants.loading": "Mandanten werden geladen …",
+  "platformTenants.active": "Aktiv",
+  "platformTenants.suspended": "Gesperrt",
+  "platformTenants.saveProfile": "Profil speichern",
+  "platformTenants.suspend": "Mandant sperren",
+  "platformTenants.activate": "Mandant aktivieren",
+  "platformTenants.confirm": "Mandantenzugriff/Profil ändern? Die Daten bleiben erhalten. Moduländerungen gelten ab der nächsten Anfrage.",
+  "platformTenants.notice": "Profile begrenzen Module zusätzlich zu Rollenrechten. Wechseln Sie den Arbeitsbereich vor einer Sperre. Der Standardmandant kann nicht gesperrt werden.",
+  "audit.change.bankEnabled": "Bank-Module",
+  "audit.change.corporateEnabled": "Corporate-Module"
 }

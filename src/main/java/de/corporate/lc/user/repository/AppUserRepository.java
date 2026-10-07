@@ -1,6 +1,8 @@
 package de.corporate.lc.user.repository;
 import de.corporate.lc.user.domain.*; import org.springframework.data.jpa.repository.JpaRepository; import java.util.*;
 public interface AppUserRepository extends de.corporate.lc.tenant.repository.TenantScopedRepository<AppUser,UUID>{
+ @org.springframework.data.jpa.repository.Query("select count(u)>0 from AppUser u where u.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()} and u.id=:id and u.platformAdministrator=true and u.active=true and u.invitationPending=false and u.totpEnabled=true")
+ boolean hasLivePlatformAccess(@org.springframework.data.repository.query.Param("id") UUID id);
  @org.springframework.data.jpa.repository.Query("select count(u) from AppUser u where u.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()} and u.platformAdministrator=true and u.active=true and u.invitationPending=false and u.totpEnabled=true")
  long countEnabledPlatformAdministrators();
  // Own-identity 2FA protection only, not a cross-tenant administration directory.

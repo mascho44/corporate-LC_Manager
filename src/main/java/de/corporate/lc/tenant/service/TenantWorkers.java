@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
  private final TenantRepository tenants;
  public TenantWorkers(TenantRepository tenants){this.tenants=tenants;}
  public void forEach(Runnable job){
-  for(var tenant:tenants.findAll())try(var scope=TenantContext.open(tenant.getId())){job.run();}
+  for(var tenant:tenants.findAll())if(tenant.isActive())try(var scope=TenantContext.open(tenant.getId())){job.run();}
   catch(RuntimeException failure){log.warn("Tenant worker failed: tenant={} type={}",tenant.getId(),failure.getClass().getSimpleName());}
  }
 }

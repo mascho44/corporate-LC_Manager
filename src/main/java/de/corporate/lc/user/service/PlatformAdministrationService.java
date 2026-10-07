@@ -24,6 +24,8 @@ import java.util.*;
  }
  private AppUser require(Authentication auth){return administrator(auth).orElseThrow(()->new AccessDeniedException("An active platform administrator with two-factor authentication is required."));}
  @Transactional(readOnly=true) public boolean enabled(Authentication auth){try(var scope=TenantContext.open(Tenant.DEFAULT_ID)){return administrator(auth).isPresent();}}
+ /** Scalar query also detects revocation when an identity is already managed in this transaction. */
+ @Transactional(readOnly=true) public void verifyLiveAccess(Authentication auth){try(var scope=TenantContext.open(Tenant.DEFAULT_ID)){var actor=require(auth);if(!users.hasLivePlatformAccess(actor.getId()))throw new AccessDeniedException("Platform access unavailable.");}}
  @Transactional(readOnly=true) public List<Account> accounts(Authentication auth){try(var scope=TenantContext.open(Tenant.DEFAULT_ID)){require(auth);return users.findAllByOrderByUsernameAsc().stream().map(this::view).toList();}}
  @Transactional public Account changeAccess(UUID id,boolean active,Authentication auth){
   try(var scope=TenantContext.open(Tenant.DEFAULT_ID)){

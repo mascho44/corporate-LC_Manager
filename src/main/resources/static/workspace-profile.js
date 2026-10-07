@@ -1,10 +1,12 @@
-/* Presentation only: never changes authorization or hides modules. */
+/* Presentation mirrors profile gates; the server remains authoritative. */
 function workspaceProfile(settings){
  if(typeof settings?.bankEnabled!=='boolean'||typeof settings?.corporateEnabled!=='boolean')return 'general';
  const bank=settings?.bankEnabled===true,corporate=settings?.corporateEnabled===true;
  return bank&&corporate?'combined':bank?'bank':corporate?'corporate':'general';
 }
 function applyWorkspaceProfile(settings){
+ globalThis.LcWorkspaceModules={bank:settings?.bankEnabled===true,corporate:settings?.corporateEnabled===true};
+ globalThis.LcSelectedTenantId=settings?.tenantId;
  const mode=workspaceProfile(settings),hero=document.querySelector('#cockpitSection'),nav=document.querySelector('#appNav nav');if(!hero||!nav)return;
  const text=(key,fallback)=>{const value=globalThis.LcI18n?.t(key);return value&&value!==key?value:fallback;};
  const node=(tag,key,fallback)=>{const n=document.createElement(tag);n.dataset.i18n=key;n.textContent=text(key,fallback);return n;};
@@ -22,5 +24,7 @@ function applyWorkspaceProfile(settings){
  const actions={files:['[data-app-section="lcs"]','nav.lcs','LC files'],work:['#appNavMyWork','nav.myWork','My work'],inbox:['#appNavInbox','nav.inbox','Document inbox','DOCUMENT_UPLOAD'],templates:['#appNavTemplates','nav.templates','Document templates','SETTINGS_MANAGE']};
  const choices=mode==='corporate'?['files','templates','inbox']:mode==='combined'?['files','work','templates','inbox']:['work','files','inbox'];
  choices.forEach(key=>{const [selector,label,fallback,permission]=actions[key];if(permission&&(typeof can!=='function'||!can(permission)))return;const target=nav.querySelector(selector);if(!target)return;const button=node('button',label,fallback);button.type='button';button.className='secondary';button.onclick=()=>target.click();shortcuts.append(button);});
- shortcuts.append(node('p','workspace.presentationOnly','This profile changes navigation priorities only. Available functions and role permissions remain unchanged.'));
+ if(!settings?.corporateEnabled){document.querySelector('#appNavTemplates')?.classList.add('hidden');}
+ if(!settings?.bankEnabled){document.querySelector('#appNavApprovalPolicy')?.classList.add('hidden');const choice=document.querySelector('#trainingProfileSelect option[value="ADVISING_LETTER"]');if(choice){choice.disabled=true;choice.hidden=true;}}
+ shortcuts.append(node('p','workspace.moduleLimits','The tenant profile limits available modules in addition to your role permissions.'));
 }

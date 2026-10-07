@@ -70,7 +70,7 @@
   "tenant.profileBank": "Bank",
   "tenant.profileCorporate": "Corporate",
   "tenant.profileCombined": "Bank & Corporate",
-  "tenant.profileNotice": "The profile is informational. It does not enable modules or grant permissions. It cannot currently be changed after creation.",
+  "tenant.profileNotice": "Profiles enable modules in addition to role permissions. Changes are managed in Platform administration.",
   "membership.search": "Find members (username, role, status)",
   "membership.searchMatches": "Matching members: ",
   "membership.suspended": "Suspended",
@@ -197,5 +197,17 @@
   "tenant.missing": "Not yet configured",
   "tenant.configure": "Open administration",
   "tenant.saveSettings": "Save settings",
-  "tenant.settingsSaved": "Settings saved. The default language applies to users without a personal language preference."
+  "tenant.settingsSaved": "Settings saved. The default language applies to users without a personal language preference.",
+  "workspace.moduleLimits": "The tenant profile limits available modules in addition to your role permissions.",
+  "platformTenants.title": "Tenant administration",
+  "platformTenants.loading": "Loading tenants…",
+  "platformTenants.active": "Active",
+  "platformTenants.suspended": "Suspended",
+  "platformTenants.saveProfile": "Save profile",
+  "platformTenants.suspend": "Suspend tenant",
+  "platformTenants.activate": "Activate tenant",
+  "platformTenants.confirm": "Change tenant access/profile? Existing data is retained. Module changes take effect on subsequent requests.",
+  "platformTenants.notice": "Profiles limit modules in addition to role permissions. Switch workspace before suspending it. The default tenant cannot be suspended.",
+  "audit.change.bankEnabled": "Bank modules",
+  "audit.change.corporateEnabled": "Corporate modules"
 }

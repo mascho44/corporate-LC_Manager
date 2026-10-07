@@ -27,7 +27,7 @@ import static org.mockito.Mockito.*;
 /** Real Spring transactions/repositories; the PostgreSQL function itself is tested separately. */
 @DataJpaTest(properties={"app.mail.enabled=true","app.mail.from=synthetic@example.invalid","spring.flyway.enabled=false","spring.jpa.hibernate.ddl-auto=create-drop","spring.datasource.url=jdbc:h2:mem:sharedidentityaudit;MODE=PostgreSQL;DB_CLOSE_DELAY=-1","spring.datasource.driver-class-name=org.h2.Driver"},showSql=false)
 @AutoConfigureTestDatabase(replace=AutoConfigureTestDatabase.Replace.NONE)
-@Import({de.corporate.lc.user.service.PlatformInvitationService.class,de.corporate.lc.user.service.PlatformAccountCreationService.class,de.corporate.lc.user.service.PlatformAdministrationService.class,TenantSettingsService.class,TenantWorkspaceService.class,TenantSharedIdentityRoleService.class,TenantSharedIdentityAccessService.class,TenantMembershipService.class,TenantAdministrationLock.class,TenantSharedIdentityTransactionTest.Beans.class})
+@Import({de.corporate.lc.user.service.PlatformInvitationService.class,de.corporate.lc.user.service.PlatformAccountCreationService.class,de.corporate.lc.user.service.PlatformAdministrationService.class,PlatformTenantService.class,TenantSettingsService.class,TenantWorkspaceService.class,TenantSharedIdentityRoleService.class,TenantSharedIdentityAccessService.class,TenantMembershipService.class,TenantAdministrationLock.class,TenantSharedIdentityTransactionTest.Beans.class})
 @Transactional(propagation=Propagation.NOT_SUPPORTED)
 class TenantSharedIdentityTransactionTest {
  @TestConfiguration static class Beans {
@@ -48,6 +48,7 @@ class TenantSharedIdentityTransactionTest {
  @Autowired TenantSharedIdentityRoleService roleService;
  @Autowired TenantSharedIdentityAccessService accessService;
  @Autowired TenantWorkspaceService workspaceService;
+ @Autowired PlatformTenantService platformTenants;
  @Autowired TenantSettingsService settingsService;
  @Autowired de.corporate.lc.user.service.PlatformAdministrationService platform;
  @Autowired de.corporate.lc.user.service.PlatformAccountCreationService creation;
@@ -66,7 +67,7 @@ class TenantSharedIdentityTransactionTest {
   jdbc.update("delete from platform_invitation");jdbc.update("delete from tenant_membership_suspension");jdbc.update("delete from tenant_membership");jdbc.update("delete from app_user");jdbc.update("delete from app_role_permission");jdbc.update("delete from app_role");jdbc.update("delete from tenant");
   tenants.saveAndFlush(new Tenant());tenantId=UUID.randomUUID();var tenant=new Tenant();ReflectionTestUtils.setField(tenant,"id",tenantId);ReflectionTestUtils.setField(tenant,"code","synthetic-shared");tenants.saveAndFlush(tenant);
   var home=role("Synthetic home",UserRole.VIEWER,Set.of());homeRoleId=home.getId();
-  var actor=user("synthetic-shared-admin",role("Synthetic home admin",UserRole.ADMIN,Set.of(UserPermission.USER_MANAGE)));actor.setTotpEnabled(true);users.saveAndFlush(actor);seed(Tenant.DEFAULT_ID,actor.getId(),actor.getAssignedRole().getId());
+  var actor=user("synthetic-shared-admin",role("Synthetic home admin",UserRole.ADMIN,Set.of(UserPermission.USER_MANAGE)));actor.setTotpEnabled(true);actor.setPlatformAdministrator(true);users.saveAndFlush(actor);seed(Tenant.DEFAULT_ID,actor.getId(),actor.getAssignedRole().getId());
   var identity=user("synthetic-shared-target",home);userId=identity.getId();
   seed(Tenant.DEFAULT_ID,userId,homeRoleId);
   try(var scope=TenantContext.open(tenantId)){
@@ -137,7 +138,7 @@ class TenantSharedIdentityTransactionTest {
   assertThat(users.findById(userId).orElseThrow().isActive()).isTrue();
  }
  @Test void tenantCreationAssignsInitialAdministratorAndRestoresScope(){
-  var created=workspaceService.create("synthetic-created","Synthetic created workspace","en",true,false,authentication);
+  var created=workspaceService.createForPlatform("synthetic-created","Synthetic created workspace","en",true,false,authentication);
   assertThat(TenantContext.currentId()).isEqualTo(Tenant.DEFAULT_ID);assertThat(created.id()).isNotEqualTo(Tenant.DEFAULT_ID);
   var selected=workspaceService.select(created.id(),authentication);assertThat(selected.baseRole()).isEqualTo(UserRole.ADMIN);assertThat(selected.permissions()).contains(UserPermission.USER_MANAGE);
   assertThat(workspaceService.overview(authentication).workspaces()).extracting(TenantWorkspaceService.Workspace::id).contains(created.id());
@@ -147,10 +148,20 @@ class TenantSharedIdentityTransactionTest {
    for(var role:standard)assertThat(role.getPermissions()).containsExactlyInAnyOrderElementsOf(UserPermission.defaults(role.getBaseRole()));
   }
  }
+ @Test void tenantSuspensionAndProfileAuditRollBackTogether(){
+  failAudit();assertThatThrownBy(()->platformTenants.update(tenantId,false,false,true,authentication)).isInstanceOf(IllegalStateException.class);
+  var target=tenants.findById(tenantId).orElseThrow();assertThat(target.isActive()).isTrue();assertThat(target.isBankEnabled()).isTrue();assertThat(target.isCorporateEnabled()).isFalse();
+ }
+ @Test void suspendedTenantDeniesLoginAndSelectionUntilReactivated(){
+  platformTenants.update(tenantId,false,true,false,authentication);
+  assertThatThrownBy(()->workspaceService.select(tenantId,authentication)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+  assertThat(workspaceService.overview(authentication).workspaces()).extracting(TenantWorkspaceService.Workspace::id).doesNotContain(tenantId);
+  platformTenants.update(tenantId,true,true,false,authentication);assertThat(workspaceService.select(tenantId,authentication).tenantId()).isEqualTo(tenantId);
+ }
  @Test void newTenantStandardRolesDoNotChangeExistingTenantRoles(){
   var homeIds=roles.findAllByOrderByNameAsc().stream().map(AppRole::getId).toList();
   java.util.List<UUID> existingIds;try(var scope=TenantContext.open(tenantId)){existingIds=roles.findAllByOrderByNameAsc().stream().map(AppRole::getId).toList();}
-  var created=workspaceService.create("synthetic-roles","Synthetic roles workspace","en",true,false,authentication);
+  var created=workspaceService.createForPlatform("synthetic-roles","Synthetic roles workspace","en",true,false,authentication);
   assertThat(roles.findAllByOrderByNameAsc()).extracting(AppRole::getId).containsExactlyElementsOf(homeIds);
   try(var scope=TenantContext.open(tenantId)){assertThat(roles.findAllByOrderByNameAsc()).extracting(AppRole::getId).containsExactlyElementsOf(existingIds);}
   try(var scope=TenantContext.open(created.id())){assertThat(roles.findAllByOrderByNameAsc()).allMatch(r->r.getTenantId().equals(created.id()));}
@@ -158,15 +169,15 @@ class TenantSharedIdentityTransactionTest {
  @Test void creationAuditFailureRollsBackTenantRoleAndMembership(){
   long beforeTenants=tenants.count(),beforeRoles=roles.count();
   AuditService target=AopTestUtils.getUltimateTargetObject(audit);doThrow(new IllegalStateException("Synthetic audit unavailable")).when(target).recordInTransaction(any(),anyString(),anyString(),any(),anyString());
-  assertThatThrownBy(()->workspaceService.create("synthetic-rollback","Synthetic rollback workspace","en",true,false,authentication)).isInstanceOf(IllegalStateException.class);
+  assertThatThrownBy(()->workspaceService.createForPlatform("synthetic-rollback","Synthetic rollback workspace","en",true,false,authentication)).isInstanceOf(IllegalStateException.class);
   assertThat(tenants.count()).isEqualTo(beforeTenants);assertThat(roles.count()).isEqualTo(beforeRoles);assertThat(tenants.existsByCodeIgnoreCase("synthetic-rollback")).isFalse();assertThat(TenantContext.currentId()).isEqualTo(Tenant.DEFAULT_ID);
  }
  @Test void unassignedTenantSelectionIsDeniedAndScopeRestored(){
   assertThatThrownBy(()->workspaceService.select(UUID.randomUUID(),authentication)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);assertThat(TenantContext.currentId()).isEqualTo(Tenant.DEFAULT_ID);
  }
  @Test void duplicateCodesAndForeignTenantCreationAreRejected(){
-  assertThatThrownBy(()->workspaceService.create("DEFAULT","Duplicate","en",true,false,authentication)).isInstanceOf(IllegalArgumentException.class);
-  try(var scope=TenantContext.open(tenantId)){assertThatThrownBy(()->workspaceService.create("blocked","Blocked","en",true,false,authentication)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);}
+  assertThatThrownBy(()->workspaceService.createForPlatform("DEFAULT","Duplicate","en",true,false,authentication)).isInstanceOf(IllegalArgumentException.class);
+  try(var scope=TenantContext.open(tenantId)){assertThatThrownBy(()->workspaceService.createForPlatform("blocked","Blocked","en",true,false,authentication)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);}
  }
  @Test void settingsUpdateChangesOnlySelectedTenantAndAuditsValues(){
   try(var scope=TenantContext.open(tenantId)){var changed=settingsService.update("Synthetic renamed","de",authentication);assertThat(changed.name()).isEqualTo("Synthetic renamed");assertThat(changed.defaultLanguage()).isEqualTo("de");assertThat(changed.code()).isEqualTo("synthetic-shared");}
