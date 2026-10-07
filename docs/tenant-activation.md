@@ -47,13 +47,13 @@ explains explicit tenant login, existing global credentials, role assignment and
 the default-tenant behavior of an empty login code. It uses the existing authorized
 workspace list; there is no public tenant discovery or extra administrative access.
 
-Local follow-up: selecting another workspace requires an explicit confirmation
+Deployed via PR #119: selecting another workspace requires an explicit confirmation
 showing its name and code and warning about unsaved changes before reloading.
 Cancel/Escape leaves the selected workspace and session unchanged; concurrent
 switch requests are suppressed while confirmation is pending. This is a general
 warning, not unsaved-change detection or automatic draft saving.
 
-After successful creation, a local follow-up displays an explicit open-workspace
+After successful creation, the page displays an explicit open-workspace
 action and setup guidance, only when the refreshed authorized workspace list
 contains the new tenant. Creation itself does not select or reload the workspace.
 The action uses the same confirmed, server-authorized selection flow.
@@ -110,3 +110,18 @@ The follow-up release passed 446 Java cases (444 passed, two skipped) and 59
 JavaScript tests. The expanded PostgreSQL smoke test passed settings updates,
 read-only denial and explicit tenant login for an identity whose default membership
 was suspended, with foreign LC details remaining inaccessible.
+
+Extended PostgreSQL smoke verification on 2026-10-07 passed default Admin/Editor/
+Viewer role provisioning, zero company/template counts and one initial active
+member, read-only settings, denied setup counts and administration for Viewers,
+denied LC import/deletion, and unchanged workspace/LC data after rejected writes
+or an inaccessible workspace selection. The test also retains two-way LC isolation
+and explicit login with suspended default-tenant access. Its disposable local app
+requires a synthetic TOTP_ENCRYPTION_KEY of at least 32 characters. No production
+data was used; test containers, temporary database volume and network were removed.
+
+Local follow-up: membership role choices include their current permission set.
+Both existing-user assignment and role changes preview these additional permissions
+before submission. Selection alone never updates a membership; mutation requests
+still contain only roleId (and username for an initial assignment). This preview
+does not replace server authorization or describe every base-role capability.
