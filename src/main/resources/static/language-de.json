@@ -1,4 +1,10 @@
 {
+  "tenant.profile": "Mandantenprofil",
+  "tenant.profileInvalid": "Bitte ein unterstütztes Mandantenprofil auswählen.",
+  "tenant.profileBank": "Bank",
+  "tenant.profileCorporate": "Corporate",
+  "tenant.profileCombined": "Bank & Corporate",
+  "tenant.profileNotice": "Das Profil ist eine Kennzeichnung. Es aktiviert keine Module und erteilt keine Berechtigungen. Nach dem Anlegen kann es derzeit nicht geändert werden.",
   "membership.search": "Mitglieder suchen (Benutzername, Rolle, Status)",
   "membership.searchMatches": "Gefundene Mitglieder: ",
   "membership.suspended": "Mandantenzugang gesperrt",

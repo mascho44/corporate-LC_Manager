@@ -1,4 +1,10 @@
 {
+  "tenant.profile": "Tenant profile",
+  "tenant.profileInvalid": "Select a supported tenant profile.",
+  "tenant.profileBank": "Bank",
+  "tenant.profileCorporate": "Corporate",
+  "tenant.profileCombined": "Bank & Corporate",
+  "tenant.profileNotice": "The profile is informational. It does not enable modules or grant permissions. It cannot currently be changed after creation.",
   "membership.search": "Find members (username, role, status)",
   "membership.searchMatches": "Matching members: ",
   "membership.suspended": "Suspended",
