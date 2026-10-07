@@ -32,9 +32,23 @@ Platform identities cannot be changed or deleted through legacy tenant identity
 administration, and cannot disable their own TOTP. Existing local role/membership
 administration remains separate. Credential self-service remains available.
 
-This first stage does not yet create global accounts, send invitations, administer
-platform grants or retire the legacy default-tenant account-creation workflow.
-Those are follow-up stages; the new page currently manages global activation only.
+The next local stage adds `POST /api/platform/users` and an inline creation form.
+Only a live platform administrator with TOTP may create an identity. Email is
+required; username uniqueness is global and case-insensitive. Initial passwords
+use the existing strength policy and are hashed, never returned or audited.
+Requests cannot select roles, activation, tenant IDs or platform grants.
+The identity uses the empty-permission system VIEWER role in the bootstrap tenant;
+its automatically generated home membership is suspended in the same transaction.
+Thus creation grants no business access, not even read access to the default
+tenant. An authorized local administrator subsequently assigns an explicit role
+in the intended tenant through the existing membership workflow. Global account
+activation never lifts the bootstrap suspension. Creation and audit are atomic.
+The UI clears passwords after both successful and failed submissions.
+
+Invitation links, forced first-login password changes and platform grant management
+remain follow-up scope. The legacy default-tenant account-creation workflow is
+not yet retired. An initial password must be communicated securely; this is not
+an email invitation workflow.
 
 Verification on 2026-10-07: 41 targeted backend tests and 99 JavaScript tests passed.
 The disposable PostgreSQL acceptance installation applied V67 and passed platform
@@ -44,3 +58,10 @@ session, and restoration of foreign login without lifting the suspended default
 membership. No production data was used.
 The full backend regression completed 480 cases without failures or errors (two
 skipped). The test installation removed its own containers and network afterward.
+
+Local account-creation verification: 37 targeted backend tests and all 101
+JavaScript tests passed. Disposable PostgreSQL acceptance confirmed denial for
+local-only users, required email, duplicate rejection, no default/foreign login
+before assignment, explicit local assignment, continued default-login denial and
+viewer-only access in the assigned tenant. Audit-failure rollback was verified
+with real Spring transactions. The test installation was removed afterward.

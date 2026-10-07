@@ -8,6 +8,19 @@ async function setupPlatformAdministration(){
  const status=node('p','','');status.setAttribute('role','status');const list=document.createElement('div');let generation=0;
  const reload=node('button','platform.reload','Reload accounts');reload.type='button';reload.className='secondary';
  section.append(node('h2','platform.title','Platform administration'),node('p','platform.notice','Global account suspension blocks access in every tenant. Activation does not restore suspended local memberships.'),reload,status,list);document.querySelector('main').append(section);
+ const form=document.createElement('form');form.className='platform-create-form';
+ form.append(node('h3','platform.createTitle','Create global account'),node('p','platform.createNotice','No tenant access is granted. Assign the identity under Users in the intended tenant. Invitation links will follow separately.'));
+ const inputs={};
+ for(const [key,type,max] of [['username','text',100],['displayName','text',255],['email','email',255],['password','password',200]]){
+  const label=node('label','platform.field.'+key,key);const input=document.createElement('input');input.id='platformCreate'+key;input.type=type;input.required=true;input.maxLength=max;input.autocomplete=key==='password'?'new-password':'off';if(key==='password')input.minLength=10;label.append(input);form.append(label);inputs[key]=input;
+ }
+ const create=node('button','platform.create','Create account');create.type='submit';const createStatus=node('p','','');createStatus.setAttribute('role','status');form.append(create,createStatus);section.append(form);
+ let creating=false;
+ form.onsubmit=async event=>{event.preventDefault();if(creating||!form.reportValidity())return;creating=true;create.disabled=true;createStatus.textContent=text('platform.creating','Creating account…');
+  const payload=Object.fromEntries(Object.entries(inputs).map(([key,input])=>[key,input.value]));
+  try{await json('/api/platform/users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});form.reset();createStatus.textContent=text('platform.created','Account created without tenant access. Assign it in the intended tenant.');await refresh();}
+  catch(failure){createStatus.textContent=failure.message;}finally{inputs.password.value='';creating=false;create.disabled=false;}
+ };
  async function refresh(){
   const request=++generation;list.replaceChildren();status.textContent=text('platform.loading','Loading global accounts…');section.setAttribute('aria-busy','true');
   try{const accounts=await json('/api/platform/users');if(request!==generation)return;

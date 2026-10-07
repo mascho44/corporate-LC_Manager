@@ -1,4 +1,13 @@
 {
+  "platform.createTitle": "Globales Konto anlegen",
+  "platform.createNotice": "Es wird kein Mandantenzugang vergeben. Ordnen Sie die Identität unter Benutzer im vorgesehenen Mandanten zu. Einladungslinks folgen separat.",
+  "platform.field.username": "Benutzername",
+  "platform.field.displayName": "Anzeigename",
+  "platform.field.email": "E-Mail (Pflichtfeld)",
+  "platform.field.password": "Startpasswort (10–200 Zeichen, Groß-/Kleinbuchstaben und Zahl)",
+  "platform.create": "Konto anlegen",
+  "platform.creating": "Konto wird angelegt…",
+  "platform.created": "Konto ohne Mandantenzugang angelegt. Ordnen Sie es im vorgesehenen Mandanten zu.",
   "platform.title": "Plattformadministration",
   "platform.notice": "Eine globale Kontosperre verhindert den Zugang in allen Mandanten. Aktivierung hebt lokale Mitgliedschaftssperren nicht auf.",
   "platform.reload": "Konten neu laden",
