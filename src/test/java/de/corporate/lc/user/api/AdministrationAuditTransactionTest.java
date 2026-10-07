@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.*;
 
 @DataJpaTest(properties={"spring.flyway.enabled=false","spring.jpa.hibernate.ddl-auto=create-drop","spring.datasource.url=jdbc:h2:mem:administrationaudit;MODE=PostgreSQL;DB_CLOSE_DELAY=-1","spring.datasource.driver-class-name=org.h2.Driver"},showSql=false)
 @AutoConfigureTestDatabase(replace=AutoConfigureTestDatabase.Replace.NONE)
-@Import({RoleController.class,UserController.class,RoleService.class,UserService.class,AdministrationAuditTransactionTest.Beans.class})
+@Import({RoleController.class,UserController.class,RoleService.class,UserService.class,TenantAdministrationLock.class,AdministrationAuditTransactionTest.Beans.class})
 @Transactional(propagation=Propagation.NOT_SUPPORTED)
 class AdministrationAuditTransactionTest {
  @TestConfiguration static class Beans{
@@ -27,6 +27,27 @@ class AdministrationAuditTransactionTest {
  }
  @Autowired RoleController roleController;@Autowired UserController userController;
  @Autowired AppRoleRepository roles;@Autowired AppUserRepository users;@Autowired AuditService audit;
+ @Autowired de.corporate.lc.tenant.repository.TenantRepository tenants;
+ @Autowired TenantAdministrationLock administrationLock;
+ @org.junit.jupiter.api.BeforeEach void prepareTenant(){if(!tenants.existsById(de.corporate.lc.tenant.domain.Tenant.DEFAULT_ID))tenants.saveAndFlush(new de.corporate.lc.tenant.domain.Tenant());}
+ @Test void administrationLockRequiresTransactionAndExistingTenant(){
+  assertThatThrownBy(()->administrationLock.acquire()).isInstanceOf(org.springframework.transaction.IllegalTransactionStateException.class);
+  try(var scope=de.corporate.lc.tenant.domain.TenantContext.open(UUID.randomUUID())){
+   assertThatThrownBy(()->roleController.create(new RoleRequest("Synthetic unavailable tenant",UserRole.VIEWER,Set.of()),UsernamePasswordAuthenticationToken.authenticated("synthetic-operator",null,List.of()))).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+  }
+ }
+ @Test void simultaneousAdministratorRemovalsLeaveOneActiveAccount()throws Exception{
+  AuditService target=org.springframework.test.util.AopTestUtils.getUltimateTargetObject(audit);reset(target);
+  var role=new AppRole();role.setName("Synthetic parallel administrator");role.setBaseRole(UserRole.ADMIN);role.setPermissions(Set.of(UserPermission.USER_MANAGE));role=roles.saveAndFlush(role);
+  var roleId=role.getId();var requests=new java.util.ArrayList<Map.Entry<UUID,UserRequest>>();
+  for(int i=0;i<2;i++){var user=new AppUser();user.setUsername("synthetic-parallel-"+i);user.setDisplayName("Synthetic parallel user");user.setEmail("parallel"+i+"@example.invalid");user.setPasswordHash("synthetic-hash");user.setAssignedRole(role);user=users.saveAndFlush(user);requests.add(Map.entry(user.getId(),new UserRequest(user.getUsername(),user.getDisplayName(),user.getEmail(),null,roleId,false)));}
+  var start=new java.util.concurrent.CountDownLatch(1);var pool=java.util.concurrent.Executors.newFixedThreadPool(2);
+  try{
+   var futures=requests.stream().map(entry->pool.submit(()->{start.await();try{userController.update(entry.getKey(),entry.getValue(),UsernamePasswordAuthenticationToken.authenticated("synthetic-operator",null,List.of()));return true;}catch(IllegalArgumentException rejected){return false;}})).toList();start.countDown();
+   int succeeded=0;for(var result:futures)if(result.get(15,java.util.concurrent.TimeUnit.SECONDS))succeeded++;
+   assertThat(succeeded).isEqualTo(1);assertThat(users.countByRoleAndActiveTrue(UserRole.ADMIN)).isEqualTo(1);
+  }finally{pool.shutdownNow();for(var entry:requests)users.deleteById(entry.getKey());roles.deleteById(roleId);}
+ }
  @Test void auditFailureRollsBackRoleAndUserMutations(){
   var role=new AppRole();role.setName("Synthetic audit role");role.setBaseRole(UserRole.EDITOR);role.setPermissions(Set.of(UserPermission.LC_EDIT));role=roles.saveAndFlush(role);
   var user=new AppUser();user.setUsername("synthetic-audit-user");user.setDisplayName("Synthetic user");user.setEmail("user@example.invalid");user.setPasswordHash("synthetic-secret-hash");user.setAssignedRole(role);user=users.saveAndFlush(user);

@@ -1,4 +1,7 @@
 {
+ "audit.change.show":"Änderungen anzeigen", "audit.change.field":"Feld", "audit.change.before":"Vorher", "audit.change.after":"Nachher", "audit.change.changed":"Geändert",
+ "audit.change.name":"Rollenname", "audit.change.baseRole":"Basistyp", "audit.change.systemRole":"Systemrolle", "audit.change.permissions":"Rechte",
+ "audit.change.username":"Benutzername", "audit.change.roleId":"Zugewiesene Rollen-ID", "audit.change.role":"Basistyp", "audit.change.active":"Aktiv", "audit.change.yes":"Ja", "audit.change.no":"Nein", "audit.change.roles":"Rollen",
   "membership.code": "Mandantenkennung",
   "membership.language": "Standardsprache",
   "membership.bank": "Bankprofil",

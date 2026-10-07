@@ -570,3 +570,46 @@ No migration or tenant activation is introduced. This stage remains local.
 Verification: complete regression ran 354 Java tests with no failures/errors
 (two skipped). Administration rollback and allowlist snapshot tests passed;
 whitespace validation passed. Not deployed.
+
+## Stage 22: readable administration audit changes
+
+The existing audit dialog renders structured user/role snapshots as a field table
+with previous/new values and a changed marker. Supported fields are allowlisted;
+unknown fields are not rendered in the structured table. Creation/deletion have
+one-sided values. Malformed JSON, old plain-text snapshots and other event types
+retain an escaped text fallback. All snapshot content is escaped before markup.
+
+A separate ROLE area filter prevents role changes from appearing as LC events.
+Field labels and change controls support English/German. A horizontally scrollable
+table and the existing blue palette are used. An external script loads before the
+application, preserving the inline-script CSP restriction; cache versions changed.
+No backend, SQL or access-control change is introduced.
+
+Verification: all 40 JavaScript tests passed, including safe rendering, highlights,
+legacy fallback, translations, role filtering and script order. App syntax and
+whitespace validation passed. Visual browser QA was not performed. Not deployed.
+
+## Stage 23: serialize tenant administration decisions
+
+User/role administration acquires a pessimistic write lock on the current tenant
+row inside the mutation transaction. Role/user creation, updates and deletion
+use the same lock, including standalone service entry points. The audit controllers
+acquire it before loading previous values, avoiding stale pre-lock snapshots in
+the normal endpoint flow. The lock remains held through the atomic audit commit
+or rollback; it serializes competing last-administrator decisions within a tenant.
+
+The lock service requires an existing transaction and tenant. Missing context
+records are rejected, not treated as an unlocked fallback. Authentication, OCR,
+outbox and read-only lists do not acquire this administration lock. This replaces
+the previously documented concurrent-decision limitation for the covered mutation
+entry points, not arbitrary database writes or already-running authenticated requests.
+No migration or additional tenant activation is introduced.
+
+Tests run two concurrent administration transactions against the same tenant;
+exactly one administrator deactivation succeeds and one active administrator remains.
+Rollback tests continue to cover audit failure. Additional tests require a transaction
+and reject unavailable tenants. Stages 22–23 remain local, not deployed.
+
+Pre-release verification on 2026-10-07: full Java regression passed without
+failures/errors, including the parallel administrator test and transaction/tenant
+negative tests. All 40 JavaScript tests passed; whitespace validation passed.

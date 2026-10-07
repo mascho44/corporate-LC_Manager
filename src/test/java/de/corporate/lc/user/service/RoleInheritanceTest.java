@@ -19,7 +19,7 @@ class RoleInheritanceTest {
  }
  @Test void lastActiveAdministratorCannotBeDemotedThroughCustomRole(){
   var roles=mock(AppRoleRepository.class);var users=mock(AppUserRepository.class);var id=UUID.randomUUID();var role=new AppRole();role.setBaseRole(UserRole.ADMIN);role.setName("Synthetic administrator");when(roles.findById(id)).thenReturn(Optional.of(role));when(roles.findAllByOrderByNameAsc()).thenReturn(List.of());when(users.countByAssignedRoleIdAndActiveTrue(id)).thenReturn(2L);when(users.countByRoleAndActiveTrue(UserRole.ADMIN)).thenReturn(2L);
-  var service=new RoleService(roles,users);var request=new RoleRequest(role.getName(),UserRole.VIEWER,Set.of());
+  var service=new RoleService(roles,users,mock(TenantAdministrationLock.class));var request=new RoleRequest(role.getName(),UserRole.VIEWER,Set.of());
   assertThatThrownBy(()->service.update(id,request)).isInstanceOf(IllegalArgumentException.class);assertThat(role.getBaseRole()).isEqualTo(UserRole.ADMIN);
   when(users.countByRoleAndActiveTrue(UserRole.ADMIN)).thenReturn(3L);service.update(id,request);assertThat(role.getBaseRole()).isEqualTo(UserRole.VIEWER);
  }
