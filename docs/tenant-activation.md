@@ -120,8 +120,19 @@ and explicit login with suspended default-tenant access. Its disposable local ap
 requires a synthetic TOTP_ENCRYPTION_KEY of at least 32 characters. No production
 data was used; test containers, temporary database volume and network were removed.
 
-Local follow-up: membership role choices include their current permission set.
+Deployed via PR #120: membership role choices include their current permission set.
 Both existing-user assignment and role changes preview these additional permissions
 before submission. Selection alone never updates a membership; mutation requests
 still contain only roleId (and username for an initial assignment). This preview
 does not replace server authorization or describe every base-role capability.
+
+Local follow-up: the membership overview, prospective-role preview and role-editor
+checkboxes use readable EN/DE labels for all current permission identifiers.
+Unknown permissions remain visible with their original identifier; stored roles
+and assignment payloads are unchanged. Coverage checks both language catalogs
+against the backend permission enum.
+
+The role editor's local search filters by the translated permission label or
+technical identifier. It hides labels without rebuilding or disabling checkboxes,
+so selected permissions remain part of the save payload even when filtered out.
+Resetting the role form clears the search; a live status reports the match count.
