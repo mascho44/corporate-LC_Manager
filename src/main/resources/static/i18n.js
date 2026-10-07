@@ -26,7 +26,7 @@ globalThis.LcI18n=(()=>{
 })();
 document.addEventListener('DOMContentLoaded',()=>{
     const bindings={'[data-app-section="cockpit"]':'nav.cockpit','[data-app-section="lcs"]':'nav.lcs','#appNavMyWork':'nav.myWork','#appNavInbox':'nav.inbox','#appNavTraining':'nav.training','#appNavImport':'nav.import','[data-app-section="imports"]':'nav.imports','#appNavMonitoring':'nav.monitoring','#appNavCompany':'nav.company','#appNavTemplates':'nav.templates','#appNavUsers':'nav.users','#appNavAudit':'nav.audit','#appNavSecurity':'nav.security','#appNavPassword':'nav.password','#appNavLogout':'nav.logout','.info-menu-link':'nav.info','#avatarOpenProfile':'profile.title','#avatarOpenPassword':'profile.password','#avatarOpenTotp':'profile.totp','#avatarLogout':'nav.logout'};
-    const annotate=()=>{for(const [selector,key] of Object.entries(bindings)){const node=document.querySelector(selector);if(node&&node.dataset.i18n!==key)node.dataset.i18n=key;}LcI18n.apply();};
+    const annotate=()=>{for(const [selector,key] of Object.entries(bindings)){const node=document.querySelector(selector);const effectiveKey=node?.dataset.profileI18n||key;if(node&&node.dataset.i18n!==effectiveKey)node.dataset.i18n=effectiveKey;}LcI18n.apply();};
     annotate();new MutationObserver(annotate).observe(document.body,{childList:true,subtree:true});
     LcI18n.setLanguage('en').catch(()=>{});
 });

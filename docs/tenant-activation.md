@@ -35,6 +35,15 @@ are still created centrally. Global IAM lifecycle administration remains open.
 
 ## Security and verification
 
+Profile presentation: the authenticated current-settings response exposes the
+persisted Bank/Corporate flags to current members. Bank, Corporate and combined
+profiles get localized cockpit titles, descriptions and quick links. Corporate
+prioritizes LC files and document templates; Bank prioritizes work queues and LC
+files. Existing business menu buttons are reordered without changing handlers,
+visibility or administration grouping. Quick links respect the existing UI
+permissions. Missing/invalid profile flags use the general cockpit. No profile
+blocks a module or grants a permission; server authorization is unchanged.
+
 Deployed via PR #117: Tenants includes a selected-tenant setup summary
 showing company-record, document-template and active-member counts, with explicit
 buttons opening the existing administration forms. It is a presence check, not a
