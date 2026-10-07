@@ -811,13 +811,55 @@ function renderMembershipOverview(overview){
   });body.append(metadata);
   body.append(membershipMessage('membership.metadataNotice','Profile settings are informational; they do not grant access permissions.'));
  }
- body.append(membershipMessage('membership.notice','Managed through user administration. Tenant switching is not enabled.'));
+ body.append(membershipMessage('membership.notice','Membership roles can be changed here. Identity data is managed separately. Tenant switching is not enabled.'));
  if(!overview.memberships.length){body.append(membershipMessage('membership.empty','No memberships available.'));return;}
  overview.memberships.forEach(m=>{
   const row=document.createElement('div');row.className='membership-row';
   const identity=document.createElement('div');identity.append(membershipNode('b',m.username),membershipNode('small',m.roleName),membershipNode('small',m.permissions.join(' · ')));
-  const key=m.active?'membership.active':'membership.inactive';const status=membershipNode('span',membershipText(key,m.active?'Active':'Inactive'),'import-status '+(m.active?'success':'rejected'));status.dataset.i18n=key;
-  row.append(identity,status);body.append(row);
+  const key=m.suspended?'membership.suspended':m.active?'membership.active':'membership.inactive';const status=membershipNode('span',membershipText(key,m.suspended?'Suspended':m.active?'Active':'Inactive'),'import-status '+(m.active?'success':'rejected'));status.dataset.i18n=key;
+  row.append(identity,status);
+  if(overview.roleEditingEnabled&&Array.isArray(overview.roleChoices)&&overview.roleChoices.length&&can('USER_MANAGE')){
+   const controls=document.createElement('div');controls.className='membership-role-controls';
+   const label=membershipNode('label',membershipText('membership.role','Membership role'));label.dataset.i18n='membership.role';
+   const select=document.createElement('select');select.id='membership-role-'+m.userId;label.htmlFor=select.id;
+   overview.roleChoices.forEach(role=>{const option=membershipNode('option',role.name);option.value=role.id;select.append(option);});select.value=m.roleId;
+   const save=membershipNode('button',membershipText('membership.saveRole','Save role'),'secondary');save.type='button';save.dataset.i18n='membership.saveRole';save.disabled=true;
+   const error=membershipNode('small','','error membership-role-error');error.setAttribute('role','alert');
+   const generation=membershipOverviewGeneration;let busy=false;
+   select.onchange=()=>{save.disabled=busy||select.value===m.roleId;error.textContent='';};
+   save.onclick=async()=>{
+    if(busy||!can('USER_MANAGE')||select.value===m.roleId)return;
+    busy=true;save.disabled=true;select.disabled=true;error.textContent='';
+    try{
+     await json('/api/users/memberships/'+encodeURIComponent(m.userId)+'/role',{method:'PUT',body:JSON.stringify({roleId:select.value})});
+     if(generation===membershipOverviewGeneration)await loadUsers();
+    }catch(failure){if(generation===membershipOverviewGeneration)error.textContent=failure.message||membershipText('membership.saveError','The membership role could not be saved.');}
+    finally{busy=false;select.disabled=false;save.disabled=select.value===m.roleId;}
+   };
+   controls.append(label,select,save,error);row.append(controls);
+  }
+  if(overview.accessEditingEnabled&&can('USER_MANAGE')){
+   const controls=document.createElement('div');controls.className='membership-access-controls';
+   const own=typeof currentUser!=='undefined'&&String(currentUser?.username||'').toLowerCase()===String(m.username).toLowerCase();
+   const disabled=(!m.suspended&&own)||m.identityActive===false;
+   const label=m.suspended?'membership.activate':'membership.suspend';
+   const toggle=membershipNode('button',membershipText(label,m.suspended?'Activate membership':'Suspend membership'),m.suspended?'secondary':'danger');toggle.type='button';toggle.dataset.i18n=label;toggle.disabled=disabled;
+   const notice=membershipMessage(m.identityActive===false?'membership.identityInactive':'membership.accessNotice',m.identityActive===false?'The global account is inactive.':'Only access to this tenant is affected.');
+   const error=membershipNode('small','','error');error.setAttribute('role','alert');
+   const generation=membershipOverviewGeneration;let busy=false;
+   toggle.onclick=async()=>{
+    if(busy||disabled||!can('USER_MANAGE'))return;
+    busy=true;toggle.disabled=true;error.textContent='';
+    try{
+     if(!m.suspended&&!await confirmAction(membershipText('membership.confirmSuspend','Suspend access to this tenant for')+' '+m.username+'?'))return;
+     await json('/api/users/memberships/'+encodeURIComponent(m.userId)+'/access',{method:'PUT',body:JSON.stringify({suspended:!m.suspended})});
+     if(generation===membershipOverviewGeneration)await loadUsers();
+    }catch(failure){if(generation===membershipOverviewGeneration)error.textContent=failure.message||membershipText('membership.accessError','Membership access could not be updated.');}
+    finally{busy=false;toggle.disabled=disabled;}
+   };
+   controls.append(toggle,notice,error);row.append(controls);
+  }
+  body.append(row);
  });
 }
 async function loadMembershipOverview(){

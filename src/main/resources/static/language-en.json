@@ -1,4 +1,5 @@
 {
+ "membership.suspended":"Suspended", "membership.suspend":"Suspend membership", "membership.activate":"Activate membership", "membership.accessNotice":"Only access to this tenant is affected.", "membership.identityInactive":"The global account is inactive.", "membership.confirmSuspend":"Suspend access to this tenant for", "membership.accessError":"Membership access could not be updated.", "audit.change.suspended":"Membership suspended",
  "audit.change.show":"Show changes", "audit.change.field":"Field", "audit.change.before":"Before", "audit.change.after":"After", "audit.change.changed":"Changed",
  "audit.change.name":"Role name", "audit.change.baseRole":"Base role", "audit.change.systemRole":"System role", "audit.change.permissions":"Permissions",
  "audit.change.username":"Username", "audit.change.roleId":"Assigned role ID", "audit.change.role":"Base role", "audit.change.active":"Active", "audit.change.yes":"Yes", "audit.change.no":"No", "audit.change.roles":"Roles",
@@ -9,7 +10,8 @@
   "membership.enabled": "Enabled",
   "membership.disabled": "Disabled",
   "membership.metadataNotice": "Profile settings are informational; they do not grant access permissions.",
- "membership.title":"Tenant memberships", "membership.notice":"Managed through user administration. Tenant switching is not enabled.", "membership.empty":"No memberships available.", "membership.active":"Active", "membership.inactive":"Inactive", "membership.loading":"Loading memberships…", "membership.error":"Membership overview unavailable. User administration remains available.",
+ "membership.role":"Membership role", "membership.saveRole":"Save role", "membership.saveError":"The membership role could not be saved.",
+ "membership.title":"Tenant memberships", "membership.notice":"Membership roles can be changed here. Identity data is managed separately. Tenant switching is not enabled.", "membership.empty":"No memberships available.", "membership.active":"Active", "membership.inactive":"Inactive", "membership.loading":"Loading memberships…", "membership.error":"Membership overview unavailable. User administration remains available.",
  "nav.workspace":"Bank workspace", "nav.cockpit":"Dashboard", "nav.myWork":"My work", "nav.lcs":"LC files",
  "nav.inbox":"Document inbox", "nav.training":"Training & recognition", "nav.import":"Import SWIFT", "nav.imports":"Import history",
  "nav.monitoring":"Operations monitor", "nav.company":"Company details", "nav.templates":"Document templates", "nav.users":"Users",
