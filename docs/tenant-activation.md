@@ -10,7 +10,7 @@ bootstrap constraint. Membership write guards and same-tenant foreign keys remai
 2. Open **Tenants** in the left menu. Enter a unique lowercase code, a name and the
    default language. Create the tenant. It starts with no business data and its own
    administrator role; the creator receives that role in the new tenant.
-   Local follow-up: new tenants also receive Editor and Viewer system roles using
+   New tenants also receive Editor and Viewer system roles using
    the existing permission defaults. No users are automatically assigned these
    roles. Existing tenants and customized roles remain unchanged. All three roles
    are created within the same audited tenant-creation transaction.
@@ -32,7 +32,7 @@ are still created centrally. Global IAM lifecycle administration remains open.
 
 ## Security and verification
 
-Local follow-up (not deployed): Tenants includes a selected-tenant setup summary
+Deployed via PR #117: Tenants includes a selected-tenant setup summary
 showing company-record, document-template and active-member counts, with explicit
 buttons opening the existing administration forms. It is a presence check, not a
 certification of data completeness or document-template validity. Suspended and
@@ -40,6 +40,12 @@ globally inactive members are excluded. The read-only endpoint requires an activ
 ADMIN membership, TOTP, USER_MANAGE and SETTINGS_MANAGE. No arbitrary tenant ID is
 accepted and all counts use tenant-scoped repository queries. Other users do not
 request these counts. A setup-summary error leaves normal tenant navigation usable.
+
+Local follow-up: the Tenants page shows the selected workspace's name and login
+code to all of its authenticated members, including read-only users. Guidance
+explains explicit tenant login, existing global credentials, role assignment and
+the default-tenant behavior of an empty login code. It uses the existing authorized
+workspace list; there is no public tenant discovery or extra administrative access.
 
 The selected tenant's administrators with
 USER_MANAGE and active TOTP can change its name and default language on the Tenants
