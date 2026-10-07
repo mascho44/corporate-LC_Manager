@@ -117,6 +117,20 @@ class TenantRepositoryIsolationTest {
  @Autowired de.corporate.lc.document.repository.DocumentComparisonRepository comparisons;
  @Autowired de.corporate.lc.email.repository.EmailDeliveryRepository deliveries;
  final UUID foreignTenant=UUID.fromString("00000000-0000-0000-0000-000000000099");
+ @Test void accessibleAdministratorCountUsesSelectedMembershipNotIdentityHome(){
+  var homeRole=createRole("Synthetic home viewer");homeRole.setBaseRole(UserRole.VIEWER);roles.flush();
+  var identity=createTenantUser("synthetic-count-shared",homeRole);seedMembership(identity,homeRole,Tenant.DEFAULT_ID);
+  try(var scope=TenantContext.open(foreignTenant)){
+   var adminRole=createRole("Synthetic membership admin");seedMembership(identity,adminRole,foreignTenant);
+   assertThat(memberships.countAccessibleAdministrators()).isEqualTo(1);
+   var restriction=new de.corporate.lc.tenant.domain.TenantMembershipSuspension(identity.getId());restriction.setSuspended(true);suspensions.saveAndFlush(restriction);
+   assertThat(memberships.countAccessibleAdministrators()).isZero();
+   restriction.setSuspended(false);suspensions.flush();assertThat(memberships.countAccessibleAdministrators()).isEqualTo(1);
+  }
+  assertThat(memberships.countAccessibleAdministrators()).isZero();
+  identity.setActive(false);users.flush();
+  try(var scope=TenantContext.open(foreignTenant)){assertThat(memberships.countAccessibleAdministrators()).isZero();}
+ }
  UUID seedMembership(AppUser user,AppRole role,UUID tenantId){var id=UUID.randomUUID();entityManager.createNativeQuery("insert into tenant_membership(id,tenant_id,user_id,role_id,active) values(:id,:tenant,:user,:role,true)").setParameter("id",id).setParameter("tenant",tenantId).setParameter("user",user.getId()).setParameter("role",role.getId()).executeUpdate();return id;}
  @Test void membershipsExposeOnlyCurrentTenantAndInheritRolePermissions(){
   var ownRole=createRole("Own membership role");ownRole.setPermissions(java.util.Set.of(UserPermission.USER_MANAGE));roles.flush();var own=createTenantUser("own-membership",ownRole);var ownId=seedMembership(own,ownRole,Tenant.DEFAULT_ID);
