@@ -18,8 +18,17 @@ transaction, never in production. It checks provisioning, duplicate and foreign-
 rejection, inactive/home identity rejection, public execution revocation, unchanged
 identity fields, independent suspensions and identity-deletion cascades.
 
-Before exposing this capability, implement a server-scoped authorized service,
-transactional audit logging, membership-based administration for foreign identities,
+Stage 30 adds an internal server-scoped service and transactional audit logging.
+It rejects the bootstrap tenant before looking up any identity, requires an
+authenticated actor with a live active membership and USER_MANAGE permission in
+the current server-owned context, and serializes administration using the tenant
+lock. The target tenant is never supplied as a request parameter. Only an explicitly
+named existing active identity may be assigned; foreign roles and duplicates are
+rejected. No credentials or global user fields are modified. The allowlisted audit
+event USER_MEMBERSHIP_CREATED joins the same transaction as provisioning.
+There is still no endpoint, UI or configuration flag enabling this service.
+
+Before exposing this capability, implement membership-based administration for foreign identities,
 and shared identity lifecycle handling. Only after isolation and authentication tests
 pass should tenant creation and tenant selection be enabled. SQL provisioning must
 not be exposed directly to clients. This preparation has not been deployed.
