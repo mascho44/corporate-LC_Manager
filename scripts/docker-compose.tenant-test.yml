@@ -1,0 +1,30 @@
+# Disposable synthetic test environment only; no production volumes or credentials.
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: lcmanager
+      POSTGRES_USER: lcmanager
+      POSTGRES_PASSWORD: SyntheticDbOnly
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lcmanager -d lcmanager"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  app:
+    build:
+      context: ..
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/lcmanager
+      DB_USER: lcmanager
+      DB_PASSWORD: SyntheticDbOnly
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: SyntheticOnly123!
+      TOTP_ENCRYPTION_KEY: SyntheticTestEncryptionKeyOnly20261007
+      SESSION_COOKIE_SECURE: "false"
+      SMTP_ENABLED: "false"
+    ports:
+      - "127.0.0.1:18086:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
