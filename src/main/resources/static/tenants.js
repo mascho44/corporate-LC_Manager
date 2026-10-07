@@ -13,6 +13,7 @@ async function setupTenants(){
  const submit=node('button',text('tenant.create','Create tenant'));submit.type='submit';form.append(submit);
  const notice=node('p',text('tenant.identityNotice','Create global user accounts in the default tenant, then assign them to another tenant under Users. New tenants start with no business data.'));
  section.append(heading,notice,message,list,form);document.querySelector('main').append(section);
+ const loginInfo=document.createElement('section');loginInfo.id='tenantLoginInfo';loginInfo.className='tenant-readiness';loginInfo.hidden=true;section.append(loginInfo);
  const settingsForm=document.createElement('form');settingsForm.id='tenantSettingsForm';settingsForm.className='form-grid';settingsForm.hidden=true;
  const settingsTitle=node('h3',text('tenant.settings','Current tenant settings'));
  const nameLabel=node('label',text('tenant.name','Tenant name')),settingsName=document.createElement('input');settingsName.name='name';settingsName.required=true;settingsName.maxLength=255;nameLabel.append(settingsName);
@@ -41,12 +42,15 @@ async function setupTenants(){
  }
  chooser.onchange=()=>switchTo(chooser.value);
  async function refresh(){
+  loginInfo.hidden=true;loginInfo.replaceChildren();
   try{overview=await json('/api/tenants');chooser.replaceChildren();list.replaceChildren();form.hidden=!overview.creationEnabled;
    overview.workspaces.forEach(workspace=>{const option=node('option',workspace.name);option.value=workspace.id;chooser.append(option);
     const row=document.createElement('article');row.className='membership-row';row.append(node('b',workspace.name),node('small',workspace.code));
     const button=node('button',workspace.id===overview.selectedTenantId?text('tenant.selected','Selected'):text('tenant.open','Open workspace'));button.type='button';button.className='secondary';button.disabled=workspace.id===overview.selectedTenantId;button.onclick=()=>switchTo(workspace.id);row.append(button);list.append(row);
    });chooser.value=overview.selectedTenantId;
    settings=await json('/api/tenants/current/settings');settingsForm.hidden=!settings.editingEnabled;settingsName.value=settings.name;settingsLanguage.value=settings.defaultLanguage;
+   const current=overview.workspaces.find(workspace=>workspace.id===overview.selectedTenantId);
+   if(current){loginInfo.hidden=false;loginInfo.append(node('h3',text('tenant.loginInfo','Access to this tenant')),node('p',current.name),node('p',text('tenant.loginCode','Tenant code for login: ')+current.code),node('p',text('tenant.loginHelp','On the login page, enter this code in the optional tenant field. Use your existing username, password and two-factor authentication when required. Leaving the tenant field blank opens the default tenant, not necessarily this workspace.')),node('p',text('tenant.accessHelp','A tenant administrator must first assign your existing account to a role under Users. Creating a tenant or knowing its code does not grant access.')));}
    await refreshReadiness();
   }catch(error){message.textContent=error.message;form.hidden=true;chooser.disabled=true;}
  }
