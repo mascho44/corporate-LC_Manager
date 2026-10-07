@@ -39,11 +39,16 @@ public class TenantWorkspaceService {
   if(tenants.existsByCodeIgnoreCase(code))throw new IllegalArgumentException("Tenant code already exists.");
   var tenant=tenants.saveAndFlush(new Tenant(code,name,language,bank,corporate));
   try(var scope=TenantContext.open(tenant.getId())){
-   var role=new AppRole();role.setName("Administrator");role.setBaseRole(UserRole.ADMIN);role.setSystemRole(true);role.setPermissions(EnumSet.allOf(UserPermission.class));role=roles.saveAndFlush(role);
+   var role=createStandardRole("Administrator",UserRole.ADMIN);
+   createStandardRole("Editor",UserRole.EDITOR);
+   createStandardRole("Viewer",UserRole.VIEWER);
    store.create(tenant.getId(),user.getId(),role.getId());
    audit.recordInTransaction(auth,"TENANT_CREATED","TENANT",tenant.getId(),"Tenant created with initial administrator membership");
   }
   return new Workspace(tenant.getId(),tenant.getCode(),tenant.getName());
+ }
+ private AppRole createStandardRole(String name,UserRole base){
+  var role=new AppRole();role.setName(name);role.setBaseRole(base);role.setSystemRole(true);role.setPermissions(UserPermission.defaults(base));return roles.saveAndFlush(role);
  }
  @Transactional public TenantMembershipService.Access select(UUID tenantId,Authentication auth){
   var user=identity(auth);
