@@ -1,6 +1,8 @@
 package de.corporate.lc.user.repository;
 import de.corporate.lc.user.domain.*; import org.springframework.data.jpa.repository.JpaRepository; import java.util.*;
 public interface AppUserRepository extends de.corporate.lc.tenant.repository.TenantScopedRepository<AppUser,UUID>{
+ @org.springframework.data.jpa.repository.Query("select count(u) from AppUser u where u.tenantId=:#{T(de.corporate.lc.tenant.domain.TenantContext).currentId()} and u.platformAdministrator=true and u.active=true and u.totpEnabled=true")
+ long countEnabledPlatformAdministrators();
  // Own-identity 2FA protection only, not a cross-tenant administration directory.
  @org.springframework.data.jpa.repository.Query("select count(m)>0 from TenantMembership m where m.user.id=:userId and m.active=true and m.user.active=true and m.role.baseRole=de.corporate.lc.user.domain.UserRole.ADMIN and not exists(select s.id from TenantMembershipSuspension s where s.tenantId=m.tenantId and s.userId=m.user.id and s.suspended=true)")
  boolean hasActiveAdministratorMembership(UUID userId);

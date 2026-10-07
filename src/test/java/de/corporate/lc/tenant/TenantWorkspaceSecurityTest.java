@@ -23,12 +23,14 @@ import static org.assertj.core.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest({TenantWorkspaceController.class,de.corporate.lc.tenant.api.TenantSettingsController.class,de.corporate.lc.tenant.api.TenantReadinessController.class}) @Import(SecurityConfig.class)
+@WebMvcTest({de.corporate.lc.user.api.PlatformAccountCreationController.class,de.corporate.lc.user.api.PlatformAdministrationController.class,TenantWorkspaceController.class,de.corporate.lc.tenant.api.TenantSettingsController.class,de.corporate.lc.tenant.api.TenantReadinessController.class}) @Import(SecurityConfig.class)
 class TenantWorkspaceSecurityTest {
  @Autowired MockMvc mvc;
  @MockitoBean TenantWorkspaceService workspaces;
  @MockitoBean TenantSettingsService settings;
  @MockitoBean TenantReadinessService readiness;
+ @MockitoBean PlatformAdministrationService platform;
+ @MockitoBean PlatformAccountCreationService accountCreation;
  @MockitoBean TenantMembershipService memberships;
  @MockitoBean AppUserDetailsService details;
  @MockitoBean AppUserRepository users;
@@ -58,6 +60,24 @@ class TenantWorkspaceSecurityTest {
   mvc.perform(post("/api/tenants/"+target+"/select").session(session).header(token.getHeaderName(),token.getToken())).andExpect(status().isForbidden());assertThat(session.getAttribute(CredentialSessionFilter.TENANT)).isNull();assertThat(session.getAttribute(CredentialSessionFilter.AUTHORIZATION_STAMP)).isEqualTo(before);
  }
  @Test void anonymousCannotReadSettings()throws Exception{mvc.perform(get("/api/tenants/current/settings")).andExpect(status().isUnauthorized());verifyNoInteractions(settings);}
+ @Test void anonymousCannotReadGlobalAccounts()throws Exception{mvc.perform(get("/api/platform/users")).andExpect(status().isUnauthorized());verifyNoInteractions(platform);}
+ @Test void accountCreationRequiresCsrfAndValidEmail()throws Exception{
+  var session=session();var token=token(session);String body="{\"username\":\"new\",\"displayName\":\"New\",\"email\":\"new@example.invalid\",\"password\":\"Synthetic123!\"}";
+  mvc.perform(post("/api/platform/users").session(session).contentType("application/json").content(body)).andExpect(status().isForbidden());verifyNoInteractions(accountCreation);
+  mvc.perform(post("/api/platform/users").session(session).header(token.getHeaderName(),token.getToken()).contentType("application/json").content(body.replace("new@example.invalid",""))).andExpect(status().isBadRequest());verifyNoInteractions(accountCreation);
+  mvc.perform(post("/api/platform/users").session(session).header(token.getHeaderName(),token.getToken()).contentType("application/json").content(body)).andExpect(status().isCreated());verify(accountCreation).create(eq("new"),eq("New"),eq("new@example.invalid"),eq("Synthetic123!"),any());
+ }
+ @Test void accountCreationServiceDenialIsForbidden()throws Exception{
+  when(accountCreation.create(any(),any(),any(),any(),any())).thenThrow(new org.springframework.security.access.AccessDeniedException("Denied"));var session=session();var token=token(session);
+  mvc.perform(post("/api/platform/users").session(session).header(token.getHeaderName(),token.getToken()).contentType("application/json").content("{\"username\":\"new\",\"displayName\":\"New\",\"email\":\"new@example.invalid\",\"password\":\"Synthetic123!\"}")).andExpect(status().isForbidden());
+ }
+ @Test void localRoleCannotOverridePlatformServiceDenial()throws Exception{when(platform.accounts(any())).thenThrow(new org.springframework.security.access.AccessDeniedException("Platform access denied"));mvc.perform(get("/api/platform/users").session(session())).andExpect(status().isForbidden());}
+ @Test void globalAccessUpdateRequiresCsrfAndRequiredBoolean()throws Exception{
+  var session=session();var token=token(session);String url="/api/platform/users/"+target+"/access";
+  mvc.perform(put(url).session(session).contentType("application/json").content("{\"active\":false}")).andExpect(status().isForbidden());verifyNoInteractions(platform);
+  mvc.perform(put(url).session(session).header(token.getHeaderName(),token.getToken()).contentType("application/json").content("{}")).andExpect(status().isBadRequest());verifyNoInteractions(platform);
+  mvc.perform(put(url).session(session).header(token.getHeaderName(),token.getToken()).contentType("application/json").content("{\"active\":false}")).andExpect(status().isOk());verify(platform).changeAccess(eq(target),eq(false),any());
+ }
  @Test void memberCanReadProfileMetadataWithoutEditingPermission()throws Exception{
   when(settings.get(any())).thenReturn(new TenantSettingsService.Settings(Tenant.DEFAULT_ID,"default","Synthetic","en",false,false,true));
   mvc.perform(get("/api/tenants/current/settings").session(session())).andExpect(status().isOk()).andExpect(jsonPath("$.editingEnabled").value(false)).andExpect(jsonPath("$.bankEnabled").value(false)).andExpect(jsonPath("$.corporateEnabled").value(true));

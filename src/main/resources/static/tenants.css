@@ -6,8 +6,11 @@
 #tenantSection form[hidden],#userForm.hidden,#newUser.hidden{display:none!important}
 #tenantSection input{width:100%}#tenantSection label{display:grid;gap:6px}#tenantSection button[type=submit]{align-self:end}
 #tenantProfileNotice{grid-column:1/-1;margin:0;color:#475467;font-size:13px;line-height:1.5}
+#platformSection{padding:22px}#platformSection>p{line-height:1.5}#platformSection .membership-row{flex-wrap:wrap}#platformSection .membership-row>small{flex-basis:100%}
 #cockpitSection{flex-wrap:wrap}#workspaceProfileShortcuts{display:flex;flex-wrap:wrap;flex-basis:100%;gap:10px;margin:20px 0}#workspaceProfileShortcuts h2,#workspaceProfileShortcuts p{flex-basis:100%;margin:0}#workspaceProfileShortcuts h2{font-size:18px}#workspaceProfileShortcuts p{font-size:13px;color:#475467;line-height:1.5}
 #membershipOverviewBody>form{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}#membershipOverviewBody>form input{max-width:260px}
 .tenant-readiness{margin-top:24px;padding:18px;border:1px solid #d8dee8;border-radius:12px;background:#f7f9fc}.tenant-readiness[hidden]{display:none!important}.tenant-readiness>p{color:#475467;line-height:1.5}.tenant-readiness .membership-row{padding:12px 0}
 .role-permission-search{display:grid;gap:8px;margin:18px 22px}.role-permission-search input{width:100%;min-width:0}.role-permission-search small{color:#475467}#permissionList>label[hidden]{display:none!important}
 @media(max-width:650px){.tenant-workspace-selector{flex:0 1 120px}.tenant-workspace-selector select{width:120px;max-width:28vw}#tenantSection .form-grid{grid-template-columns:1fr}}
+.platform-create-form { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border, #dce3ed); display: grid; gap: 12px; max-width: 640px; }
+.platform-create-form label { display: grid; gap: 6px; }
