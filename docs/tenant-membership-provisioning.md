@@ -36,6 +36,25 @@ role, active global account, active membership and tenant-local suspension, rath
 than the identity's home role. Only the current tenant's suspension is written;
 global identity fields and other memberships are untouched. No public API is added.
 
+Stage 32 (local, not deployed) adds internal shared-identity role administration.
+V65 provides an invoker-rights, owner-only role command; direct membership write
+guards remain enabled. The service validates live tenant administration permission,
+same-tenant roles and foreign-home identity membership. It protects the last active
+administrator and the caller's user-management permission. Only the selected
+membership role changes; global identity/home role, activation and local suspensions
+remain unchanged. Audit joins the same transaction. No endpoint or tenant switch
+is enabled. Tests include disposable PostgreSQL migration/role-update checks and
+Java authorization, last-admin, ownership and suspension preservation checks.
+
+Stage 33 adds real Spring transaction tests for shared-identity administration.
+Audit failures must roll back both a native membership role update and a newly
+created suspension. Successful operations must preserve the home role, credentials,
+home membership and another tenant's independent role/access state. These tests use
+H2 repositories and a transaction-bound JDBC replacement for the PostgreSQL role
+function; they verify service transaction behavior, not PostgreSQL trigger behavior.
+The actual PostgreSQL function and direct-write guards are verified separately by
+the disposable PostgreSQL fixture. Stages 32–33 remain local, not deployed.
+
 Before exposing this capability, implement membership-based administration for foreign identities,
 and shared identity lifecycle handling. Only after isolation and authentication tests
 pass should tenant creation and tenant selection be enabled. SQL provisioning must

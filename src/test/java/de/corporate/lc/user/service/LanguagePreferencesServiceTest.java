@@ -13,7 +13,7 @@ class LanguagePreferencesServiceTest {
  final LanguagePreferencesService service=new LanguagePreferencesService(users,tenants);
  final AppUser user=new AppUser();
  void setup(){when(users.findByUsernameIgnoreCase("test")).thenReturn(Optional.of(user));when(tenants.findById(Tenant.DEFAULT_ID)).thenReturn(Optional.of(new Tenant()));}
- @Test void defaultsToEnglishWithoutUserPreference(){setup();var result=service.get("test");assertThat(result.language()).isEqualTo("en");assertThat(result.preferredLanguage()).isNull();assertThat(result.multiTenantEnabled()).isFalse();}
+ @Test void defaultsToEnglishWithoutUserPreference(){setup();var result=service.get("test");assertThat(result.language()).isEqualTo("en");assertThat(result.preferredLanguage()).isNull();assertThat(result.multiTenantEnabled()).isTrue();}
  @Test void userPreferenceWinsAndCanBeReset(){setup();assertThat(service.update("test","de").language()).isEqualTo("de");assertThat(service.update("test",null).language()).isEqualTo("en");}
  @Test void rejectsUnknownPackBeforeWriting(){setup();assertThatThrownBy(()->service.update("test","../../evil")).isInstanceOf(IllegalArgumentException.class);verify(users,never()).save(any());}
  @Test void refusesNonDefaultTenant(){setup();ReflectionTestUtils.setField(user,"tenantId",UUID.randomUUID());assertThatThrownBy(()->service.get("test")).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);verifyNoInteractions(tenants);}

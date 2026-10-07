@@ -20,6 +20,7 @@ public class OutboxService {
     private final ObjectMapper json;
     private final MessagePublisher publisher;
     private final int maxAttempts;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private de.corporate.lc.tenant.service.TenantWorkers tenantWorkers;
 
     public OutboxService(OutboxMessageRepository repo, ObjectMapper json, MessagePublisher publisher,
                          @Value("${app.messaging.max-attempts:8}") int maxAttempts) {
@@ -44,9 +45,11 @@ public class OutboxService {
 
     @Scheduled(fixedDelayString = "${app.messaging.outbox-interval-ms:5000}")
     public void dispatch() {
-        de.corporate.lc.tenant.service.TenantJobRunner.run(de.corporate.lc.tenant.domain.Tenant.DEFAULT_ID, () -> {
+        if(tenantWorkers!=null)tenantWorkers.forEach(this::dispatchCurrentTenant);
+        else de.corporate.lc.tenant.service.TenantJobRunner.run(de.corporate.lc.tenant.domain.Tenant.DEFAULT_ID,this::dispatchCurrentTenant);
+    }
+    private void dispatchCurrentTenant(){
         for (OutboxMessage message : repo.findTop50ByStatusAndNextAttemptAtLessThanEqualOrderByCreatedAt("PENDING", LocalDateTime.now())) publish(message);
-        });
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)

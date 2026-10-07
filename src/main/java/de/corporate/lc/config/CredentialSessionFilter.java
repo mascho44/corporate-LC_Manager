@@ -13,6 +13,7 @@ public class CredentialSessionFilter extends OncePerRequestFilter {
     public static final String STAMP="LC_CREDENTIAL_STAMP";
     public static final String AUTHORIZATION_STAMP="LC_AUTHORIZATION_STAMP";
     public static final String AUTHENTICATED_AT="LC_AUTHENTICATED_AT";
+    public static final String TENANT="LC_SELECTED_TENANT";
     private final AppUserRepository users;
     private final de.corporate.lc.tenant.service.TenantMembershipService memberships;
     public CredentialSessionFilter(AppUserRepository users,de.corporate.lc.tenant.service.TenantMembershipService memberships){this.users=users;this.memberships=memberships;}
@@ -24,11 +25,14 @@ public class CredentialSessionFilter extends OncePerRequestFilter {
             Object started=session==null?null:session.getAttribute(AUTHENTICATED_AT);
             boolean withinLifetime=started instanceof Long&&System.currentTimeMillis()-(Long)started<28_800_000;
             var account=users.findByUsernameIgnoreCase(auth.getName()).orElse(null);
+            Object selected=session==null?null:session.getAttribute(TENANT);
+            java.util.UUID tenantId=selected instanceof java.util.UUID id?id:de.corporate.lc.tenant.domain.Tenant.DEFAULT_ID;
             boolean valid=withinLifetime&&account!=null&&account.isActive()&&CredentialStamp.of(account.getPasswordHash()).equals(stamp)&&
                 de.corporate.lc.tenant.domain.Tenant.DEFAULT_ID.equals(account.getTenantId())&&
                 (account.getAssignedRole()==null||account.getTenantId().equals(account.getAssignedRole().getTenantId()));
+            valid=valid&&(selected==null||selected instanceof java.util.UUID);
             if(valid){
-                try(var scope=de.corporate.lc.tenant.domain.TenantContext.open(de.corporate.lc.tenant.domain.Tenant.DEFAULT_ID)){
+                try(var scope=de.corporate.lc.tenant.domain.TenantContext.open(tenantId)){
                     var access=memberships.requireActiveAccess(account.getId());
                     valid=(access.baseRole()!=de.corporate.lc.user.domain.UserRole.ADMIN||account.isTotpEnabled())&&
                         de.corporate.lc.user.service.AuthorizationStamp.of(access).equals(session.getAttribute(AUTHORIZATION_STAMP));
@@ -39,7 +43,9 @@ public class CredentialSessionFilter extends OncePerRequestFilter {
                 else response.sendRedirect("/login.html");
                 return;
             }
-            try(var scope=de.corporate.lc.tenant.domain.TenantContext.open(account.getTenantId())){chain.doFilter(request,response);}
+            // Own identity self-service remains in the identity's home scope; business APIs use selected membership.
+            String uri=request.getRequestURI();boolean selfService=(uri.startsWith("/api/profile")&&!uri.startsWith("/api/profile/language"))||uri.equals("/api/auth/password")||uri.startsWith("/api/auth/totp/");
+            try(var scope=de.corporate.lc.tenant.domain.TenantContext.open(selfService?account.getTenantId():tenantId)){chain.doFilter(request,response);}
             return;
         }
         chain.doFilter(request,response);
