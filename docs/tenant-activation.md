@@ -168,3 +168,19 @@ conflict fails without stopping the application already using that port.
 Verified on 2026-10-07: the one-command runner completed the PostgreSQL smoke
 successfully and removed its test containers and network automatically. No
 Compose-labeled containers, networks or volumes remained for its unique project.
+
+## Continuous acceptance checks
+
+The CI workflow runs the same disposable PostgreSQL acceptance test as a separate
+**Tenant acceptance (PostgreSQL)** job on pull requests, pushes to main and manual
+workflow runs. It checks the actual database migrations, tenant provisioning,
+workspace switching, session revocation and read/write access boundaries, alongside
+the existing Java and JavaScript tests. The job has a 20-minute limit and uses a
+GitHub-hosted runner with read-only repository permissions and no retained checkout
+credentials. It does not use deployment secrets, production hosts or uploaded
+documents. The local runner handles its own normal/error cleanup; GitHub discards
+the hosted runner after cancellation or a job timeout.
+
+Adding the job does not automatically make it a required branch-protection check.
+That repository setting must be configured separately if merges should be blocked
+until this check passes.
