@@ -22,6 +22,10 @@ class TenantRepositoryIsolationTest {
   try(var scope=TenantContext.open(foreignTenant)){seedMembership(user,createRole("Synthetic foreign access role"),foreignTenant);}
   var homeState=new TenantMembershipSuspension(user.getId());homeState.setSuspended(true);suspensions.saveAndFlush(homeState);
   assertThatThrownBy(()->access.requireActiveAccess(user.getId())).isInstanceOf(AccessDeniedException.class);
+  var explicitDetails=new de.corporate.lc.user.service.AppUserDetailsService(users,access);
+  assertThatThrownBy(()->explicitDetails.loadUserByUsername(user.getUsername())).isInstanceOf(org.springframework.security.authentication.DisabledException.class);
+  assertThat(explicitDetails.loadForTenant(user.getUsername(),foreignTenant).isEnabled()).isTrue();
+  assertThat(TenantContext.currentId()).isEqualTo(Tenant.DEFAULT_ID);
   var view=access.forUser(user.getId()).orElseThrow();assertThat(view.suspended()).isTrue();assertThat(view.identityActive()).isTrue();assertThat(view.active()).isFalse();
   assertThat(users.countByRoleAndActiveTrue(UserRole.ADMIN)).isZero();assertThat(users.countByAssignedRoleIdAndActiveTrue(role.getId())).isZero();assertThat(users.findAllByActiveTrueOrderByDisplayNameAsc()).isEmpty();assertThat(users.existsAssignableUsername(user.getUsername())).isFalse();assertThat(user.isActive()).isTrue();
   UUID foreignStateId;

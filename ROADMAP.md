@@ -34,6 +34,6 @@
 
 - Zurückgestellt bis zur Rechteklärung: ICC-bezogene Rule Packs und Microservice `lc-rule-engine`. Zielarchitektur und Freigabevorgaben stehen in [lc-rule-engine](docs/lc-rule-engine.md). Bezug: GitHub #29. Die neue ICC-Teilregel und der Pack-Endpunkt wurden vorerst entfernt; interne LC-Vorprüfungen bleiben bestehen.
 - EBICS-Anbindung für den sicheren Bankaustausch
-- Multiple Entities: erste lokale Mandantenanlage mit getrennten Akten, Rollen, Einstellungen und Mitgliedschaften umgesetzt; globale Identitäten werden zunächst im Standardmandanten angelegt. Unabhängiger Mandanten-Login und vollständiger globaler IAM-Lebenszyklus bleiben offen.
+- Multiple Entities: Mandantenanlage und Wechsel deployed; Bearbeitung von Name/Standardsprache und expliziter Mandanten-Login lokal ergänzt. Globale Identitäten werden zunächst zentral im Standardmandanten angelegt; ein vollständiger globaler IAM-Lebenszyklus bleibt offen.
 - Weitere SWIFT-Profile, insbesondere MT767
 - Kerberos-Anbindung für Enterprise-SSO mit Rollenabbildung und lokalem Notfall-Adminzugang

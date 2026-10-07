@@ -13,10 +13,15 @@ async function setupTenants(){
  const submit=node('button',text('tenant.create','Create tenant'));submit.type='submit';form.append(submit);
  const notice=node('p',text('tenant.identityNotice','Create global user accounts in the default tenant, then assign them to another tenant under Users. New tenants start with no business data.'));
  section.append(heading,notice,message,list,form);document.querySelector('main').append(section);
+ const settingsForm=document.createElement('form');settingsForm.id='tenantSettingsForm';settingsForm.className='form-grid';settingsForm.hidden=true;
+ const settingsTitle=node('h3',text('tenant.settings','Current tenant settings'));
+ const nameLabel=node('label',text('tenant.name','Tenant name')),settingsName=document.createElement('input');settingsName.name='name';settingsName.required=true;settingsName.maxLength=255;nameLabel.append(settingsName);
+ const languageLabel=node('label',text('tenant.language','Default language')),settingsLanguage=document.createElement('select');settingsLanguage.name='defaultLanguage';[['en','English'],['de','Deutsch']].forEach(([value,label])=>{const option=node('option',label);option.value=value;settingsLanguage.append(option);});languageLabel.append(settingsLanguage);
+ const saveSettings=node('button',text('tenant.saveSettings','Save settings'));saveSettings.type='submit';settingsForm.append(settingsTitle,nameLabel,languageLabel,saveSettings);section.append(settingsForm);
  nav.onclick=()=>{appNavigate('tenants',nav);refresh();};
  const header=document.createElement('label');header.className='tenant-workspace-selector';header.append(node('span',text('tenant.workspace','Workspace')));
  const chooser=document.createElement('select');chooser.setAttribute('aria-label',text('tenant.workspace','Workspace'));header.append(chooser);document.querySelector('.header-actions').prepend(header);
- let overview,busy=false;
+ let overview,settings,busy=false;
  async function switchTo(id){
   if(busy||id===overview.selectedTenantId)return;busy=true;chooser.disabled=true;
   try{await json('/api/tenants/'+encodeURIComponent(id)+'/select',{method:'POST'});location.reload();}
@@ -30,11 +35,16 @@ async function setupTenants(){
     const row=document.createElement('article');row.className='membership-row';row.append(node('b',workspace.name),node('small',workspace.code));
     const button=node('button',workspace.id===overview.selectedTenantId?text('tenant.selected','Selected'):text('tenant.open','Open workspace'));button.type='button';button.className='secondary';button.disabled=workspace.id===overview.selectedTenantId;button.onclick=()=>switchTo(workspace.id);row.append(button);list.append(row);
    });chooser.value=overview.selectedTenantId;
+   settings=await json('/api/tenants/current/settings');settingsForm.hidden=!settings.editingEnabled;settingsName.value=settings.name;settingsLanguage.value=settings.defaultLanguage;
   }catch(error){message.textContent=error.message;form.hidden=true;chooser.disabled=true;}
  }
  form.onsubmit=async event=>{event.preventDefault();if(busy||!overview?.creationEnabled)return;busy=true;submit.disabled=true;message.textContent='';
   try{const values=Object.fromEntries(new FormData(form));values.bankEnabled=true;values.corporateEnabled=false;const created=await json('/api/tenants',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(values)});form.reset();await refresh();message.textContent=text('tenant.created','Tenant created: ')+created.name;}
   catch(error){message.textContent=error.message;}finally{busy=false;submit.disabled=false;}
+ };
+ settingsForm.onsubmit=async event=>{event.preventDefault();if(busy||!settings?.editingEnabled)return;busy=true;saveSettings.disabled=true;message.textContent='';
+  try{await json('/api/tenants/current/settings',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:settingsName.value,defaultLanguage:settingsLanguage.value})});await refresh();message.textContent=text('tenant.settingsSaved','Settings saved. The default language applies to users without a personal language preference.');}
+  catch(error){message.textContent=error.message;}finally{busy=false;saveSettings.disabled=false;}
  };
  await refresh();
 }

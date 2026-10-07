@@ -23,10 +23,11 @@ import static org.assertj.core.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(TenantWorkspaceController.class) @Import(SecurityConfig.class)
+@WebMvcTest({TenantWorkspaceController.class,de.corporate.lc.tenant.api.TenantSettingsController.class}) @Import(SecurityConfig.class)
 class TenantWorkspaceSecurityTest {
  @Autowired MockMvc mvc;
  @MockitoBean TenantWorkspaceService workspaces;
+ @MockitoBean TenantSettingsService settings;
  @MockitoBean TenantMembershipService memberships;
  @MockitoBean AppUserDetailsService details;
  @MockitoBean AppUserRepository users;
@@ -54,5 +55,16 @@ class TenantWorkspaceSecurityTest {
  @Test void rejectedSelectionLeavesSessionUnchanged()throws Exception{
   var session=session();var token=token(session);var before=session.getAttribute(CredentialSessionFilter.AUTHORIZATION_STAMP);when(workspaces.select(eq(target),any())).thenThrow(new org.springframework.security.access.AccessDeniedException("No membership"));
   mvc.perform(post("/api/tenants/"+target+"/select").session(session).header(token.getHeaderName(),token.getToken())).andExpect(status().isForbidden());assertThat(session.getAttribute(CredentialSessionFilter.TENANT)).isNull();assertThat(session.getAttribute(CredentialSessionFilter.AUTHORIZATION_STAMP)).isEqualTo(before);
+ }
+ @Test void anonymousCannotReadSettings()throws Exception{mvc.perform(get("/api/tenants/current/settings")).andExpect(status().isUnauthorized());verifyNoInteractions(settings);}
+ @Test void settingsUpdateRequiresCsrfAndPassesOnlyPresentationFields()throws Exception{
+  var session=session();var token=token(session);var body="{\"name\":\"Synthetic renamed\",\"defaultLanguage\":\"de\"}";
+  mvc.perform(put("/api/tenants/current/settings").session(session).contentType("application/json").content(body)).andExpect(status().isForbidden());verifyNoInteractions(settings);
+  when(settings.update(eq("Synthetic renamed"),eq("de"),any())).thenReturn(new TenantSettingsService.Settings(Tenant.DEFAULT_ID,"default","Synthetic renamed","de",true));
+  mvc.perform(put("/api/tenants/current/settings").session(session).header(token.getHeaderName(),token.getToken()).contentType("application/json").content(body)).andExpect(status().isOk()).andExpect(jsonPath("$.name").value("Synthetic renamed"));
+ }
+ @Test void settingsServiceDenialReturnsForbidden()throws Exception{
+  var session=session();var token=token(session);when(settings.update(any(),any(),any())).thenThrow(new org.springframework.security.access.AccessDeniedException("Not an administrator"));
+  mvc.perform(put("/api/tenants/current/settings").session(session).header(token.getHeaderName(),token.getToken()).contentType("application/json").content("{\"name\":\"Blocked\",\"defaultLanguage\":\"en\"}")).andExpect(status().isForbidden());
  }
 }

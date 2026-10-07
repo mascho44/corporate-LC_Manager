@@ -21,6 +21,7 @@ function swift(reference){return `:20:${reference}\n:31C:261001\n:31D:271231SYNT
  const created=await call('/api/tenants','POST',{code:'synthetic-smoke',name:'Synthetic smoke workspace',defaultLanguage:'en',bankEnabled:true,corporateEnabled:false});
  await call('/api/tenants/'+created.id+'/select','POST');csrf=(await call('/api/auth/me')).csrfToken;
  assert.equal((await call('/api/tenants')).selectedTenantId,created.id);assert.deepEqual(await call('/api/lcs'),[]);
+ await call('/api/tenants/current/settings','PUT',{name:'Synthetic renamed workspace',defaultLanguage:'de'});assert.equal((await call('/api/tenants/current/settings')).name,'Synthetic renamed workspace');
  await call('/api/lcs/'+homeLc.id,'GET',undefined,404);
  const localLc=await call('/api/lcs/import/mt700','POST',swift('SYNTHETIC-LOCAL'),200,'text/plain');assert.equal((await call('/api/lcs')).length,1);
  assert.equal((await call('/api/profile')).username,'admin');assert.equal((await call('/api/profile/language')).tenantId,created.id);
@@ -34,5 +35,15 @@ function swift(reference){return `:20:${reference}\n:31C:261001\n:31D:271231SYNT
  await call('/api/tenants/'+crypto.randomUUID()+'/select','POST',undefined,403);
  await call('/api/tenants/'+home+'/select','POST');csrf=(await call('/api/auth/me')).csrfToken;
  assert.deepEqual((await call('/api/lcs')).map(l=>l.reference),['SYNTHETIC-HOME']);await call('/api/lcs/'+localLc.id,'GET',undefined,404);
- console.log('PASS: TOTP login, native PostgreSQL tenant creation, selection, local role update, stale-session revocation, profile/language and two-way LC isolation.');
+ const homeViewer=(await call('/api/roles')).find(r=>r.baseRole==='VIEWER');assert.ok(homeViewer);
+ const isolated=await call('/api/users','POST',{username:'synthetic-local-only',displayName:'Synthetic local identity',email:'synthetic-local-only@example.invalid',password:'SyntheticOnly456!',roleId:homeViewer.id,active:true});
+ await call('/api/tenants/'+created.id+'/select','POST');csrf=(await call('/api/auth/me')).csrfToken;
+ const viewer=await call('/api/roles','POST',{name:'Synthetic local viewer',baseRole:'VIEWER',permissions:[]});await call('/api/users/memberships/shared','POST',{username:isolated.username,roleId:viewer.id});
+ await call('/api/tenants/'+home+'/select','POST');csrf=(await call('/api/auth/me')).csrfToken;await call('/api/users/memberships/'+isolated.id+'/access','PUT',{suspended:true});
+ await call('/api/auth/logout','POST',undefined,204);csrf='';
+ await call('/api/auth/login','POST',{username:isolated.username,password:'SyntheticOnly456!'},401);
+ await call('/api/auth/login','POST',{username:isolated.username,password:'SyntheticOnly456!',tenantCode:'synthetic-smoke'});csrf=(await call('/api/auth/me')).csrfToken;
+ assert.equal((await call('/api/tenants')).selectedTenantId,created.id);assert.deepEqual((await call('/api/lcs')).map(l=>l.reference),['SYNTHETIC-LOCAL']);await call('/api/lcs/'+homeLc.id,'GET',undefined,404);
+ await call('/api/tenants/current/settings','PUT',{name:'Forbidden',defaultLanguage:'en'},403);
+ console.log('PASS: TOTP login, native PostgreSQL tenant creation, settings, selection, local roles, stale-session revocation, two-way LC isolation and explicit tenant login with suspended default access.');
 })().catch(error=>{console.error(error.message);process.exitCode=1;});

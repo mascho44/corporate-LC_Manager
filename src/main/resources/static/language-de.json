@@ -80,5 +80,8 @@
   "tenant.open": "Arbeitsbereich öffnen",
   "tenant.created": "Mandant angelegt: ",
   "tenant.existingUsername": "Vorhandener Benutzername",
-  "tenant.assign": "Vorhandenen Benutzer zuordnen"
+  "tenant.assign": "Vorhandenen Benutzer zuordnen",
+  "tenant.settings": "Einstellungen des aktuellen Mandanten",
+  "tenant.saveSettings": "Einstellungen speichern",
+  "tenant.settingsSaved": "Einstellungen gespeichert. Die Standardsprache gilt für Benutzer ohne persönliche Sprachpräferenz."
 }
