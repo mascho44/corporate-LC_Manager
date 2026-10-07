@@ -153,3 +153,18 @@ Local follow-up: direct document extraction, background extraction and applicati
 of page-local recognition explicitly validate document ownership before reading
 content or changing extraction metadata. Ownership failures propagate as access
 denials rather than being converted into an OCR failure on a foreign document.
+
+## Repeatable local acceptance test
+
+Run `bash scripts/test-tenant-workspaces.sh` with Docker, curl and Node.js 20+.
+It builds the current source in a uniquely named Compose project, binds only
+localhost port 18086, and uses fixed synthetic credentials and a disposable TOTP
+key. It waits for both API health and initial-user provisioning before testing.
+Production configuration and existing application volumes are not used.
+On success, failure or a handled interrupt it removes its own test containers,
+database volumes and network. Test data is intentionally not retained. A port
+conflict fails without stopping the application already using that port.
+
+Verified on 2026-10-07: the one-command runner completed the PostgreSQL smoke
+successfully and removed its test containers and network automatically. No
+Compose-labeled containers, networks or volumes remained for its unique project.
