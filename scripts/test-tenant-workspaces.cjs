@@ -11,6 +11,18 @@ async function call(path,method='GET',body,expected=200,type='application/json',
  const content=await response.text();assert.equal(response.status,expected,`${method} ${path}: HTTP ${response.status}`);return raw?content:content?JSON.parse(content):null;
 }
 function attachment(text){const form=new FormData();form.append('file',new Blob([text],{type:'text/plain'}),'synthetic-annex.txt');return form;}
+async function assertPng(path,expectedPages=null){
+ const response=await fetch(base+path,{headers:{Cookie:[...cookies].map(([k,v])=>`${k}=${v}`).join(';')}});
+ assert.equal(response.status,200,`PNG ${path}: HTTP ${response.status}`);assert.match(response.headers.get('Content-Type'),/^image\/png/);assert.equal(response.headers.get('Cache-Control'),'no-store');
+ const bytes=Buffer.from(await response.arrayBuffer());assert.ok(bytes.length>24);assert.deepEqual([...bytes.subarray(0,8)],[137,80,78,71,13,10,26,10]);
+ const width=bytes.readUInt32BE(16),height=bytes.readUInt32BE(20);assert.ok(width>0&&height>0&&Math.max(width,height)<=1400);
+ if(expectedPages!=null)assert.equal(Number(response.headers.get('X-Page-Count')),expectedPages);
+}
+async function waitTraining(id){
+ const deadline=Date.now()+30000;
+ while(Date.now()<deadline){const job=await call('/api/training/document-types/jobs/'+id);if(job.state==='COMPLETED'){assert.ok(job.result);return job.result;}assert.notEqual(job.state,'FAILED',job.message);await new Promise(r=>setTimeout(r,200));}
+ throw Error('Synthetic background training did not finish within 30 seconds.');
+}
 function syntheticPdf(pages){
  const objects=['<< /Type /Catalog /Pages 2 0 R >>','<< /Type /Pages /Count '+pages.length+' /Kids ['+pages.map((_,i)=>(4+i*2)+' 0 R').join(' ')+'] >>','<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'];
  pages.forEach((text,i)=>{const stream='BT /F1 12 Tf 30 700 Td ('+text+') Tj ET';objects.push('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents '+(5+i*2)+' 0 R >>','<< /Length '+Buffer.byteLength(stream)+' >>\nstream\n'+stream+'\nendstream');});let pdf='%PDF-1.4\n',offsets=[0];objects.forEach((object,i)=>{offsets.push(Buffer.byteLength(pdf));pdf+=(i+1)+' 0 obj\n'+object+'\nendobj\n';});const xref=Buffer.byteLength(pdf);pdf+='xref\n0 '+(objects.length+1)+'\n0000000000 65535 f \n'+offsets.slice(1).map(at=>String(at).padStart(10,'0')+' 00000 n \n').join('')+'trailer\n<< /Size '+(objects.length+1)+' /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF\n';return Buffer.from(pdf);
@@ -232,14 +244,50 @@ function swift(reference){return `:20:${reference}\n:31C:261001\n:31D:271231SYNT
  const repeatedTraining=await trainingUpload();const learnedProposal=await call('/api/inbox/'+repeatedTraining.id+'/split-proposal');assert.deepEqual(learnedProposal.parts,confirmedRanges);assert.ok(learnedProposal.pages.every(p=>p.classification.status==='REVIEW'&&p.classification.method==='CONFIRMED_SPLIT_PATTERN_V1'));assert.deepEqual(await call('/api/inbox/'+repeatedTraining.id+'/auto-split','POST'),[]);
  assert.equal((await call('/api/platform/tenants/'+created.id+'/inventory')).categories.find(c=>c.key==='document_split_training').records,1);
  const beforePretraining=(await call('/api/inbox')).map(i=>i.id).sort();const pretrainUpload=new FormData();pretrainUpload.append('file',new Blob([trainingBundle],{type:'application/pdf'}),'synthetic-pretraining.pdf');
- const pretrain=await call('/api/training/document-types/proposal','POST',pretrainUpload,200,'multipart');assert.deepEqual(pretrain.proposal.parts,confirmedRanges);assert.ok(pretrain.receipt);
+ const trainingJob=await call('/api/training/document-types/jobs','POST',pretrainUpload,202,'multipart');assert.ok(trainingJob.id);const pretrain=await waitTraining(trainingJob.id);assert.deepEqual(pretrain.proposal.parts,confirmedRanges);assert.ok(pretrain.receipt);
+ await call('/api/training/document-types/confirm','POST',{receipt:pretrain.receipt,parts:[{fromPage:1,toPage:1,documentType:'OTHER'},{fromPage:3,toPage:3,documentType:'OTHER'}]},400);
  assert.equal((await call('/api/platform/tenants/'+created.id+'/inventory')).categories.find(c=>c.key==='document_split_training').records,1);
  await call('/api/training/document-types/confirm','POST',{receipt:pretrain.receipt,parts:confirmedRanges});assert.deepEqual((await call('/api/inbox')).map(i=>i.id).sort(),beforePretraining);
  assert.equal((await call('/api/platform/tenants/'+created.id+'/inventory')).categories.find(c=>c.key==='document_split_training').records,2);
- await call('/api/tenants/'+home+'/select','POST');csrf=(await call('/api/auth/me')).csrfToken;const otherTraining=await trainingUpload();assert.ok((await call('/api/inbox/'+otherTraining.id+'/split-proposal')).pages.every(p=>p.classification.method!=='CONFIRMED_SPLIT_PATTERN_V1'));await call('/api/inbox/'+otherTraining.id,'DELETE',undefined,204);await call('/api/tenants/'+created.id+'/select','POST');csrf=(await call('/api/auth/me')).csrfToken;
+ await call('/api/tenants/'+home+'/select','POST');csrf=(await call('/api/auth/me')).csrfToken;
+ await call('/api/training/document-types/jobs/'+trainingJob.id,'GET',undefined,404);
+ const otherTraining=await trainingUpload();assert.ok((await call('/api/inbox/'+otherTraining.id+'/split-proposal')).pages.every(p=>p.classification.method!=='CONFIRMED_SPLIT_PATTERN_V1'));await call('/api/inbox/'+otherTraining.id,'DELETE',undefined,204);await call('/api/tenants/'+created.id+'/select','POST');csrf=(await call('/api/auth/me')).csrfToken;
+ // Complete reviewed workflow: invalid split leaves source intact, valid parts retain designation,
+ // previews work before/after attachment, and learned templates never inherit Original/Copy.
+ await call('/api/inbox/'+repeatedTraining.id+'/split','POST',{parts:[{fromPage:1,toPage:1,documentType:'OTHER'},{fromPage:1,toPage:2,documentType:'OTHER'}]},400);
+ assert.ok((await call('/api/inbox')).some(item=>item.id===repeatedTraining.id));
+ const reviewedParts=[{...confirmedRanges[0],copyNumber:-1},{...confirmedRanges[1],copyNumber:2}];
+ const workflowParts=await call('/api/inbox/'+repeatedTraining.id+'/split','POST',{parts:reviewedParts});assert.deepEqual(workflowParts.map(item=>item.copyNumber),[-1,2]);
+ assert.equal(await call('/api/inbox/'+repeatedTraining.id+'/content','GET',undefined,200,'application/json',true),trainingBundle.toString());
+ await assertPng('/api/inbox/'+workflowParts[0].id+'/pages/1/preview?enlarged=true');
+ const attached=[];
+ for(let index=0;index<workflowParts.length;index++){
+  const result=await call('/api/inbox/'+workflowParts[index].id+'/attach','POST',{lcId:localLc.id,documentType:reviewedParts[index].documentType,copyNumber:reviewedParts[index].copyNumber});
+  assert.equal(result.document.copyNumber,reviewedParts[index].copyNumber);assert.equal(result.document.documentType,reviewedParts[index].documentType);attached.push(result.document);
+ }
+ const documentList=await call('/api/lcs/'+localLc.id+'/documents');assert.ok(attached.every(document=>documentList.some(saved=>saved.id===document.id&&saved.copyNumber===document.copyNumber)));
+ assert.ok(!(await call('/api/inbox')).some(item=>workflowParts.some(part=>part.id===item.id)));
+ for(const document of attached){assert.ok((await call('/api/documents/'+document.id+'/content','GET',undefined,200,'application/json',true)).startsWith('%PDF-'));await assertPng('/api/documents/'+document.id+'/pages/1/preview',1);}
+ await call('/api/documents/'+attached[0].id+'/pages/2/preview','GET',undefined,400);
+ await call('/api/tenants/'+home+'/select','POST');csrf=(await call('/api/auth/me')).csrfToken;
+ await call('/api/documents/'+attached[0].id+'/pages/1/preview','GET',undefined,404);
+ await call('/api/tenants/'+created.id+'/select','POST');csrf=(await call('/api/auth/me')).csrfToken;
+ const afterAttachmentTraining=await trainingUpload();assert.deepEqual((await call('/api/inbox/'+afterAttachmentTraining.id+'/split-proposal')).parts,confirmedRanges);
+ await call('/api/inbox/'+afterAttachmentTraining.id,'DELETE',undefined,204);
+ // Large DIGITAL bundle exercises real page ranges; deliberately not an OCR performance claim.
+ const largeBundle=syntheticPdf(Array.from({length:42},(_,index)=>'Synthetic bundle page '+(index+1)+' customer descriptions package details and declared quantities for regression testing only'));
+ const largeForm=new FormData();largeForm.append('file',new Blob([largeBundle],{type:'application/pdf'}),'synthetic-42-pages.pdf');
+ const largeJob=await call('/api/training/document-types/jobs','POST',largeForm,202,'multipart');const largePreview=await waitTraining(largeJob.id);assert.equal(largePreview.proposal.pageCount,42);
+ const largeRanges=[{fromPage:1,toPage:14,documentType:'BILL_OF_LADING',copyNumber:-1},{fromPage:15,toPage:28,documentType:'BILL_OF_LADING',copyNumber:-2},{fromPage:29,toPage:42,documentType:'BILL_OF_LADING',copyNumber:1}];
+ await call('/api/training/document-types/confirm','POST',{receipt:largePreview.receipt,parts:largeRanges});
+ const largeInboxForm=new FormData();largeInboxForm.append('file',new Blob([largeBundle],{type:'application/pdf'}),'synthetic-42-pages.pdf');const largeSource=(await call('/api/inbox','POST',largeInboxForm,202,'multipart'))[0];
+ await waitInbox(items=>items.some(item=>item.id===largeSource.id&&item.extractionStatus==='EXTRACTED'));
+ const largeLearned=await call('/api/inbox/'+largeSource.id+'/split-proposal');assert.equal(largeLearned.parts.length,3);assert.ok(largeLearned.parts.every(part=>part.copyNumber==null));
+ const largeParts=await call('/api/inbox/'+largeSource.id+'/split','POST',{parts:largeRanges});assert.deepEqual(largeParts.map(part=>[part.sourceFromPage,part.sourceToPage,part.copyNumber]),[[1,14,-1],[15,28,-2],[29,42,1]]);
+ for(const part of largeParts){const result=await call('/api/inbox/'+part.id+'/attach','POST',{lcId:localLc.id,documentType:'BILL_OF_LADING',copyNumber:part.copyNumber});await assertPng('/api/documents/'+result.document.id+'/pages/14/preview',14);}
  // Original/Copy is explicit per-file metadata, editable and never inferred.
- const copyForm=new FormData();for(const designation of [0,2]){copyForm.append('file',new Blob([trainingBundle],{type:'application/pdf'}),'synthetic-copy.pdf');copyForm.append('types','OTHER');copyForm.append('copies',String(designation));}
- const copies=await call('/api/lcs/'+localLc.id+'/documents/batch','POST',copyForm,200,'multipart');assert.deepEqual(copies.map(d=>d.copyNumber),[0,2]);
+ const copyForm=new FormData();for(const designation of [-1,-2,-3,0,2]){copyForm.append('file',new Blob([trainingBundle],{type:'application/pdf'}),'synthetic-copy.pdf');copyForm.append('types','BILL_OF_LADING');copyForm.append('copies',String(designation));}
+ const copies=await call('/api/lcs/'+localLc.id+'/documents/batch','POST',copyForm,200,'multipart');assert.deepEqual(copies.map(d=>d.copyNumber),[-1,-2,-3,0,2]);
  const changedCopy=await call('/api/lcs/'+localLc.id+'/documents/'+copies[0].id,'PUT',{type:'OTHER',copyNumber:3});assert.equal(changedCopy.copyNumber,3);
  await call('/api/lcs/'+localLc.id+'/documents/'+copies[0].id,'PUT',{type:'OTHER',copyNumber:4},400);
  for(const document of copies)await call('/api/lcs/'+localLc.id+'/documents/'+document.id,'DELETE',undefined,204);
@@ -259,5 +307,5 @@ function swift(reference){return `:20:${reference}\n:31C:261001\n:31D:271231SYNT
  assert.ok(purged.categories.filter(c=>c.key!=='audit_event').every(c=>c.records===0));
  assert.ok(purged.categories.find(c=>c.key==='audit_event').records>0);
  await call('/api/platform/tenants/'+created.id+'/archive','PUT',{archived:false},400);
- console.log('PASS: tenant lifecycle, isolation, automatic splitting and full disposable business-data purge.');
+ console.log('PASS: tenant lifecycle, isolation, async pretraining, reviewed split/attachment, raster previews, Original/Copy and full disposable business-data purge.');
 })().catch(error=>{console.error(error.message);process.exitCode=1;}).finally(async()=>{if(syntheticSmtp)await syntheticSmtp.close();});
