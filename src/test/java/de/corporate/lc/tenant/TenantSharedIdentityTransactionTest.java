@@ -25,12 +25,13 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 /** Real Spring transactions/repositories; the PostgreSQL function itself is tested separately. */
-@DataJpaTest(properties={"app.mail.enabled=true","app.mail.from=synthetic@example.invalid","spring.flyway.enabled=false","spring.jpa.hibernate.ddl-auto=create-drop","spring.datasource.url=jdbc:h2:mem:sharedidentityaudit;MODE=PostgreSQL;DB_CLOSE_DELAY=-1","spring.datasource.driver-class-name=org.h2.Driver"},showSql=false)
+@DataJpaTest(properties={"app.security.totp-encryption-key=SyntheticMailQueueKeyForTestsOnly32", "app.mail.enabled=true","app.mail.from=synthetic@example.invalid","spring.flyway.enabled=false","spring.jpa.hibernate.ddl-auto=create-drop","spring.datasource.url=jdbc:h2:mem:sharedidentityaudit;MODE=PostgreSQL;DB_CLOSE_DELAY=-1","spring.datasource.driver-class-name=org.h2.Driver"},showSql=false)
 @AutoConfigureTestDatabase(replace=AutoConfigureTestDatabase.Replace.NONE)
-@Import({de.corporate.lc.user.service.PlatformInvitationService.class,de.corporate.lc.user.service.PlatformAccountCreationService.class,de.corporate.lc.user.service.PlatformAdministrationService.class,PlatformTenantService.class,TenantSettingsService.class,TenantWorkspaceService.class,TenantSharedIdentityRoleService.class,TenantSharedIdentityAccessService.class,TenantMembershipService.class,TenantAdministrationLock.class,TenantSharedIdentityTransactionTest.Beans.class})
+@Import({de.corporate.lc.user.service.InvitationMailQueue.class,de.corporate.lc.user.service.InvitationMailCipher.class,de.corporate.lc.user.service.PlatformInvitationMailListener.class,de.corporate.lc.user.service.PlatformInvitationMailService.class,de.corporate.lc.user.service.PlatformInvitationService.class,de.corporate.lc.user.service.PlatformAccountCreationService.class,de.corporate.lc.user.service.PlatformAdministrationService.class,PlatformTenantService.class,TenantSettingsService.class,TenantWorkspaceService.class,TenantSharedIdentityRoleService.class,TenantSharedIdentityAccessService.class,TenantMembershipService.class,TenantAdministrationLock.class,TenantSharedIdentityTransactionTest.Beans.class})
 @Transactional(propagation=Propagation.NOT_SUPPORTED)
 class TenantSharedIdentityTransactionTest {
  @TestConfiguration static class Beans {
+  @Bean org.springframework.mail.javamail.JavaMailSender mailSender(){return mock(org.springframework.mail.javamail.JavaMailSender.class);}
   @Bean AuditService audit(){return mock(AuditService.class);}
   @Bean org.springframework.security.crypto.password.PasswordEncoder encoder(){return new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder(4);}
   @Bean TenantMembershipProvisioningStore store(EntityManager em,DataSource source){return new TransactionalTestStore(em,source);}
@@ -92,6 +93,24 @@ class TenantSharedIdentityTransactionTest {
   assertThat(users.findById(userId).orElseThrow().isActive()).isTrue();
  }
  @Test void platformGrantRollsBackOnAuditFailure(){var actor=users.findByUsernameIgnoreCase(authentication.getName()).orElseThrow();actor.setPlatformAdministrator(true);users.saveAndFlush(actor);var target=users.findById(userId).orElseThrow();target.setTotpEnabled(true);users.saveAndFlush(target);failAudit();assertThatThrownBy(()->platform.changePlatformGrant(userId,true,authentication)).isInstanceOf(IllegalStateException.class);assertThat(users.findById(userId).orElseThrow().isPlatformAdministrator()).isFalse();}
+ @Autowired de.corporate.lc.user.service.InvitationMailQueue mailQueue;
+ @Autowired org.springframework.mail.javamail.JavaMailSender mailSender;
+ @Autowired de.corporate.lc.user.service.InvitationMailCipher mailCipher;
+ @Test void missingQueueKeyRollsBackInvitationAndIdentity(){
+  var viewer=roles.findById(homeRoleId).orElseThrow();viewer.setSystemRole(true);roles.saveAndFlush(viewer);long count=users.count();Object original=ReflectionTestUtils.getField(mailCipher,"secret");
+  try{ReflectionTestUtils.setField(mailCipher,"secret","");assertThatThrownBy(()->invitations.invite("synthetic-no-key","Synthetic no key","no-key@example.invalid",tenantId,replacementId,authentication)).isInstanceOf(IllegalStateException.class);assertThat(users.count()).isEqualTo(count);assertThat(invitationTokens.count()).isZero();assertThat(users.existsByUsernameIgnoreCase("synthetic-no-key")).isFalse();}
+  finally{ReflectionTestUtils.setField(mailCipher,"secret",original);}
+ }
+ @Test void invitationQueueCommitsEncryptedPayloadAndRetriesPersistedFailure(){
+  var viewer=roles.findById(homeRoleId).orElseThrow();viewer.setSystemRole(true);roles.saveAndFlush(viewer);
+  var created=invitations.invite("synthetic-queued","Synthetic queued","queued@example.invalid",tenantId,replacementId,authentication);
+  var queued=invitationTokens.findByUserId(created.userId()).orElseThrow();
+  assertThat(queued.getEncryptedMailPayload()).isNotBlank().doesNotContain("queued@example.invalid");assertThat(queued.getNextDeliveryAttempt()).isNotNull();
+  doThrow(new org.springframework.mail.MailSendException("Synthetic SMTP rejection")).when(mailSender).send(any(org.springframework.mail.SimpleMailMessage.class));
+  try{mailQueue.deliverNext();var failed=invitationTokens.findByUserId(created.userId()).orElseThrow();assertThat(failed.getDeliveryStatus()).isEqualTo("MAIL_RETRY");assertThat(failed.getDeliveryAttempts()).isEqualTo(1);assertThat(failed.getEncryptedMailPayload()).isNotBlank();
+   reset(mailSender);jdbc.update("update platform_invitation set next_delivery_attempt=? where user_id=?",java.sql.Timestamp.from(java.time.Instant.now().minusSeconds(1)),created.userId());mailQueue.deliverNext();var sent=invitationTokens.findByUserId(created.userId()).orElseThrow();assertThat(sent.getDeliveryStatus()).isEqualTo("SENT");assertThat(sent.getDeliveryAttempts()).isEqualTo(2);assertThat(sent.getEncryptedMailPayload()).isNull();assertThat(sent.getNextDeliveryAttempt()).isNull();
+  }finally{reset(mailSender);}
+ }
  @Test void invitationIssuanceRollsBackIdentityTokenAndSuspensionOnAuditFailure(){
   var actor=users.findByUsernameIgnoreCase(authentication.getName()).orElseThrow();actor.setPlatformAdministrator(true);users.saveAndFlush(actor);var viewer=roles.findById(homeRoleId).orElseThrow();viewer.setSystemRole(true);roles.saveAndFlush(viewer);failAudit();long count=users.count();
   assertThatThrownBy(()->invitations.invite("synthetic-invited","Synthetic invited","invited@example.invalid",tenantId,replacementId,authentication)).isInstanceOf(IllegalStateException.class).hasMessage("Synthetic audit unavailable");assertThat(users.count()).isEqualTo(count);assertThat(invitationTokens.count()).isZero();assertThat(users.existsByUsernameIgnoreCase("synthetic-invited")).isFalse();assertThat(jdbc.queryForObject("select count(*) from tenant_membership_suspension",Long.class)).isZero();

@@ -21,7 +21,7 @@ import java.util.*;
 public class PlatformInvitationService {
  public record RoleChoice(UUID id,String name,Set<UserPermission> permissions){}
  public record TenantChoice(UUID id,String name,String code,List<RoleChoice> roles){}
- public record InvitationView(UUID userId,String username,String email,UUID tenantId,String tenantName,UUID roleId,String roleName,Instant expiresAt,String status){}
+ public record InvitationView(UUID userId,String username,String email,UUID tenantId,String tenantName,UUID roleId,String roleName,Instant expiresAt,String status,int attempts,Instant nextAttemptAt,String errorCode){}
  public record MailRequested(UUID userId,String token,String username,String email,String tenantCode,String tenantName){@Override public String toString(){return "InvitationMailRequested[redacted]";}}
  private final PlatformAdministrationService platform;private final PlatformAccountCreationService creation;
  private final AppUserRepository users;private final AppRoleRepository roles;private final TenantRepository tenants;
@@ -90,7 +90,7 @@ public class PlatformInvitationService {
  private InvitationView view(PlatformInvitation saved){
   var user=users.findById(saved.getUserId()).orElseThrow();var tenant=tenants.findById(saved.getTenantId()).orElseThrow();String roleName;
   try(var scope=TenantContext.open(saved.getTenantId())){roleName=roles.findById(saved.getRoleId()).map(AppRole::getName).orElse("Unavailable role");}
-  return new InvitationView(user.getId(),user.getUsername(),user.getEmail(),tenant.getId(),tenant.getName(),saved.getRoleId(),roleName,saved.getExpiresAt(),saved.getExpiresAt().isAfter(clock.instant())?saved.getDeliveryStatus():"EXPIRED");
+  return new InvitationView(user.getId(),user.getUsername(),user.getEmail(),tenant.getId(),tenant.getName(),saved.getRoleId(),roleName,saved.getExpiresAt(),saved.getExpiresAt().isAfter(clock.instant())?saved.getDeliveryStatus():"EXPIRED",saved.getDeliveryAttempts(),saved.getNextDeliveryAttempt(),saved.getDeliveryError());
  }
  private void requireMail(){if(!mailEnabled||mailFrom.isBlank())throw new IllegalArgumentException("Invitation email delivery is not configured.");}
  private String secret(){byte[] bytes=new byte[32];random.nextBytes(bytes);return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);}

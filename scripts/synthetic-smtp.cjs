@@ -9,6 +9,6 @@ async function startSyntheticSmtp(port=18087){
   }});
  });
  await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(port,'0.0.0.0',resolve);});
- return {tokenFor(email){const message=[...messages].reverse().find(m=>m.includes(email));if(!message)throw Error('Synthetic invitation email not received.');const decoded=message.replace(/=\n/g,'').replace(/=3D/g,'=');const match=decoded.match(/#token=([A-Za-z0-9_-]{43})/);if(!match)throw Error('Synthetic invitation token missing.');return match[1];},async close(){for(const socket of sockets)socket.destroy();await new Promise(resolve=>server.close(resolve));}};
+ return {async tokenFor(email,previousToken){const deadline=Date.now()+15000;while(Date.now()<deadline){const message=[...messages].reverse().find(m=>m.includes(email));if(!message){await new Promise(r=>setTimeout(r,50));continue;}const decoded=message.replace(/=\n/g,'').replace(/=3D/g,'=');const match=decoded.match(/#token=([A-Za-z0-9_-]{43})/);if(!match)throw Error('Synthetic invitation token missing.');if(match[1]!==previousToken)return match[1];await new Promise(r=>setTimeout(r,50));}throw Error('Synthetic invitation email not received in time.');},async close(){for(const socket of sockets)socket.destroy();await new Promise(resolve=>server.close(resolve));}};
 }
 module.exports={startSyntheticSmtp};

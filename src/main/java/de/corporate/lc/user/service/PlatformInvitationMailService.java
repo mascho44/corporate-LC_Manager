@@ -8,11 +8,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.*;
 import java.net.URI;
 
-/** Runs after the issuance commits; SMTP failures retain a visible, retryable invitation. */
+/** Invoked by the durable queue in its transaction; SMTP failures remain retryable. */
 @Service public class PlatformInvitationMailService {
  private final JavaMailSender mail;private final PlatformInvitationRepository invitations;private final AppUserRepository users;private final String from,baseUrl;
  public PlatformInvitationMailService(JavaMailSender mail,PlatformInvitationRepository invitations,AppUserRepository users,@Value("${app.mail.from:}") String from,@Value("${app.security.public-base-url:https://lc.example.com}") String baseUrl){this.mail=mail;this.invitations=invitations;this.users=users;this.from=from;URI uri=URI.create(baseUrl);if(!"https".equals(uri.getScheme())||uri.getHost()==null||uri.getUserInfo()!=null||uri.getQuery()!=null||uri.getFragment()!=null)throw new IllegalArgumentException("Public base URL must be an HTTPS address.");this.baseUrl=baseUrl.replaceAll("/+$","");}
- @Transactional(propagation=Propagation.REQUIRES_NEW) public void deliver(PlatformInvitationService.MailRequested event){
+ @Transactional(propagation=Propagation.REQUIRED) public void deliver(PlatformInvitationService.MailRequested event){
   try(var home=TenantContext.open(Tenant.DEFAULT_ID)){
    var user=users.findForPasswordReset(event.userId()).orElse(null);if(user==null||!user.isInvitationPending())return;
    var saved=invitations.findById(CredentialStamp.of(event.token())).orElse(null);if(saved==null)return;
