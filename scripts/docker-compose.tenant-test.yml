@@ -22,6 +22,7 @@ services:
       ADMIN_PASSWORD: SyntheticOnly123!
       TOTP_ENCRYPTION_KEY: SyntheticTestEncryptionKeyOnly20261007
       SESSION_COOKIE_SECURE: "false"
+      LC_TENANTS_TEST_PURGE_ENABLED: "true"
       SMTP_ENABLED: "true"
       SMTP_HOST: host.docker.internal
       SMTP_PORT: "18087"

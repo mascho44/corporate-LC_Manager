@@ -9,6 +9,7 @@ import java.util.*;
  public record Create(String code,String name,String defaultLanguage,@NotNull Boolean bankEnabled,@NotNull Boolean corporateEnabled){}
  public record Update(@NotNull Boolean active,@NotNull Boolean bankEnabled,@NotNull Boolean corporateEnabled){}
  public record Archive(@NotNull Boolean archived){}
+ @DeleteMapping("/{id}") @ResponseStatus(org.springframework.http.HttpStatus.NO_CONTENT) public void purge(@PathVariable UUID id,@RequestBody PlatformTenantService.PurgeConfirmation confirmation,Authentication auth){service.purge(id,confirmation,auth);}
  @PutMapping("/{id}/archive") public PlatformTenantService.View archive(@PathVariable UUID id,@Valid @RequestBody Archive body,Authentication auth){return service.archive(id,body.archived(),auth);}
  private final PlatformTenantService service;private final TenantInventoryService inventory;
  public PlatformTenantController(PlatformTenantService service,TenantInventoryService inventory){this.service=service;this.inventory=inventory;}

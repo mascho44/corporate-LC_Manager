@@ -13,6 +13,9 @@ public class Tenant {
  @Column(nullable=false) private boolean corporateEnabled=false;
  @Column(nullable=false) private boolean active=true;
  @Column private java.time.Instant archivedAt;
+ @Column private java.time.Instant deletedAt;
+ public boolean isDeleted(){return deletedAt!=null;}
+ public void markDeleted(){if(active||!isArchived()||DEFAULT_ID.equals(id))throw new IllegalArgumentException("Only archived, non-default tenants can be deleted.");deletedAt=java.time.Instant.now();}
  public Tenant(){}
  public Tenant(String code,String name,String language,boolean bank,boolean corporate){this.id=UUID.randomUUID();this.code=code;this.name=name;this.defaultLanguage=language;this.bankEnabled=bank;this.corporateEnabled=corporate;}
  public UUID getId(){return id;} public String getCode(){return code;} public String getName(){return name;}
@@ -24,6 +27,6 @@ public class Tenant {
  public boolean isArchived(){return archivedAt!=null;}
  public java.time.Instant getArchivedAt(){return archivedAt;}
  public void archive(){if(active)throw new IllegalArgumentException("Suspend the tenant before archiving.");if(archivedAt==null)archivedAt=java.time.Instant.now();}
- public void restoreArchive(){archivedAt=null;active=false;}
+ public void restoreArchive(){if(isDeleted())throw new IllegalArgumentException("Deleted tenant cannot be restored.");archivedAt=null;active=false;}
  public void updateProfile(boolean bank,boolean corporate){if(!bank&&!corporate)throw new IllegalArgumentException("Select at least one profile.");this.bankEnabled=bank;this.corporateEnabled=corporate;}
 }

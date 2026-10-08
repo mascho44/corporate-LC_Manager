@@ -2,7 +2,9 @@
 
 Status: evolving implementation specification, 2026-10-08. Inventory and reversible
 archive metadata are implemented; see [Tenant lifecycle](tenant-lifecycle.md).
-No tenant purge endpoint exists. Retention periods and
+An opt-in endpoint for **disposable test data only** now exists; see
+[Test-data purge](tenant-test-purge.md). It is disabled by default and is not the
+production retention/approval workflow specified below. Retention periods and
 approval policy require owner approval before irreversible deletion is enabled.
 This is a technical design, not a statement of statutory retention obligations.
 

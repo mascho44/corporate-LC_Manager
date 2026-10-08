@@ -223,5 +223,21 @@ function swift(reference){return `:20:${reference}\n:31C:261001\n:31D:271231SYNT
  const invoice=children.find(i=>i.classification.suggestedType==='COMMERCIAL_INVOICE');assert.equal(invoice.sourceFromPage,1);assert.equal(invoice.sourceToPage,2);assert.equal((await call('/api/inbox/'+invoice.id+'/split-proposal')).pageCount,2);await call('/api/inbox/'+source+'/auto-split','POST',undefined,400);
  const unclear=syntheticPdf(['COMMERCIAL INVOICE','Unknown continuation','PACKING LIST']);const uncertainForm=new FormData();uncertainForm.append('file',new Blob([unclear],{type:'application/pdf'}),'synthetic-unclear.pdf');const uncertain=(await call('/api/inbox','POST',uncertainForm,202,'multipart'))[0];const reviewed=await waitInbox(items=>items.some(i=>i.id===uncertain.id&&i.extractionStatus==='EXTRACTED'));assert.ok(!reviewed.some(i=>i.sourceInboxId===uncertain.id));assert.deepEqual(await call('/api/inbox/'+uncertain.id+'/auto-split','POST'),[]);
  const manual=await call('/api/inbox/'+uncertain.id+'/split','POST',{parts:[{fromPage:1,toPage:2,documentType:'COMMERCIAL_INVOICE'},{fromPage:3,toPage:3,documentType:'PACKING_LIST'}]});assert.equal(manual.length,2);assert.ok(manual.every(i=>!i.automaticallySplit));
- console.log('PASS: existing tenant/invitation regressions, central tenant creation, profile API gates, self/default suspension protection, suspended login/session denial and reactivation without data loss.');
+ // Full test-data purge preserves shared global identities and the other workspace.
+ const purgeBody={tenantCode:'synthetic-smoke',deleteAllBusinessData:true,acknowledgeAuditAndBackupsRetained:true};
+ await call('/api/platform/tenants/'+created.id,'DELETE',purgeBody,400);
+ await call('/api/tenants/'+home+'/select','POST');csrf=(await call('/api/auth/me')).csrfToken;
+ await call('/api/platform/tenants/'+home,'DELETE',{...purgeBody,tenantCode:'default'},400);
+ await call('/api/platform/tenants/'+created.id,'PUT',{active:false,bankEnabled:true,corporateEnabled:true});
+ await call('/api/platform/tenants/'+created.id+'/archive','PUT',{archived:true});
+ await call('/api/platform/tenants/'+created.id,'DELETE',{...purgeBody,tenantCode:'wrong'},400);
+ await call('/api/platform/tenants/'+created.id,'DELETE',purgeBody,204);
+ assert.equal((await call('/api/platform/tenants')).some(t=>t.id===created.id),false);
+ assert.ok((await call('/api/platform/users')).some(u=>u.id===isolated.id));
+ assert.ok((await call('/api/lcs')).some(l=>l.id===homeLc.id));
+ const purged=await call('/api/platform/tenants/'+created.id+'/inventory');
+ assert.ok(purged.categories.filter(c=>c.key!=='audit_event').every(c=>c.records===0));
+ assert.ok(purged.categories.find(c=>c.key==='audit_event').records>0);
+ await call('/api/platform/tenants/'+created.id+'/archive','PUT',{archived:false},400);
+ console.log('PASS: tenant lifecycle, isolation, automatic splitting and full disposable business-data purge.');
 })().catch(error=>{console.error(error.message);process.exitCode=1;}).finally(async()=>{if(syntheticSmtp)await syntheticSmtp.close();});
