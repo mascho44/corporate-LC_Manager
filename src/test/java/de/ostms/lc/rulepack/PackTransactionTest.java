@@ -35,5 +35,10 @@ class PackTransactionTest {
   reset(target);service.activate(v.id,true,auth);
   assertThat(selections.findById(v.packId).orElseThrow().activeVersionId).isEqualTo(v.id);
   service.deactivate(v.packId,auth);assertThat(selections.findById(v.packId).orElseThrow().previousVersionId).isEqualTo(v.id);
+  doThrow(new IllegalStateException("Synthetic audit failure")).when(target).recordInTransaction(any(),eq("LC_RULE_PACK_DELETED"),anyString(),any(),anyString());
+  assertThatThrownBy(()->service.delete(v.id,auth)).isInstanceOf(IllegalStateException.class);
+  assertThat(versions.findById(v.id)).isPresent();assertThat(selections.findById(v.packId).orElseThrow().previousVersionId).isEqualTo(v.id);
+  reset(target);service.delete(v.id,auth);
+  assertThat(versions.findById(v.id)).isEmpty();assertThat(selections.findById(v.packId).orElseThrow().previousVersionId).isNull();
  }
 }

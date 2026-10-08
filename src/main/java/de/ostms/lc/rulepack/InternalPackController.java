@@ -16,6 +16,8 @@ public class InternalPackController {
  public record Activation(boolean rightsConfirmed){}
  @PostMapping("/{id}/activate") public void activate(@PathVariable UUID id,@RequestBody Activation request,Authentication auth){service.activate(id,request.rightsConfirmed(),auth);}
  @PostMapping("/{packId}/deactivate") public void deactivate(@PathVariable String packId,Authentication auth){service.deactivate(packId,auth);}
+ @DeleteMapping("/{id}") @ResponseStatus(org.springframework.http.HttpStatus.NO_CONTENT)
+ public void delete(@PathVariable UUID id,Authentication auth){service.delete(id,auth);}
  private byte[] body(HttpServletRequest request)throws IOException{
   var bytes=request.getInputStream().readNBytes(PackCodec.MAX_BYTES+1);
   if(bytes.length>PackCodec.MAX_BYTES)throw new IllegalArgumentException("Rule Pack überschreitet 5 MB.");

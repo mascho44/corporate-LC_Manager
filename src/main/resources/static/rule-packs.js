@@ -17,7 +17,7 @@
  }
  async function refresh(){
   const rows=await request(api);
-  get('packVersions').innerHTML=rows.length?'<div class="pack-table-wrap"><table class="pack-table"><thead><tr><th>Pack / Version</th><th>Status</th><th>Aktionen</th></tr></thead><tbody>'+rows.map(p=>'<tr><td><b>'+escape(p.name)+'</b><small>'+escape(p.packId+' v'+p.version)+'</small><small>'+escape(p.importedBy+' · '+p.importedAt)+'</small><details><summary>Prüfsumme</summary><span class="pack-checksum">'+escape(p.checksum)+'</span></details></td><td>'+(p.active?'Aktiv':p.previous?'Vorherige Version':'Inaktiv')+'<small>Tests '+(p.testsPassed?'bestanden':'fehlgeschlagen')+'</small></td><td><button class="secondary" data-test="'+p.id+'">Testlauf</button>'+(p.active?'<button class="secondary" data-deactivate="'+escape(p.packId)+'">Deaktivieren</button>':'<button data-activate="'+p.id+'" data-label="'+escape(p.packId+' v'+p.version)+'" '+(p.testsPassed?'':'disabled')+'>'+(p.previous?'Vorherige Version aktivieren':'Aktivieren')+'</button>')+'</td></tr>').join('')+'</tbody></table></div>':'Noch keine Packs importiert.';
+  get('packVersions').innerHTML=rows.length?'<div class="pack-table-wrap"><table class="pack-table"><thead><tr><th>Pack / Version</th><th>Status</th><th>Aktionen</th></tr></thead><tbody>'+rows.map(p=>'<tr><td><b>'+escape(p.name)+'</b><small>'+escape(p.packId+' v'+p.version)+'</small><small>'+escape(p.importedBy+' · '+p.importedAt)+'</small><details><summary>Prüfsumme</summary><span class="pack-checksum">'+escape(p.checksum)+'</span></details></td><td>'+(p.active?'Aktiv':p.previous?'Vorherige Version':'Inaktiv')+'<small>Tests '+(p.testsPassed?'bestanden':'fehlgeschlagen')+'</small></td><td><button class="secondary" data-test="'+p.id+'">Testlauf</button>'+(p.active?'<button class="secondary" data-deactivate="'+escape(p.packId)+'">Deaktivieren</button>':'<button data-activate="'+p.id+'" data-label="'+escape(p.packId+' v'+p.version)+'" '+(p.testsPassed?'':'disabled')+'>'+(p.previous?'Vorherige Version aktivieren':'Aktivieren')+'</button>')+'<button class="danger" data-delete="'+p.id+'" data-label="'+escape(p.packId+' v'+p.version)+'" '+(p.active?'disabled title="Zuerst deaktivieren"':'')+'>Löschen</button></td></tr>').join('')+'</tbody></table></div>':'Noch keine Packs importiert.';
  }
  get('packFile').onchange=async()=>{
   const current=++sequence;source=null;preview=null;get('packImport').disabled=true;message('');
@@ -47,11 +47,13 @@
    if(!confirm(button.dataset.label+' für alle LC-Akten aktivieren?'))return;
   }
   if(button.dataset.deactivate&&!confirm('Pack '+button.dataset.deactivate+' für alle LC-Akten deaktivieren?'))return;
+  if(button.dataset.delete&&!confirm(button.dataset.label+' endgültig löschen? Audit-Protokolle und bisherige Befunde bleiben erhalten.'))return;
   busy=true;button.disabled=true;message('');
   try{
    if(button.dataset.test){++sequence;source=null;preview=null;get('packImport').disabled=true;get('packFile').disabled=true;renderPreview(await request(api+'/'+button.dataset.test+'/test',{method:'POST'}));}
    else if(button.dataset.activate){await request(api+'/'+button.dataset.activate+'/activate',{method:'POST',body:JSON.stringify({rightsConfirmed:true})});get('packRights').checked=false;await refresh();message('Pack-Version aktiviert.');}
    else if(button.dataset.deactivate){await request(api+'/'+encodeURIComponent(button.dataset.deactivate)+'/deactivate',{method:'POST'});await refresh();message('Pack deaktiviert.');}
+   else if(button.dataset.delete){await request(api+'/'+button.dataset.delete,{method:'DELETE'});get('packPreview').textContent='';await refresh();message('Pack-Version gelöscht.');}
   }catch(error){message(error.message);}
   finally{busy=false;button.disabled=false;get('packFile').disabled=false;}
  };

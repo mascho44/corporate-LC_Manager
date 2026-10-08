@@ -22,6 +22,19 @@ class InternalPackServiceTest {
   v.packId=p.packId();v.version=p.version();v.definitionJson=codec.canonical(p);v.checksum=codec.digest(v.definitionJson);v.testsPassed=true;
   when(versions.findById(v.id)).thenReturn(Optional.of(v));return v;
  }
+ @Test void deletionRejectsActiveVersion()throws Exception{
+  var v=version();var selection=new PackSelection();selection.activeVersionId=v.id;
+  when(selections.locked(v.packId)).thenReturn(Optional.of(selection));
+  assertThatThrownBy(()->service.delete(v.id,auth)).isInstanceOf(IllegalArgumentException.class);
+  verify(versions,never()).delete(any(StoredPackVersion.class));verifyNoInteractions(audit);
+ }
+ @Test void deletionClearsPreviousPointerAndIsAudited()throws Exception{
+  var v=version();var selection=new PackSelection();selection.previousVersionId=v.id;
+  when(selections.locked(v.packId)).thenReturn(Optional.of(selection));
+  service.delete(v.id,auth);assertThat(selection.previousVersionId).isNull();
+  var order=inOrder(selections,versions);order.verify(selections).locked(v.packId);order.verify(selections).flush();order.verify(versions).delete(v);order.verify(versions).flush();
+  verify(audit).recordInTransaction(eq(auth),eq("LC_RULE_PACK_DELETED"),eq("RULE_PACK_VERSION"),eq(v.id),anyString());
+ }
  @Test void importedVersionIsInactiveImmutableAndAudited()throws Exception{
   when(selections.existsById(anyString())).thenReturn(true);
   var v=service.importPack(PackCodecTest.example(),auth);
