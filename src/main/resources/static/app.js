@@ -118,6 +118,13 @@ function divideInboxSplitRange(part){
     if(!part||![part.fromPage,part.toPage].every(Number.isInteger)||part.fromPage<1||part.toPage<=part.fromPage)throw Error('Dieser Bereich enthält keine abtrennbare Seite.');
     return [{...part,toPage:part.toPage-1},{...part,fromPage:part.toPage,documentType:'OTHER',copyNumber:null}];
 }
+function dissolveInboxSplitRange(parts,index){
+    if(!Number.isInteger(index)||index<0||index>=parts.length||parts.length<2)throw Error('Der letzte Bereich kann nicht aufgelöst werden.');
+    const result=parts.map(part=>({...part})),neighbor=index>0?index-1:1;
+    const a=result[Math.min(index,neighbor)],b=result[Math.max(index,neighbor)];
+    const merged=mergeInboxSplitRanges(a,b);
+    result[neighbor]={...result[neighbor],fromPage:merged.fromPage,toPage:merged.toPage};result.splice(index,1);return result;
+}
 function adjustInboxSplitRanges(parts,index,field,pageCount){
     const result=parts.map(part=>({...part}));
     if(!Number.isInteger(index)||index<0||index>=result.length||!['fromPage','toPage'].includes(field)||!Number.isInteger(pageCount))throw Error('Ungültiger Seitenbereich.');
@@ -173,7 +180,9 @@ async function openInboxSplit(item){
             const learned=document.createElement('p');learned.setAttribute('role','status');
             learned.textContent='Vorschlag aus bestätigtem Training. Bitte Seitenbereiche und Dokumenttypen erneut prüfen.';form.before(learned);
         }
-        const preview=document.createElement('section');preview.className='split-page-preview';preview.hidden=true;preview.innerHTML='<h3>Seitenbild vergrößert</h3><p role="status"></p><img alt="Vergrößerte PDF-Seite">';form.before(preview);
+        const preview=document.createElement('section');preview.className='split-page-preview';preview.hidden=true;preview.innerHTML='<div class="split-preview-head"><h3>Seitenbild vergrößert</h3><button type="button">Vorschau schließen</button></div><p role="status"></p><img alt="Vergrößerte PDF-Seite">';
+        let previewOrigin=null,previewScroll=0;
+        preview.querySelector('button').onclick=()=>{zoomVersion++;preview.hidden=true;dialog.scrollTop=previewScroll;previewOrigin?.focus({preventScroll:true});};
         const images=new Map(),imageUrls=[],abort=new AbortController();let rendering=Promise.resolve(),zoomVersion=0;
         const oldClose=dialog.onclose;dialog.onclose=()=>{abort.abort();observer?.disconnect();imageUrls.forEach(url=>URL.revokeObjectURL(url));oldClose();};
         function pageImage(page,enlarged=false){
@@ -187,14 +196,14 @@ async function openInboxSplit(item){
                 const imageUrl=URL.createObjectURL(await response.blob());if(!dialog.isConnected){URL.revokeObjectURL(imageUrl);throw new Error('Vorschau geschlossen.');}imageUrls.push(imageUrl);return imageUrl;
             });images.set(key,promise);rendering=promise;promise.catch(()=>images.delete(key));return promise;
         }
-        async function enlargePage(page){const version=++zoomVersion;preview.hidden=false;preview.querySelector('p').textContent=`Seite ${page} wird geladen …`;preview.querySelector('img').removeAttribute('src');try{const url=await pageImage(page,true);if(version!==zoomVersion||!dialog.isConnected)return;preview.querySelector('img').src=url;preview.querySelector('img').alt=`PDF-Seite ${page}`;preview.querySelector('p').textContent=`Seite ${page}`;preview.scrollIntoView({behavior:'smooth',block:'nearest'});}catch(error){if(version===zoomVersion&&dialog.isConnected)preview.querySelector('p').textContent=error.message;}}
+        async function enlargePage(page,row,origin){const version=++zoomVersion;previewOrigin=origin;previewScroll=dialog.scrollTop;row.querySelector('.split-row-actions').before(preview);preview.hidden=false;preview.querySelector('p').textContent=`Seite ${page} wird geladen …`;preview.querySelector('img').removeAttribute('src');preview.scrollIntoView({behavior:'smooth',block:'start'});try{const url=await pageImage(page,true);if(version!==zoomVersion||!dialog.isConnected)return;preview.querySelector('img').src=url;preview.querySelector('img').alt=`PDF-Seite ${page}`;preview.querySelector('p').textContent=`Seite ${page}`;}catch(error){if(version===zoomVersion&&dialog.isConnected)preview.querySelector('p').textContent=error.message;}}
         function loadThumb(button){if(button.dataset.loaded)return;button.dataset.loaded='true';pageImage(Number(button.dataset.page)).then(url=>{if(button.isConnected){button.querySelector('img').src=url;button.querySelector('small').textContent='Klicken zum Vergrößern';}}).catch(()=>{if(button.isConnected){delete button.dataset.loaded;button.querySelector('small').textContent='Nicht geladen · klicken zum Wiederholen';}});}
         const observer=typeof IntersectionObserver==='function'?new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){observer.unobserve(entry.target);loadThumb(entry.target);}}),{root:dialog,rootMargin:'100px'}):null;
         function renderThumbs(row){
             let strip=row.querySelector('.split-thumbnails');if(!strip){strip=document.createElement('div');strip.className='split-thumbnails';row.querySelector('.split-row-actions').before(strip);}
             strip.querySelectorAll('button').forEach(button=>observer?.unobserve(button));strip.replaceChildren();const part=readRange(row);
             if(!Number.isInteger(part.fromPage)||!Number.isInteger(part.toPage)||part.fromPage<1||part.toPage>proposal.pageCount||part.toPage<part.fromPage)return;
-            for(let page=part.fromPage;page<=part.toPage;page++){const button=document.createElement('button');button.type='button';button.className='split-thumbnail';button.dataset.page=page;button.innerHTML=`<span>Seite ${page}</span><img alt="Vorschau Seite ${page}"><small>Wird geladen …</small>`;button.onclick=()=>{loadThumb(button);enlargePage(page);};strip.append(button);if(observer)observer.observe(button);else loadThumb(button);}
+            for(let page=part.fromPage;page<=part.toPage;page++){const button=document.createElement('button');button.type='button';button.className='split-thumbnail';button.dataset.page=page;button.innerHTML=`<span>Seite ${page}</span><img alt="Vorschau Seite ${page}"><small>Wird geladen …</small>`;button.onclick=()=>{loadThumb(button);enlargePage(page,row,button);};strip.append(button);if(observer)observer.observe(button);else loadThumb(button);}
         }
         const readRange=row=>({fromPage:Number(row.querySelector('[name=fromPage]').value),toPage:Number(row.querySelector('[name=toPage]').value),documentType:row.querySelector('[name=documentType]').value,copyNumber:readDocumentCopy(row.querySelector('[name=copyNumber]').value)});
         const refreshMergeButtons=()=>[...rows.children].forEach((row,index)=>row.querySelector('[data-merge]').disabled=index===0);
@@ -210,14 +219,25 @@ async function openInboxSplit(item){
         const add=part=>{
             const row=document.createElement('div');row.className='inbox-split-row';
             row.innerHTML=`<label>Von Seite<input name="fromPage" type="number" min="1" max="${proposal.pageCount}" value="${part.fromPage}" required></label><label>Bis Seite<input name="toPage" type="number" min="1" max="${proposal.pageCount}" value="${part.toPage}" required></label><label class="split-type">Dokumenttyp<select name="documentType" required>${inboxDocumentTypes.map(([type,label])=>`<option value="${type}"${type===part.documentType?' selected':''}>${label}</option>`).join('')}</select></label><label>Kennzeichnung<select name="copyNumber" ${item.pretraining?'disabled':''}>${documentCopyOptions(part.copyNumber)}</select></label><div class="split-row-actions"><button type="button" class="secondary" data-preview>Seite ansehen</button><button type="button" class="secondary" data-merge>Mit vorherigem verbinden</button><button type="button" class="secondary" data-remove>Bereich auflösen</button></div>`;
-            row.querySelector('[data-remove]').onclick=async()=>{
+            row.querySelector('[data-remove]').onclick=()=>{
                 const error=dialog.querySelector('[data-error]');error.textContent='';
                 const neighbor=row.previousElementSibling||row.nextElementSibling;
                 if(!neighbor){error.textContent='Der letzte Bereich kann nicht entfernt werden; alle PDF-Seiten müssen enthalten bleiben.';return;}
-                if(!await confirmAction('Bereich auflösen und seine Seiten dem angrenzenden Bereich zuordnen? Dessen Dokumenttyp und Kennzeichnung bleiben erhalten. Bitte anschließend prüfen.'))return;
-                try{const a=readRange(row.previousElementSibling?neighbor:row),b=readRange(row.previousElementSibling?row:neighbor);mergeInboxSplitRanges(a,b);neighbor.querySelector('[name=fromPage]').value=a.fromPage;neighbor.querySelector('[name=toPage]').value=b.toPage;row.remove();refreshMergeButtons();renderThumbs(neighbor);}catch(failure){error.textContent=failure.message;}
+                row.querySelector('.split-dissolve-confirm')?.remove();
+                const confirmation=document.createElement('div');confirmation.className='split-dissolve-confirm';confirmation.innerHTML='<p></p><div class="split-row-actions"><button type="button" data-confirm>Ja, Bereich auflösen</button><button type="button" class="secondary" data-cancel>Abbrechen</button></div>';
+                const target=readRange(neighbor);confirmation.querySelector('p').textContent=`Seiten diesem ${row.previousElementSibling?'vorherigen':'folgenden'} Bereich (${target.fromPage}–${target.toPage}) zuordnen? Dessen Dokumenttyp und Kennzeichnung bleiben erhalten. Keine PDF-Seite wird gelöscht.`;
+                confirmation.querySelector('[data-cancel]').onclick=()=>{confirmation.remove();row.querySelector('[data-remove]').focus({preventScroll:true});};
+                confirmation.querySelector('[data-confirm]').onclick=()=>{
+                    try{
+                        const all=[...rows.children],index=all.indexOf(row),adjusted=dissolveInboxSplitRange(all.map(readRange),index);
+                        if(row.contains(preview))preview.hidden=true;
+                        row.remove();[...rows.children].forEach((remaining,i)=>{remaining.querySelector('[name=fromPage]').value=adjusted[i].fromPage;remaining.querySelector('[name=toPage]').value=adjusted[i].toPage;});
+                        refreshMergeButtons();renderThumbs(neighbor);neighbor.querySelector('[name=fromPage]').focus({preventScroll:true});submitStatus.textContent='Bereich aufgelöst. Seiten dem angrenzenden Bereich zugeordnet; bitte prüfen.';
+                    }catch(failure){error.textContent=failure.message;confirmation.querySelector('p').textContent=failure.message;}
+                };
+                row.append(confirmation);confirmation.querySelector('[data-cancel]').focus({preventScroll:true});confirmation.scrollIntoView({behavior:'smooth',block:'nearest'});
             };
-            row.querySelector('[data-preview]').onclick=()=>{const page=readRange(row).fromPage;if(!Number.isInteger(page)||page<1||page>proposal.pageCount)return;enlargePage(page);};
+            row.querySelector('[data-preview]').onclick=()=>{const page=readRange(row).fromPage;if(!Number.isInteger(page)||page<1||page>proposal.pageCount)return;enlargePage(page,row,row.querySelector('[data-preview]'));};
             row.querySelector('[data-merge]').onclick=async()=>{const error=dialog.querySelector('[data-error]');error.textContent='';try{const previous=row.previousElementSibling,a=readRange(previous),b=readRange(row),merged=mergeInboxSplitRanges(a,b);if((a.documentType!==b.documentType||a.copyNumber!==b.copyNumber)&&!await confirmAction('Unterschiedliche Dokumenttypen oder Original/Copy-Kennzeichnungen verbinden? Dokumenttyp und Kennzeichnung des vorherigen Bereichs bleiben erhalten. Bitte anschließend prüfen.'))return;previous.querySelector('[name=toPage]').value=merged.toPage;row.remove();refreshMergeButtons();renderThumbs(previous);}catch(failure){error.textContent=failure.message;}};
             rows.append(row);refreshMergeButtons();renderThumbs(row);
         };
