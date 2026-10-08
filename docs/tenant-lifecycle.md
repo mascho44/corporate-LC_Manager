@@ -1,5 +1,9 @@
 # Central tenant lifecycle and module profiles
 
+The proposed archive/retention/purge lifecycle is specified separately in
+[Tenant archive and deletion concept](tenant-retention-and-deletion.md).
+It is not yet implemented; current suspension does not delete data.
+
 Tenant creation now belongs exclusively to Platform administration. The legacy
 `POST /api/tenants` always denies creation, including for local administrators.
 `POST /api/platform/tenants` requires a live, active platform administrator with
