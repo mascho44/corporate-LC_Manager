@@ -22,7 +22,7 @@ class DocumentExtractionServiceTest {
         var content=PdfDocumentSplitterTest.pdf("COMMERCIAL INVOICE","PACKING LIST");
         assertThat(DocumentExtractionService.readPdfPages(content)).hasSize(2);
         var result=new DocumentExtractionService().extractFile(content,"synthetic.pdf","application/pdf");
-        assertThat(result.status()).isEqualTo("EXTRACTED");assertThat(result.text()).contains("COMMERCIAL INVOICE","PACKING LIST");assertThat(result.ocrEvidence()).isNull();
+        assertThat(result.status()).isEqualTo("EXTRACTED");assertThat(result.text()).contains("COMMERCIAL INVOICE","PACKING LIST");assertThat(result.ocrEvidence().method()).isEqualTo("PDF_TEXT_POSITIONS");assertThat(result.ocrEvidence().words()).allMatch(word->word.confidence()==null);assertThat(result.ocrEvidence().words().stream().map(OcrEvidence.Word::page)).contains(1,2);
     }
     @org.junit.jupiter.params.ParameterizedTest
     @org.junit.jupiter.params.provider.ValueSource(strings={"synchronous","background","recognized"})

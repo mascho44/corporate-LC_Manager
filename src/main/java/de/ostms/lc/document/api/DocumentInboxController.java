@@ -22,6 +22,8 @@ public class DocumentInboxController {
 
     @GetMapping("/{id}/metadata-training")
     public de.ostms.lc.document.service.DocumentMetadataTraining.Proposal metadataSuggestion(@PathVariable UUID id){return metadataTraining.suggest(service.openItem(id).getExtractedText());}
+    @GetMapping("/{id}/metadata-positions")
+    public java.util.Map<String,de.ostms.lc.document.service.SpatialMetadata.Field> metadataPositions(@PathVariable UUID id){return de.ostms.lc.document.service.SpatialMetadata.detect(de.ostms.lc.document.service.DocumentExtractionService.readEvidence(service.openItem(id).getOcrEvidenceJson()));}
 
     @PostMapping("/{id}/metadata-training") @ResponseStatus(HttpStatus.NO_CONTENT)
     @org.springframework.transaction.annotation.Transactional
