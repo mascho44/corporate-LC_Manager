@@ -6,10 +6,12 @@
 @media(max-width:650px){.inbox-item .inbox-split-action{display:flex;width:100%;margin:12px 0}}
 .inbox-split-dialog{width:min(1120px,94vw);max-width:94vw;max-height:88vh;overflow:auto;box-sizing:border-box}
 .inbox-split-dialog>p,.inbox-split-dialog>a,.inbox-split-dialog>details,.inbox-split-dialog>form,.inbox-split-dialog>.split-page-preview{margin:16px 22px}
-.inbox-split-row{display:grid;grid-template-columns:85px 85px minmax(180px,1fr);gap:12px;padding:14px 0;border-bottom:1px solid #dce5f2;align-items:end}
+.inbox-split-row{display:grid;grid-template-columns:85px 85px minmax(180px,1fr) 160px;gap:12px;padding:14px 0;border-bottom:1px solid #dce5f2;align-items:end}
 .inbox-split-row label{display:grid;gap:6px;min-width:0;font-size:13px}
 .inbox-split-row input,.inbox-split-row select{width:100%;min-width:0;box-sizing:border-box}
 .split-row-actions{grid-column:1/-1;display:flex;gap:12px;flex-wrap:wrap}
 .split-row-actions button{min-height:42px}
 .split-page-preview iframe{width:100%;height:55vh;border:1px solid #dce5f2}
-@media(max-width:550px){.inbox-split-row{grid-template-columns:1fr 1fr}.inbox-split-row .split-type{grid-column:1/-1}.split-row-actions button{flex:1 1 160px}}
+@media(max-width:760px){.inbox-split-row{grid-template-columns:1fr 1fr}.inbox-split-row .split-type{grid-column:1/-1}.split-row-actions button{flex:1 1 160px}}
+.document-batch-row{grid-template-columns:minmax(0,1fr) 220px 160px}
+@media(max-width:760px){.document-batch-row{grid-template-columns:1fr}}

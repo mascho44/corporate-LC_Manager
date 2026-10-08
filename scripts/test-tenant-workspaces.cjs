@@ -223,6 +223,26 @@ function swift(reference){return `:20:${reference}\n:31C:261001\n:31D:271231SYNT
  const invoice=children.find(i=>i.classification.suggestedType==='COMMERCIAL_INVOICE');assert.equal(invoice.sourceFromPage,1);assert.equal(invoice.sourceToPage,2);assert.equal((await call('/api/inbox/'+invoice.id+'/split-proposal')).pageCount,2);await call('/api/inbox/'+source+'/auto-split','POST',undefined,400);
  const unclear=syntheticPdf(['COMMERCIAL INVOICE','Unknown continuation','PACKING LIST']);const uncertainForm=new FormData();uncertainForm.append('file',new Blob([unclear],{type:'application/pdf'}),'synthetic-unclear.pdf');const uncertain=(await call('/api/inbox','POST',uncertainForm,202,'multipart'))[0];const reviewed=await waitInbox(items=>items.some(i=>i.id===uncertain.id&&i.extractionStatus==='EXTRACTED'));assert.ok(!reviewed.some(i=>i.sourceInboxId===uncertain.id));assert.deepEqual(await call('/api/inbox/'+uncertain.id+'/auto-split','POST'),[]);
  const manual=await call('/api/inbox/'+uncertain.id+'/split','POST',{parts:[{fromPage:1,toPage:2,documentType:'COMMERCIAL_INVOICE'},{fromPage:3,toPage:3,documentType:'PACKING_LIST'}]});assert.equal(manual.length,2);assert.ok(manual.every(i=>!i.automaticallySplit));
+ // Confirmed split training replays only tenant-local, reviewed templates and survives file deletion.
+ const trainingBundle=syntheticPdf(['Unusual document customer 123 description of shipped goods and detailed quantities for review','Continuation customer 123 description of packages and declared weights for careful review']);
+ const trainingUpload=async()=>{const form=new FormData();form.append('file',new Blob([trainingBundle],{type:'application/pdf'}),'synthetic-training.pdf');const received=(await call('/api/inbox','POST',form,202,'multipart'))[0];await waitInbox(items=>items.some(i=>i.id===received.id&&i.extractionStatus==='EXTRACTED'));return received;};
+ const trainingSource=await trainingUpload();const confirmedRanges=[{fromPage:1,toPage:1,documentType:'COMMERCIAL_INVOICE',copyNumber:null},{fromPage:2,toPage:2,documentType:'PACKING_LIST',copyNumber:null}];
+ const trainedChildren=await call('/api/inbox/'+trainingSource.id+'/split','POST',{parts:confirmedRanges});
+ await call('/api/inbox/'+trainedChildren[0].id,'DELETE',undefined,204);
+ const repeatedTraining=await trainingUpload();const learnedProposal=await call('/api/inbox/'+repeatedTraining.id+'/split-proposal');assert.deepEqual(learnedProposal.parts,confirmedRanges);assert.ok(learnedProposal.pages.every(p=>p.classification.status==='REVIEW'&&p.classification.method==='CONFIRMED_SPLIT_PATTERN_V1'));assert.deepEqual(await call('/api/inbox/'+repeatedTraining.id+'/auto-split','POST'),[]);
+ assert.equal((await call('/api/platform/tenants/'+created.id+'/inventory')).categories.find(c=>c.key==='document_split_training').records,1);
+ const beforePretraining=(await call('/api/inbox')).map(i=>i.id).sort();const pretrainUpload=new FormData();pretrainUpload.append('file',new Blob([trainingBundle],{type:'application/pdf'}),'synthetic-pretraining.pdf');
+ const pretrain=await call('/api/training/document-types/proposal','POST',pretrainUpload,200,'multipart');assert.deepEqual(pretrain.proposal.parts,confirmedRanges);assert.ok(pretrain.receipt);
+ assert.equal((await call('/api/platform/tenants/'+created.id+'/inventory')).categories.find(c=>c.key==='document_split_training').records,1);
+ await call('/api/training/document-types/confirm','POST',{receipt:pretrain.receipt,parts:confirmedRanges});assert.deepEqual((await call('/api/inbox')).map(i=>i.id).sort(),beforePretraining);
+ assert.equal((await call('/api/platform/tenants/'+created.id+'/inventory')).categories.find(c=>c.key==='document_split_training').records,2);
+ await call('/api/tenants/'+home+'/select','POST');csrf=(await call('/api/auth/me')).csrfToken;const otherTraining=await trainingUpload();assert.ok((await call('/api/inbox/'+otherTraining.id+'/split-proposal')).pages.every(p=>p.classification.method!=='CONFIRMED_SPLIT_PATTERN_V1'));await call('/api/inbox/'+otherTraining.id,'DELETE',undefined,204);await call('/api/tenants/'+created.id+'/select','POST');csrf=(await call('/api/auth/me')).csrfToken;
+ // Original/Copy is explicit per-file metadata, editable and never inferred.
+ const copyForm=new FormData();for(const designation of [0,2]){copyForm.append('file',new Blob([trainingBundle],{type:'application/pdf'}),'synthetic-copy.pdf');copyForm.append('types','OTHER');copyForm.append('copies',String(designation));}
+ const copies=await call('/api/lcs/'+localLc.id+'/documents/batch','POST',copyForm,200,'multipart');assert.deepEqual(copies.map(d=>d.copyNumber),[0,2]);
+ const changedCopy=await call('/api/lcs/'+localLc.id+'/documents/'+copies[0].id,'PUT',{type:'OTHER',copyNumber:3});assert.equal(changedCopy.copyNumber,3);
+ await call('/api/lcs/'+localLc.id+'/documents/'+copies[0].id,'PUT',{type:'OTHER',copyNumber:4},400);
+ for(const document of copies)await call('/api/lcs/'+localLc.id+'/documents/'+document.id,'DELETE',undefined,204);
  // Full test-data purge preserves shared global identities and the other workspace.
  const purgeBody={tenantCode:'synthetic-smoke',deleteAllBusinessData:true,acknowledgeAuditAndBackupsRetained:true};
  await call('/api/platform/tenants/'+created.id,'DELETE',purgeBody,400);

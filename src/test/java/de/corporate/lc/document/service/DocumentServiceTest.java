@@ -21,6 +21,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class DocumentServiceTest {
+    @Test void batchPersistsOriginalAndNumberedCopy()throws Exception{
+        var lcId=UUID.randomUUID();var lc=new LetterOfCredit();var documents=mock(LcDocumentRepository.class);when(documents.save(any())).thenAnswer(call->call.getArgument(0));var lcs=mock(LetterOfCreditRepository.class);when(lcs.findById(lcId)).thenReturn(Optional.of(lc));var service=new DocumentService(documents,lcs,mock(DocumentExtractionService.class));
+        var file=new MockMultipartFile("file","synthetic.pdf","application/pdf",new byte[]{1});
+        assertThat(service.uploadBatch(lcId,List.of(file,file),List.of(DocumentType.OTHER,DocumentType.OTHER),List.of(0,3))).extracting("copyNumber").containsExactly(0,3);
+    }
     @Test void importsZipEntriesAndClassifiesUnknownFilesAsAnnex()throws Exception{
         UUID lcId=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-ZIP-1");
         LcDocumentRepository documents=mock(LcDocumentRepository.class);when(documents.save(any())).thenAnswer(call->call.getArgument(0));

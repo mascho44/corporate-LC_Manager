@@ -11,7 +11,7 @@ public record DocumentView(UUID id, DocumentType documentType, String typeLabel,
         String originalFilename, String contentType, long fileSize, LocalDate documentDate,
         BigDecimal amount, String currency, LocalDateTime uploadedAt, String downloadUrl,
         String extractionStatus, String extractedReference, String extractedDocumentNumber,
-        BigDecimal extractedAmount, String extractedCurrency) {
+        BigDecimal extractedAmount, String extractedCurrency,Integer copyNumber) {
     public static DocumentView from(LcDocument document) {
         return new DocumentView(document.getId(), document.getDocumentType(),
                 document.getDocumentType().getDisplayName(), document.getOriginalFilename(),
@@ -19,6 +19,6 @@ public record DocumentView(UUID id, DocumentType documentType, String typeLabel,
                 document.getAmount(), document.getCurrency(), document.getUploadedAt(),
                 "/api/documents/" + document.getId() + "/content", document.getExtractionStatus(),
                 document.getExtractedReference(), document.getExtractedDocumentNumber(),
-                document.getExtractedAmount(), document.getExtractedCurrency());
+                document.getExtractedAmount(), document.getExtractedCurrency(),document.getCopyNumber());
     }
 }

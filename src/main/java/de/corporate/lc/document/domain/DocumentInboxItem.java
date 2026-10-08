@@ -10,6 +10,9 @@ import java.util.UUID;
 @Entity
 @Table(name = "document_inbox_item")
 public class DocumentInboxItem {
+    private Integer copyNumber;
+    public Integer getCopyNumber(){return copyNumber;}
+    public void setCopyNumber(Integer value){copyNumber=DocumentCopy.validate(value);}
     @Column(nullable=false,updatable=false) @JsonIgnore private UUID tenantId=de.corporate.lc.tenant.domain.TenantContext.currentId();
     public UUID getTenantId(){return tenantId;}
     @PrePersist @PreUpdate @PreRemove private void validateTenant(){de.corporate.lc.tenant.domain.TenantContext.require(tenantId);}

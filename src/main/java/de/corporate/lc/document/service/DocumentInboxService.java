@@ -28,6 +28,7 @@ public class DocumentInboxService {
     private final DocumentExtractionService extraction;
     private final de.corporate.lc.check.service.DocumentCheckService checks;
     @org.springframework.beans.factory.annotation.Autowired private InboxAutomaticSplitter automaticSplitter;
+    @org.springframework.beans.factory.annotation.Autowired private SplitTrainingService splitTraining;
     @Transactional(rollbackFor=Exception.class)
     public List<DocumentInboxItemView> automaticSplit(UUID id,String requestedBy)throws Exception{
         var item=lockedOpenItem(id);requireProcessed(item);requirePdf(item);
@@ -70,7 +71,8 @@ public class DocumentInboxService {
     @Transactional(readOnly=true)
     public PdfDocumentSplitter.Proposal splitProposal(UUID id) throws Exception {
         var item=openItem(id);requireProcessed(item);requirePdf(item);
-        return PdfDocumentSplitter.propose(item.getContent(),item.getOcrEvidenceJson());
+        var baseline=PdfDocumentSplitter.propose(item.getContent(),item.getOcrEvidenceJson());
+        return splitTraining==null?baseline:splitTraining.suggest(item.getContent(),item.getOcrEvidenceJson(),baseline);
     }
 
     @Transactional(rollbackFor=Exception.class)
@@ -86,6 +88,7 @@ public class DocumentInboxService {
             item.setOriginalFilename(base+"-Seiten-"+part.fromPage()+"-"+part.toPage()+".pdf");
             item.setContentType("application/pdf");item.setContent(output.content());item.setFileSize(output.content().length);item.setReceivedBy(username);
             item.setSourceInboxId(id);item.setSourceFromPage(part.fromPage());item.setSourceToPage(part.toPage());
+            item.setCopyNumber(part.copyNumber());
             var document=new LcDocument();document.setOriginalFilename(item.getOriginalFilename());
             extraction.applyRecognizedText(document,output.text(),output.text().isBlank()?"QUEUED":output.evidence()!=null?"OCR_EXTRACTED":"EXTRACTED");
             item.setExtractedText(document.getExtractedText());item.setExtractionStatus(document.getExtractionStatus());
@@ -95,6 +98,7 @@ public class DocumentInboxService {
             item.setClassificationHistoryJson(ClassificationHistory.manual(document.getClassificationHistoryJson(),part.documentType(),username));
             result.add(view(inbox.save(item),targets));
         }
+        if(splitTraining!=null)splitTraining.confirm(original.getContent(),original.getOcrEvidenceJson(),parts,username);
         original.setStatus("SPLIT");inbox.save(original);return List.copyOf(result);
     }
 
@@ -114,7 +118,7 @@ public class DocumentInboxService {
         lc.setAmount(request.amount());lc.setCurrency(request.currency());lc.setExpiryDate(request.expiryDate());
         lc.setIssuingBank(request.issuingBank());lc.setExpiryPlace(request.expiryPlace());
         var saved=lettersOfCredit.saveAndFlush(lc);
-        return new NewCaseResult(saved.getId(),attach(id,new DocumentInboxAttachRequest(saved.getId(),request.documentType(),request.documentDate())));
+        return new NewCaseResult(saved.getId(),attach(id,new DocumentInboxAttachRequest(saved.getId(),request.documentType(),request.documentDate(),request.copyNumber())));
     }
 
     @Transactional
@@ -125,6 +129,7 @@ public class DocumentInboxService {
         LcDocument document = new LcDocument();
         document.setLetterOfCredit(lc);
         document.setDocumentType(request.documentType());
+        document.setCopyNumber(request.copyNumber()==null?item.getCopyNumber():request.copyNumber());
         document.setOriginalFilename(item.getOriginalFilename());
         document.setContentType(item.getContentType());
         document.setFileSize(item.getFileSize());

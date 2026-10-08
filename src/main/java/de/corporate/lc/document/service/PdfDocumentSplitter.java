@@ -9,11 +9,30 @@ import java.util.*;
 
 /** Page-boundary proposals, never an automatic destructive split. */
 public final class PdfDocumentSplitter {
-    public record Part(int fromPage,int toPage,DocumentType documentType) {}
+    public record Part(int fromPage,int toPage,DocumentType documentType,Integer copyNumber) {
+        public Part(int fromPage,int toPage,DocumentType type){this(fromPage,toPage,type,null);}
+        public Part {de.corporate.lc.document.domain.DocumentCopy.validate(copyNumber);}
+    }
     public record Page(int number,DocumentClassifier.Classification classification,String textSource) {}
     public record Proposal(int pageCount,List<Page> pages,List<Part> parts) {}
     public record Output(Part part,byte[] content,String text,OcrEvidence evidence) {}
     private PdfDocumentSplitter() {}
+
+    /** Exact normalized page sequence, not fuzzy matching. Variable numbers are ignored. */
+    public static String trainingPattern(byte[] content,String evidenceJson)throws Exception {
+        try(var slot=PdfProcessingSafety.acquire();var pdf=Loader.loadPDF(content)) {
+            PdfProcessingSafety.validate(pdf);
+            var texts=pageTexts(pdf,DocumentExtractionService.readEvidence(evidenceJson));
+            var normalized=new ArrayList<String>();
+            for(String text:texts){
+                String page=text.toLowerCase(Locale.ROOT).replaceAll("\\p{N}+","#").replaceAll("\\s+"," ").trim();
+                if(page.replaceAll("[^\\p{L}]","").length()<40)return null;
+                normalized.add(page);
+            }
+            String pattern="SPLIT_V1:"+texts.size()+":"+String.join("\u000c",normalized);
+            return HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(pattern.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+        }
+    }
 
     public static Proposal propose(byte[] content,String evidenceJson) throws Exception {
         try(var slot=PdfProcessingSafety.acquire();var pdf=Loader.loadPDF(content)) {
@@ -78,7 +97,7 @@ public final class PdfDocumentSplitter {
         }
     }
 
-    static void validate(List<Part> parts,int pageCount) {
+    public static void validate(List<Part> parts,int pageCount) {
         if(parts==null||parts.size()<2||parts.size()>100)throw new IllegalArgumentException("Bitte 2 bis 100 Teil-Dokumente angeben.");
         int next=1;
         for(var part:parts) {

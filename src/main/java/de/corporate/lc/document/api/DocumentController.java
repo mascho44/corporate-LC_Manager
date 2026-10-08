@@ -38,8 +38,8 @@ public class DocumentController {
             @RequestParam DocumentType type,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate documentDate,
             @RequestParam(required = false) BigDecimal amount,
-            @RequestParam(required = false) String currency, Authentication authentication) throws IOException {
-        DocumentView document = service.upload(lcId, file, type, documentDate, amount, currency);
+            @RequestParam(required = false) String currency,@RequestParam(required=false) Integer copyNumber, Authentication authentication) throws IOException {
+        DocumentView document = service.upload(lcId, file, type, documentDate, amount, currency,copyNumber);
         resetChecks(lcId,authentication,"Dokument hochgeladen");
         audit.record(authentication, "DOCUMENT_UPLOADED", "LETTER_OF_CREDIT", lcId, file.getOriginalFilename()+" · "+type);
         return document;
@@ -50,8 +50,8 @@ public class DocumentController {
         audit.record(authentication,"DOCUMENT_ARCHIVE_UPLOADED","LETTER_OF_CREDIT",lcId,file.getOriginalFilename()+" · "+imported.size()+" Dateien importiert");return imported;
     }
     @PostMapping(value="/lcs/{lcId}/documents/batch",consumes=MediaType.MULTIPART_FORM_DATA_VALUE)
-    public List<DocumentView> uploadBatch(@PathVariable UUID lcId,@RequestPart("file") List<MultipartFile> files,@RequestParam List<DocumentType> types,Authentication authentication)throws IOException{
-        List<DocumentView> imported=service.uploadBatch(lcId,files,types);resetChecks(lcId,authentication,"Dokumenten-Batch hochgeladen");
+    public List<DocumentView> uploadBatch(@PathVariable UUID lcId,@RequestPart("file") List<MultipartFile> files,@RequestParam List<DocumentType> types,@RequestParam(required=false) List<Integer> copies,Authentication authentication)throws IOException{
+        List<DocumentView> imported=service.uploadBatch(lcId,files,types,copies);resetChecks(lcId,authentication,"Dokumenten-Batch hochgeladen");
         audit.record(authentication,"DOCUMENT_BATCH_UPLOADED","LETTER_OF_CREDIT",lcId,files.size()+" Quelldateien · "+imported.size()+" Dokumente importiert");return imported;
     }
     private void resetChecks(UUID lcId,Authentication authentication,String reason){long reset=checks.invalidateDecisions(lcId);if(reset>0)audit.record(authentication,"DOCUMENT_CHECK_DECISIONS_RESET","LETTER_OF_CREDIT",lcId,reset+" Entscheidungen zurückgesetzt · "+reason);}
@@ -73,7 +73,7 @@ public class DocumentController {
         audit.recordChange(authentication,"DOCUMENT_UPDATED","LETTER_OF_CREDIT",lcId,document.originalFilename()+" · "+document.documentType(),previous,documentAuditState(document));return document;
     }
 
-    private String documentAuditState(DocumentView document){return "Datei="+document.originalFilename()+" | Typ="+document.documentType()+" | Datum="+(document.documentDate()==null?"-":document.documentDate())+" | Betrag="+(document.currency()==null?"-":document.currency())+" "+(document.amount()==null?"-":document.amount());}
+    private String documentAuditState(DocumentView document){return "Datei="+document.originalFilename()+" | Typ="+document.documentType()+" | Kennzeichnung="+(document.copyNumber()==null?"unspecified":document.copyNumber()==0?"Original":"Copy "+document.copyNumber())+" | Datum="+(document.documentDate()==null?"-":document.documentDate())+" | Betrag="+(document.currency()==null?"-":document.currency())+" "+(document.amount()==null?"-":document.amount());}
 
     @GetMapping("/documents/{id}/content")
     public ResponseEntity<byte[]> download(@PathVariable UUID id) {

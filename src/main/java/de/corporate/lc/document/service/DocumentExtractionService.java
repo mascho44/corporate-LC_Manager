@@ -26,9 +26,9 @@ public class DocumentExtractionService {
     @org.springframework.beans.factory.annotation.Value("${lc.ocr.max-pages:100}")
     private int maxOcrPages=100;
     private static final class PageLimitException extends IOException{}
-    private static final Pattern DOCUMENT_NUMBER = Pattern.compile("(?im)^(?:invoice|commercial invoice|document)\\s*(?:no\\.?|number|#)?\\s*[:#-]?\\s*([A-Z0-9][A-Z0-9./_-]{2,})\\s*$");
-    private static final Pattern LC_REFERENCE = Pattern.compile("(?im)(?:letter of credit|documentary credit|lc|l/c)\\s*(?:no\\.?|number|reference|ref\\.?|#)?\\s*[:#-]?\\s*([A-Z0-9][A-Z0-9./_-]{3,})");
-    private static final Pattern AMOUNT = Pattern.compile("(?im)(?:total|invoice amount|grand total|amount due)\\s*+[:]?\\s*+(EUR|USD|GBP|CHF|JPY)?\\s*+([0-9][0-9., ]{0,20})\\s*+(EUR|USD|GBP|CHF|JPY)?");
+    private static final Pattern DOCUMENT_NUMBER = Pattern.compile("(?im)^(?:invoice|commercial invoice|document)[\\t ]*+(?:no\\.?|number|#)?[\\t ]*+[:#-]?[\\t ]*+([A-Z0-9][A-Z0-9./_-]{2,})[\\t ]*+$");
+    private static final Pattern LC_REFERENCE = Pattern.compile("(?im)(?:letter of credit|documentary credit|lc|l/c)[\\t ]*+(?:no\\.?|number|reference|ref\\.?|#)?[\\t ]*+[:#-]?[\\t ]*+([A-Z0-9][A-Z0-9./_-]{3,})");
+    private static final Pattern AMOUNT = Pattern.compile("(?im)(?:total|invoice amount|grand total|amount due)[\\t ]*+[:]?[\\t ]*+(EUR|USD|GBP|CHF|JPY)?[\\t ]*+([0-9][0-9., ]{0,20})[\\t ]*+(EUR|USD|GBP|CHF|JPY)?");
 
     public record TextExtraction(String text,String status,OcrEvidence ocrEvidence) {public TextExtraction(String text,String status){this(text,status,null);}}
     public TextExtraction extractFile(byte[] content,String filename,String contentType) { LcDocument document=new LcDocument();document.setContent(content);document.setOriginalFilename(filename==null?"document":filename);document.setContentType(contentType==null?"application/octet-stream":contentType);extract(document);return new TextExtraction(document.getExtractedText(),document.getExtractionStatus(),readEvidence(document.getOcrEvidenceJson())); }
