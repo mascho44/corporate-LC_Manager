@@ -134,7 +134,7 @@ public class DocumentInboxService {
         document.setContentType(item.getContentType());
         document.setFileSize(item.getFileSize());
         document.setContent(item.getContent());
-        document.setDocumentDate(request.documentDate());
+        document.setDocumentDate(request.documentDate()!=null?request.documentDate():DocumentDateDetector.detect(item.getExtractedText()).date());
         document.setAmount(item.getExtractedAmount());
         document.setCurrency(item.getExtractedCurrency());
         document.setExtractedReference(item.getExtractedReference());
