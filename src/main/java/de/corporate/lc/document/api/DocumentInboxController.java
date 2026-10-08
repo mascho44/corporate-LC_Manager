@@ -18,6 +18,15 @@ import java.util.UUID;
 public class DocumentInboxController {
     private final DocumentInboxService service;
     private final AuditService audit;
+    @org.springframework.beans.factory.annotation.Autowired private de.corporate.lc.document.service.PdfPagePreviewService pagePreview;
+
+    @GetMapping(value="/{id}/pages/{page}/preview",produces="image/png")
+    public ResponseEntity<byte[]> pagePreview(@PathVariable UUID id,@PathVariable int page,@RequestParam(defaultValue="false") boolean enlarged)throws Exception{
+        var item=service.openItem(id);
+        if(!"application/pdf".equals(item.getContentType()))throw new IllegalArgumentException("Nur PDF-Seiten können angezeigt werden.");
+        return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).cacheControl(CacheControl.noStore())
+            .header("X-Content-Type-Options","nosniff").body(pagePreview.render(item.getContent(),page,enlarged));
+    }
     private final de.corporate.lc.training.service.AdvisingTrainingService advisingTraining;
 
     public DocumentInboxController(DocumentInboxService service, AuditService audit,de.corporate.lc.training.service.AdvisingTrainingService advisingTraining) {

@@ -13,6 +13,14 @@ import java.util.*;
 @RestController
 @RequestMapping("/api/training/document-types")
 public class SplitPretrainingController {
+ @org.springframework.beans.factory.annotation.Autowired private PdfPagePreviewService pagePreview;
+ @PostMapping(value="/page-preview",consumes="multipart/form-data",produces="image/png")
+ public org.springframework.http.ResponseEntity<byte[]> pagePreview(@RequestPart("file") MultipartFile file,@RequestParam int page,@RequestParam(defaultValue="false") boolean enlarged)throws Exception{
+  if(file==null||file.isEmpty()||file.getSize()>10*1024*1024)throw new IllegalArgumentException("Bitte eine PDF bis 10 MB auswählen.");
+  byte[] content;try(var stream=file.getInputStream()){content=stream.readNBytes(10*1024*1024+1);}
+  if(content.length>10*1024*1024)throw new IllegalArgumentException("PDF überschreitet 10 MB.");
+  return org.springframework.http.ResponseEntity.ok().contentType(org.springframework.http.MediaType.IMAGE_PNG).cacheControl(org.springframework.http.CacheControl.noStore()).body(pagePreview.render(content,page,enlarged));
+ }
  private final DocumentExtractionService extraction;private final SplitTrainingService training;private final ObjectMapper json;private final AuditService audit;private final SplitTrainingReceipt receipts;
  public SplitPretrainingController(DocumentExtractionService extraction,SplitTrainingService training,ObjectMapper json,AuditService audit,SplitTrainingReceipt receipts){this.extraction=extraction;this.training=training;this.json=json;this.audit=audit;this.receipts=receipts;}
  private record Input(byte[] content,String evidence){}

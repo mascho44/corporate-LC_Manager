@@ -156,7 +156,29 @@ async function openInboxSplit(item){
             const learned=document.createElement('p');learned.setAttribute('role','status');
             learned.textContent='Vorschlag aus bestätigtem Training. Bitte Seitenbereiche und Dokumenttypen erneut prüfen.';form.before(learned);
         }
-        const preview=document.createElement('section');preview.className='split-page-preview';preview.hidden=true;preview.innerHTML='<h3>PDF-Seitenvorschau</h3><p>Die Seite ist eine Orientierungshilfe. Bitte den gesamten Bereich im Original prüfen.</p><iframe title="PDF-Seitenvorschau"></iframe>';form.before(preview);
+        const preview=document.createElement('section');preview.className='split-page-preview';preview.hidden=true;preview.innerHTML='<h3>Seitenbild vergrößert</h3><p role="status"></p><img alt="Vergrößerte PDF-Seite">';form.before(preview);
+        const images=new Map(),imageUrls=[],abort=new AbortController();let rendering=Promise.resolve(),zoomVersion=0;
+        const oldClose=dialog.onclose;dialog.onclose=()=>{abort.abort();observer?.disconnect();imageUrls.forEach(url=>URL.revokeObjectURL(url));oldClose();};
+        function pageImage(page,enlarged=false){
+            const key=page+':'+enlarged;if(images.has(key))return images.get(key);
+            const promise=rendering.catch(()=>{}).then(async()=>{
+                if(!dialog.isConnected)throw new Error('Vorschau geschlossen.');
+                let url=`/api/inbox/${encodeURIComponent(item.id)}/pages/${page}/preview?enlarged=${enlarged}`,options={signal:abort.signal};
+                if(item.pretraining){url='/api/training/document-types/page-preview';const body=new FormData();body.append('file',item.file);body.append('page',page);body.append('enlarged',enlarged);options={...options,method:'POST',headers:{'X-CSRF-TOKEN':csrfToken},body};}
+                const response=await fetch(url,options);
+                if(!response.ok||!response.headers.get('Content-Type')?.startsWith('image/png'))throw new Error('Seitenbild nicht verfügbar. Bitte erneut anklicken oder das Original öffnen.');
+                const imageUrl=URL.createObjectURL(await response.blob());if(!dialog.isConnected){URL.revokeObjectURL(imageUrl);throw new Error('Vorschau geschlossen.');}imageUrls.push(imageUrl);return imageUrl;
+            });images.set(key,promise);rendering=promise;promise.catch(()=>images.delete(key));return promise;
+        }
+        async function enlargePage(page){const version=++zoomVersion;preview.hidden=false;preview.querySelector('p').textContent=`Seite ${page} wird geladen …`;preview.querySelector('img').removeAttribute('src');try{const url=await pageImage(page,true);if(version!==zoomVersion||!dialog.isConnected)return;preview.querySelector('img').src=url;preview.querySelector('img').alt=`PDF-Seite ${page}`;preview.querySelector('p').textContent=`Seite ${page}`;preview.scrollIntoView({behavior:'smooth',block:'nearest'});}catch(error){if(version===zoomVersion&&dialog.isConnected)preview.querySelector('p').textContent=error.message;}}
+        function loadThumb(button){if(button.dataset.loaded)return;button.dataset.loaded='true';pageImage(Number(button.dataset.page)).then(url=>{if(button.isConnected){button.querySelector('img').src=url;button.querySelector('small').textContent='Klicken zum Vergrößern';}}).catch(()=>{if(button.isConnected){delete button.dataset.loaded;button.querySelector('small').textContent='Nicht geladen · klicken zum Wiederholen';}});}
+        const observer=typeof IntersectionObserver==='function'?new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){observer.unobserve(entry.target);loadThumb(entry.target);}}),{root:dialog,rootMargin:'100px'}):null;
+        function renderThumbs(row){
+            let strip=row.querySelector('.split-thumbnails');if(!strip){strip=document.createElement('div');strip.className='split-thumbnails';row.querySelector('.split-row-actions').before(strip);}
+            strip.querySelectorAll('button').forEach(button=>observer?.unobserve(button));strip.replaceChildren();const part=readRange(row);
+            if(!Number.isInteger(part.fromPage)||!Number.isInteger(part.toPage)||part.fromPage<1||part.toPage>proposal.pageCount||part.toPage<part.fromPage)return;
+            for(let page=part.fromPage;page<=part.toPage;page++){const button=document.createElement('button');button.type='button';button.className='split-thumbnail';button.dataset.page=page;button.innerHTML=`<span>Seite ${page}</span><img alt="Vorschau Seite ${page}"><small>Wird geladen …</small>`;button.onclick=()=>{loadThumb(button);enlargePage(page);};strip.append(button);if(observer)observer.observe(button);else loadThumb(button);}
+        }
         const readRange=row=>({fromPage:Number(row.querySelector('[name=fromPage]').value),toPage:Number(row.querySelector('[name=toPage]').value),documentType:row.querySelector('[name=documentType]').value,copyNumber:readDocumentCopy(row.querySelector('[name=copyNumber]').value)});
         const refreshMergeButtons=()=>[...rows.children].forEach((row,index)=>row.querySelector('[data-merge]').disabled=index===0);
         rows.addEventListener('change',event=>{
@@ -165,16 +187,16 @@ async function openInboxSplit(item){
             const all=[...rows.children];
             try{
                 const adjusted=adjustInboxSplitRanges(all.map(readRange),all.indexOf(event.target.closest('.inbox-split-row')),event.target.name,proposal.pageCount);
-                adjusted.forEach((part,index)=>{all[index].querySelector('[name=fromPage]').value=part.fromPage;all[index].querySelector('[name=toPage]').value=part.toPage;});
+                adjusted.forEach((part,index)=>{all[index].querySelector('[name=fromPage]').value=part.fromPage;all[index].querySelector('[name=toPage]').value=part.toPage;renderThumbs(all[index]);});
             }catch(failure){error.textContent=failure.message;}
         });
         const add=part=>{
             const row=document.createElement('div');row.className='inbox-split-row';
             row.innerHTML=`<label>Von Seite<input name="fromPage" type="number" min="1" max="${proposal.pageCount}" value="${part.fromPage}" required></label><label>Bis Seite<input name="toPage" type="number" min="1" max="${proposal.pageCount}" value="${part.toPage}" required></label><label class="split-type">Dokumenttyp<select name="documentType" required>${inboxDocumentTypes.map(([type,label])=>`<option value="${type}"${type===part.documentType?' selected':''}>${label}</option>`).join('')}</select></label><label>Kennzeichnung<select name="copyNumber" ${item.pretraining?'disabled':''}>${documentCopyOptions(part.copyNumber)}</select></label><div class="split-row-actions"><button type="button" class="secondary" data-preview>Seite ansehen</button><button type="button" class="secondary" data-merge>Mit vorherigem verbinden</button><button type="button" class="secondary" data-remove>Entfernen</button></div>`;
             row.querySelector('[data-remove]').onclick=()=>{row.remove();refreshMergeButtons();};
-            row.querySelector('[data-preview]').onclick=()=>{const page=readRange(row).fromPage;if(!Number.isInteger(page)||page<1||page>proposal.pageCount)return;preview.hidden=false;preview.querySelector('iframe').src=`${originalUrl}#page=${page}`;preview.scrollIntoView({behavior:'smooth',block:'nearest'});};
-            row.querySelector('[data-merge]').onclick=async()=>{const error=dialog.querySelector('[data-error]');error.textContent='';try{const previous=row.previousElementSibling,a=readRange(previous),b=readRange(row),merged=mergeInboxSplitRanges(a,b);if((a.documentType!==b.documentType||a.copyNumber!==b.copyNumber)&&!await confirmAction('Unterschiedliche Dokumenttypen oder Original/Copy-Kennzeichnungen verbinden? Dokumenttyp und Kennzeichnung des vorherigen Bereichs bleiben erhalten. Bitte anschließend prüfen.'))return;previous.querySelector('[name=toPage]').value=merged.toPage;row.remove();refreshMergeButtons();}catch(failure){error.textContent=failure.message;}};
-            rows.append(row);refreshMergeButtons();
+            row.querySelector('[data-preview]').onclick=()=>{const page=readRange(row).fromPage;if(!Number.isInteger(page)||page<1||page>proposal.pageCount)return;enlargePage(page);};
+            row.querySelector('[data-merge]').onclick=async()=>{const error=dialog.querySelector('[data-error]');error.textContent='';try{const previous=row.previousElementSibling,a=readRange(previous),b=readRange(row),merged=mergeInboxSplitRanges(a,b);if((a.documentType!==b.documentType||a.copyNumber!==b.copyNumber)&&!await confirmAction('Unterschiedliche Dokumenttypen oder Original/Copy-Kennzeichnungen verbinden? Dokumenttyp und Kennzeichnung des vorherigen Bereichs bleiben erhalten. Bitte anschließend prüfen.'))return;previous.querySelector('[name=toPage]').value=merged.toPage;row.remove();refreshMergeButtons();renderThumbs(previous);}catch(failure){error.textContent=failure.message;}};
+            rows.append(row);refreshMergeButtons();renderThumbs(row);
         };
         proposal.parts.forEach(add);dialog.querySelector('[data-add]').onclick=()=>add({fromPage:1,toPage:proposal.pageCount,documentType:'OTHER'});
         form.onsubmit=async event=>{event.preventDefault();const error=dialog.querySelector('[data-error]');error.textContent='';
