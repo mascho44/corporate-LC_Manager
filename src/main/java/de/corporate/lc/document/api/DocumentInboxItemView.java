@@ -11,7 +11,8 @@ public record DocumentInboxItemView(UUID id, String originalFilename, String con
                                     String extractedCurrency, UUID suggestedLcId, String suggestedLcReference,
                                     java.util.List<LcAssignmentCandidate> assignmentCandidates,
                                     de.corporate.lc.document.service.DocumentClassifier.Classification classification,
-                                    UUID sourceInboxId,Integer sourceFromPage,Integer sourceToPage,boolean automaticallySplit,Integer copyNumber) {
+                                    UUID sourceInboxId,Integer sourceFromPage,Integer sourceToPage,boolean automaticallySplit,Integer copyNumber,
+                                    de.corporate.lc.document.service.DocumentCopyDetector.Hint copyHint) {
     public static DocumentInboxItemView from(DocumentInboxItem item, java.util.List<LcAssignmentCandidate> candidates) {
         LcAssignmentCandidate single=candidates.size()==1?candidates.get(0):null;
         var selected=de.corporate.lc.document.service.ClassificationHistory.selectedType(item.getClassificationHistoryJson());
@@ -19,6 +20,6 @@ public record DocumentInboxItemView(UUID id, String originalFilename, String con
                 item.getReceivedAt(), item.getReceivedBy(), item.getStatus(), item.getExtractionStatus(),
                 item.getExtractedReference(), item.getExtractedDocumentNumber(), item.getExtractedAmount(),
                 item.getExtractedCurrency(), single==null?null:single.lcId(), single==null?null:single.reference(), candidates,
-                selected!=null?new de.corporate.lc.document.service.DocumentClassifier.Classification(selected,1,"CONFIRMED","MANUAL",java.util.List.of("Dokumenttyp bei der Aufteilung bestätigt")):"OPEN".equals(item.getStatus())?de.corporate.lc.document.service.DocumentClassifier.classify(item.getOriginalFilename(),item.getExtractedText()):de.corporate.lc.document.service.ClassificationHistory.suggestion(item.getClassificationHistoryJson()),item.getSourceInboxId(),item.getSourceFromPage(),item.getSourceToPage(),de.corporate.lc.document.service.ClassificationHistory.wasAutomaticallySplit(item.getClassificationHistoryJson()),item.getCopyNumber());
+                selected!=null?new de.corporate.lc.document.service.DocumentClassifier.Classification(selected,1,"CONFIRMED","MANUAL",java.util.List.of("Dokumenttyp bei der Aufteilung bestätigt")):"OPEN".equals(item.getStatus())?de.corporate.lc.document.service.DocumentClassifier.classify(item.getOriginalFilename(),item.getExtractedText()):de.corporate.lc.document.service.ClassificationHistory.suggestion(item.getClassificationHistoryJson()),item.getSourceInboxId(),item.getSourceFromPage(),item.getSourceToPage(),de.corporate.lc.document.service.ClassificationHistory.wasAutomaticallySplit(item.getClassificationHistoryJson()),item.getCopyNumber(),de.corporate.lc.document.service.DocumentCopyDetector.detect(item.getExtractedText()));
     }
 }

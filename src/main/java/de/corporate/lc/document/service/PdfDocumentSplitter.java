@@ -13,7 +13,9 @@ public final class PdfDocumentSplitter {
         public Part(int fromPage,int toPage,DocumentType type){this(fromPage,toPage,type,null);}
         public Part {de.corporate.lc.document.domain.DocumentCopy.validate(copyNumber);}
     }
-    public record Page(int number,DocumentClassifier.Classification classification,String textSource) {}
+    public record Page(int number,DocumentClassifier.Classification classification,String textSource,DocumentCopyDetector.Hint copyHint) {
+        public Page(int number,DocumentClassifier.Classification classification,String textSource){this(number,classification,textSource,DocumentCopyDetector.detect(null));}
+    }
     public record Proposal(int pageCount,List<Page> pages,List<Part> parts) {}
     public record Output(Part part,byte[] content,String text,OcrEvidence evidence) {}
     private PdfDocumentSplitter() {}
@@ -40,10 +42,13 @@ public final class PdfDocumentSplitter {
             var texts=pageTexts(pdf,DocumentExtractionService.readEvidence(evidenceJson));
             List<Page> pages=new ArrayList<>();List<Part> parts=new ArrayList<>();
             DocumentType current=null;int start=1;int[] previousNumber=null;String reference=null;
+            DocumentCopyDetector.Hint previousCopy=DocumentCopyDetector.detect(null);
             for(int i=0;i<texts.size();i++) {
                 var classification=DocumentClassifier.classify(null,texts.get(i));
                 var detected=classification.score()>=.8?classification.suggestedType():null;
                 int[] number=pageNumber(texts.get(i));String nextReference=documentReference(texts.get(i));
+                var copy=DocumentCopyDetector.detect(texts.get(i));
+                boolean differentCopy=!copy.kind().equals("UNKNOWN")&&!previousCopy.kind().equals("UNKNOWN")&&(!copy.kind().equals(previousCopy.kind())||copy.copyNumber()!=null&&previousCopy.copyNumber()!=null&&!copy.copyNumber().equals(previousCopy.copyNumber()));
                 boolean restart=i>0&&number!=null&&number[0]==1;
                 boolean differentReference=reference!=null&&nextReference!=null&&!reference.equals(nextReference);
                 boolean continuation=i>0&&current!=null&&number!=null&&previousNumber!=null&&number[0]==previousNumber[0]+1&&number[1]==previousNumber[1]&&!differentReference;
@@ -51,17 +56,20 @@ public final class PdfDocumentSplitter {
                     detected=current;
                     classification=new DocumentClassifier.Classification(current,.8,"REVIEW","PAGE_SEQUENCE_V1",List.of("Fortsetzungsseite "+number[0]+" / "+number[1]+"; Dokumenttyp aus vorheriger Seite vorgeschlagen – bitte prüfen"));
                 }
-                pages.add(new Page(i+1,classification,texts.get(i).isBlank()?"UNAVAILABLE":"PAGE_TEXT"));
+                pages.add(new Page(i+1,classification,texts.get(i).isBlank()?"UNAVAILABLE":"PAGE_TEXT",DocumentCopyDetector.detect(texts.get(i))));
                 // Unknown pages are isolated instead of silently treated as continuations.
-                if(i>0&&(detected==null||current==null||detected!=current||restart||differentReference)) {
+                if(i>0&&(detected==null||current==null||detected!=current||restart||differentReference||differentCopy)) {
                     parts.add(new Part(start,i,current==null?DocumentType.OTHER:current));start=i+1;
                     reference=null;
                 }
                 current=detected;
+                if(!copy.kind().equals("UNKNOWN"))previousCopy=copy;
+                else if(start==i+1)previousCopy=copy;
                 previousNumber=number;if(nextReference!=null)reference=nextReference;
             }
             parts.add(new Part(start,texts.size(),current==null?DocumentType.OTHER:current));
-            return new Proposal(texts.size(),List.copyOf(pages),List.copyOf(parts));
+            var suggestedParts=parts.stream().map(part->new Part(part.fromPage(),part.toPage(),part.documentType(),DocumentCopyDetector.detect(String.join("\n",texts.subList(part.fromPage()-1,part.toPage()))).copyNumber())).toList();
+            return new Proposal(texts.size(),List.copyOf(pages),suggestedParts);
         }
     }
 
