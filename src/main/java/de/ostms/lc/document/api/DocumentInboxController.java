@@ -19,11 +19,24 @@ public class DocumentInboxController {
     private final DocumentInboxService service;
     private final AuditService audit;
     @org.springframework.beans.factory.annotation.Autowired private de.ostms.lc.document.service.DocumentMetadataTraining metadataTraining;
+    @org.springframework.beans.factory.annotation.Autowired private de.ostms.lc.document.service.SpatialLayoutTraining spatialTraining;
 
     @GetMapping("/{id}/metadata-training")
     public de.ostms.lc.document.service.DocumentMetadataTraining.Proposal metadataSuggestion(@PathVariable UUID id){return metadataTraining.suggest(service.openItem(id).getExtractedText());}
     @GetMapping("/{id}/metadata-positions")
-    public java.util.Map<String,de.ostms.lc.document.service.SpatialMetadata.Field> metadataPositions(@PathVariable UUID id){return de.ostms.lc.document.service.SpatialMetadata.detect(de.ostms.lc.document.service.DocumentExtractionService.readEvidence(service.openItem(id).getOcrEvidenceJson()));}
+    public java.util.Map<String,de.ostms.lc.document.service.SpatialMetadata.Field> metadataPositions(@PathVariable UUID id,@RequestParam(required=false) String profile)throws Exception{return spatialTraining.suggest(de.ostms.lc.document.service.DocumentExtractionService.readEvidence(service.openItem(id).getOcrEvidenceJson()),profile);}
+    @PostMapping("/{id}/spatial-training") @ResponseStatus(HttpStatus.NO_CONTENT)
+    @org.springframework.transaction.annotation.Transactional
+    public void confirmSpatial(@PathVariable UUID id,@Valid @RequestBody de.ostms.lc.document.service.SpatialLayoutTraining.Confirmation request,Authentication auth)throws Exception{
+        spatialTraining.confirm(de.ostms.lc.document.service.DocumentExtractionService.readEvidence(service.openItem(id).getOcrEvidenceJson()),request,auth.getName());
+        audit.recordInTransaction(auth,"DOCUMENT_SPATIAL_LAYOUT_TRAINED","DOCUMENT_INBOX",id,"Räumlich bestätigtes Profil: "+request.profile());
+    }
+    @GetMapping(value="/{id}/metadata-positions/{field}/preview",produces="image/png")
+    public ResponseEntity<byte[]> spatialPreview(@PathVariable UUID id,@PathVariable String field,@RequestParam(required=false) String profile)throws Exception{
+        var item=service.openItem(id);if(!"application/pdf".equals(item.getContentType()))throw new IllegalArgumentException("Nur PDF-Ausschnitte unterstützt.");
+        var found=spatialTraining.suggest(de.ostms.lc.document.service.DocumentExtractionService.readEvidence(item.getOcrEvidenceJson()),profile).get(field);if(found==null)throw new IllegalArgumentException("Keine eindeutige Fundstelle vorhanden.");
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).header("X-Content-Type-Options","nosniff").body(pagePreview.markedCrop(item.getContent(),found));
+    }
 
     @PostMapping("/{id}/metadata-training") @ResponseStatus(HttpStatus.NO_CONTENT)
     @org.springframework.transaction.annotation.Transactional
