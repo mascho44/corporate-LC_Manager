@@ -16,6 +16,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 class DocumentCheckServiceTest {
+    @Test void precheckShowsAutomaticFindingsWithoutReadingOrWritingHumanDecisions(){
+        UUID id=UUID.randomUUID();var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);var decisions=mock(DocumentCheckDecisionRepository.class);
+        var lc=new LetterOfCredit();lc.setRequiredDocuments(List.of("COMMERCIAL INVOICE"));
+        when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of());
+        var result=new DocumentCheckService(lcs,docs,decisions).precheck(id);
+        assertThat(result.results()).anyMatch(r->r.code().equals("MISSING_DOCUMENT"));
+        assertThat(result.results()).allMatch(r->r.reviewDecision()==null);
+        verifyNoInteractions(decisions);verify(lcs,never()).save(any());verify(docs,never()).save(any());
+    }
     @Test void requiresAndStoresAcceptanceReason(){
         UUID id=UUID.randomUUID();var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);var decisions=mock(DocumentCheckDecisionRepository.class);
         when(lcs.findById(id)).thenReturn(Optional.of(new LetterOfCredit()));
