@@ -38,7 +38,17 @@ public class DocumentCheckService {
         return evaluate(lcId,lc,uploaded,true);
     }
 
+    /** Read-only automatic baseline: existing human decisions never mask findings. */
+    @Transactional(readOnly=true)
+    public ReviewSummary precheck(UUID lcId){
+        var lc=lcs.findById(lcId).orElseThrow();
+        return evaluate(lcId,lc,documents.findByLetterOfCreditIdOrderByUploadedAtDesc(lcId),false,true);
+    }
+
     private ReviewSummary evaluate(UUID lcId,LetterOfCredit lc,List<de.corporate.lc.document.domain.LcDocument> uploaded,boolean simulation){
+        return evaluate(lcId,lc,uploaded,simulation,false);
+    }
+    private ReviewSummary evaluate(UUID lcId,LetterOfCredit lc,List<de.corporate.lc.document.domain.LcDocument> uploaded,boolean simulation,boolean precheck){
         List<CheckResult> results = new ArrayList<>();
         if(simulation)results.add(new CheckResult(OK,"SIMULATION_ONLY","Simulation – keine Geschäftsdaten oder Prüfentscheidungen werden gespeichert."));
         else addEffectiveVersionContext(lc,results);
@@ -168,7 +178,7 @@ public class DocumentCheckService {
         if(internalPacks!=null)results.addAll(internalPacks.evaluate(lc,uploaded));
         if (results.isEmpty()) results.add(new CheckResult(WARNING, "NO_RULES_APPLIED", "No automated rule could be applied."));
         String inputFingerprint=ReviewInputFingerprint.of(lc,uploaded);
-        List<DocumentCheckDecision> reviewed=simulation?List.of():decisions.findByLcId(lcId);
+        List<DocumentCheckDecision> reviewed=simulation||precheck?List.of():decisions.findByLcId(lcId);
         List<CheckResult> reviewedResults=new ArrayList<>();
         for(CheckResult rawResult:results){
             CheckResult result=rawResult.withInputFingerprint(inputFingerprint);
