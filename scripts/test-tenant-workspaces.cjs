@@ -167,7 +167,7 @@ function swift(reference){return `:20:${reference}\n:31C:261001\n:31D:271231SYNT
  const suspensionViewerSession=[...cookies],suspensionViewerCsrf=csrf;
  const syntheticInvoice={type:'COMMERCIAL_INVOICE',documentNumber:'SYNTHETIC-INVOICE-001',documentDate:'2026-10-08',description:'Synthetic test goods only',quantity:'1',notes:'Disposable acceptance test'};
  await call('/api/lcs/'+localLc.id+'/generated-documents','POST',syntheticInvoice,403); // A Viewer must never gain generation rights from a profile.
- await call('/api/platform/tenants','GET',undefined,403);
+ await call('/api/platform/tenants','GET',undefined,403);await call('/api/platform/tenants/'+created.id+'/inventory','GET',undefined,403);
  cookies.clear();adminSession.forEach(([k,v])=>cookies.set(k,v));csrf=adminCsrf;
  // Restore the explicitly assigned full local role for module tests: platform
  // authority alone must not bypass SETTINGS_MANAGE on business endpoints.
@@ -195,7 +195,7 @@ function swift(reference){return `:20:${reference}\n:31C:261001\n:31D:271231SYNT
  assert.ok((await call('/api/documents/'+generatedPdf.id+'/content','GET',undefined,200,'application/json',true)).startsWith('%PDF-')); // Existing documents remain readable.
  await call('/api/tenants/'+home+'/select','POST');csrf=(await call('/api/auth/me')).csrfToken;
  await call('/api/platform/tenants/'+created.id,'PUT',{active:false,bankEnabled:true,corporateEnabled:true});
- assert.equal((await call('/api/tenants')).workspaces.some(t=>t.id===created.id),false);
+ assert.equal((await call('/api/tenants')).workspaces.some(t=>t.id===created.id),false);const suspendedInventory=await call('/api/platform/tenants/'+created.id+'/inventory');assert.equal(suspendedInventory.tenantId,created.id);assert.equal(suspendedInventory.deletionAllowed,false);assert.equal(suspendedInventory.categories.find(c=>c.key==='letter_of_credit').records,1);
  const lifecycleAdminSession=[...cookies],lifecycleAdminCsrf=csrf;cookies.clear();suspensionViewerSession.forEach(([k,v])=>cookies.set(k,v));csrf=suspensionViewerCsrf;
  await call('/api/lcs','GET',undefined,401);cookies.clear();csrf='';
  await call('/api/auth/login','POST',{username:isolated.username,password:'SyntheticOnly456!',tenantCode:'synthetic-smoke'},401);
@@ -203,5 +203,7 @@ function swift(reference){return `:20:${reference}\n:31C:261001\n:31D:271231SYNT
  await call('/api/platform/tenants/'+created.id,'PUT',{active:true,bankEnabled:true,corporateEnabled:true});
  await call('/api/tenants/'+created.id+'/select','POST');csrf=(await call('/api/auth/me')).csrfToken;assert.equal((await call('/api/lcs')).length,1);
  const retainedDocuments=(await call('/api/lcs/'+localLc.id+'/documents')).map(d=>d.id);assert.ok(retainedDocuments.includes(generatedPdf.id));assert.ok(retainedDocuments.includes(generatedWord.id));
+ const localInventory=await call('/api/platform/tenants/'+created.id+'/inventory');assert.equal(localInventory.inventoryOnly,true);assert.equal(localInventory.deletionAllowed,false);assert.equal(localInventory.globalAccountsExcluded,true);assert.equal(localInventory.protectedTenant,true);assert.ok(localInventory.sharedMemberships>=1);assert.ok(localInventory.blockers.includes('HOLDS_NOT_EVALUATED'));assert.equal(localInventory.categories.find(c=>c.key==='letter_of_credit').records,1);assert.equal(localInventory.categories.find(c=>c.key==='lc_document').records,retainedDocuments.length);assert.ok(localInventory.knownBinaryBytes>=generatedPdf.fileSize+generatedWord.fileSize);
+ const homeInventory=await call('/api/platform/tenants/'+home+'/inventory');assert.equal(homeInventory.categories.find(c=>c.key==='lc_document').records,1);assert.equal(homeInventory.categories.find(c=>c.key==='lc_document').binaryBytes,Buffer.byteLength(homeContent));assert.ok(homeInventory.blockers.includes('PROTECTED_TENANT'));await call('/api/platform/tenants/'+crypto.randomUUID()+'/inventory','GET',undefined,404);assert.equal((await call('/api/tenants')).selectedTenantId,created.id);
  console.log('PASS: existing tenant/invitation regressions, central tenant creation, profile API gates, self/default suspension protection, suspended login/session denial and reactivation without data loss.');
 })().catch(error=>{console.error(error.message);process.exitCode=1;}).finally(async()=>{if(syntheticSmtp)await syntheticSmtp.close();});
