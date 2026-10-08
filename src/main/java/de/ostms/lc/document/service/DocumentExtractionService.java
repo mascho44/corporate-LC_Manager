@@ -84,8 +84,9 @@ public class DocumentExtractionService {
     public void applyRecognizedText(LcDocument document,String recognized,String status) {
             de.ostms.lc.tenant.domain.TenantContext.require(document.getTenantId());
             String text=limit(normalize(recognized));document.setExtractedText(text);
+            if(document.getDocumentDate()==null)document.setDocumentDate(DocumentDateDetector.detect(text).date());
             match(DOCUMENT_NUMBER, text, 1).ifPresent(document::setExtractedDocumentNumber);
-            match(LC_REFERENCE, text, 1).ifPresent(document::setExtractedReference);
+            document.setExtractedReference(DocumentReferenceDetector.detect(text));
             var amountMatcher = AMOUNT.matcher(text);
             if (amountMatcher.find()) {
                 String currency = amountMatcher.group(1) != null ? amountMatcher.group(1) : amountMatcher.group(3);
