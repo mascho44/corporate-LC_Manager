@@ -23,7 +23,9 @@ public class DocumentExtractionService {
     @org.springframework.beans.factory.annotation.Value("${lc.ocr.document-timeout-seconds:900}")
     private long ocrDocumentTimeoutSeconds=900;
     private static final int MAX_TEXT_LENGTH = 100_000;
-    private static final int MAX_OCR_PAGES = 20;
+    @org.springframework.beans.factory.annotation.Value("${lc.ocr.max-pages:100}")
+    private int maxOcrPages=100;
+    private static final class PageLimitException extends IOException{}
     private static final Pattern DOCUMENT_NUMBER = Pattern.compile("(?im)^(?:invoice|commercial invoice|document)\\s*(?:no\\.?|number|#)?\\s*[:#-]?\\s*([A-Z0-9][A-Z0-9./_-]{2,})\\s*$");
     private static final Pattern LC_REFERENCE = Pattern.compile("(?im)(?:letter of credit|documentary credit|lc|l/c)\\s*(?:no\\.?|number|reference|ref\\.?|#)?\\s*[:#-]?\\s*([A-Z0-9][A-Z0-9./_-]{3,})");
     private static final Pattern AMOUNT = Pattern.compile("(?im)(?:total|invoice amount|grand total|amount due)\\s*+[:]?\\s*+(EUR|USD|GBP|CHF|JPY)?\\s*+([0-9][0-9., ]{0,20})\\s*+(EUR|USD|GBP|CHF|JPY)?");
@@ -60,6 +62,8 @@ public class DocumentExtractionService {
                 return;
             }
             applyRecognizedText(document,text,ocrUsed ? "OCR_EXTRACTED" : "EXTRACTED");
+        } catch (PageLimitException exception) {
+            document.setExtractionStatus("OCR_PAGE_LIMIT");
         } catch (BoundedProcess.TimeoutException exception) {
             document.setExtractionStatus("OCR_TIMEOUT");
         } catch (BoundedProcess.UnavailableException exception) {
@@ -122,25 +126,27 @@ public class DocumentExtractionService {
 
     private String readPdfWithOcr(LcDocument document,long documentBudget,List<String> pageTexts) throws Exception {
         long requiredPages=pageTexts.stream().filter(String::isBlank).count();
-        if(requiredPages>MAX_OCR_PAGES)throw new IOException("OCR page limit exceeded");
+        int limit=Math.max(1,Math.min(200,maxOcrPages));
+        if(requiredPages>limit){log.warn("OCR page limit: scannedPages={}, maxPages={}",requiredPages,limit);throw new PageLimitException();}
         long started=System.nanoTime();
         Path directory = Files.createTempDirectory("lc-ocr-");
         try {
             Path input = directory.resolve("input.pdf");
             Files.write(input, document.getContent(), StandardOpenOption.CREATE_NEW);
-            for(int[] range:blankPageRanges(pageTexts)){
-                long remaining=documentBudget-java.util.concurrent.TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()-started);
-                if(remaining<=0)throw new BoundedProcess.TimeoutException("OCR");
-                runOcrStep(new ProcessBuilder("pdftoppm","-png","-r","200","-f",String.valueOf(range[0]),"-l",String.valueOf(range[1]),input.toString(),directory.resolve("page").toString()).redirectErrorStream(true),Math.min(60,remaining));
-            }
             var images=new java.util.HashMap<Integer,Path>();
-            try(var files=Files.list(directory)){files.filter(p->p.getFileName().toString().matches("page-[0-9]+\\.png")).forEach(p->images.put(Integer.parseInt(p.getFileName().toString().replaceAll("[^0-9]","")),p));}
             StringBuilder result = new StringBuilder();
             java.util.ArrayList<OcrEvidence.Word> words=new java.util.ArrayList<>();
             String engineVersion=tesseractVersion(directory);
             for (int index = 0; index < pageTexts.size(); index++) {
                 if(!pageTexts.get(index).isBlank()){if(result.length()<MAX_TEXT_LENGTH)result.append(pageTexts.get(index)).append('\n');continue;}
-                Path image=images.get(index+1);if(image==null)throw new IOException("PDF renderer produced no page");
+                if(!images.containsKey(index+1)){
+                    int last=index;while(last+1<pageTexts.size()&&last-index<2&&pageTexts.get(last+1).isBlank())last++;
+                    long remaining=documentBudget-java.util.concurrent.TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()-started);
+                    if(remaining<=0)throw new BoundedProcess.TimeoutException("OCR");
+                    runOcrStep(new ProcessBuilder("pdftoppm","-png","-r","200","-f",String.valueOf(index+1),"-l",String.valueOf(last+1),input.toString(),directory.resolve("page").toString()).redirectErrorStream(true),Math.min(60,remaining));
+                    try(var files=Files.list(directory)){files.filter(p->p.getFileName().toString().matches("page-[0-9]+\\.png")).forEach(p->images.put(Integer.parseInt(p.getFileName().toString().replaceAll("[^0-9]","")),p));}
+                }
+                Path image=images.remove(index+1);if(image==null)throw new IOException("PDF renderer produced no page");
                 Path output = directory.resolve("ocr-" + index);
                 ProcessBuilder ocr;
                 ocr = new ProcessBuilder("tesseract", image.toString(), output.toString(), "-l", "deu+eng",
