@@ -30,6 +30,7 @@ import static org.mockito.Mockito.*;
 @Import({de.corporate.lc.user.service.InvitationMailQueue.class,de.corporate.lc.user.service.InvitationMailCipher.class,de.corporate.lc.user.service.PlatformInvitationMailListener.class,de.corporate.lc.user.service.PlatformInvitationMailService.class,de.corporate.lc.user.service.PlatformInvitationService.class,de.corporate.lc.user.service.PlatformAccountCreationService.class,de.corporate.lc.user.service.PlatformAdministrationService.class,PlatformTenantService.class,TenantSettingsService.class,TenantWorkspaceService.class,TenantSharedIdentityRoleService.class,TenantSharedIdentityAccessService.class,TenantMembershipService.class,TenantAdministrationLock.class,TenantSharedIdentityTransactionTest.Beans.class})
 @Transactional(propagation=Propagation.NOT_SUPPORTED)
 class TenantSharedIdentityTransactionTest {
+ @org.springframework.test.context.bean.override.mockito.MockitoBean TenantInventoryStore inventory;
  @Test void archivalRollsBackOnAuditFailure(){var tenant=tenants.findById(tenantId).orElseThrow();tenant.setActive(false);tenants.saveAndFlush(tenant);failAudit();assertThatThrownBy(()->platformTenants.archive(tenantId,true,authentication)).isInstanceOf(IllegalStateException.class);var retained=tenants.findById(tenantId).orElseThrow();assertThat(retained.isArchived()).isFalse();assertThat(retained.isActive()).isFalse();}
  @TestConfiguration static class Beans {
   @Bean org.springframework.mail.javamail.JavaMailSender mailSender(){return mock(org.springframework.mail.javamail.JavaMailSender.class);}
