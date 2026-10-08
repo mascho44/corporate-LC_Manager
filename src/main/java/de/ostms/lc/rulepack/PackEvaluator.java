@@ -37,12 +37,22 @@ public final class PackEvaluator {
   if(excluded)return Outcome.NOT_APPLICABLE;
   if(unknown)return Outcome.NOT_EVALUABLE;
   if(rule.effectiveMode()==Mode.MANUAL){
-   if(facts.get(rule.left())==null||facts.get(rule.right())==null||facts.get(rule.left()).isBlank()||facts.get(rule.right()).isBlank())return Outcome.NOT_EVALUABLE;
+   if(facts.get(rule.left())==null||right(rule,facts)==null||facts.get(rule.left()).isBlank()||right(rule,facts).isBlank())return Outcome.NOT_EVALUABLE;
    return Outcome.MANUAL_REVIEW;
   }
   try{
-   String left=facts.get(rule.left()),right=facts.get(rule.right());
+   String left=facts.get(rule.left()),right=right(rule,facts);
    if(left==null||right==null||left.isBlank()||right.isBlank())return Outcome.NOT_EVALUABLE;
+   if(rule.operator()==Operator.IN||rule.operator()==Operator.NOT_IN){
+    var params=rule.parameters();if(params==null||params.values()==null||params.values().isEmpty())return Outcome.NOT_EVALUABLE;
+    var probe=new Rule("member","1.0.0",rule.documentType(),rule.left(),Operator.EQ,rule.left(),Level.WARNING,"member","member");
+    boolean matched=false;
+    for(var candidate:params.values()){
+     var result=compare(probe,left,candidate);if(result==Outcome.NOT_EVALUABLE)return result;
+     if(result==Outcome.PASS)matched=true;
+    }
+    return matched==(rule.operator()==Operator.IN)?Outcome.PASS:Outcome.FAIL;
+   }
    if(unitChecks&&!compatibleUnits(rule,facts))return Outcome.NOT_EVALUABLE;
    if(rule.operator()==Operator.WITHIN_DAYS){
     var params=rule.parameters();if(params==null)return Outcome.NOT_EVALUABLE;
@@ -76,7 +86,12 @@ public final class PackEvaluator {
     return pass?Outcome.PASS:Outcome.FAIL;
    }
   }catch(RuntimeException invalid){return Outcome.NOT_EVALUABLE;}
-  return compare(rule,facts.get(rule.left()),facts.get(rule.right()));
+  return compare(rule,facts.get(rule.left()),right(rule,facts));
+ }
+ public static String right(Rule rule,Map<Field,String> facts){
+  if(rule.right()!=Field.LITERAL)return facts.get(rule.right());
+  if((rule.operator()==Operator.IN||rule.operator()==Operator.NOT_IN)&&rule.parameters()!=null&&rule.parameters().values()!=null)return String.join(",",rule.parameters().values());
+  return rule.rightValue();
  }
  private static boolean compatibleUnits(Rule rule,Map<Field,String> facts){
   Field l=unit(rule.left()),r=unit(rule.right());if(l==null&&r==null)return true;
@@ -86,7 +101,7 @@ public final class PackEvaluator {
  }
  private static Field unit(Field field){return switch(field){
   case DOCUMENT_AMOUNT->Field.DOCUMENT_CURRENCY;case DOCUMENT_INSURED_AMOUNT->Field.DOCUMENT_INSURANCE_CURRENCY;
-  case LC_AMOUNT,LC_INSURANCE_BASE_AMOUNT,LC_UNIT_PRICE_AMOUNT->Field.LC_CURRENCY;case PEER_AMOUNT->Field.PEER_CURRENCY;
+  case LC_AMOUNT,LC_CLAIMED_AMOUNT,LC_INSURANCE_BASE_AMOUNT,LC_UNIT_PRICE_AMOUNT->Field.LC_CURRENCY;case PEER_AMOUNT->Field.PEER_CURRENCY;
   case DOCUMENT_UNIT_PRICE_AMOUNT->Field.DOCUMENT_CURRENCY;
   case LC_QUANTITY->Field.LC_QUANTITY_UNIT;
   case DOCUMENT_QUANTITY->Field.DOCUMENT_QUANTITY_UNIT;case PEER_QUANTITY->Field.PEER_QUANTITY_UNIT;
@@ -111,7 +126,7 @@ public final class PackEvaluator {
  public record TestResult(String name,String ruleId,Outcome expected,Outcome actual,boolean passed){}
  static Map<Field,String> testFacts(Rule rule,TestCase test){
   var facts=new EnumMap<Field,String>(Field.class);if(test.facts()!=null)facts.putAll(test.facts());
-  facts.put(rule.left(),test.left());facts.put(rule.right(),test.right());return facts;
+  facts.put(rule.left(),test.left());if(rule.right()!=Field.LITERAL)facts.put(rule.right(),test.right());return facts;
  }
  public static List<TestResult> test(PackDefinition pack){
   return pack.tests().stream().map(t->{

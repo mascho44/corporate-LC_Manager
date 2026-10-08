@@ -113,6 +113,17 @@ class InternalPackServiceTest {
    assertThat(service.evaluate(new LetterOfCredit(),List.of(doc,peer,duplicate)).get(0).message()).contains("nicht prüfbar");
   }
  }
+ @Test void literalRuntimeUsesTheConfiguredValueAndReportsIt(){
+  var rule=new PackDefinition.Rule("synthetic-literal","1.0.0",DocumentType.SEA_WAYBILL,PackDefinition.Field.DOCUMENT_SIGNED,PackDefinition.Operator.EQ,PackDefinition.Field.LITERAL,PackDefinition.Level.DISCREPANCY,"Synthetic signature","Internal synthetic",PackDefinition.Mode.AUTOMATIC,null,null,"true");
+  var tests=List.of(new PackDefinition.TestCase("pass",rule.id(),"true",null,PackDefinition.Outcome.PASS),new PackDefinition.TestCase("fail",rule.id(),"false",null,PackDefinition.Outcome.FAIL),new PackDefinition.TestCase("missing",rule.id(),null,null,PackDefinition.Outcome.NOT_EVALUABLE));
+  var pack=new PackDefinition(5,"synthetic-literal","1.0.0","Synthetic literal","OWN_INTERNAL","Internal","Synthetic only",List.of(rule),tests);codec.validate(pack);
+  var v=new StoredPackVersion();v.packId=pack.packId();v.version=pack.version();v.definitionJson=codec.canonical(pack);v.checksum=codec.digest(v.definitionJson);v.testsPassed=true;
+  when(versions.findById(v.id)).thenReturn(Optional.of(v));var selected=new PackSelection();selected.id=v.packId;selected.activeVersionId=v.id;when(selections.findAll()).thenReturn(List.of(selected));
+  var doc=new LcDocument();doc.setDocumentType(DocumentType.SEA_WAYBILL);doc.setOriginalFilename("synthetic.pdf");doc.setRuleFactsJson(RuleFacts.encode(Map.of(PackDefinition.Field.DOCUMENT_SIGNED,"false"),true));
+  var result=service.evaluate(new LetterOfCredit(),List.of(doc)).get(0);
+  assertThat(result.severity().name()).isEqualTo("DISCREPANCY");assertThat(result.lcCondition()).contains("LITERAL = true");
+  doc.setRuleFactsJson("{}");assertThat(service.evaluate(new LetterOfCredit(),List.of(doc)).get(0).message()).contains("nicht prüfbar");
+ }
  @Test void corruptedPackNeverProducesSuccessfulFinding()throws Exception{
   var v=version();v.definitionJson+=" ";var selected=new PackSelection();selected.id=v.packId;selected.activeVersionId=v.id;
   when(selections.findAll()).thenReturn(List.of(selected));

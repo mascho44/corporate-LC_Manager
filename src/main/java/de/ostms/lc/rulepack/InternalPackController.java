@@ -10,7 +10,7 @@ public class InternalPackController {
  private final InternalPackService service;
  public InternalPackController(InternalPackService s){service=s;}
  @GetMapping public List<InternalPackService.View> list(){return service.list();}
- @PostMapping("/preview") public InternalPackService.Preview preview(HttpServletRequest request)throws IOException{return service.preview(body(request));}
+ @PostMapping("/preview") public Object preview(HttpServletRequest request)throws IOException{return service.previewOrInspect(body(request));}
  @PostMapping public StoredPackVersion importPack(HttpServletRequest request,Authentication auth)throws IOException{return service.importPack(body(request),auth);}
  @PostMapping("/{id}/test") public InternalPackService.Preview test(@PathVariable UUID id){return service.test(id);}
  public record Activation(boolean rightsConfirmed){}
