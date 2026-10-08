@@ -133,10 +133,11 @@ public class InternalPackService {
  private String value(Field field,LetterOfCredit lc,LcDocument doc){
   Object value=switch(field){
    case DOCUMENT_AMOUNT->doc.getAmount();case DOCUMENT_CURRENCY->doc.getCurrency();case DOCUMENT_DATE->doc.getDocumentDate();
+   case DOCUMENT_NUMBER->doc.getExtractedDocumentNumber();
    case LC_AMOUNT->lc.getAmount();case LC_CURRENCY->lc.getCurrency();case LC_EXPIRY_DATE->lc.getExpiryDate();case LC_LATEST_SHIPMENT_DATE->lc.getLatestShipmentDate();
    case LC_BENEFICIARY->lc.getBeneficiary();case LC_APPLICANT->lc.getApplicant();
    case LC_DOCUMENT_ISSUED_ORIGINAL_COUNT->RuleFacts.read(doc.getRuleFactsJson()).get(Field.DOCUMENT_ISSUED_ORIGINAL_COUNT);
-   case LC_SIGNATURE_REQUIRED,LC_REQUIRED_ORIGINAL_COUNT->RuleRequirements.read(lc.getRuleRequirementsJson()).getOrDefault(doc.getDocumentType(),Map.of()).get(field);
+   case LC_SIGNATURE_REQUIRED,LC_REQUIRED_ORIGINAL_COUNT,LC_REQUIRED_ISSUER->RuleRequirements.read(lc.getRuleRequirementsJson()).getOrDefault(doc.getDocumentType(),Map.of()).get(field);
    default->field.peer()?null:RuleFacts.read(field.document()?doc.getRuleFactsJson():lc.getRuleFactsJson()).get(field);
   };
   return value==null?null:value instanceof java.math.BigDecimal number?number.toPlainString():value.toString();
@@ -160,6 +161,9 @@ public class InternalPackService {
   case PEER_SHIPMENT_DATE->Field.DOCUMENT_SHIPMENT_DATE;case PEER_GOODS_DESCRIPTION->Field.DOCUMENT_GOODS_DESCRIPTION;
   case PEER_QUANTITY->Field.DOCUMENT_QUANTITY;case PEER_QUANTITY_UNIT->Field.DOCUMENT_QUANTITY_UNIT;
   case PEER_NET_WEIGHT->Field.DOCUMENT_NET_WEIGHT;case PEER_GROSS_WEIGHT->Field.DOCUMENT_GROSS_WEIGHT;case PEER_WEIGHT_UNIT->Field.DOCUMENT_WEIGHT_UNIT;
+  case PEER_DOCUMENT_NUMBER->Field.DOCUMENT_NUMBER;
+  case PEER_PACKAGE_COUNT->Field.DOCUMENT_PACKAGE_COUNT;
+  case PEER_SHIPPING_MARKS->Field.DOCUMENT_SHIPPING_MARKS;
   default->throw new IllegalArgumentException("Kein Peer-Feld.");
  };}
 }
