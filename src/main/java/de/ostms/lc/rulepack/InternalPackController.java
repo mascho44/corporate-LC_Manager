@@ -18,7 +18,7 @@ public class InternalPackController {
  @PostMapping("/{packId}/deactivate") public void deactivate(@PathVariable String packId,Authentication auth){service.deactivate(packId,auth);}
  private byte[] body(HttpServletRequest request)throws IOException{
   var bytes=request.getInputStream().readNBytes(PackCodec.MAX_BYTES+1);
-  if(bytes.length>PackCodec.MAX_BYTES)throw new IllegalArgumentException("Rule Pack überschreitet 512 KB.");
+  if(bytes.length>PackCodec.MAX_BYTES)throw new IllegalArgumentException("Rule Pack überschreitet 5 MB.");
   return bytes;
  }
 }

@@ -14,6 +14,10 @@ class PackCodecTest {
   var pack=codec.parse(example());assertThat(PackEvaluator.test(pack)).allMatch(PackEvaluator.TestResult::passed);
   assertThat(codec.digest(codec.canonical(pack))).hasSize(64);
  }
+ @Test void validJsonAtNewByteLimitIsAccepted()throws Exception{
+  String padded=new String(example(),StandardCharsets.UTF_8);padded=padded+" ".repeat(PackCodec.MAX_BYTES-padded.getBytes(StandardCharsets.UTF_8).length);
+  assertThat(padded.getBytes(StandardCharsets.UTF_8)).hasSize(PackCodec.MAX_BYTES);assertThat(codec.parse(padded.getBytes(StandardCharsets.UTF_8)).rules()).isNotEmpty();
+ }
  @Test void unknownFieldsDuplicateKeysAndOversizedBodyAreRejected()throws Exception{
   String source=new String(example(),StandardCharsets.UTF_8);
   assertThatThrownBy(()->codec.parse(source.replace("\"schemaVersion\": 1","\"script\":\"run()\",\"schemaVersion\":1").getBytes(StandardCharsets.UTF_8))).isInstanceOf(IllegalArgumentException.class);
@@ -48,9 +52,9 @@ class PackCodecTest {
   var pack=new PackDefinition(1,original.packId(),original.version(),original.name(),original.origin(),original.license(),original.rightsStatement(),rules,tests);
   codec.validate(pack);assertThat(PackEvaluator.test(pack)).allMatch(PackEvaluator.TestResult::passed);
   rules.add(new Rule("own-extra",prototype.version(),prototype.documentType(),prototype.left(),prototype.operator(),prototype.right(),prototype.severity(),prototype.message(),prototype.sourceReference()));
-  assertThatThrownBy(()->codec.validate(pack)).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("50 Regeln");rules.remove(rules.size()-1);
+  assertThatThrownBy(()->codec.validate(pack)).isInstanceOf(IllegalArgumentException.class).hasMessageContaining(PackCodec.MAX_RULES+" Regeln");rules.remove(rules.size()-1);
   var tooMany=new ArrayList<TestCase>();for(int i=0;i<=PackCodec.MAX_TESTS;i++)tooMany.add(tests.get(0));
-  assertThatThrownBy(()->codec.validate(new PackDefinition(1,original.packId(),original.version(),original.name(),original.origin(),original.license(),original.rightsStatement(),rules,tooMany))).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("300 synthetische");
+  assertThatThrownBy(()->codec.validate(new PackDefinition(1,original.packId(),original.version(),original.name(),original.origin(),original.license(),original.rightsStatement(),rules,tooMany))).isInstanceOf(IllegalArgumentException.class).hasMessageContaining(PackCodec.MAX_TESTS+" synthetische");
  }
  @Test void invalidNumbersAndDatesCannotProduceSuccess()throws Exception{
   var r=codec.parse(example()).rules().get(0);

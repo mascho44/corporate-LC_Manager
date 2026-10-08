@@ -3,7 +3,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.*;
 class DeferredRulePacksTest {
  @Test void internalCatalogueDoesNotPublishIccPacksOrSourceAttribution() {
-  assertThat(RuleCatalog.definitions()).hasSize(4);
+  assertThat(RuleCatalog.definitions()).hasSize(5);
   assertThat(RuleCatalog.definitions()).allMatch(r->r.sourceUrl()==null);
   assertThat(RuleCatalog.definitions()).noneMatch(r->r.id().startsWith("UCP"));
  }
