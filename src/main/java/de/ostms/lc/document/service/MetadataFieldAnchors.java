@@ -42,7 +42,7 @@ final class MetadataFieldAnchors {
  private static String heading(String[] lines){for(String line:lines){String value=line.strip();if(value.isEmpty())continue;return value.length()<=120&&value.matches("[\\p{L} ./'()-]{3,120}")?value:null;}return null;}
  private static Object value(DocumentMetadataTraining.Confirmation c,String field){return switch(field){case "reference"->c.metadata().reference();case "documentNumber"->c.metadata().documentNumber();case "amount"->c.metadata().amount();case "currency"->c.metadata().currency();default->c.documentDate();};}
  private static boolean equal(Object a,Object b){return a instanceof BigDecimal x&&b instanceof BigDecimal y?x.compareTo(y)==0:Objects.equals(a,b);}
- private static Object parse(String field,String raw){
+ static Object parse(String field,String raw){
   if(raw.length()>255)return null;
   return switch(field){
    case "reference","documentNumber"->raw.matches("[A-Za-z0-9][A-Za-z0-9./_-]{2,99}")&&raw.chars().anyMatch(Character::isDigit)?raw:null;

@@ -52,6 +52,7 @@ public class DocumentExtractionService {
             }
             boolean ocrUsed = false;
             text = normalize(text);
+            if(pdfPages!=null){var positions=PdfWordPositions.read(document.getContent());document.setOcrEvidenceJson(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(new OcrEvidence("PDFBOX","PDF_TEXT_POSITIONS",200,ocrThreshold,positions)));}
             if (pdfPages!=null&&pdfPages.stream().anyMatch(String::isBlank)) {
                 text = normalize(readPdfWithOcr(document,documentBudget,pdfPages));
                 ocrUsed = !text.isBlank();
@@ -137,6 +138,7 @@ public class DocumentExtractionService {
             var images=new java.util.HashMap<Integer,Path>();
             StringBuilder result = new StringBuilder();
             java.util.ArrayList<OcrEvidence.Word> words=new java.util.ArrayList<>();
+            var digital=readEvidence(document.getOcrEvidenceJson());if(digital!=null)words.addAll(digital.words());
             String engineVersion=tesseractVersion(directory);
             for (int index = 0; index < pageTexts.size(); index++) {
                 if(!pageTexts.get(index).isBlank()){if(result.length()<MAX_TEXT_LENGTH)result.append(pageTexts.get(index)).append('\n');continue;}
