@@ -1,0 +1,5 @@
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const source=fs.readFileSync('src/main/resources/static/app.js','utf8');const context=vm.createContext({});
+vm.runInContext(source.slice(source.indexOf('function mergeInboxSplitRanges('),source.indexOf('async function openInboxSplit(')),context);
+test('merging adjacent ranges retains prior type and does not mutate input',()=>{const a={fromPage:3,toPage:4,documentType:'COMMERCIAL_INVOICE'},b={fromPage:5,toPage:6,documentType:'OTHER'};const result=context.mergeInboxSplitRanges(a,b);assert.equal(result.fromPage,3);assert.equal(result.toPage,6);assert.equal(result.documentType,a.documentType);assert.equal(a.toPage,4);});
+test('merge refuses gaps, overlaps, invalid numbers and reversed ranges',()=>{for(const b of [{fromPage:4,toPage:6},{fromPage:6,toPage:7},{fromPage:5,toPage:4},{fromPage:5.5,toPage:6}])assert.throws(()=>context.mergeInboxSplitRanges({fromPage:3,toPage:4},b));});
