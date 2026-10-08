@@ -79,7 +79,10 @@ function swift(reference){return `:20:${reference}\n:31C:261001\n:31D:271231SYNT
  const viewer=await call('/api/roles','POST',{name:'Synthetic local viewer',baseRole:'VIEWER',permissions:[]});await call('/api/users/memberships/shared','POST',{username:isolated.username,roleId:viewer.id});
  await call('/api/tenants/'+home+'/select','POST');csrf=(await call('/api/auth/me')).csrfToken;await call('/api/users/memberships/'+isolated.id+'/access','PUT',{suspended:true});
  await call('/api/auth/logout','POST',undefined,204);csrf='';
- await call('/api/auth/login','POST',{username:isolated.username,password:'SyntheticOnly456!'},401);
+ await call('/api/auth/login','POST',{username:isolated.username,password:'SyntheticOnly456!'});
+ assert.equal((await call('/api/tenants')).selectedTenantId,created.id);
+ assert.equal((await call('/api/tenants')).workspaces.some(t=>t.id===home),false);
+ await call('/api/auth/login','POST',{username:isolated.username,password:'SyntheticOnly456!',tenantCode:'default'},401);
  await call('/api/auth/login','POST',{username:isolated.username,password:'SyntheticOnly456!',tenantCode:'synthetic-smoke'});csrf=(await call('/api/auth/me')).csrfToken;
  assert.equal((await call('/api/tenants')).selectedTenantId,created.id);assert.deepEqual((await call('/api/lcs')).map(l=>l.reference),['SYNTHETIC-LOCAL']);await call('/api/lcs/'+homeLc.id,'GET',undefined,404);
  assert.equal((await call('/api/tenants')).creationEnabled,false);assert.equal((await call('/api/tenants/current/settings')).editingEnabled,false);
@@ -125,7 +128,8 @@ function swift(reference){return `:20:${reference}\n:31C:261001\n:31D:271231SYNT
  await call('/api/auth/login','POST',{username:invitePayload.username,password:'SyntheticInvited123!',tenantCode:'synthetic-smoke'},401);
  await call('/api/auth/invitation/accept','POST',{token:acceptedToken,password:'SyntheticInvited123!'});
  await call('/api/auth/invitation/accept','POST',{token:acceptedToken,password:'SyntheticInvited123!'},400);
- await call('/api/auth/login','POST',{username:invitePayload.username,password:'SyntheticInvited123!'},401);
+ await call('/api/auth/login','POST',{username:invitePayload.username,password:'SyntheticInvited123!'});
+ assert.equal((await call('/api/tenants')).selectedTenantId,created.id);
  await call('/api/auth/login','POST',{username:invitePayload.username,password:'SyntheticInvited123!',tenantCode:'synthetic-smoke'});csrf=(await call('/api/auth/me')).csrfToken;
  assert.equal((await call('/api/platform/access')).enabled,false);await call('/api/companies','POST',{legalName:'FORBIDDEN INVITED WRITE'},403);
  // Grant only after verified TOTP enrollment; revoke must take effect for an already-open session.
@@ -160,12 +164,15 @@ function swift(reference){return `:20:${reference}\n:31C:261001\n:31D:271231SYNT
  // Business access is granted only through the existing, independently authorized membership workflow.
  await call('/api/users/memberships/shared','POST',{username:newIdentity.username,roleId:viewer.id});
  cookies.clear();csrf='';
- await call('/api/auth/login','POST',{username:newIdentity.username,password:newIdentityPayload.password},401);
+ await call('/api/auth/login','POST',{username:newIdentity.username,password:newIdentityPayload.password});
+ assert.equal((await call('/api/tenants')).selectedTenantId,created.id);
  await call('/api/auth/login','POST',{username:newIdentity.username,password:newIdentityPayload.password,tenantCode:'synthetic-smoke'});csrf=(await call('/api/auth/me')).csrfToken;
  assert.equal((await call('/api/tenants')).selectedTenantId,created.id);assert.equal((await call('/api/platform/access')).enabled,false);
  await call('/api/companies','POST',{legalName:'FORBIDDEN NEW IDENTITY COMPANY'},403);
  cookies.clear();csrf='';
- await call('/api/auth/login','POST',{username:isolated.username,password:'SyntheticOnly456!'},401); // Global activation must not lift the local home suspension.
+ await call('/api/auth/login','POST',{username:isolated.username,password:'SyntheticOnly456!'});
+ assert.equal((await call('/api/tenants')).workspaces.some(t=>t.id===home),false); // Global activation must not lift the local home suspension.
+ await call('/api/auth/login','POST',{username:isolated.username,password:'SyntheticOnly456!',tenantCode:'default'},401);
  await call('/api/auth/login','POST',{username:isolated.username,password:'SyntheticOnly456!',tenantCode:'synthetic-smoke'});csrf=(await call('/api/auth/me')).csrfToken;
  assert.equal((await call('/api/tenants')).selectedTenantId,created.id);
  // Central lifecycle: no tenant-role shortcut, profile gates and live suspension.

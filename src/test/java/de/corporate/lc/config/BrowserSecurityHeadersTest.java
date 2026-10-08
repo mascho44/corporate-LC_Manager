@@ -6,6 +6,20 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import static org.assertj.core.api.Assertions.*;
 
 class BrowserSecurityHeadersTest {
+    @Test void permitsNativeViewerOnlyForInternalPdfResponses(){
+        String path="/api/documents/00000000-0000-0000-0000-000000000001/preview";
+        var pdf=new MockHttpServletResponse();pdf.setContentType("application/pdf");
+        new BrowserSecurityHeaders().writeHeaders(new MockHttpServletRequest("GET",path),pdf);
+        assertThat(pdf.getHeader("Content-Security-Policy")).contains("object-src 'self'","frame-ancestors 'self'").doesNotContain("object-src *");
+        for(String type:java.util.List.of("text/html","application/json")){
+            var response=new MockHttpServletResponse();response.setContentType(type);
+            new BrowserSecurityHeaders().writeHeaders(new MockHttpServletRequest("GET",path),response);
+            assertThat(response.getHeader("Content-Security-Policy")).contains("object-src 'none'");
+        }
+        var other=new MockHttpServletResponse();other.setContentType("application/pdf");
+        new BrowserSecurityHeaders().writeHeaders(new MockHttpServletRequest("GET","/untrusted.pdf"),other);
+        assertThat(other.getHeader("Content-Security-Policy")).contains("object-src 'none'","frame-ancestors 'none'");
+    }
     @Test void enforcesWithoutSendingReportsElsewhere() {
         var response=new MockHttpServletResponse();
         new BrowserSecurityHeaders().writeHeaders(new MockHttpServletRequest(),response);

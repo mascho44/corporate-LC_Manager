@@ -10,6 +10,21 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.*;
 
 class PdfDocumentSplitterTest {
+    @Test void numberedContinuationStaysWithDocumentButRequiresReview() throws Exception {
+        var proposal=PdfDocumentSplitter.propose(pdf("COMMERCIAL INVOICE No. INV-10 Page 1 of 3","Goods details Page 2 of 3","Totals Page 3 of 3","PACKING LIST No. PK-20 Page 1 of 2","Packages Page 2 of 2"),null);
+        assertThat(proposal.parts()).containsExactly(new PdfDocumentSplitter.Part(1,3,DocumentType.COMMERCIAL_INVOICE),new PdfDocumentSplitter.Part(4,5,DocumentType.PACKING_LIST));
+        assertThat(proposal.pages().get(1).classification().status()).isEqualTo("REVIEW");
+        assertThat(proposal.pages().get(1).classification().method()).isEqualTo("PAGE_SEQUENCE_V1");
+    }
+    @Test void differentReferencesAndNumberingRestartSeparateSameTypeDocuments() throws Exception {
+        var proposal=PdfDocumentSplitter.propose(pdf("COMMERCIAL INVOICE No. INV-10 Page 1 of 2","COMMERCIAL INVOICE No. INV-10 Page 2 of 2","COMMERCIAL INVOICE No. INV-11 Page 1 of 2","Details Page 2 of 2"),null);
+        assertThat(proposal.parts()).containsExactly(new PdfDocumentSplitter.Part(1,2,DocumentType.COMMERCIAL_INVOICE),new PdfDocumentSplitter.Part(3,4,DocumentType.COMMERCIAL_INVOICE));
+    }
+    @Test void missingOrInconsistentNumberingIsNotSilentlyInherited() throws Exception {
+        var proposal=PdfDocumentSplitter.propose(pdf("COMMERCIAL INVOICE No. INV-10 Page 1 of 3","Details Page 3 of 3","Unknown continuation"),null);
+        assertThat(proposal.parts()).hasSize(3);
+        assertThat(proposal.pages().get(1).classification().suggestedType()).isNull();
+    }
     @Test void proposesTypeChangesAndIsolatesUnknownPages() throws Exception {
         var proposal=PdfDocumentSplitter.propose(pdf("COMMERCIAL INVOICE","COMMERCIAL INVOICE","Unknown continuation","PACKING LIST"),null);
         assertThat(proposal.pageCount()).isEqualTo(4);

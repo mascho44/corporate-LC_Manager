@@ -21,6 +21,17 @@ class ExplicitTenantLoginTest {
   details=new AppUserDetailsService(users,access);login=new TenantLoginService(new TenantLoginResolver(tenants),details,encoder);
  }
  @Test void explicitLoginWorksWithoutDefaultAccessAndUsesOnlyLocalPermissions(){var result=login.verify(user.getUsername(),"synthetic-password","synthetic");assertThat(result.tenantId()).isEqualTo(target);assertThat(result.user().getAuthorities()).extracting("authority").containsExactlyInAnyOrder("ROLE_VIEWER","PERM_DOCUMENT_REVIEW");assertThat(TenantContext.currentId()).isEqualTo(Tenant.DEFAULT_ID);}
+ @Test void codeFreeLoginUsesAccessibleWorkspaceWhenDefaultAccessIsSuspended(){
+  var memberships=mock(de.corporate.lc.tenant.repository.TenantMembershipRepository.class);
+  var membership=mock(TenantMembership.class);when(membership.getTenantId()).thenReturn(target);
+  when(memberships.findWorkspaceMemberships(userId)).thenReturn(List.of(membership));
+  when(tenants.findById(target)).thenReturn(Optional.of(new Tenant("synthetic","Synthetic","en",true,false)));
+  ReflectionTestUtils.setField(login,"identities",users);ReflectionTestUtils.setField(login,"memberships",memberships);ReflectionTestUtils.setField(login,"tenants",tenants);
+  assertThat(login.verify(user.getUsername(),"synthetic-password",null).tenantId()).isEqualTo(target);
+  assertThatThrownBy(()->login.verify(user.getUsername(),"wrong",null)).isInstanceOf(BadCredentialsException.class);
+  when(memberships.findWorkspaceMemberships(userId)).thenReturn(List.of());
+  assertThatThrownBy(()->login.verify(user.getUsername(),"synthetic-password",null)).isInstanceOf(BadCredentialsException.class);
+ }
  @Test void frameworkLoginNeverInheritsOuterTenantScope(){try(var scope=TenantContext.open(target)){assertThatThrownBy(()->details.loadUserByUsername(user.getUsername())).isInstanceOf(DisabledException.class);assertThat(TenantContext.currentId()).isEqualTo(target);}}
  @Test void wrongPasswordUnknownTenantAndHomeSuspensionShareGenericFailure(){for(String code:List.of("synthetic","missing","")){assertThatThrownBy(()->login.verify(user.getUsername(),"wrong",code)).isInstanceOf(BadCredentialsException.class).hasMessage("Login failed.");}assertThat(TenantContext.currentId()).isEqualTo(Tenant.DEFAULT_ID);}
  @Test void globallyDisabledIdentityCannotLoginThroughAnotherTenant(){user.setActive(false);assertThatThrownBy(()->login.verify(user.getUsername(),"synthetic-password","synthetic")).isInstanceOf(BadCredentialsException.class);}
