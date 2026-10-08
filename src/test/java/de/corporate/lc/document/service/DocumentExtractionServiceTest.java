@@ -9,6 +9,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 class DocumentExtractionServiceTest {
+    @Test void reportsConfiguredScanPageLimitExplicitlyBeforeStartingTools()throws Exception{
+        var service=new DocumentExtractionService();org.springframework.test.util.ReflectionTestUtils.setField(service,"maxOcrPages",1);
+        assertThat(service.extractFile(PdfDocumentSplitterTest.pdf("",""),"synthetic.pdf","application/pdf").status()).isEqualTo("OCR_PAGE_LIMIT");
+    }
     @Test void groupsOnlyBlankPagesIntoMinimalRenderRanges(){
         var ranges=DocumentExtractionService.blankPageRanges(java.util.List.of("Digital invoice"," ","","Digital packing list",""));
         assertThat(ranges).hasSize(2);assertThat(ranges.get(0)).containsExactly(2,3);assertThat(ranges.get(1)).containsExactly(5,5);
