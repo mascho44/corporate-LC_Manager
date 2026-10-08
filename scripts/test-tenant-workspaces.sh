@@ -16,6 +16,9 @@ compose=(docker compose --project-name "$project" --file "$script_dir/docker-com
 cleanup(){
   local result=$?
   trap - EXIT INT TERM
+  if [[ "$result" != 0 ]]; then
+    "${compose[@]}" logs --tail 80 app >&2 || true
+  fi
   if ! "${compose[@]}" down --volumes; then
     echo "Test cleanup failed; remaining project: $project" >&2
     result=1

@@ -27,6 +27,14 @@ public class DocumentInboxService {
     private final LcDocumentRepository documents;
     private final DocumentExtractionService extraction;
     private final de.corporate.lc.check.service.DocumentCheckService checks;
+    @org.springframework.beans.factory.annotation.Autowired private InboxAutomaticSplitter automaticSplitter;
+    @Transactional(rollbackFor=Exception.class)
+    public List<DocumentInboxItemView> automaticSplit(UUID id,String requestedBy)throws Exception{
+        var item=lockedOpenItem(id);requireProcessed(item);requirePdf(item);
+        de.corporate.lc.tenant.domain.TenantContext.require(item.getTenantId());
+        var document=new LcDocument();document.setContentType(item.getContentType());document.setContent(item.getContent());document.setExtractionStatus(item.getExtractionStatus());document.setOcrEvidenceJson(item.getOcrEvidenceJson());
+        var result=automaticSplitter.persist(item,automaticSplitter.prepare(document),requestedBy);var targets=lettersOfCredit.findAssignmentTargets();return result.stream().map(part->view(part,targets)).toList();
+    }
 
     public DocumentInboxService(DocumentInboxRepository inbox, LetterOfCreditRepository lettersOfCredit,
                                 LcDocumentRepository documents, DocumentExtractionService extraction,
@@ -152,6 +160,7 @@ public class DocumentInboxService {
 
     private DocumentInboxItem lockedOpenItem(UUID id) {
         DocumentInboxItem item = inbox.findForUpdate(id).orElseThrow(() -> new NoSuchElementException("Inbox-Datei nicht gefunden."));
+        de.corporate.lc.tenant.domain.TenantContext.require(item.getTenantId());
         if (!"OPEN".equals(item.getStatus()) || item.getContent() == null) throw new IllegalStateException("Diese Datei ist nicht mehr im offenen Eingang.");
         return item;
     }

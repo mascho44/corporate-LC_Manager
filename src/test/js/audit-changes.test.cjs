@@ -1,4 +1,5 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
+test('tenant archival is rendered as an explicit translated change',()=>{const html=fixture({'audit.change.archived':'Archiviert'}).render({entityType:'TENANT',previousValue:'{"active":false,"archived":false}',newValue:'{"active":false,"archived":true}'});assert.match(html,/Archiviert/);assert.equal((html.match(/class="audit-field-changed"/g)||[]).length,1);});
 function fixture(translations){const context=vm.createContext({LcI18n:translations?{t:key=>translations[key]||key}:undefined});vm.runInContext(fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/audit-changes.js'),'utf8'),context);return context.LcAuditChanges;}
 test('membership audit shows role and permissions without identity credentials',()=>{
  const html=fixture().render({entityType:'MEMBERSHIP',previousValue:JSON.stringify({username:'Synthetic',roleId:'old',permissions:['LC_EDIT'],active:true}),newValue:JSON.stringify({username:'Synthetic',roleId:'new',permissions:['DOCUMENT_REVIEW'],active:true,passwordHash:'secret-not-rendered'})});

@@ -6,6 +6,8 @@ import java.time.Instant;
 public final class ClassificationHistory {
  private static final ObjectMapper JSON=new ObjectMapper();
  private ClassificationHistory(){}
+ public static String automaticSplit(String filename,String text){var events=read(automatic(filename,text));var event=JSON.createObjectNode();event.put("action","AUTO_SPLIT").put("at",Instant.now().toString());events.add(event);return events.toString();}
+ public static boolean wasAutomaticallySplit(String history){for(var event:read(history))if("AUTO_SPLIT".equals(event.path("action").asText()))return true;return false;}
  public static String automatic(String filename,String text){var classification=DocumentClassifier.classify(filename,text);var history=JSON.createArrayNode();var event=JSON.valueToTree(classification);((com.fasterxml.jackson.databind.node.ObjectNode)event).put("action","AUTOMATIC").put("at",Instant.now().toString());history.add(event);return history.toString();}
  public static String manual(String history,DocumentType type,String actor){
   ArrayNode events=read(history);var event=JSON.createObjectNode();event.put("action","MANUAL").put("selectedType",type.name()).put("actor",actor).put("at",Instant.now().toString());events.add(event);return events.toString();

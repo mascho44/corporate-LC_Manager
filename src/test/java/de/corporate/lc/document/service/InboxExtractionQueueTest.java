@@ -19,6 +19,14 @@ import static org.mockito.Mockito.*;
 @AutoConfigureTestDatabase(replace=AutoConfigureTestDatabase.Replace.NONE)
 @Transactional(propagation=Propagation.NOT_SUPPORTED)
 class InboxExtractionQueueTest {
+ @Test void automaticallySplitsAtomicallyAndRecoversAfterAuditFailure()throws Exception{
+  var item=enqueue("QUEUED");item.setOriginalFilename("synthetic-bundle.pdf");item.setContentType("application/pdf");item.setContent(PdfDocumentSplitterTest.pdf("COMMERCIAL INVOICE","PACKING LIST"));inbox.saveAndFlush(item);
+  org.springframework.test.util.ReflectionTestUtils.setField(queue,"automaticSplitter",new InboxAutomaticSplitter(inbox,new DocumentExtractionService(),audit));
+  doAnswer(call->{LcDocument doc=call.getArgument(0);new DocumentExtractionService().applyRecognizedText(doc,"COMMERCIAL INVOICE\nPACKING LIST","EXTRACTED");return null;}).when(extraction).extractInBackground(any());
+  doThrow(new IllegalStateException("Synthetic audit failure")).when(audit).recordInTransaction(any(),eq("DOCUMENT_INBOX_AUTO_SPLIT"),any(),any(),any());
+  assertThatThrownBy(()->queue.processNext()).isInstanceOf(IllegalStateException.class);assertThat(inbox.count()).isEqualTo(1);var claimed=inbox.findById(item.getId()).orElseThrow();assertThat(claimed.getStatus()).isEqualTo("OPEN");assertThat(claimed.getExtractionStatus()).isEqualTo("PROCESSING");claimed.setExtractionStartedAt(LocalDateTime.now().minusMinutes(36));inbox.saveAndFlush(claimed);reset(audit);
+  queue.processNext();assertThat(inbox.count()).isEqualTo(3);var source=inbox.findById(item.getId()).orElseThrow();assertThat(source.getStatus()).isEqualTo("SPLIT");assertThat(source.getContent()).isEqualTo(item.getContent());var parts=inbox.findAll().stream().filter(p->p.getSourceInboxId()!=null).toList();assertThat(parts).hasSize(2);assertThat(parts).allMatch(p->p.getTenantId().equals(item.getTenantId())&&ClassificationHistory.wasAutomaticallySplit(p.getClassificationHistoryJson())&&ClassificationHistory.selectedType(p.getClassificationHistoryJson())==null);queue.processNext();assertThat(inbox.count()).isEqualTo(3);
+ }
  @Autowired DocumentInboxRepository inbox;
  @Autowired PlatformTransactionManager manager;
  DocumentExtractionService extraction;AuditService audit;InboxExtractionQueue queue;
