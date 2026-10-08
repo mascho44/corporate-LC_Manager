@@ -5,7 +5,7 @@ import java.util.regex.Pattern;
 
 /** Only explicit LC labels; never infer an LC reference from an invoice number. */
 final class DocumentReferenceDetector {
-    private static final Pattern LABEL = Pattern.compile("(?im)(?<![\\p{L}\\p{N}])(?:letter of credit|documentary credit|l\\.?/?c\\.?|akkreditiv)(?:[\\t ]*(?:no\\.?|number|reference|ref\\.?|nummer|nr\\.?|referenz|#))?[\\t ]*[:#-]?[\\t ]*(?:\\r?\\n[\\t ]*)?([A-Z0-9][A-Z0-9./_-]{3,})(?![A-Z0-9./_-])");
+private static final Pattern LABEL = Pattern.compile("(?im)(?<![\\p{L}\\p{N}])(?:letter of credit|documentary credit|l\\.?/?c\\.?|akkreditiv)(?:[\\t ]*+(?:no\\.?|number|reference|ref\\.?|nummer|nr\\.?|referenz|#))?[\\t ]*+[:#-]?[\\t ]*+(?:\\r?\\n[\\t ]*+)?([A-Z0-9][A-Z0-9./_-]{3,}+)(?![A-Z0-9./_-])");
     static String detect(String text) {
         if (text == null) return null;
         var values = new LinkedHashSet<String>();
