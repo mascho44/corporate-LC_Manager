@@ -25,7 +25,12 @@
   if(file.size>5*1024*1024){message('Datei überschreitet 5 MB.');return;}
   get('packPreview').textContent='Datei wird validiert und getestet …';
   try{const text=await file.text();const result=await request(api+'/preview',{method:'POST',body:text});
-   if(current!==sequence)return;source=text;preview=result;renderPreview(result);get('packImport').disabled=false;
+   if(current!==sequence)return;
+   if(result.kind==='SPECIFICATION'){
+    get('packPreview').innerHTML='<h3>Erweiterungsspezifikation · Kompatibilität</h3><p>'+result.supported+' von '+result.rules+' Regeln strukturell unterstützt · Schema '+result.schemaVersion+'</p><p>'+escape(result.message)+'</p><ul>'+[...(result.configurationRequirements||[]).map(reason=>({ruleId:'Konfiguration',reason})),...result.issues].map(i=>'<li>'+escape(i.ruleId)+': '+escape(i.reason)+'</li>').join('')+'</ul>';
+    message('Spezifikation geprüft, nicht gespeichert oder aktiviert.');return;
+   }
+   source=text;preview=result;renderPreview(result);get('packImport').disabled=false;
   }catch(error){if(current===sequence){message(error.message);get('packPreview').textContent='Keine gültige Vorschau.';}}
  };
  get('packImport').onclick=async()=>{

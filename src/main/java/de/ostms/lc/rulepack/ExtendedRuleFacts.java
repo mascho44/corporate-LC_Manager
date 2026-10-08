@@ -85,6 +85,6 @@ public final class ExtendedRuleFacts {
   case LC_NOTIFY_ADDRESS_COUNTRY->"LC: Land der Meldeadresse";
   case DOCUMENT_PARTIAL_SHIPMENT_INDICATED->"Teilverladung fachlich festgestellt?";
   case DOCUMENT_NUMBER->"Erfasste Dokumentnummer";
-  default->field.name();
+  default->field.ordinal()>Field.LC_NOTIFY_ADDRESS_COUNTRY.ordinal()?field.name().replaceFirst("^(DOCUMENT|LC|PEER)_","").replace('_',' ').toLowerCase(Locale.ROOT):field.name();
  };}
 }

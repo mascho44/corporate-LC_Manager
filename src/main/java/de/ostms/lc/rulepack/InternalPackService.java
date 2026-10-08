@@ -15,6 +15,7 @@ public class InternalPackService {
  private final PackSelectionRepository selections;private final AuditService audit;
  public InternalPackService(PackCodec c,PackVersionRepository v,PackSelectionRepository s,AuditService a){codec=c;versions=v;selections=s;audit=a;}
  public record Preview(PackDefinition definition,String checksum,List<PackEvaluator.TestResult> tests,boolean testsPassed){}
+ public Object previewOrInspect(byte[] source){var report=codec.inspectSpecification(source);return report==null?preview(source):report;}
  public Preview preview(byte[] source){
   var pack=codec.parse(source);var tests=PackEvaluator.test(pack);
   return new Preview(pack,codec.digest(codec.canonical(pack)),tests,tests.stream().allMatch(PackEvaluator.TestResult::passed));
@@ -117,7 +118,7 @@ public class InternalPackService {
       }
      }
      catch(RuntimeException invalidFacts){facts.clear();}
-     String left=facts.get(rule.left()),right=facts.get(rule.right());
+     String left=facts.get(rule.left()),right=PackEvaluator.right(rule,facts);
      var outcome=PackEvaluator.evaluate(rule,facts,definition.calendars()==null?List.of():definition.calendars(),definition.schemaVersion()>=3);
      var level=outcome==Outcome.PASS?CheckResult.Severity.OK:outcome!=Outcome.FAIL||rule.severity()==Level.WARNING?CheckResult.Severity.WARNING:CheckResult.Severity.DISCREPANCY;
      String outcomeLabel=switch(outcome){case PASS->"Regel erfüllt: ";case FAIL->"Regel verletzt: ";case NOT_APPLICABLE->"Regel nicht anwendbar: ";case MANUAL_REVIEW->"Manuelle fachliche Prüfung erforderlich: ";case NOT_EVALUABLE->"Regel nicht prüfbar: ";};
@@ -134,6 +135,7 @@ public class InternalPackService {
   Object value=switch(field){
    case DOCUMENT_AMOUNT->doc.getAmount();case DOCUMENT_CURRENCY->doc.getCurrency();case DOCUMENT_DATE->doc.getDocumentDate();
    case DOCUMENT_NUMBER->doc.getExtractedDocumentNumber();
+   case LITERAL->null;
    case LC_AMOUNT->lc.getAmount();case LC_CURRENCY->lc.getCurrency();case LC_EXPIRY_DATE->lc.getExpiryDate();case LC_LATEST_SHIPMENT_DATE->lc.getLatestShipmentDate();
    case LC_BENEFICIARY->lc.getBeneficiary();case LC_APPLICANT->lc.getApplicant();
    case LC_DOCUMENT_ISSUED_ORIGINAL_COUNT->RuleFacts.read(doc.getRuleFactsJson()).get(Field.DOCUMENT_ISSUED_ORIGINAL_COUNT);
@@ -161,6 +163,7 @@ public class InternalPackService {
   case PEER_SHIPMENT_DATE->Field.DOCUMENT_SHIPMENT_DATE;case PEER_GOODS_DESCRIPTION->Field.DOCUMENT_GOODS_DESCRIPTION;
   case PEER_QUANTITY->Field.DOCUMENT_QUANTITY;case PEER_QUANTITY_UNIT->Field.DOCUMENT_QUANTITY_UNIT;
   case PEER_NET_WEIGHT->Field.DOCUMENT_NET_WEIGHT;case PEER_GROSS_WEIGHT->Field.DOCUMENT_GROSS_WEIGHT;case PEER_WEIGHT_UNIT->Field.DOCUMENT_WEIGHT_UNIT;
+  case PEER_CONSIGNEE->Field.DOCUMENT_CONSIGNEE;
   case PEER_DOCUMENT_NUMBER->Field.DOCUMENT_NUMBER;
   case PEER_PACKAGE_COUNT->Field.DOCUMENT_PACKAGE_COUNT;
   case PEER_SHIPPING_MARKS->Field.DOCUMENT_SHIPPING_MARKS;

@@ -81,12 +81,69 @@ public record PackDefinition(int schemaVersion, String packId, String version, S
   PEER_SHIPPING_MARKS,
   DOCUMENT_SIGNER_NAME, DOCUMENT_NUMBER, DOCUMENT_PARTIAL_SHIPMENT_INDICATED,
   DOCUMENT_CONSIGNEE_ADDRESS_COUNTRY, DOCUMENT_NOTIFY_ADDRESS_COUNTRY,
-  LC_CONSIGNEE_ADDRESS_COUNTRY, LC_NOTIFY_ADDRESS_COUNTRY;
+  LC_CONSIGNEE_ADDRESS_COUNTRY, LC_NOTIFY_ADDRESS_COUNTRY,
+  DOCUMENT_ACCEPTED_FOR_CARRIAGE_INDICATED,
+  DOCUMENT_ADDITIONAL_COSTS_INDICATED,
+  DOCUMENT_AGENT_PRINCIPAL_INDICATED,
+  DOCUMENT_AMOUNT_WORDS_MATCH_INDICATED,
+  DOCUMENT_APPLICANT_ADDRESS,
+  DOCUMENT_CARRIER_INDICATED,
+  DOCUMENT_CERTIFIED_STATEMENT,
+  DOCUMENT_CHARTER_PARTY_INDICATED,
+  DOCUMENT_CLAIM_EXPIRY_INDICATED,
+  DOCUMENT_CLAUSE_INDICATED,
+  DOCUMENT_CONTAINERISED_SHIPMENT_INDICATED,
+  DOCUMENT_CORRECTIONS_PRESENT,
+  DOCUMENT_CORRECTION_AUTHENTICATED_INDICATED,
+  DOCUMENT_COUNTERSIGNATURE_PRESENT,
+  DOCUMENT_COUNTERSIGNATURE_REQUIRED,
+  DOCUMENT_COVER_DATE_INDICATED,
+  DOCUMENT_DISCOUNT_INDICATED,
+  DOCUMENT_ENTIRE_CARRIAGE_SINGLE_DOC_INDICATED,
+  DOCUMENT_FORM_TYPE,
+  DOCUMENT_FULL_QUANTITY_INDICATED,
+  DOCUMENT_INTENDED_PORT_INDICATED,
+  DOCUMENT_ON_DECK_INDICATED,
+  DOCUMENT_ORIGINAL_FOR_CONSIGNOR_INDICATED,
+  DOCUMENT_PACKING_DESCRIPTION,
+  DOCUMENT_PLACE_OF_DESTINATION,
+  DOCUMENT_PLACE_OF_FINAL_DESTINATION,
+  DOCUMENT_PLACE_OF_RECEIPT,
+  DOCUMENT_PLACE_OF_SHIPMENT,
+  DOCUMENT_PREMIUM_PAID_INDICATED,
+  DOCUMENT_PRESHIPMENT_INDICATED,
+  DOCUMENT_PROVISIONAL_INDICATED,
+  DOCUMENT_REFERS_TO_INVOICED_GOODS_INDICATED,
+  DOCUMENT_RELEASE_CONDITION_INDICATED,
+  DOCUMENT_SHIPPED_ON_BOARD_INDICATED,
+  DOCUMENT_SIGNED_BY_AGENT_INDICATED,
+  DOCUMENT_SIGNED_OR_STAMPED_PRESENT,
+  DOCUMENT_TO_ORDER_INDICATED,
+  DOCUMENT_VALUE_INDICATED,
+  LC_ADDITIONAL_COSTS_ALLOWED,
+  LC_AMOUNT_TOLERANCE_ALLOWED,
+  LC_APPLICANT_ADDRESS,
+  LC_CONSIGNMENT_TYPE,
+  LC_DISCOUNT_REQUIRED,
+  LC_EXTENDED_EXPIRY_DATE,
+  LC_INSTALMENT_PERIOD_END_DATE,
+  LC_INSTALMENT_SHIPMENT_REQUIRED,
+  LC_INSURANCE_TYPE,
+  LC_PACKING_REQUIREMENT,
+  LC_PLACE_OF_DESTINATION,
+  LC_PLACE_OF_FINAL_DESTINATION,
+  LC_PLACE_OF_RECEIPT,
+  LC_PLACE_OF_SHIPMENT,
+  LC_PREMIUM_PAID_REQUIRED,
+  LC_PRESHIPMENT_INSPECTION_REQUIRED,
+  LC_REQUIRED_FORM_TYPE,
+  LC_REQUIRED_STATEMENT,
+  PEER_CONSIGNEE, LITERAL;
   public boolean document(){return name().startsWith("DOCUMENT_");}
   public boolean peer(){return name().startsWith("PEER_");}
   public String kind(){return name().endsWith("AMOUNT")||name().endsWith("QUANTITY")||name().endsWith("WEIGHT")||name().endsWith("COUNT")||name().endsWith("DAYS")||name().endsWith("PERCENT")?"NUMBER":name().endsWith("CURRENCY")?"CURRENCY":name().endsWith("DATE")?"DATE":this==LC_TRANSFERRED||this==DOCUMENT_SIGNED||this==LC_SIGNATURE_REQUIRED||name().endsWith("ALLOWED")||name().endsWith("REQUIRED")||name().endsWith("PRESENT")||name().endsWith("INDICATED")||this==DOCUMENT_FREIGHT_PREPAID||this==DOCUMENT_IRRESPECTIVE_OF_PERCENTAGE?"BOOLEAN":"TEXT";}
  }
- public enum Operator { EQ, NE, LTE, GTE, WITHIN_DAYS, PERCENT_GTE, PERCENT_LTE, WITHIN_TOLERANCE }
+ public enum Operator { EQ, NE, LTE, GTE, WITHIN_DAYS, PERCENT_GTE, PERCENT_LTE, WITHIN_TOLERANCE, IN, NOT_IN }
  public enum Outcome { PASS, FAIL, NOT_EVALUABLE, NOT_APPLICABLE, MANUAL_REVIEW }
  public enum Mode { AUTOMATIC, MANUAL }
  public record Condition(Field field,Operator operator,String value){}
@@ -97,13 +154,18 @@ public record PackDefinition(int schemaVersion, String packId, String version, S
   @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL) Field daysField,
   @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL) String calendarId,
   @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL) java.math.BigDecimal percent,
-  @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL) Field percentField){}
+  @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL) Field percentField,
+  @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL) List<String> values){
+  public Parameters(DocumentType peerDocumentType,Integer days,Field daysField,String calendarId,java.math.BigDecimal percent,Field percentField){this(peerDocumentType,days,daysField,calendarId,percent,percentField,null);}
+ }
  public enum Level { WARNING, DISCREPANCY }
  public record Rule(String id,String version,DocumentType documentType,Field left,
                     Operator operator,Field right,Level severity,String message,String sourceReference,
                     @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL) Mode mode,
                     @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL) List<Condition> conditions,
-                    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL) Parameters parameters){
+                    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL) Parameters parameters,
+                    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL) String rightValue){
+  public Rule(String id,String version,DocumentType documentType,Field left,Operator operator,Field right,Level severity,String message,String sourceReference,Mode mode,List<Condition> conditions,Parameters parameters){this(id,version,documentType,left,operator,right,severity,message,sourceReference,mode,conditions,parameters,null);}
   public Rule(String id,String version,DocumentType documentType,Field left,Operator operator,Field right,Level severity,String message,String sourceReference){this(id,version,documentType,left,operator,right,severity,message,sourceReference,null,null,null);}
   public Rule(String id,String version,DocumentType documentType,Field left,Operator operator,Field right,Level severity,String message,String sourceReference,Mode mode,List<Condition> conditions){this(id,version,documentType,left,operator,right,severity,message,sourceReference,mode,conditions,null);}
   public Mode effectiveMode(){return mode==null?Mode.AUTOMATIC:mode;}

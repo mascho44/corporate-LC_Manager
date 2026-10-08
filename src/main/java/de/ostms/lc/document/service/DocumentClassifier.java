@@ -10,6 +10,11 @@ public final class DocumentClassifier {
   HEADINGS.put(DocumentType.COMMERCIAL_INVOICE,"(?:commercial invoice|invoice|handelsrechnung)");
   HEADINGS.put(DocumentType.PACKING_LIST,"(?:packing list|packliste)");
   HEADINGS.put(DocumentType.BILL_OF_LADING,"(?:bill of lading|ocean bill of lading|konnossement)");
+  HEADINGS.put(DocumentType.SEA_WAYBILL,"(?:sea waybill|seefrachtbrief)");
+  HEADINGS.put(DocumentType.CHARTER_PARTY_BILL_OF_LADING,"(?:charter[ -]?party bill of lading|charterpartie[- ]konnossement)");
+  HEADINGS.put(DocumentType.MULTIMODAL_TRANSPORT_DOCUMENT,"(?:multimodal transport document|combined transport document|multimodales transportdokument)");
+  HEADINGS.put(DocumentType.WEIGHT_LIST,"(?:weight list|weight certificate|gewichtsliste)");
+  HEADINGS.put(DocumentType.POST_RECEIPT,"(?:post receipt|postal receipt|posteinlieferungsbeleg)");
   HEADINGS.put(DocumentType.AIR_WAYBILL,"(?:air waybill|airway bill|luftfrachtbrief)");
   HEADINGS.put(DocumentType.CERTIFICATE_OF_ORIGIN,"(?:certificate of origin|ursprungszeugnis)");
   HEADINGS.put(DocumentType.INSURANCE_CERTIFICATE,"(?:insurance certificate|certificate of insurance|insurance policy|versicherungszertifikat)");
