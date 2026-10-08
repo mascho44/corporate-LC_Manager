@@ -11,6 +11,17 @@ test('adding a range divides existing pages without overlap and clears designati
  assert.throws(()=>context.divideInboxSplitRange({fromPage:2,toPage:2}));
 });
 const ranges=()=>[{fromPage:1,toPage:2,documentType:'OTHER'},{fromPage:3,toPage:4,documentType:'COMMERCIAL_INVOICE'},{fromPage:5,toPage:8,documentType:'PACKING_LIST'}];
+test('dissolving first, middle and last ranges preserves every page and neighbor metadata',()=>{
+ for(let index=0;index<3;index++){
+  const parts=ranges();parts[0].copyNumber=-1;parts[1].copyNumber=2;
+  const result=context.dissolveInboxSplitRange(parts,index);
+  assert.equal(result.length,2);let next=1;for(const part of result){assert.equal(part.fromPage,next);next=part.toPage+1;}assert.equal(next,9);
+  assert.equal(result[index===2?1:0].documentType,parts[index===0?1:index-1].documentType);
+  assert.equal(parts.length,3);
+ }
+ assert.throws(()=>context.dissolveInboxSplitRange([{fromPage:1,toPage:4}],0));
+ assert.throws(()=>context.dissolveInboxSplitRange([{fromPage:1,toPage:2},{fromPage:4,toPage:4}],1));
+});
 test('end boundary updates subsequent starts and cascades past consumed ranges',()=>{
     const parts=ranges();parts[0].toPage=4;
     const result=context.adjustInboxSplitRanges(parts,0,'toPage',8);
