@@ -61,7 +61,7 @@ public class SplitPretrainingController {
   var suggested=training.suggest(input.content(),input.evidence(),baseline);
   return new Preview(suggested,receipts.issue(hash,baseline.pageCount(),actor,suggested.parts(),SplitTrainingService.method(suggested)));
  }
- public record Confirmation(@jakarta.validation.constraints.NotBlank @jakarta.validation.constraints.Size(max=40000) String receipt,@jakarta.validation.constraints.NotNull @jakarta.validation.constraints.Size(min=2,max=100) List<PdfDocumentSplitter.Part> parts){}
+ public record Confirmation(@jakarta.validation.constraints.NotBlank @jakarta.validation.constraints.Size(max=40000) String receipt,@jakarta.validation.constraints.NotNull @jakarta.validation.constraints.Size(min=1,max=100) List<PdfDocumentSplitter.Part> parts){}
  @PostMapping(value="/confirm",consumes="application/json")
  @Transactional(rollbackFor=Exception.class)
  public Map<String,String> confirm(@jakarta.validation.Valid @RequestBody Confirmation request,Authentication actor)throws Exception{

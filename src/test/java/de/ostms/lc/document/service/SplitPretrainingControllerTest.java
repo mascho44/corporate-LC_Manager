@@ -33,6 +33,12 @@ class SplitPretrainingControllerTest {
   assertThat(controller.confirm(new SplitPretrainingController.Confirmation(preview.receipt(),parts),actor).get("status")).isEqualTo("CONFIRMED");
   verify(extraction,times(1)).extractFile(any(),anyString(),anyString());verify(training).confirmMeasured(matches("[a-f0-9]{64}"),eq(parts),eq("reviewer"),any(),eq("RULE_BASED"));verify(audit).recordInTransaction(eq(actor),eq("DOCUMENT_SPLIT_PRETRAINED"),eq("TRAINING"),isNull(),anyString());
  }
+ @Test void singleCompleteDocumentCanBeTrained()throws Exception{
+  var training=mock(SplitTrainingService.class);var json=new ObjectMapper();var receipts=new SplitTrainingReceipt(json);var controller=new SplitPretrainingController(new DocumentExtractionService(),training,json,mock(AuditService.class),receipts);var actor=UsernamePasswordAuthenticationToken.unauthenticated("reviewer",null);
+  var parts=List.of(new PdfDocumentSplitter.Part(1,2,DocumentType.BILL_OF_LADING,-1));var token=receipts.issue("a".repeat(64),2,"reviewer");
+  assertThat(controller.confirm(new SplitPretrainingController.Confirmation(token,parts),actor).get("status")).isEqualTo("CONFIRMED");
+  verify(training).confirmMeasured(eq("a".repeat(64)),eq(parts),eq("reviewer"),isNull(),isNull());
+ }
  @Test void invalidReceiptAndIncompleteCoverageCannotTrain()throws Exception{
   var training=mock(SplitTrainingService.class);var json=new ObjectMapper();var receipts=new SplitTrainingReceipt(json);var controller=new SplitPretrainingController(new DocumentExtractionService(),training,json,mock(AuditService.class),receipts);var actor=UsernamePasswordAuthenticationToken.unauthenticated("reviewer",null);
   var parts=List.of(new PdfDocumentSplitter.Part(1,1,DocumentType.OTHER),new PdfDocumentSplitter.Part(3,3,DocumentType.OTHER));
