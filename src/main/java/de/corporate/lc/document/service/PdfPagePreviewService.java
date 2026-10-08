@@ -10,6 +10,9 @@ import java.nio.file.Files;
 /** Small raster pages, no OCR and no browser PDF plug-in. */
 @Service
 public class PdfPagePreviewService {
+ public int pageCount(byte[] content)throws Exception{
+  try(var slot=PdfProcessingSafety.acquire();var pdf=Loader.loadPDF(content)){PdfProcessingSafety.validate(pdf);return pdf.getNumberOfPages();}
+ }
  public byte[] render(byte[] content,int page,boolean enlarged)throws Exception{
   try(var slot=PdfProcessingSafety.acquire();var pdf=Loader.loadPDF(content)){
    PdfProcessingSafety.validate(pdf);

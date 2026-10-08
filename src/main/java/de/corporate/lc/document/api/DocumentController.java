@@ -21,6 +21,16 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api")
 public class DocumentController {
+    @org.springframework.beans.factory.annotation.Autowired private de.corporate.lc.document.service.PdfPagePreviewService pagePreview;
+    @GetMapping(value="/documents/{id}/pages/{page}/preview",produces="image/png")
+    public ResponseEntity<byte[]> pagePreview(@PathVariable UUID id,@PathVariable int page)throws Exception{
+        LcDocument document=service.one(id);
+        if(!"application/pdf".equals(document.getContentType()))throw new IllegalArgumentException("Seitenvorschau benötigt eine PDF.");
+        byte[] content=document.getContent();int pages=pagePreview.pageCount(content);
+        return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).cacheControl(CacheControl.noStore())
+                .header("X-Page-Count",Integer.toString(pages)).header("X-Content-Type-Options","nosniff")
+                .body(pagePreview.render(content,page,true));
+    }
     private final DocumentService service;
     private final AuditService audit;
     private final GeneratedDocumentService generated;
