@@ -18,5 +18,13 @@ class OcrPipelineIntegrationTest {
   var result=new DocumentExtractionService().extractFile(content,"scan.pdf","application/pdf");
   assertThat(result.status()).isEqualTo("OCR_EXTRACTED");assertThat(result.ocrEvidence()).isNotNull();assertThat(result.ocrEvidence().words()).isNotEmpty();assertThat(result.ocrEvidence().engineVersion()).containsIgnoringCase("tesseract");assertThat(result.ocrEvidence().words()).allMatch(w->w.page()==1);
   assertThat(result.ocrEvidence().assess("LC123456",.8).score()).isNotNull();
+  try(var pdf=new PDDocument();var out=new ByteArrayOutputStream()){
+   var digital=new PDPage();pdf.addPage(digital);
+   try(var stream=new PDPageContentStream(pdf,digital)){stream.beginText();stream.setFont(new org.apache.pdfbox.pdmodel.font.PDType1Font(org.apache.pdfbox.pdmodel.font.Standard14Fonts.FontName.HELVETICA),12);stream.newLineAtOffset(30,700);stream.showText("SYNTHETIC DIGITAL COVER");stream.endText();}
+   var scan=new PDPage();pdf.addPage(scan);try(var stream=new PDPageContentStream(pdf,scan)){stream.drawImage(LosslessFactory.createFromImage(pdf,image),0,0,scan.getMediaBox().getWidth(),scan.getMediaBox().getHeight());}
+   pdf.save(out);var mixed=new DocumentExtractionService().extractFile(out.toByteArray(),"mixed.pdf","application/pdf");
+   assertThat(mixed.status()).isEqualTo("OCR_EXTRACTED");assertThat(mixed.text()).contains("SYNTHETIC DIGITAL COVER","LC123456");
+   assertThat(mixed.ocrEvidence().words()).isNotEmpty().allMatch(w->w.page()==2);
+  }
  }
 }
