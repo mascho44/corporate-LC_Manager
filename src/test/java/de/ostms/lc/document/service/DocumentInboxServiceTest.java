@@ -70,6 +70,13 @@ class DocumentInboxServiceTest {
         verifyNoInteractions(documents,checks,extraction);
     }
 
+    @Test void correctedMetadataIsTransferredWithoutChangingLcMasterData(){
+        UUID id=UUID.randomUUID(),lcId=UUID.randomUUID();var item=item();item.setExtractedText("Invoice date: 25.08.2026");when(inbox.findForUpdate(id)).thenReturn(Optional.of(item));
+        var lc=new LetterOfCredit();lc.setReference("LC-UNCHANGED");ReflectionTestUtils.setField(lc,"id",lcId);when(lcs.findById(lcId)).thenReturn(Optional.of(lc));
+        when(documents.save(any())).thenAnswer(call->{LcDocument doc=call.getArgument(0);ReflectionTestUtils.setField(doc,"id",UUID.randomUUID());assertThat(doc.getExtractedReference()).isEqualTo("LC-CORRECTED");assertThat(doc.getExtractedDocumentNumber()).isEqualTo("INV-42");assertThat(doc.getAmount()).isEqualByComparingTo("42.50");assertThat(doc.getCurrency()).isEqualTo("EUR");assertThat(doc.getDocumentDate()).isNull();return doc;});
+        service.attach(id,new DocumentInboxAttachRequest(lcId,DocumentType.COMMERCIAL_INVOICE,null,null,new DocumentInboxAttachRequest.Metadata("LC-CORRECTED","INV-42",new java.math.BigDecimal("42.50"),"EUR")));
+        assertThat(lc.getReference()).isEqualTo("LC-UNCHANGED");
+    }
     @Test void confirmedAssignmentMovesContentAndInvalidatesOldChecks() {
         UUID id=UUID.randomUUID(),lcId=UUID.randomUUID(),documentId=UUID.randomUUID();
         DocumentInboxItem item=item();when(inbox.findForUpdate(id)).thenReturn(Optional.of(item));

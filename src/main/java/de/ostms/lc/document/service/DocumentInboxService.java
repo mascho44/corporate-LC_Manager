@@ -134,13 +134,18 @@ public class DocumentInboxService {
         document.setContentType(item.getContentType());
         document.setFileSize(item.getFileSize());
         document.setContent(item.getContent());
-        document.setDocumentDate(request.documentDate()!=null?request.documentDate():DocumentDateDetector.detect(item.getExtractedText()).date());
+        document.setDocumentDate(request.metadata()!=null?request.documentDate():request.documentDate()!=null?request.documentDate():DocumentDateDetector.detect(item.getExtractedText()).date());
         document.setAmount(item.getExtractedAmount());
         document.setCurrency(item.getExtractedCurrency());
         document.setExtractedReference(item.getExtractedReference());
         document.setExtractedDocumentNumber(item.getExtractedDocumentNumber());
         document.setExtractedAmount(item.getExtractedAmount());
         document.setExtractedCurrency(item.getExtractedCurrency());
+        if(request.metadata()!=null){
+            document.setExtractedReference(request.metadata().reference());
+            document.setExtractedDocumentNumber(request.metadata().documentNumber());
+            document.setAmount(request.metadata().amount());document.setCurrency(request.metadata().currency());
+        }
         document.setExtractedText(item.getExtractedText());
         document.setExtractionStatus(item.getExtractionStatus());
         document.setOcrEvidenceJson(item.getOcrEvidenceJson());
