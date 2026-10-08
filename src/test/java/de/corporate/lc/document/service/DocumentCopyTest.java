@@ -5,9 +5,11 @@ import static org.assertj.core.api.Assertions.*;
 class DocumentCopyTest {
  @Test void designationIsExplicitAndUnknownRemainsUnknown(){
   var document=new LcDocument();assertThat(document.getCopyNumber()).isNull();
-  for(int value=0;value<=3;value++){document.setCopyNumber(value);assertThat(document.getCopyNumber()).isEqualTo(value);}
+  for(int value=-3;value<=3;value++){document.setCopyNumber(value);assertThat(document.getCopyNumber()).isEqualTo(value);}
   document.setCopyNumber(null);assertThat(document.getCopyNumber()).isNull();
-  assertThatThrownBy(()->document.setCopyNumber(-1)).isInstanceOf(IllegalArgumentException.class);
+  assertThatThrownBy(()->document.setCopyNumber(-4)).isInstanceOf(IllegalArgumentException.class);
+  assertThat(DocumentCopy.label(-1)).isEqualTo("Original 1");
+  assertThat(DocumentCopy.label(-3)).isEqualTo("Original 3");
   assertThatThrownBy(()->document.setCopyNumber(4)).isInstanceOf(IllegalArgumentException.class);
  }
  @Test void splittingCarriesDesignationAndRejectsInvalidCopies()throws Exception{
