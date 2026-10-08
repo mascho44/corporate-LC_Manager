@@ -18,6 +18,18 @@ import java.util.UUID;
 public class DocumentInboxController {
     private final DocumentInboxService service;
     private final AuditService audit;
+    @org.springframework.beans.factory.annotation.Autowired private de.ostms.lc.document.service.DocumentMetadataTraining metadataTraining;
+
+    @GetMapping("/{id}/metadata-training")
+    public de.ostms.lc.document.service.DocumentMetadataTraining.Proposal metadataSuggestion(@PathVariable UUID id){return metadataTraining.suggest(service.openItem(id).getExtractedText());}
+
+    @PostMapping("/{id}/metadata-training") @ResponseStatus(HttpStatus.NO_CONTENT)
+    @org.springframework.transaction.annotation.Transactional
+    public void confirmMetadata(@PathVariable UUID id,@Valid @RequestBody de.ostms.lc.document.service.DocumentMetadataTraining.Confirmation request,Authentication auth){
+        var item=service.openItem(id);
+        metadataTraining.confirm(item.getExtractedText(),request,auth.getName());
+        audit.recordInTransaction(auth,"DOCUMENT_METADATA_TRAINED","DOCUMENT_INBOX",id,"Dokumentmetadaten ausdrücklich bestätigt · mandantenspezifisches Textmuster");
+    }
     @org.springframework.beans.factory.annotation.Autowired private de.ostms.lc.document.service.PdfPagePreviewService pagePreview;
 
     @GetMapping(value="/{id}/pages/{page}/preview",produces="image/png")
