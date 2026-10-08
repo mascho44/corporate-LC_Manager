@@ -32,7 +32,7 @@ beschreibt dessen Grenzen, Rule Packs und die Integrationspipeline.
 Dies ist ein Roadmap-Ziel, keine bereits vorhandene Laufzeitkomponente;
 die aktuelle Anwendung bleibt zunächst ein Monolith.
 
-Der Code liegt unter `de.corporate.lc`. Module trennen `api` (Controller/
+Der Code liegt unter `de.ostms.lc`. Module trennen `api` (Controller/
 DTOs), `service` (Geschäftslogik), `domain` (JPA-Entitäten) und `repository`.
 
 | Modul | Verantwortung |

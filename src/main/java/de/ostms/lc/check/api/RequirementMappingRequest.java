@@ -1,0 +1,1 @@
+package de.ostms.lc.check.api;import de.ostms.lc.document.domain.DocumentType;import jakarta.validation.constraints.*;public record RequirementMappingRequest(@NotBlank @Size(max=2000)String requirement,@NotNull DocumentType documentType){}
