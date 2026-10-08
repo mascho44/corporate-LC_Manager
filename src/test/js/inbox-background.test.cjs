@@ -2,12 +2,25 @@ const test=require('node:test'),assert=require('node:assert/strict'),vm=require(
 test('automatic split completion signals refresh without overwriting ongoing assignments',async()=>{const f=fixture([{id:'new-part',automaticallySplit:true,extractionStatus:'EXTRACTED'}]);f.list.innerHTML='user draft';vm.runInContext('inboxEditedItems.add("other")',f.context);await f.context.loadInbox(true);assert.equal(f.list.innerHTML,'user draft');assert.match(f.nodes.message.textContent,/Automatically split documents are available/);});
 function fixture(items){
  const timers=[],nodes={},articles=[],created=[],calls=[];const list={innerHTML:'',textContent:'',querySelectorAll(selector){return selector==='[data-inbox-id]'?articles:[];},querySelector(selector){return nodes[selector]||null;},contains(){return false;}};
- const context=vm.createContext({document:{activeElement:null,createElement:tag=>{const node={tag,dataset:{}};created.push(node);return node;}},$:selector=>selector==='#inboxList'?list:selector==='#inboxSection'?{classList:{contains:()=>false}}:nodes.message??={textContent:''},clearTimeout(){},setTimeout(fn,delay){timers.push([fn,delay]);return timers.length;},
+ const context=vm.createContext({document:{addEventListener(){},activeElement:null,createElement:tag=>{const node={tag,dataset:{}};created.push(node);return node;}},$:selector=>selector==='#inboxList'?list:selector==='#inboxSection'?{classList:{contains:()=>false}}:nodes.message??={textContent:''},clearTimeout(){},setTimeout(fn,delay){timers.push([fn,delay]);return timers.length;},
   confirmAction:async()=>true,json:async(url,options)=>{calls.push({url,options});return url==='/api/inbox'?items:[];},renderInboxItem:item=>`item:${item.id}`,esc:String,extractionLabel:status=>status,can:()=>true});
  const source=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/app.js'),'utf8');
  vm.runInContext(source.slice(source.indexOf('let inboxRefreshTimer='),source.indexOf('let appNavigate=')),context);
  return {context,list,timers,nodes,articles,created,calls};
 }
+test('attachment preserves per-document corrections and explicit empty metadata',()=>{
+ const f=fixture([]);f.context.readDocumentCopy=value=>value===''?null:Number(value);
+ const elements=Object.fromEntries(Object.entries({documentType:'PACKING_LIST',documentDate:'2026-08-25',copyNumber:'2',metadataReference:' LC123 ',metadataNumber:' INV42 ',metadataAmount:'42.50',metadataCurrency:'EUR'}).map(([key,value])=>[key,{value}]));
+ const value=f.context.inboxAttachment({elements},'target');assert.equal(value.lcId,'target');assert.equal(value.copyNumber,2);assert.equal(value.metadata.reference,'LC123');assert.equal(value.metadata.amount,42.5);
+ elements.metadataReference.value='';elements.metadataAmount.value='';assert.equal(f.context.inboxAttachment({elements},'target').metadata.reference,null);assert.equal(f.context.inboxAttachment({elements},'target').metadata.amount,null);
+});
+test('selected files survive background polling',async()=>{
+ const f=fixture([{id:'test',extractionStatus:'EXTRACTED'}]);f.list.innerHTML='selected file';f.nodes['[data-inbox-select]:checked']={checked:true};await f.context.loadInbox(true);assert.equal(f.list.innerHTML,'selected file');
+});
+test('bulk selection is permission gated and counts selected files',()=>{
+ const f=fixture([]);assert.match(f.context.inboxBulkToolbar(),/Alle angezeigten auswählen/);f.context.can=()=>false;assert.equal(f.context.inboxBulkToolbar(),'');
+ const all={},button={},boxes=[{checked:true},{checked:false}];f.context.updateInboxSelection({querySelectorAll:()=>boxes,querySelector:s=>s.includes('select-all')?all:button});assert.equal(all.indeterminate,true);assert.equal(button.disabled,false);assert.match(button.textContent,/\(1\)/);
+});
 test('queued items poll and show background status, completed items stop polling',async()=>{
  const f=fixture([{id:'test',extractionStatus:'QUEUED'}]);await f.context.loadInbox();assert.match(f.list.innerHTML,/item:test/);assert.equal(f.timers[0][1],4000);
  assert.match(f.context.inboxStatusHtml({id:'test',extractionStatus:'QUEUED'}),/Datei ist gespeichert/);

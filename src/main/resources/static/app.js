@@ -43,7 +43,7 @@ function setupInboxUi(){
     };
 }
 function renderInboxItem(item,inboxLcs){
-return `<article class="inbox-item" data-inbox-id="${item.id}"><div class="inbox-item-head"><div><b>${esc(item.originalFilename)}</b><small>${fileSize(item.fileSize)} · Eingang von ${esc(item.receivedBy)} · ${new Intl.DateTimeFormat(globalThis.LcI18n?.locale()||'en-GB',{dateStyle:'short',timeStyle:'short'}).format(new Date(item.receivedAt))}</small><small>${esc(extractionLabel(item.extractionStatus))}${item.extractedDocumentNumber?' · Dokumentnummer '+esc(item.extractedDocumentNumber):''}</small><small>${item.extractedReference?'Erkannte LC-Referenz: '+esc(item.extractedReference):'Keine explizite LC-Referenz erkannt.'}</small></div><a class="secondary button-link" target="_blank" rel="noopener" href="/api/inbox/${item.id}/content">Dokument ansehen</a></div>${item.copyHint?.evidence?`<p class="muted">${esc(item.copyHint.evidence)}</p>`:''}${renderInboxSuggestions(item)}${renderClassificationHint(item.classification,item.id)}<div class="inbox-assignment-workspace">${inboxAssignmentPreview(item)}<div><form data-inbox-attach="${item.id}" class="inbox-assignment"><label>LC-Akte<select name="lcId" required><option value="">Bitte auswählen</option>${inboxLcs.map(lc=>`<option value="${lc.id}">${esc(lc.reference)} · ${esc(statusLabel(lc.status))}</option>`).join('')}</select></label><label>Dokumenttyp<select name="documentType" required><option value="">Bitte auswählen</option>${inboxDocumentTypes.map(([value,label])=>`<option value="${value}">${label}</option>`).join('')}</select></label><label>Kennzeichnung<select name="copyNumber">${documentCopyOptions(item.copyNumber)}</select></label><label>Dokumentdatum<input name="documentDate" type="date" value="${esc(item.extractedDocumentDate||'')}"><small>${item.extractedDocumentDate?'Automatisch erkannt – bitte prüfen':['REVIEW','AMBIGUOUS'].includes(item.documentDateRecognitionStatus)?'Datumsangabe nicht eindeutig – bitte manuell prüfen':'Kein eindeutiges Dokumentdatum erkannt'}</small></label><button type="submit">Zuordnung bestätigen</button>${can('DOCUMENT_DELETE')?`<button type="button" class="danger" data-inbox-delete="${item.id}">Löschen</button>`:''}</form>${inboxNewCaseHtml(item)}</div></div></article>`;
+return `<article class="inbox-item" data-inbox-id="${item.id}"><div class="inbox-item-head"><div>${can('DOCUMENT_DELETE')||can('DOCUMENT_UPLOAD')?`<label class="inbox-selection"><input type="checkbox" data-inbox-select="${item.id}" aria-label="Datei auswählen: ${esc(item.originalFilename)}"> Auswählen</label>`:''}<b>${esc(item.originalFilename)}</b><small>${fileSize(item.fileSize)} · Eingang von ${esc(item.receivedBy)} · ${new Intl.DateTimeFormat(globalThis.LcI18n?.locale()||'en-GB',{dateStyle:'short',timeStyle:'short'}).format(new Date(item.receivedAt))}</small><small>${esc(extractionLabel(item.extractionStatus))}${item.extractedDocumentNumber?' · Dokumentnummer '+esc(item.extractedDocumentNumber):''}</small><small>${item.extractedReference?'Erkannte LC-Referenz: '+esc(item.extractedReference):'Keine explizite LC-Referenz erkannt.'}</small></div><a class="secondary button-link" target="_blank" rel="noopener" href="/api/inbox/${item.id}/content">Dokument ansehen</a></div>${item.copyHint?.evidence?`<p class="muted">${esc(item.copyHint.evidence)}</p>`:''}${renderInboxSuggestions(item)}${renderClassificationHint(item.classification,item.id)}<div class="inbox-assignment-workspace">${inboxAssignmentPreview(item)}<div><form data-inbox-attach="${item.id}" class="inbox-assignment"><label>LC-Akte<select name="lcId" required><option value="">Bitte auswählen</option>${inboxLcs.map(lc=>`<option value="${lc.id}">${esc(lc.reference)} · ${esc(statusLabel(lc.status))}</option>`).join('')}</select></label><label>Dokumenttyp<select name="documentType" required><option value="">Bitte auswählen</option>${inboxDocumentTypes.map(([value,label])=>`<option value="${value}">${label}</option>`).join('')}</select></label><label>Kennzeichnung<select name="copyNumber">${documentCopyOptions(item.copyNumber)}</select></label><label>Dokumentdatum<input name="documentDate" type="date" value="${esc(item.extractedDocumentDate||'')}"><small>${item.extractedDocumentDate?'Automatisch erkannt – bitte prüfen':['REVIEW','AMBIGUOUS'].includes(item.documentDateRecognitionStatus)?'Datumsangabe nicht eindeutig – bitte manuell prüfen':'Kein eindeutiges Dokumentdatum erkannt'}</small></label>${inboxMetadataFields(item)}<button type="submit">Zuordnung bestätigen</button>${can('DOCUMENT_DELETE')?`<button type="button" class="danger" data-inbox-delete="${item.id}">Löschen</button>`:''}</form>${inboxNewCaseHtml(item)}</div></div></article>`;
 }
 function inboxAssignmentPreview(item){
     const url=`/api/inbox/${encodeURIComponent(item.id)}/content`,label=esc(item.originalFilename||'Dokument');
@@ -56,11 +56,60 @@ function documentCopyOptions(value){return [['','Nicht gekennzeichnet'],['0','Or
 function readDocumentCopy(value){return value===''||value==null?null:Number(value);}
 let inboxRefreshTimer=null;
 function inboxAutoText(key,fallback){const value=globalThis.LcI18n?.t('inbox.autoSplit.'+key);return value&&value!=='inbox.autoSplit.'+key?value:fallback;}
-let inboxLoadVersion=0;
+let inboxLoadVersion=0,inboxBulkDeleting=false;
 const inboxEditedItems=new Set();
+function inboxBulkToolbar(){if(!can('DOCUMENT_DELETE')&&!can('DOCUMENT_UPLOAD'))return '';return '<div class="document-bulk-actions"><label><input type="checkbox" data-inbox-select-all> Alle angezeigten auswählen</label>'+(can('DOCUMENT_DELETE')?'<button type="button" class="danger" data-inbox-delete-selected disabled>Ausgewählte löschen</button>':'')+(can('DOCUMENT_UPLOAD')?'<button type="button" class="secondary" data-inbox-attach-selected>Ausgewählte zuordnen</button>':'')+'</div>';}
+document.addEventListener('click',async event=>{
+ const evidence=event.target.closest('[data-inbox-evidence]');if(evidence){evidence.disabled=true;const target=evidence.parentElement.querySelector('[data-metadata-evidence]');try{const facts=await json(`/api/inbox/${evidence.dataset.inboxEvidence}/metadata-evidence`);target.innerHTML='<p>Textfundstellen aus der Erkennung; keine verifizierte Seitenposition. Bitte am Original prüfen.</p>'+Object.entries(facts).map(([key,value])=>`<p><b>${esc(key)}</b></p><pre>${esc(value)}</pre>`).join('');if(!Object.keys(facts).length)target.textContent='Keine eindeutige Textfundstelle verfügbar.';}catch(error){target.textContent=error.message;}finally{evidence.disabled=false;}return;}
+ const button=event.target.closest('[data-inbox-attach-selected]');if(!button||inboxBulkDeleting||!can('DOCUMENT_UPLOAD'))return;
+ const list=$('#inboxList'),ids=[...list.querySelectorAll('[data-inbox-select]:checked')].map(box=>box.dataset.inboxSelect);
+ if(!ids.length){$('#inboxMessage').textContent='Bitte Dateien auswählen.';return;}
+ const forms=ids.map(id=>list.querySelector(`[data-inbox-attach="${id}"]`));
+ if(forms.some(form=>!form||form.elements.documentType.disabled)){$('#inboxMessage').textContent='Bitte die laufende Erkennung der ausgewählten Dateien abwarten.';return;}
+ const dialog=document.createElement('dialog');dialog.className='wide-dialog';dialog.innerHTML=`<form><div class="dialoghead"><h2>Dokumente gemeinsam zuordnen</h2><button type="button" data-bulk-cancel>Schließen</button></div><p>Eine Zielakte für alle Dateien wählen. Dokumenttypen und Metadaten am Original prüfen.</p><div class="form-grid"><label class="wide">LC-Akte<select name="lcId" required>${forms[0].elements.lcId.innerHTML}</select></label>${forms.map((form,i)=>`<label class="wide">${esc(list.querySelector(`[data-inbox-id="${ids[i]}"] b`).textContent)}<select name="type${i}" required>${form.elements.documentType.innerHTML}</select></label>`).join('')}</div><div class="actions"><button type="submit">Zuordnung bestätigen</button></div><p role="alert" data-bulk-error></p></form>`;
+ document.body.append(dialog);dialog.querySelector('[data-bulk-cancel]').onclick=()=>dialog.close();dialog.addEventListener('close',()=>dialog.remove());dialog.showModal();
+ const form=dialog.querySelector('form');forms.forEach((source,i)=>form.elements['type'+i].value=source.elements.documentType.value);
+ form.onsubmit=async event=>{event.preventDefault();if(!form.reportValidity())return;
+ const lcId=form.elements.lcId.value;forms.forEach((source,i)=>{source.elements.lcId.value=lcId;source.elements.documentType.value=form.elements['type'+i].value;});
+ if(forms.some(source=>!source.reportValidity())){dialog.querySelector('[data-bulk-error]').textContent='Bitte ungültige Metadaten in den Dokumenten korrigieren.';return;}
+ if(!await confirmAction(`${ids.length} Dokumente der ausgewählten LC-Akte zuordnen?`))return;
+ const payloads=forms.map(source=>inboxAttachment(source,lcId)),controls=[...list.querySelectorAll('button,input,select')].map(control=>[control,control.disabled]);
+ inboxBulkDeleting=true;++inboxLoadVersion;clearTimeout(inboxRefreshTimer);dialog.querySelectorAll('button,select').forEach(control=>control.disabled=true);controls.forEach(([control])=>control.disabled=true);
+ let attached=0;const failures=[];
+ try{for(let i=0;i<ids.length;i++){try{await json(`/api/inbox/${ids[i]}/attach`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payloads[i])});attached++;inboxEditedItems.delete(ids[i]);list.querySelector(`[data-inbox-id="${ids[i]}"]`)?.remove();}catch(error){failures.push(error.message);}$('#inboxMessage').textContent=`${attached} von ${ids.length} zugeordnet`;}}
+ finally{inboxBulkDeleting=false;controls.forEach(([control,disabled])=>control.disabled=disabled);dialog.close();updateInboxSelection(list);}
+ await loadInbox(true);$('#inboxMessage').textContent=failures.length?`${attached} zugeordnet, ${failures.length} nicht zugeordnet: ${failures[0]}`:`${attached} Dokumente zugeordnet.`;
+ };
+});
+function inboxMetadataFields(item){return `<details><summary>Metadaten prüfen und korrigieren</summary><label>LC-Referenz im Dokument<input name="metadataReference" maxlength="255" value="${esc(item.extractedReference||'')}"></label><label>Dokumentnummer<input name="metadataNumber" maxlength="255" value="${esc(item.extractedDocumentNumber||'')}"></label><label>Betrag<input name="metadataAmount" type="number" min="0" step="0.01" value="${item.extractedAmount??''}"></label><label>Währung<input name="metadataCurrency" maxlength="3" pattern="[A-Z]{3}" value="${esc(item.extractedCurrency||'')}"></label><button type="button" class="secondary" data-inbox-evidence="${item.id}">Fundstellen anzeigen</button><div data-metadata-evidence></div><small>Korrekturen werden bei der Zuordnung übernommen. Die LC-Stammdaten ändern sich nicht.</small></details>`;}
+function inboxAttachment(form,lcId){return {lcId,documentType:form.elements.documentType.value,documentDate:form.elements.documentDate.value||null,copyNumber:readDocumentCopy(form.elements.copyNumber.value),metadata:{reference:form.elements.metadataReference.value.trim()||null,documentNumber:form.elements.metadataNumber.value.trim()||null,amount:form.elements.metadataAmount.value===''?null:Number(form.elements.metadataAmount.value),currency:form.elements.metadataCurrency.value.trim()||null}};}
+function updateInboxSelection(list){
+ const boxes=[...list.querySelectorAll('[data-inbox-select]')],count=boxes.filter(box=>box.checked).length,all=list.querySelector('[data-inbox-select-all]'),button=list.querySelector('[data-inbox-delete-selected]');
+ if(all){all.checked=boxes.length>0&&count===boxes.length;all.indeterminate=count>0&&count<boxes.length;}
+ if(button){button.disabled=!count||inboxBulkDeleting;button.textContent=`Ausgewählte löschen (${count})`;}
+}
+document.addEventListener('change',event=>{
+ if(!event.target.matches('[data-inbox-select],[data-inbox-select-all]'))return;
+ const list=$('#inboxList');if(!list)return;
+ if(event.target.matches('[data-inbox-select-all]'))list.querySelectorAll('[data-inbox-select]').forEach(box=>box.checked=event.target.checked);
+ updateInboxSelection(list);
+});
+document.addEventListener('click',async event=>{
+ const button=event.target.closest('[data-inbox-delete-selected]');if(!button||button.disabled||inboxBulkDeleting||!can('DOCUMENT_DELETE'))return;
+ const list=$('#inboxList'),ids=[...list.querySelectorAll('[data-inbox-select]:checked')].map(box=>box.dataset.inboxSelect);
+ if(!ids.length||!await confirmAction(`${ids.length} ausgewählte Dateien endgültig aus dem Posteingang löschen?`))return;
+ inboxBulkDeleting=true;++inboxLoadVersion;clearTimeout(inboxRefreshTimer);
+ const controls=[...list.querySelectorAll('button,input,select')].map(control=>[control,control.disabled]);controls.forEach(([control])=>control.disabled=true);
+ let deleted=0;const failures=[];
+ try{for(const id of ids){try{await json(`/api/inbox/${id}`,{method:'DELETE'});deleted++;inboxEditedItems.delete(id);list.querySelector(`[data-inbox-id="${id}"]`)?.remove();}catch(error){failures.push(error.message);}$('#inboxMessage').textContent=`${deleted} von ${ids.length} Dateien gelöscht`;}}
+ finally{inboxBulkDeleting=false;controls.forEach(([control,disabled])=>control.disabled=disabled);updateInboxSelection(list);}
+ await loadInbox(true);
+ $('#inboxMessage').textContent=failures.length?`${deleted} gelöscht, ${failures.length} nicht gelöscht: ${failures[0]}`:`${deleted} Dateien gelöscht.`;
+});
 function inboxPending(item){return ['QUEUED','PROCESSING'].includes(item.extractionStatus);}
 function inboxStatusHtml(item){return inboxPending(item)?`<div class="inbox-processing" role="status">${esc(extractionLabel(item.extractionStatus))}<progress aria-label="Dokumentenerkennung läuft"></progress><small>Die Datei ist gespeichert. Du kannst diese Seite verlassen; die Erkennung läuft weiter.</small></div>`:`<small>${esc(extractionLabel(item.extractionStatus))}</small>${can('DOCUMENT_UPLOAD')&&['FAILED','OCR_TIMEOUT','OCR_UNAVAILABLE','OCR_PAGE_LIMIT','NO_TEXT','NOT_PROCESSED'].includes(item.extractionStatus)?'<button type="button" class="secondary" data-inbox-retry="'+item.id+'">Erkennung erneut starten</button>':''}`;}
 async function loadInbox(silent=false){
+    if(inboxBulkDeleting)return;
     const version=++inboxLoadVersion;
     clearTimeout(inboxRefreshTimer);
     const list=$('#inboxList');if(!silent){inboxEditedItems.clear();list.textContent='Posteingang wird geladen …';}
@@ -69,13 +118,13 @@ async function loadInbox(silent=false){
         if(version!==inboxLoadVersion)return;
         if(items.some(inboxPending))inboxRefreshTimer=setTimeout(()=>{if(!$('#inboxSection').classList.contains('hidden'))loadInbox(true);},4000);
         // Never overwrite an in-progress assignment with a polling refresh.
-        if(silent&&(inboxEditedItems.size||list.contains(document.activeElement)||list.querySelector('details[open]'))){
+        if(silent&&(inboxEditedItems.size||list.contains(document.activeElement)||list.querySelector('details[open]')||list.querySelector('[data-inbox-select]:checked'))){
             items.forEach(item=>{const status=list.querySelector(`[data-inbox-status="${item.id}"]`);if(status)status.innerHTML=inboxStatusHtml(item);const article=list.querySelector(`[data-inbox-id="${item.id}"]`);if(article?.dataset.pending==='true'&&!inboxPending(item)){article.querySelectorAll('form input,form select,form button:not([data-inbox-delete])').forEach(control=>control.disabled=false);article.dataset.pending='false';}});
             if(items.some(item=>item.automaticallySplit&&!list.querySelector(`[data-inbox-id="${item.id}"]`)))$('#inboxMessage').textContent=inboxAutoText('refresh','Automatically split documents are available. Refresh when your current edits are saved.');
             bindInboxRetry(list);
             return;
         }
-        list.innerHTML=items.length?'<p class="inbox-limit">'+items.length+' offene Dateien'+(items.length===100?' · die neuesten 100 werden angezeigt':'')+'</p>'+items.map(item=>renderInboxItem(item,inboxLcs)).join(''):'<div class="empty compact">Keine offenen Dateien im Posteingang.</div>';
+        list.innerHTML=items.length?inboxBulkToolbar()+'<p class="inbox-limit">'+items.length+' offene Dateien'+(items.length===100?' · die neuesten 100 werden angezeigt':'')+'</p>'+items.map(item=>renderInboxItem(item,inboxLcs)).join(''):'<div class="empty compact">Keine offenen Dateien im Posteingang.</div>';
         list.querySelectorAll('[data-inbox-candidate]').forEach(button=>button.onclick=()=>{
             const form=list.querySelector(`[data-inbox-attach="${button.dataset.inboxItem}"]`),lc=inboxLcs.find(value=>value.id===button.dataset.inboxCandidate);
             if(!form||!lc){$('#inboxMessage').textContent='Die vorgeschlagene Akte ist nicht mehr verfügbar. Bitte aktualisieren.';return;}
@@ -87,7 +136,7 @@ async function loadInbox(silent=false){
             if(!lc){$('#inboxMessage').textContent='Bitte eine gültige LC-Akte auswählen.';return;}
             if(!await confirmAction(`„${item.originalFilename}“ der LC-Akte „${lc.reference}“ als ${form.elements.documentType.selectedOptions[0].textContent} zuordnen?`))return;
             button.disabled=true;
-            try{await json(`/api/inbox/${item.id}/attach`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({lcId,documentType:form.elements.documentType.value,documentDate:form.elements.documentDate.value||null,copyNumber:readDocumentCopy(form.elements.copyNumber.value)})});$('#inboxMessage').textContent='Dokument in LC-Akte '+lc.reference+' gespeichert.';await loadInbox();}
+            try{await json(`/api/inbox/${item.id}/attach`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(inboxAttachment(form,lcId))});$('#inboxMessage').textContent='Dokument in LC-Akte '+lc.reference+' gespeichert.';await loadInbox();}
             catch(error){$('#inboxMessage').textContent='Zuordnung fehlgeschlagen: '+error.message;button.disabled=false;}
         });
         list.querySelectorAll('[data-inbox-delete]').forEach(button=>button.onclick=async()=>{
@@ -98,7 +147,7 @@ async function loadInbox(silent=false){
         list.querySelectorAll('[data-inbox-id]').forEach(article=>{
             const item=items.find(value=>value.id===article.dataset.inboxId);
             const status=document.createElement('div');status.dataset.inboxStatus=item.id;status.innerHTML=inboxStatusHtml(item);article.querySelector('.inbox-item-head').after(status);
-            article.addEventListener('input',()=>inboxEditedItems.add(item.id));article.addEventListener('change',()=>inboxEditedItems.add(item.id));
+            article.addEventListener('input',event=>{if(!event.target.matches('[data-inbox-select]'))inboxEditedItems.add(item.id);});article.addEventListener('change',event=>{if(!event.target.matches('[data-inbox-select]'))inboxEditedItems.add(item.id);});
             article.dataset.pending=String(inboxPending(item));
             if(item.sourceInboxId){const link=document.createElement('a');link.href=`/api/inbox/${item.sourceInboxId}/content#page=${item.sourceFromPage}`;link.target='_blank';link.rel='noopener';link.textContent=`Sammeloriginal ansehen · Seiten ${item.sourceFromPage}–${item.sourceToPage}`;article.querySelector('.inbox-item-head').after(link);}
             if(item.automaticallySplit){const note=document.createElement('p');note.textContent=inboxAutoText('origin','Automatically created from a combined PDF. Review the document type; original and page range are retained.');article.querySelector('.inbox-item-head').after(note);}

@@ -51,6 +51,22 @@ public class DocumentInboxController {
         return received;
     }
 
+    @GetMapping("/{id}/metadata-evidence")
+    public java.util.Map<String,String> metadataEvidence(@PathVariable UUID id){
+        var item=service.openItem(id);var result=new java.util.LinkedHashMap<String,String>();
+        String text=item.getExtractedText()==null?"":item.getExtractedText();
+        String[] lines=text.split("\\R",-1);
+        for(int i=0;i<lines.length;i++){
+            String line=lines[i],lower=line.toLowerCase(java.util.Locale.ROOT);
+            String excerpt=line+(i+1<lines.length?"\n"+lines[i+1]:"");
+            if(excerpt.length()>600)excerpt=excerpt.substring(0,600);
+            if(item.getExtractedReference()!=null&&line.contains(item.getExtractedReference()))result.putIfAbsent("reference",excerpt);
+            if(item.getExtractedDocumentNumber()!=null&&line.contains(item.getExtractedDocumentNumber()))result.putIfAbsent("documentNumber",excerpt);
+            if((lower.contains("date")||lower.contains("datum"))&&de.ostms.lc.document.service.DocumentDateDetector.detect(excerpt).date()!=null)result.putIfAbsent("documentDate",excerpt);
+            if(lower.contains("total")||lower.contains("amount due")||lower.contains("invoice amount"))result.putIfAbsent("amount",excerpt);
+        }
+        return result;
+    }
     @GetMapping("/{id}/content")
     public ResponseEntity<byte[]> content(@PathVariable UUID id) {
         DocumentInboxItem item = service.openItem(id);
