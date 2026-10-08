@@ -30,6 +30,7 @@ public class DocumentInboxController {
     public List<DocumentInboxItemView> list() {
         return service.openItems();
     }
+    @PostMapping("/{id}/auto-split") public List<DocumentInboxItemView> automaticSplit(@PathVariable UUID id,Authentication authentication)throws Exception{return service.automaticSplit(id,authentication.getName());}
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.ACCEPTED)

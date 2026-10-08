@@ -25,7 +25,9 @@ public class InboxExtractionQueue {
     private final ExecutorService executor=Executors.newSingleThreadExecutor(task->{var thread=new Thread(task,"inbox-extraction");thread.setDaemon(true);return thread;});
     private final AtomicBoolean busy=new AtomicBoolean();
     @org.springframework.beans.factory.annotation.Autowired(required=false) private de.corporate.lc.tenant.service.TenantWorkers tenantWorkers;
-    record Work(UUID id,UUID token,UUID tenantId,LcDocument document,String username){}
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private InboxAutomaticSplitter automaticSplitter;
+    @org.springframework.beans.factory.annotation.Value("${lc.inbox.auto-split-enabled:true}") private boolean autoSplitEnabled=true;
+    record Work(UUID id,UUID token,UUID tenantId,LcDocument document,String username,boolean automaticEligible){}
     public InboxExtractionQueue(DocumentInboxRepository inbox,DocumentExtractionService extraction,AuditService audit,PlatformTransactionManager manager){
         this.inbox=inbox;this.extraction=extraction;this.audit=audit;transaction=new TransactionTemplate(manager);
     }
@@ -42,7 +44,10 @@ public class InboxExtractionQueue {
         try{extraction.extractInBackground(work.document());}catch(Exception failure){work.document().setExtractionStatus("FAILED");}
         if(work.document().getExtractionStatus()==null)work.document().setExtractionStatus("FAILED");
         if(Thread.currentThread().isInterrupted())return; // Leave claim recoverable after shutdown.
-        Boolean completed=transaction.execute(status->finish(work));
+        InboxAutomaticSplitter.Plan plan=InboxAutomaticSplitter.Plan.none();
+        if(autoSplitEnabled&&automaticSplitter!=null&&work.automaticEligible())try{plan=automaticSplitter.prepare(work.document());}catch(Exception failure){log.warn("Automatic PDF splitting requires manual review: type={}",failure.getClass().getSimpleName());}
+        var prepared=plan;
+        Boolean completed=transaction.execute(status->{try{return finish(work,prepared);}catch(Exception failure){throw new IllegalStateException("Inbox completion failed.",failure);}});
         if(Boolean.TRUE.equals(completed))audit.record(work.username(),"DOCUMENT_INBOX_EXTRACTED","DOCUMENT_INBOX",work.id(),work.document().getExtractionStatus(),!List.of("FAILED","OCR_TIMEOUT","OCR_UNAVAILABLE").contains(work.document().getExtractionStatus()),null);
         }
     }
@@ -61,11 +66,11 @@ public class InboxExtractionQueue {
             var token=UUID.randomUUID();item.setExtractionStatus("PROCESSING");item.setExtractionStartedAt(LocalDateTime.now());item.setExtractionToken(token);
             inbox.save(item);
             var document=new LcDocument();document.setOriginalFilename(item.getOriginalFilename());document.setContentType(item.getContentType());document.setContent(item.getContent());document.setDocumentType(DocumentType.ANNEX);
-            return new Work(id,token,item.getTenantId(),document,item.getReceivedBy());
+            return new Work(id,token,item.getTenantId(),document,item.getReceivedBy(),item.getSourceInboxId()==null&&ClassificationHistory.selectedType(item.getClassificationHistoryJson())==null);
         }
         return null;
     }
-    private boolean finish(Work work){
+    private boolean finish(Work work,InboxAutomaticSplitter.Plan plan)throws Exception{
         var item=inbox.findForUpdate(work.id()).orElse(null);
         // Deletion or a reclaimed lease must not resurrect or overwrite an item.
         if(item==null||!work.tenantId().equals(item.getTenantId())||!"OPEN".equals(item.getStatus())||!"PROCESSING".equals(item.getExtractionStatus())||!work.token().equals(item.getExtractionToken()))return false;
@@ -74,7 +79,9 @@ public class InboxExtractionQueue {
         item.setExtractedAmount(result.getExtractedAmount());item.setExtractedCurrency(result.getExtractedCurrency());item.setExtractedText(result.getExtractedText());
         var selected=ClassificationHistory.selectedType(item.getClassificationHistoryJson());
         item.setOcrEvidenceJson(result.getOcrEvidenceJson());item.setClassificationHistoryJson(selected==null?result.getClassificationHistoryJson():ClassificationHistory.manual(result.getClassificationHistoryJson(),selected,item.getReceivedBy()));
-        item.setExtractionToken(null);item.setExtractionStartedAt(null);inbox.save(item);return true;
+        item.setExtractionToken(null);item.setExtractionStartedAt(null);inbox.save(item);
+        if(automaticSplitter!=null)automaticSplitter.persist(item,plan);
+        return true;
     }
     @PreDestroy public void shutdown(){executor.shutdownNow();}
 }

@@ -2,7 +2,32 @@
 
 The proposed archive/retention/purge lifecycle is specified separately in
 [Tenant archive and deletion concept](tenant-retention-and-deletion.md).
-It is not yet implemented; current suspension does not delete data.
+Read-only inventory and reversible archival are implemented; neither deletes data.
+
+## Reversible archival
+
+`PUT /api/platform/tenants/{id}/archive` accepts `{archived: boolean}` with
+live platform authorization, verified session TOTP and CSRF protection. Archive
+requires prior suspension. Default/current workspaces are protected. Archival
+sets `archived_at`; V71 enforces that archived tenants stay inactive and the
+default tenant cannot be archived. Normal activation/profile updates reject
+archived tenants. Archive/restore and audit commit in one transaction.
+
+The platform page shows Archived and offers Restore archive, keeping inventory
+available. Restoration clears the archive marker but leaves the tenant suspended;
+activation requires a separate action. Roles, profiles, global accounts, business
+data and documents are retained. Revoked memberships/accounts are not restored.
+Ordinary sessions, workspace choices, invitations and enumerated workers remain
+blocked by existing inactive-tenant checks. Already-running work is not drained:
+this is reversible lifecycle metadata, not an immutable archive, purge barrier,
+retention enforcement or a read-only business/export workspace.
+
+Archival verification (2026-10-08): 554 backend cases, zero failures/errors,
+two skipped; 114 frontend tests passed. Disposable PostgreSQL V71 acceptance
+passed archive visibility, activation rejection while archived, inventory while
+archived, denied session/login, restoration remaining suspended and retained
+documents after explicit reactivation. A real Spring transaction test verified
+archive rollback when audit fails. No production or visual browser-layout test.
 
 Tenant creation now belongs exclusively to Platform administration. The legacy
 `POST /api/tenants` always denies creation, including for local administrators.

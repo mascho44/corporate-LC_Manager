@@ -1,7 +1,8 @@
 # Tenant archive and deletion concept
 
-Status: proposed implementation specification, 2026-10-08. No new archive or
-tenant purge endpoint is implemented by this document. Retention periods and
+Status: evolving implementation specification, 2026-10-08. Inventory and reversible
+archive metadata are implemented; see [Tenant lifecycle](tenant-lifecycle.md).
+No tenant purge endpoint exists. Retention periods and
 approval policy require owner approval before irreversible deletion is enabled.
 This is a technical design, not a statement of statutory retention obligations.
 
@@ -25,8 +26,8 @@ Known work includes queued/processing inbox extraction, pending/dead-letter
 integration messages and persisted invitation mail payloads. This is not an
 in-flight request barrier. Retention policy, holds, backup copies and filesystem
 temporary artifacts are explicitly reported as unresolved. `deletionAllowed`
-always remains false, including for an empty tenant. No archive or purge action
-is exposed. Inventory is available for suspended tenants to authorized platform
+always remains false, including for an empty tenant. No purge action is exposed.
+Archive/restore is a separate reversible lifecycle action. Inventory is available for suspended tenants to authorized platform
 administrators, without reopening ordinary business access.
 
 Verification (2026-10-08): 551 backend cases, no failures/errors, two skipped;
