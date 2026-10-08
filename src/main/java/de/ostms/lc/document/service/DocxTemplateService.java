@@ -1,0 +1,112 @@
+package de.ostms.lc.document.service;
+
+import com.deepoove.poi.XWPFTemplate;
+import de.ostms.lc.document.api.GeneratedDocumentRequest;
+import de.ostms.lc.document.domain.DocumentType;
+import de.ostms.lc.lc.domain.LetterOfCredit;
+import de.ostms.lc.company.service.CompanyProfileService;
+import com.deepoove.poi.data.Pictures;
+import com.deepoove.poi.data.Rows;
+import com.deepoove.poi.data.Tables;
+import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.apache.poi.xwpf.usermodel.XWPFParagraph;
+import org.springframework.stereotype.Service;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+@Service
+public class DocxTemplateService {
+    private final DocumentTemplateService templates;
+    private final CompanyProfileService companies;
+    public DocxTemplateService(DocumentTemplateService templates,CompanyProfileService companies){this.templates=templates;this.companies=companies;}
+    public byte[] render(LetterOfCredit lc, GeneratedDocumentRequest request) throws IOException {
+        de.ostms.lc.tenant.domain.TenantContext.require(lc.getTenantId());
+        var customTemplate = templates.content(request.type(),lc.getCompanyId(),lc.getTemplateCompany()==null||lc.getTemplateCompany().isBlank()?lc.getBeneficiary():lc.getTemplateCompany());
+        byte[] template = customTemplate.isPresent() ? customTemplate.get() : template(request.type());
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("title", title(request.type()));
+        data.put("documentNumber", value(request.documentNumber()));
+        data.put("documentDate", request.documentDate().toString());
+        data.put("lcReference", value(lc.getReference()));
+        data.put("beneficiary", value(lc.getBeneficiary()));
+        data.put("applicant", value(lc.getApplicant()));
+        data.put("description", value(request.description()));
+        data.put("quantity", value(request.quantity()));
+        data.put("amount", value(lc.getCurrency()) + " " + (lc.getAmount() == null ? "-" : lc.getAmount()));
+        data.put("packages", request.packages() == null ? "-" : request.packages().toString());
+        data.put("netWeight", request.netWeight() == null ? "-" : request.netWeight() + " kg");
+        data.put("grossWeight", request.grossWeight() == null ? "-" : request.grossWeight() + " kg");
+        data.put("notes", value(request.notes()));
+        data.put("itemsTable", itemsTable(request));
+        var company=companies.profile(lc.getCompanyId());data.put("companyName",value(company.getLegalName()));data.put("companyAddress",value(company.getAddressLine()));data.put("companyPostalCode",value(company.getPostalCode()));data.put("companyCity",value(company.getCity()));data.put("companyCountry",value(company.getCountry()));data.put("companyEmail",value(company.getEmail()));data.put("companyPhone",value(company.getPhone()));data.put("companyTaxId",value(company.getTaxId()));data.put("companyRegistrationNumber",value(company.getRegistrationNumber()));data.put("companyBankName",value(company.getBankName()));data.put("companyIban",value(company.getIban()));data.put("companyBic",value(company.getBic()));data.put("companyContactPerson",value(company.getContactPerson()));data.put("companyLogo",null);if(company.getLogo()!=null)data.put("companyLogo",Pictures.ofBytes(company.getLogo()).size(160,60).create());
+        try (XWPFTemplate compiled = XWPFTemplate.compile(new ByteArrayInputStream(template)).render(data);
+             ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            compiled.write(output);
+            return output.toByteArray();
+        }
+    }
+
+    public byte[] template(DocumentType type) throws IOException {
+        if(type==null||!java.util.EnumSet.of(DocumentType.COMMERCIAL_INVOICE,DocumentType.PACKING_LIST,DocumentType.CERTIFICATE_OF_ORIGIN,DocumentType.BENEFICIARY_CERTIFICATE,DocumentType.QUALITY_CERTIFICATE).contains(type))
+            throw new IllegalArgumentException("Für diesen Dokumenttyp ist keine Word-Mustervorlage verfügbar.");
+        try (XWPFDocument document = new XWPFDocument(); ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            XWPFParagraph heading = document.createParagraph();
+            heading.setStyle("Title");
+            heading.createRun().setText("{{title}}");
+            field(document, "Company", "companyName");
+            field(document, "Address", "companyAddress");
+            field(document, "City", "companyCity");
+            document.createParagraph().createRun().setText("{{@companyLogo}}");
+            field(document, "Document No.", "documentNumber");
+            field(document, "Date", "documentDate");
+            field(document, "LC Reference", "lcReference");
+            field(document, "Seller / Beneficiary", "beneficiary");
+            field(document, "Buyer / Applicant", "applicant");
+            XWPFParagraph items = document.createParagraph();
+            items.createRun().setText("{{#itemsTable}}");
+            field(document, "Description", "description");
+            field(document, "Quantity", "quantity");
+            if (type == DocumentType.COMMERCIAL_INVOICE) field(document, "Amount", "amount");
+            else if(type == DocumentType.PACKING_LIST) {
+                field(document, "Packages", "packages");
+                field(document, "Net weight", "netWeight");
+                field(document, "Gross weight", "grossWeight");
+            }
+            field(document, "Notes", "notes");
+            document.createParagraph().createRun().setText("Generated by Corporate LC Manager");
+            document.write(output);
+            return output.toByteArray();
+        }
+    }
+
+    private void field(XWPFDocument document, String label, String key) {
+        XWPFParagraph paragraph = document.createParagraph();
+        paragraph.createRun().setBold(true);
+        paragraph.getRuns().get(0).setText(label + ": ");
+        paragraph.createRun().setText("{{" + key + "}}");
+    }
+
+    private Object itemsTable(GeneratedDocumentRequest request) {
+        var items = request.items() == null ? java.util.List.<de.ostms.lc.document.api.GeneratedDocumentItemRequest>of() : request.items();
+        if (items.isEmpty()) return Tables.ofAutoWidth()
+                .addRow(Rows.of("Pos.", "Description", "Quantity", "Unit", "Unit price", "Amount").textBold().bgColor("DCE5F2").create())
+                .addRow(Rows.create("1", value(request.description()), value(request.quantity()), "", "", "")).create();
+        boolean packing = request.type() == DocumentType.PACKING_LIST;
+        var table = Tables.ofAutoWidth().addRow(packing
+                ? Rows.of("Pos.", "Description", "Quantity", "Unit", "Packages", "Net kg", "Gross kg").textBold().bgColor("DCE5F2").create()
+                : Rows.of("Pos.", "Description", "Quantity", "Unit", "Unit price", "Amount").textBold().bgColor("DCE5F2").create());
+        for (var item : items) table.addRow(packing
+                ? Rows.create(value(item.position()), value(item.description()), number(item.quantity()), value(item.unit()), number(item.packages()), number(item.netWeight()), number(item.grossWeight()))
+                : Rows.create(value(item.position()), value(item.description()), number(item.quantity()), value(item.unit()), number(item.unitPrice()), number(item.amount())));
+        return table.create();
+    }
+
+    private String number(Number value) { return value == null ? "-" : value.toString(); }
+
+    private String value(String value) { return value == null || value.isBlank() ? "-" : value.trim(); }
+    private String title(DocumentType type){return switch(type){case COMMERCIAL_INVOICE->"COMMERCIAL INVOICE";case PACKING_LIST->"PACKING LIST";case CERTIFICATE_OF_ORIGIN->"CERTIFICATE OF ORIGIN";case BENEFICIARY_CERTIFICATE->"BENEFICIARY'S CERTIFICATE";case QUALITY_CERTIFICATE->"QUALITY / ANALYSIS CERTIFICATE";default->type.getDisplayName().toUpperCase(java.util.Locale.ROOT);};}
+}

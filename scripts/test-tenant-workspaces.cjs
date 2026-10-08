@@ -248,9 +248,11 @@ function swift(reference){return `:20:${reference}\n:31C:261001\n:31D:271231SYNT
  await call('/api/training/document-types/confirm','POST',{receipt:pretrain.receipt,parts:[{fromPage:1,toPage:1,documentType:'OTHER'},{fromPage:3,toPage:3,documentType:'OTHER'}]},400);
  assert.equal((await call('/api/platform/tenants/'+created.id+'/inventory')).categories.find(c=>c.key==='document_split_training').records,1);
  await call('/api/training/document-types/confirm','POST',{receipt:pretrain.receipt,parts:confirmedRanges});assert.deepEqual((await call('/api/inbox')).map(i=>i.id).sort(),beforePretraining);
+ const splitQuality=await call('/api/training/document-types/quality');assert.equal(splitQuality.confirmations,2);assert.equal(splitQuality.measured,2);assert.equal(splitQuality.pages,4);assert.ok(splitQuality.correctedPages>=2);assert.equal(splitQuality.recent[0].method,'CONFIRMED_SPLIT_PATTERN_V1');assert.ok(splitQuality.recent.every(sample=>sample.pattern.length===12));
  assert.equal((await call('/api/platform/tenants/'+created.id+'/inventory')).categories.find(c=>c.key==='document_split_training').records,2);
  await call('/api/tenants/'+home+'/select','POST');csrf=(await call('/api/auth/me')).csrfToken;
  await call('/api/training/document-types/jobs/'+trainingJob.id,'GET',undefined,404);
+ const foreignQuality=await call('/api/training/document-types/quality');assert.equal(foreignQuality.confirmations,0);assert.equal(foreignQuality.measured,0);assert.deepEqual(foreignQuality.recent,[]);
  const otherTraining=await trainingUpload();assert.ok((await call('/api/inbox/'+otherTraining.id+'/split-proposal')).pages.every(p=>p.classification.method!=='CONFIRMED_SPLIT_PATTERN_V1'));await call('/api/inbox/'+otherTraining.id,'DELETE',undefined,204);await call('/api/tenants/'+created.id+'/select','POST');csrf=(await call('/api/auth/me')).csrfToken;
  // Complete reviewed workflow: invalid split leaves source intact, valid parts retain designation,
  // previews work before/after attachment, and learned templates never inherit Original/Copy.

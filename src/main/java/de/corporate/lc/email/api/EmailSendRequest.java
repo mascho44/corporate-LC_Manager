@@ -1,1 +1,0 @@
-package de.corporate.lc.email.api;import jakarta.validation.constraints.*;import java.util.*;public record EmailSendRequest(@NotEmpty List<@Email @NotBlank String> recipients,@NotBlank @Size(max=500)String subject,@NotBlank @Size(max=10000)String body,List<UUID> documentIds){}

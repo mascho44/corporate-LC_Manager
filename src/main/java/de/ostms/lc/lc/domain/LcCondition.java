@@ -1,0 +1,7 @@
+package de.ostms.lc.lc.domain;
+/** Business vocabulary independent of a transport message format. */
+public enum LcCondition {
+ GOODS_DESCRIPTION, ADDITIONAL_CONDITIONS, AMOUNT_TOLERANCE, PRESENTATION_PERIOD,
+ PARTIAL_SHIPMENTS, TRANSSHIPMENT, PLACE_OF_RECEIPT, PORT_OF_LOADING,
+ PORT_OF_DISCHARGE, FINAL_DESTINATION, APPLICABLE_RULES
+}

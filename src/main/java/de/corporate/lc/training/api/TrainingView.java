@@ -1,1 +1,0 @@
-package de.corporate.lc.training.api;import java.time.LocalDateTime;import java.util.UUID;public record TrainingView(UUID id,String filename,String status,String username,String messageType,LocalDateTime createdAt){}

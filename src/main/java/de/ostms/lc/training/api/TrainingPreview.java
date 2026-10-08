@@ -1,0 +1,1 @@
+package de.ostms.lc.training.api;import de.ostms.lc.imports.api.*;import java.util.UUID;public record TrainingPreview(UUID sessionId,SwiftImportRequest request,SwiftImportPreview preview,String extractionStatus,java.util.List<de.ostms.lc.document.service.OcrEvidence.Assessment> ocrFields){}
