@@ -13,6 +13,7 @@ import java.util.*;
 @RestController
 @RequestMapping("/api/training/document-types")
 public class SplitPretrainingController {
+ @org.springframework.beans.factory.annotation.Autowired private SplitPretrainingJobs jobs;
  @org.springframework.beans.factory.annotation.Autowired private PdfPagePreviewService pagePreview;
  @PostMapping(value="/page-preview",consumes="multipart/form-data",produces="image/png")
  public org.springframework.http.ResponseEntity<byte[]> pagePreview(@RequestPart("file") MultipartFile file,@RequestParam int page,@RequestParam(defaultValue="false") boolean enlarged)throws Exception{
@@ -24,22 +25,40 @@ public class SplitPretrainingController {
  private final DocumentExtractionService extraction;private final SplitTrainingService training;private final ObjectMapper json;private final AuditService audit;private final SplitTrainingReceipt receipts;
  public SplitPretrainingController(DocumentExtractionService extraction,SplitTrainingService training,ObjectMapper json,AuditService audit,SplitTrainingReceipt receipts){this.extraction=extraction;this.training=training;this.json=json;this.audit=audit;this.receipts=receipts;}
  private record Input(byte[] content,String evidence){}
- private Input read(MultipartFile file)throws Exception{
+ private byte[] readBytes(MultipartFile file)throws Exception{
   if(file==null||file.isEmpty()||file.getSize()>10*1024*1024)throw new IllegalArgumentException("Bitte eine PDF bis 10 MB auswählen.");
   byte[] content;try(var stream=file.getInputStream()){content=stream.readNBytes(10*1024*1024+1);}
   if(content.length>10*1024*1024||content.length<5||!new String(content,0,5,java.nio.charset.StandardCharsets.US_ASCII).equals("%PDF-"))throw new IllegalArgumentException("Ungültige PDF-Datei.");
-  var recognized=extraction.extractFile(content,"training.pdf","application/pdf");
+  return content;
+ }
+ private Input recognize(byte[] content,boolean background)throws Exception{
+  var document=new de.corporate.lc.document.domain.LcDocument();document.setContent(content);document.setContentType("application/pdf");document.setOriginalFilename("training.pdf");
+  DocumentExtractionService.TextExtraction recognized;
+  if(background){extraction.extractInBackground(document);recognized=new DocumentExtractionService.TextExtraction(document.getExtractedText(),document.getExtractionStatus(),DocumentExtractionService.readEvidence(document.getOcrEvidenceJson()));}
+  else recognized=extraction.extractFile(content,"training.pdf","application/pdf");
   if(!List.of("EXTRACTED","OCR_EXTRACTED").contains(recognized.status()))throw new IllegalArgumentException("Auslesen oder OCR fehlgeschlagen: "+recognized.status());
   return new Input(content,recognized.ocrEvidence()==null?null:json.writeValueAsString(recognized.ocrEvidence()));
  }
  public record Preview(PdfDocumentSplitter.Proposal proposal,String receipt){}
  @PostMapping(value="/proposal",consumes="multipart/form-data")
  public Preview proposal(@RequestPart("file") MultipartFile file,Authentication actor)throws Exception{
-  var input=read(file);var baseline=PdfDocumentSplitter.propose(input.content(),input.evidence());
+  return buildPreview(recognize(readBytes(file),false),actor.getName());
+ }
+ @PostMapping(value="/jobs",consumes="multipart/form-data")
+ public org.springframework.http.ResponseEntity<SplitPretrainingJobs.Status> start(@RequestPart("file") MultipartFile file,Authentication actor)throws Exception{
+  byte[] content=readBytes(file);String username=actor.getName();
+  return org.springframework.http.ResponseEntity.accepted().cacheControl(org.springframework.http.CacheControl.noStore()).body(jobs.submit(username,()->buildPreview(recognize(content,true),username)));
+ }
+ @GetMapping("/jobs/{id}")
+ public org.springframework.http.ResponseEntity<SplitPretrainingJobs.Status> status(@PathVariable UUID id,Authentication actor){
+  return org.springframework.http.ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore()).body(jobs.status(id,actor.getName()));
+ }
+ private Preview buildPreview(Input input,String actor)throws Exception{
+  var baseline=PdfDocumentSplitter.propose(input.content(),input.evidence());
   if(baseline.pageCount()<2)throw new IllegalArgumentException("Für das Split-Vortraining wird eine mehrseitige Sammel-PDF benötigt.");
   String hash=PdfDocumentSplitter.trainingPattern(input.content(),input.evidence());
   if(hash==null)throw new IllegalArgumentException("Zu wenig lesbarer Text für ein Trainingsmuster. Jede Seite benötigt mindestens 40 Buchstaben.");
-  return new Preview(training.suggest(input.content(),input.evidence(),baseline),receipts.issue(hash,baseline.pageCount(),actor.getName()));
+  return new Preview(training.suggest(input.content(),input.evidence(),baseline),receipts.issue(hash,baseline.pageCount(),actor));
  }
  public record Confirmation(@jakarta.validation.constraints.NotBlank @jakarta.validation.constraints.Size(max=2000) String receipt,@jakarta.validation.constraints.NotNull @jakarta.validation.constraints.Size(min=2,max=100) List<PdfDocumentSplitter.Part> parts){}
  @PostMapping(value="/confirm",consumes="application/json")

@@ -8,7 +8,7 @@ class PdfPagePreviewServiceTest {
   var service=new PdfPagePreviewService();byte[] pdf=PdfDocumentSplitterTest.pdf("Synthetic first page","Synthetic second page");
   var small=ImageIO.read(new ByteArrayInputStream(service.render(pdf,2,false)));
   var large=ImageIO.read(new ByteArrayInputStream(service.render(pdf,2,true)));
-  assertThat(small).isNotNull();assertThat(Math.max(small.getWidth(),small.getHeight())).isLessThanOrEqualTo(280);
+  assertThat(small).isNotNull();assertThat(Math.max(small.getWidth(),small.getHeight())).isLessThanOrEqualTo(560);
   assertThat(large.getHeight()).isGreaterThan(small.getHeight());assertThat(Math.max(large.getWidth(),large.getHeight())).isLessThanOrEqualTo(1400);
   boolean visible=false;
   for(int y=0;y<small.getHeight();y++)for(int x=0;x<small.getWidth();x++)if((small.getRGB(x,y)&0xffffff)!=0xffffff)visible=true;

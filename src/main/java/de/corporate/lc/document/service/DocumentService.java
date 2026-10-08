@@ -85,12 +85,12 @@ public class DocumentService {
         if(files==null||files.isEmpty())throw new IllegalArgumentException("Bitte mindestens eine Datei auswählen.");
         if(files.size()>100)throw new IllegalArgumentException("Ein Batch darf höchstens 100 Dateien enthalten.");
         if(types==null||types.size()!=files.size())throw new IllegalArgumentException("Für jede Datei muss ein Dokumenttyp angegeben werden.");
-        if(copies!=null){if(copies.size()!=files.size())throw new IllegalArgumentException("Kennzeichnung fehlt für eine Datei.");for(Integer value:copies)de.corporate.lc.document.domain.DocumentCopy.validate(value!=null&&value==-1?null:value);}
+        if(copies!=null){if(copies.size()!=files.size())throw new IllegalArgumentException("Kennzeichnung fehlt für eine Datei.");for(Integer value:copies)de.corporate.lc.document.domain.DocumentCopy.validate(value!=null&&value==-99?null:value);}
         long total=files.stream().mapToLong(MultipartFile::getSize).sum();if(total>50L*1024*1024)throw new IllegalArgumentException("Der Batch überschreitet 50 MB.");
         List<DocumentView> imported=new ArrayList<>();
         for(int index=0;index<files.size();index++){
             MultipartFile file=files.get(index);String name=file.getOriginalFilename()==null?"":file.getOriginalFilename().toLowerCase(Locale.ROOT);
-            Integer copy=copies==null?null:copies.get(index);if(copy!=null&&copy==-1)copy=null;
+            Integer copy=copies==null?null:copies.get(index);if(copy!=null&&copy==-99)copy=null;
             if(name.endsWith(".zip")){if(copy!=null)throw new IllegalArgumentException("ZIP-Inhalte bitte nach dem Import einzeln kennzeichnen.");imported.addAll(uploadArchive(lcId,file));}else imported.add(upload(lcId,file,types.get(index),null,null,null,copy));
         }
         return imported;

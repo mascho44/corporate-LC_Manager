@@ -21,6 +21,7 @@ import de.corporate.lc.user.service.AppUserDetailsService; import jakarta.servle
    .requestMatchers("/api/settings/rule-packs","/api/settings/rule-packs/**","/rule-packs.html").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/document-templates/companies").authenticated()
    .requestMatchers("/api/document-templates/**","/api/company-profile/**").hasAuthority("PERM_SETTINGS_MANAGE")
+   .requestMatchers("/api/training/document-types/jobs/**").hasAuthority("PERM_TRAINING_MANAGE")
    .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/training/**").authenticated()
    .requestMatchers("/api/training/**").hasAuthority("PERM_TRAINING_MANAGE")
    .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/users/assignable").authenticated()

@@ -73,7 +73,7 @@ public class DocumentController {
         audit.recordChange(authentication,"DOCUMENT_UPDATED","LETTER_OF_CREDIT",lcId,document.originalFilename()+" · "+document.documentType(),previous,documentAuditState(document));return document;
     }
 
-    private String documentAuditState(DocumentView document){return "Datei="+document.originalFilename()+" | Typ="+document.documentType()+" | Kennzeichnung="+(document.copyNumber()==null?"unspecified":document.copyNumber()==0?"Original":"Copy "+document.copyNumber())+" | Datum="+(document.documentDate()==null?"-":document.documentDate())+" | Betrag="+(document.currency()==null?"-":document.currency())+" "+(document.amount()==null?"-":document.amount());}
+    private String documentAuditState(DocumentView document){return "Datei="+document.originalFilename()+" | Typ="+document.documentType()+" | Kennzeichnung="+de.corporate.lc.document.domain.DocumentCopy.label(document.copyNumber())+" | Datum="+(document.documentDate()==null?"-":document.documentDate())+" | Betrag="+(document.currency()==null?"-":document.currency())+" "+(document.amount()==null?"-":document.amount());}
 
     @GetMapping("/documents/{id}/content")
     public ResponseEntity<byte[]> download(@PathVariable UUID id) {

@@ -3,6 +3,13 @@ const source=fs.readFileSync('src/main/resources/static/app.js','utf8');const co
 vm.runInContext(source.slice(source.indexOf('function mergeInboxSplitRanges('),source.indexOf('async function openInboxSplit(')),context);
 test('merging adjacent ranges retains prior type and does not mutate input',()=>{const a={fromPage:3,toPage:4,documentType:'COMMERCIAL_INVOICE'},b={fromPage:5,toPage:6,documentType:'OTHER'};const result=context.mergeInboxSplitRanges(a,b);assert.equal(result.fromPage,3);assert.equal(result.toPage,6);assert.equal(result.documentType,a.documentType);assert.equal(a.toPage,4);});
 test('merge refuses gaps, overlaps, invalid numbers and reversed ranges',()=>{for(const b of [{fromPage:4,toPage:6},{fromPage:6,toPage:7},{fromPage:5,toPage:4},{fromPage:5.5,toPage:6}])assert.throws(()=>context.mergeInboxSplitRanges({fromPage:3,toPage:4},b));});
+test('adding a range divides existing pages without overlap and clears designation on new part',()=>{
+ const part={fromPage:3,toPage:7,documentType:'BILL_OF_LADING',copyNumber:-2};
+ const divided=context.divideInboxSplitRange(part);
+ assert.deepEqual(Array.from(divided,p=>[p.fromPage,p.toPage]),[[3,6],[7,7]]);
+ assert.equal(divided[0].copyNumber,-2);assert.equal(divided[1].copyNumber,null);assert.equal(part.toPage,7);
+ assert.throws(()=>context.divideInboxSplitRange({fromPage:2,toPage:2}));
+});
 const ranges=()=>[{fromPage:1,toPage:2,documentType:'OTHER'},{fromPage:3,toPage:4,documentType:'COMMERCIAL_INVOICE'},{fromPage:5,toPage:8,documentType:'PACKING_LIST'}];
 test('end boundary updates subsequent starts and cascades past consumed ranges',()=>{
     const parts=ranges();parts[0].toPage=4;
