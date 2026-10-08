@@ -65,6 +65,17 @@ public class InternalPackService {
   var old=selected.activeVersionId;selected.previousVersionId=old;selected.activeVersionId=null;
   audit.recordInTransaction(auth,"LC_RULE_PACK_DEACTIVATED","RULE_PACK",packId,"Deaktivierte Version "+old);
  }
+ @Transactional
+ public void delete(UUID id,Authentication auth){
+  var version=versions.findById(id).orElseThrow();
+  de.ostms.lc.tenant.domain.TenantContext.require(version.getTenantId());
+  var selected=selections.locked(version.packId).orElseThrow();
+  if(id.equals(selected.activeVersionId))throw new IllegalArgumentException("Aktives Rule Pack zuerst deaktivieren.");
+  if(id.equals(selected.previousVersionId)){selected.previousVersionId=null;selections.flush();}
+  audit.recordInTransaction(auth,"LC_RULE_PACK_DELETED","RULE_PACK_VERSION",id,version.packId+" v"+version.version+" · SHA-256 "+version.checksum);
+  versions.delete(version);
+  versions.flush();
+ }
  private PackDefinition read(StoredPackVersion v){
   de.ostms.lc.tenant.domain.TenantContext.require(v.getTenantId());
   if(!codec.digest(v.definitionJson).equals(v.checksum))throw new IllegalStateException("Prüfsumme des Rule Packs stimmt nicht.");
