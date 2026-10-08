@@ -14,6 +14,12 @@ test('attachment preserves per-document corrections and explicit empty metadata'
  const value=f.context.inboxAttachment({elements},'target');assert.equal(value.lcId,'target');assert.equal(value.copyNumber,2);assert.equal(value.metadata.reference,'LC123');assert.equal(value.metadata.amount,42.5);
  elements.metadataReference.value='';elements.metadataAmount.value='';assert.equal(f.context.inboxAttachment({elements},'target').metadata.reference,null);assert.equal(f.context.inboxAttachment({elements},'target').metadata.amount,null);
 });
+test('learned anchor proposals are accepted and only evidenced fields are overwritten',()=>{
+ const source=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/app.js'),'utf8');
+ assert.ok(source.includes("['LEARNED_REVIEW','ANCHOR_REVIEW'].includes(proposal.status)"));
+ assert.ok(source.includes("Object.hasOwn(proposal.evidence||{},key)"));
+ assert.ok(source.includes('Textanker-Fundstellen aus dem neuen Beleg'));
+});
 test('selected files survive background polling',async()=>{
  const f=fixture([{id:'test',extractionStatus:'EXTRACTED'}]);f.list.innerHTML='selected file';f.nodes['[data-inbox-select]:checked']={checked:true};await f.context.loadInbox(true);assert.equal(f.list.innerHTML,'selected file');
 });

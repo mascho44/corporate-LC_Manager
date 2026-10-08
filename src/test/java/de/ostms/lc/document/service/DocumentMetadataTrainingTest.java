@@ -18,6 +18,16 @@ class DocumentMetadataTrainingTest {
   when(jdbc.queryForList(sql,String.class,TenantContext.currentId(),hash)).thenReturn(List.of(encoded,"conflicting"));
   assertThat(service.suggest("text").status()).isEqualTo("CONFLICT");assertThat(service.suggest("text").values()).isNull();
  }
+ @Test void anchorLookupUsesCurrentTenantAndNewDocumentValues()throws Exception{
+  var jdbc=mock(JdbcTemplate.class);var mapper=new ObjectMapper().findAndRegisterModules();var service=new DocumentMetadataTraining(jdbc,mapper);
+  var confirmed=new DocumentMetadataTraining.Confirmation(new Metadata("LC123","INV123",null,null),null);
+  String pattern=mapper.writeValueAsString(MetadataFieldAnchors.learn("Exporter Invoice\nCredit ref: LC123\nBill number: INV123",confirmed));
+  String sql="select distinct anchors_json from document_metadata_training where tenant_id=? and anchors_json is not null limit 1001";
+  when(jdbc.queryForList(sql,String.class,TenantContext.currentId())).thenReturn(List.of(pattern));
+  var proposal=service.suggest("Exporter Invoice\nCredit ref: LC999\nBill number: INV999");
+  assertThat(proposal.status()).isEqualTo("ANCHOR_REVIEW");assertThat(proposal.values().metadata().reference()).isEqualTo("LC999");
+  verify(jdbc).queryForList(sql,String.class,TenantContext.currentId());
+ }
  @Test void differentDocumentValuesDoNotReuseDatesOrAmounts(){
   assertThat(DocumentMetadataTraining.hash("Invoice amount 100")).isNotEqualTo(DocumentMetadataTraining.hash("Invoice amount 200"));
   assertThatThrownBy(()->DocumentMetadataTraining.hash(" ")).isInstanceOf(IllegalArgumentException.class);
