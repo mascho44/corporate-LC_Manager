@@ -5,6 +5,37 @@ tenant purge endpoint is implemented by this document. Retention periods and
 approval policy require owner approval before irreversible deletion is enabled.
 This is a technical design, not a statement of statutory retention obligations.
 
+## Implemented first step: read-only inventory
+
+Platform administration provides an inline **Inventory / deletion preview** button
+per tenant and `GET /api/platform/tenants/{id}/inventory`. It requires live global
+platform authorization, uses explicit tenant-qualified aggregates and a read-only
+repeatable-read database snapshot. The caller's selected workspace is unchanged.
+The response contains category counts and original binary-content byte totals,
+not document content, account identities, bearer tokens or learning examples.
+
+Byte totals cover document, inbox, template and training binary columns only;
+they are not database/storage usage. Draft approvals are contained in draft rows,
+and retained learning/reviews are contained in training sessions. Counts are not
+a promise that every row is immediately deletable. Shared-membership counts use
+other membership records irrespective of whether those accesses are suspended.
+Global accounts, credentials, avatars and reset tokens remain excluded.
+
+Known work includes queued/processing inbox extraction, pending/dead-letter
+integration messages and persisted invitation mail payloads. This is not an
+in-flight request barrier. Retention policy, holds, backup copies and filesystem
+temporary artifacts are explicitly reported as unresolved. `deletionAllowed`
+always remains false, including for an empty tenant. No archive or purge action
+is exposed. Inventory is available for suspended tenants to authorized platform
+administrators, without reopening ordinary business access.
+
+Verification (2026-10-08): 551 backend cases, no failures/errors, two skipped;
+112 frontend tests passed. Disposable PostgreSQL acceptance verified isolated
+category counts/binary lengths, shared membership indication, current/default
+protection, denied non-platform access, unchanged workspace selection, missing
+tenant response and inventory access while suspended. Synthetic containers and
+database were removed. No production changes or visual browser-layout test.
+
 ## Existing behavior
 
 Tenant suspension is reversible and retains business data and credentials.
