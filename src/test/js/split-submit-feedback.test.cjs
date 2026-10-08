@@ -21,3 +21,9 @@ test('failed request restores submit button and shows the server error',async()=
 test('successful request closes the dialog only after import',async()=>{
  const state=setup([[1,2],[3,4]]);await state.run();assert.equal(state.requests,1);assert.equal(state.closed,true);
 });
+test('single range covering every page can be confirmed without artificial splitting',async()=>{
+ const state=setup([[1,4]]);await state.run();assert.equal(state.requests,1);assert.equal(state.closed,true);assert.equal(state.error.textContent,'');
+});
+test('single incomplete range remains rejected',async()=>{
+ const state=setup([[1,3]]);await state.run();assert.equal(state.requests,0);assert.match(state.error.textContent,/alle Seiten abdecken/);
+});

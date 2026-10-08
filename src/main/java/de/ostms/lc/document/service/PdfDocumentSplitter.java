@@ -106,7 +106,7 @@ public final class PdfDocumentSplitter {
     }
 
     public static void validate(List<Part> parts,int pageCount) {
-        if(parts==null||parts.size()<2||parts.size()>100)throw new IllegalArgumentException("Bitte 2 bis 100 Teil-Dokumente angeben.");
+        if(parts==null||parts.isEmpty()||parts.size()>100)throw new IllegalArgumentException("Bitte 1 bis 100 Dokumentbereiche angeben.");
         int next=1;
         for(var part:parts) {
             if(part==null||part.documentType()==null||part.fromPage()!=next||part.toPage()<next||part.toPage()>pageCount)

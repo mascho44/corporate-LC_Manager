@@ -84,7 +84,7 @@ public class DocumentInboxController {
         return service.splitProposal(id);
     }
 
-    public record SplitRequest(@jakarta.validation.constraints.NotNull @jakarta.validation.constraints.Size(min=2,max=100)
+    public record SplitRequest(@jakarta.validation.constraints.NotNull @jakarta.validation.constraints.Size(min=1,max=100)
                                List<de.ostms.lc.document.service.PdfDocumentSplitter.Part> parts) {}
 
     @PostMapping("/{id}/split")
