@@ -8,8 +8,11 @@
   return '<input name="'+name+'" type="'+type+'" value="'+esc(v)+'" maxlength="'+d.maxLength+'" '+(type==='number'?'min="0" step="'+(name.endsWith('COUNT')||name.endsWith('DAYS')?'1':'0.000001')+'"':'')+'>';
  }
  function section(d){
-  if(d.field.includes('INSUR'))return 'Versicherung';
-  if(/SHIPMENT|PRESENTATION|QUANTITY|WEIGHT|TOLERANCE/.test(d.field))return 'Transport, Mengen und Fristen';
+  if(/INSUR|FRANCHISE|PERCENTAGE|ENDORSEMENT/.test(d.field))return 'Versicherung';
+  if(/DRAWEE|DRAFT_TENOR/.test(d.field))return 'Tratten';
+  if(/INCOTERM|FREIGHT/.test(d.field))return 'Handelsklauseln und Fracht';
+  if(/CONSIGNEE|NOTIFY|ADDRESS_COUNTRY|SIGNER|SIGNED_FOR/.test(d.field))return 'Parteien, Adressen und Unterschriften';
+  if(/SHIPMENT|PRESENTATION|QUANTITY|WEIGHT|TOLERANCE|ON_BOARD|VESSEL|PACKAGE|SHIPPING_MARKS|TRANSSHIPMENT/.test(d.field))return 'Transport, Mengen und Fristen';
   return 'Allgemeine Prüfdaten';
  }
  async function openFacts(documentId,documentType=null,requirements=false){

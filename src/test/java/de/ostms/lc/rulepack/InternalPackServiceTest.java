@@ -92,6 +92,27 @@ class InternalPackServiceTest {
   lc.setRuleFactsJson(RuleFacts.encode(Map.of(PackDefinition.Field.LC_RULE_STANDARD,"UCP600",PackDefinition.Field.LC_CLAIMED_AMOUNT,"1000"),false));assertThat(service.evaluate(lc,List.of(doc)).get(0).message()).contains("nicht prüfbar");
   lc.setRuleFactsJson(RuleFacts.encode(Map.of(PackDefinition.Field.LC_RULE_STANDARD,"OTHER"),false));assertThat(service.evaluate(lc,List.of()).get(0).message()).contains("nicht anwendbar").doesNotContain("fehlt");
  }
+ @Test void supplementaryPeerFactsUseCapturedNumbersAndUniqueDocuments()throws Exception{
+  for(var pair:List.of(
+   List.of(PackDefinition.Field.DOCUMENT_INVOICE_REFERENCE,PackDefinition.Field.PEER_DOCUMENT_NUMBER),
+   List.of(PackDefinition.Field.DOCUMENT_PACKAGE_COUNT,PackDefinition.Field.PEER_PACKAGE_COUNT),
+   List.of(PackDefinition.Field.DOCUMENT_SHIPPING_MARKS,PackDefinition.Field.PEER_SHIPPING_MARKS))){
+   String value=pair.get(0)==PackDefinition.Field.DOCUMENT_PACKAGE_COUNT?"12":"SYNTHETIC-123";
+   var rule=new PackDefinition.Rule("peer-check","1.0.0",DocumentType.CERTIFICATE_OF_ORIGIN,pair.get(0),PackDefinition.Operator.EQ,pair.get(1),PackDefinition.Level.WARNING,"Synthetic peer","Internal",PackDefinition.Mode.AUTOMATIC,null,new PackDefinition.Parameters(DocumentType.COMMERCIAL_INVOICE,null,null,null,null,null));
+   var tests=List.of(new PackDefinition.TestCase("pass","peer-check",value,value,PackDefinition.Outcome.PASS),
+    new PackDefinition.TestCase("fail","peer-check",value,"13",PackDefinition.Outcome.FAIL),
+    new PackDefinition.TestCase("unknown","peer-check",null,value,PackDefinition.Outcome.NOT_EVALUABLE));
+   var pack=new PackDefinition(4,"synthetic-peer","1.0.0","Synthetic peer","OWN_INTERNAL","Internal","Synthetic only",List.of(rule),tests);codec.validate(pack);
+   var v=new StoredPackVersion();v.packId=pack.packId();v.version=pack.version();v.definitionJson=codec.canonical(pack);v.checksum=codec.digest(v.definitionJson);v.testsPassed=true;
+   when(versions.findById(v.id)).thenReturn(Optional.of(v));var selected=new PackSelection();selected.id=v.packId;selected.activeVersionId=v.id;when(selections.findAll()).thenReturn(List.of(selected));
+   var doc=new LcDocument();doc.setDocumentType(DocumentType.CERTIFICATE_OF_ORIGIN);doc.setOriginalFilename("synthetic-certificate.pdf");doc.setRuleFactsJson(RuleFacts.encode(Map.of(pair.get(0),value),true));
+   var peer=new LcDocument();peer.setDocumentType(DocumentType.COMMERCIAL_INVOICE);peer.setOriginalFilename("synthetic-invoice.pdf");peer.setContent(new byte[]{1});peer.setExtractedDocumentNumber(value);
+   peer.setRuleFactsJson(RuleFacts.encode(Map.of(PackDefinition.Field.DOCUMENT_PACKAGE_COUNT,"12",PackDefinition.Field.DOCUMENT_SHIPPING_MARKS,value),true));
+   assertThat(service.evaluate(new LetterOfCredit(),List.of(doc,peer)).get(0).severity().name()).isEqualTo("OK");
+   var duplicate=new LcDocument();duplicate.setDocumentType(DocumentType.COMMERCIAL_INVOICE);
+   assertThat(service.evaluate(new LetterOfCredit(),List.of(doc,peer,duplicate)).get(0).message()).contains("nicht prüfbar");
+  }
+ }
  @Test void corruptedPackNeverProducesSuccessfulFinding()throws Exception{
   var v=version();v.definitionJson+=" ";var selected=new PackSelection();selected.id=v.packId;selected.activeVersionId=v.id;
   when(selections.findAll()).thenReturn(List.of(selected));
