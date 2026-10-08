@@ -73,3 +73,12 @@
 @media(max-width:600px){.membership-row .membership-role-controls{width:100%;min-width:0}}
 .membership-access-controls{max-width:240px;display:flex;flex-direction:column;gap:8px}.membership-access-controls p{margin:0;font-size:12px;color:#667085}.membership-access-controls small.error{color:#b42318}
 .audit-change-scroll{max-width:100%;overflow-x:auto}.audit-fields{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}.audit-fields th,.audit-fields td{text-align:left;vertical-align:top;padding:8px;border:1px solid #e5e9ef;overflow-wrap:anywhere}.audit-fields thead{background:#eef2f6}.audit-fields .audit-field-changed{background:#edf3ff}.audit-fields th span+span{display:block;color:#3156a3;font-size:10px}
+/* Import previews fit their dialog, not the wider browser viewport. */
+#importDialog .batch-row{grid-template-columns:26px minmax(0,1fr);align-items:start}
+#importDialog .batch-row>div{min-width:0;container-type:inline-size}
+#importDialog .batch-row>.import-status{grid-column:2;justify-self:start}
+#importDialog .swift-field{grid-template-columns:60px minmax(0,1fr);align-items:start}
+#importDialog .swift-field>*{min-width:0}
+#importDialog .swift-field pre{grid-column:1/-1;font-size:13px;line-height:1.5;padding:10px;background:#fff;border-radius:6px;white-space:pre-wrap;overflow-wrap:break-word;word-break:normal}
+#importDialog .field-suggestion{grid-column:1/-1;border-left:0;border-top:1px solid #d8dee8;padding:10px 0 0}
+@container(min-width:760px){#importDialog .swift-field{grid-template-columns:60px minmax(120px,1fr) minmax(240px,2fr)}#importDialog .swift-field pre{grid-column:3}#importDialog .field-suggestion{grid-column:2/-1}}

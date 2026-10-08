@@ -20,20 +20,41 @@ public final class PdfDocumentSplitter {
             PdfProcessingSafety.validate(pdf);
             var texts=pageTexts(pdf,DocumentExtractionService.readEvidence(evidenceJson));
             List<Page> pages=new ArrayList<>();List<Part> parts=new ArrayList<>();
-            DocumentType current=null;int start=1;
+            DocumentType current=null;int start=1;int[] previousNumber=null;String reference=null;
             for(int i=0;i<texts.size();i++) {
                 var classification=DocumentClassifier.classify(null,texts.get(i));
                 var detected=classification.score()>=.8?classification.suggestedType():null;
+                int[] number=pageNumber(texts.get(i));String nextReference=documentReference(texts.get(i));
+                boolean restart=i>0&&number!=null&&number[0]==1;
+                boolean differentReference=reference!=null&&nextReference!=null&&!reference.equals(nextReference);
+                boolean continuation=i>0&&current!=null&&number!=null&&previousNumber!=null&&number[0]==previousNumber[0]+1&&number[1]==previousNumber[1]&&!differentReference;
+                if(detected==null&&"UNKNOWN".equals(classification.status())&&!texts.get(i).isBlank()&&continuation){
+                    detected=current;
+                    classification=new DocumentClassifier.Classification(current,.8,"REVIEW","PAGE_SEQUENCE_V1",List.of("Fortsetzungsseite "+number[0]+" / "+number[1]+"; Dokumenttyp aus vorheriger Seite vorgeschlagen – bitte prüfen"));
+                }
                 pages.add(new Page(i+1,classification,texts.get(i).isBlank()?"UNAVAILABLE":"PAGE_TEXT"));
                 // Unknown pages are isolated instead of silently treated as continuations.
-                if(i>0&&(detected==null||current==null||detected!=current)) {
+                if(i>0&&(detected==null||current==null||detected!=current||restart||differentReference)) {
                     parts.add(new Part(start,i,current==null?DocumentType.OTHER:current));start=i+1;
+                    reference=null;
                 }
                 current=detected;
+                previousNumber=number;if(nextReference!=null)reference=nextReference;
             }
             parts.add(new Part(start,texts.size(),current==null?DocumentType.OTHER:current));
             return new Proposal(texts.size(),List.copyOf(pages),List.copyOf(parts));
         }
+    }
+
+    private static int[] pageNumber(String text){
+        var matcher=java.util.regex.Pattern.compile("(?i)\\b(?:page|seite)\\s*(\\d{1,3})\\s*(?:of|von|/)\\s*(\\d{1,3})\\b").matcher(text);
+        int[] result=null;
+        while(matcher.find()){int page=Integer.parseInt(matcher.group(1)),total=Integer.parseInt(matcher.group(2));if(page<1||page>total)return null;if(result!=null&&(result[0]!=page||result[1]!=total))return null;result=new int[]{page,total};}
+        return result;
+    }
+    private static String documentReference(String text){
+        var matcher=java.util.regex.Pattern.compile("(?im)^\\s*(?:commercial\\s+invoice|invoice|packing\\s+list|handelsrechnung|packliste)\\s+(?:no\\.?|number|nr\\.?)\\s*[:#]?\\s*([a-z0-9][a-z0-9/-]{1,79})\\b").matcher(text);
+        return matcher.find()?matcher.group(1).toUpperCase(Locale.ROOT):null;
     }
 
     public static List<Output> split(byte[] content,String evidenceJson,List<Part> parts) throws Exception {

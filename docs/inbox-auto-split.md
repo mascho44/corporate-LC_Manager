@@ -57,6 +57,20 @@ multiple documents sharing a single page.
 
 ## Verification
 
+### Multi-page proposal refinement
+
+Split proposals recognize consecutive explicit `Page n of total`, `Page n / total`
+and German `Seite n von total` markers. An otherwise unknown nonblank page may
+inherit the preceding document type only when the sequence and total match and
+there is no conflicting document reference. Such inheritance is marked REVIEW
+with PAGE_SEQUENCE_V1 evidence, not high-confidence automatic classification, so
+it never bypasses the automatic splitter's conservative acceptance gate.
+Numbering restarting at one or a changed invoice/packing-list number creates a
+new proposed part even when the document type stays the same. Missing, skipped or
+contradictory numbering, blank pages and ambiguous type evidence remain separate.
+These are heuristic proposals; unnumbered continuation inference is not yet
+implemented. The source PDF is retained and all ranges remain editable.
+
 Local verification passed: 562 Java tests (two skipped), 116 JavaScript tests,
 and the isolated PostgreSQL acceptance workflow through migration V72. Coverage
 includes retained original bytes, page ranges, tenant isolation, atomic rollback,
