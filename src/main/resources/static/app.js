@@ -105,6 +105,24 @@ function mergeInboxSplitRanges(previous,current){
     if(!previous||!current||![previous.fromPage,previous.toPage,current.fromPage,current.toPage].every(Number.isInteger)||previous.fromPage<1||previous.toPage<previous.fromPage||current.fromPage!==previous.toPage+1||current.toPage<current.fromPage)throw Error('Nur gültige, direkt angrenzende Bereiche können zusammengeführt werden.');
     return {...previous,toPage:current.toPage};
 }
+function adjustInboxSplitRanges(parts,index,field,pageCount){
+    const result=parts.map(part=>({...part}));
+    if(!Number.isInteger(index)||index<0||index>=result.length||!['fromPage','toPage'].includes(field)||!Number.isInteger(pageCount))throw Error('Ungültiger Seitenbereich.');
+    const current=result[index];
+    if(![current.fromPage,current.toPage].every(Number.isInteger)||current.fromPage<1||current.toPage<current.fromPage||current.toPage>pageCount)throw Error('Bitte gültige Seitenzahlen innerhalb des PDFs angeben.');
+    if(field==='fromPage'){
+        if(index===0&&current.fromPage!==1)throw Error('Der erste Bereich muss auf Seite 1 beginnen.');
+        if(index>0){const previous=result[index-1];if(current.fromPage<=previous.fromPage)throw Error('Für den vorherigen Bereich muss mindestens eine Seite bleiben.');previous.toPage=current.fromPage-1;}
+    }else if(current.fromPage!==(index===0?1:result[index-1].toPage+1))throw Error('Bitte zuerst den Beginn dieses Bereichs korrigieren.');
+    for(let i=index+1;i<result.length;i++){
+        const part=result[i];part.fromPage=result[i-1].toPage+1;
+        if(!Number.isInteger(part.toPage))throw Error('Bitte gültige Seitenzahlen angeben.');
+        part.toPage=Math.max(part.fromPage,part.toPage);
+        if(part.toPage>pageCount-(result.length-1-i))throw Error('Für die folgenden Bereiche bleiben nicht genügend Seiten. Bitte Bereiche zuerst verbinden oder entfernen.');
+    }
+    if(result.at(-1).toPage!==pageCount)throw Error('Der letzte Bereich muss bis zur letzten PDF-Seite reichen.');
+    return result;
+}
 async function openInboxSplit(item){
     const dialog=document.createElement('dialog');dialog.className='wide-dialog inbox-split-dialog';
     dialog.innerHTML='<p role="status">Seitengrenzen und Dokumenttypen werden geprüft …</p><button type="button">Schließen</button>';
@@ -118,6 +136,15 @@ async function openInboxSplit(item){
         const preview=document.createElement('section');preview.className='split-page-preview';preview.hidden=true;preview.innerHTML='<h3>PDF-Seitenvorschau</h3><p>Die Seite ist eine Orientierungshilfe. Bitte den gesamten Bereich im Original prüfen.</p><iframe title="PDF-Seitenvorschau"></iframe>';form.before(preview);
         const readRange=row=>({fromPage:Number(row.querySelector('[name=fromPage]').value),toPage:Number(row.querySelector('[name=toPage]').value),documentType:row.querySelector('select').value});
         const refreshMergeButtons=()=>[...rows.children].forEach((row,index)=>row.querySelector('[data-merge]').disabled=index===0);
+        rows.addEventListener('change',event=>{
+            if(!['fromPage','toPage'].includes(event.target.name))return;
+            const error=dialog.querySelector('[data-error]');error.textContent='';
+            const all=[...rows.children];
+            try{
+                const adjusted=adjustInboxSplitRanges(all.map(readRange),all.indexOf(event.target.closest('.inbox-split-row')),event.target.name,proposal.pageCount);
+                adjusted.forEach((part,index)=>{all[index].querySelector('[name=fromPage]').value=part.fromPage;all[index].querySelector('[name=toPage]').value=part.toPage;});
+            }catch(failure){error.textContent=failure.message;}
+        });
         const add=part=>{
             const row=document.createElement('div');row.className='inbox-split-row';
             row.innerHTML=`<label>Von Seite<input name="fromPage" type="number" min="1" max="${proposal.pageCount}" value="${part.fromPage}" required></label><label>Bis Seite<input name="toPage" type="number" min="1" max="${proposal.pageCount}" value="${part.toPage}" required></label><label class="split-type">Dokumenttyp<select name="documentType" required>${inboxDocumentTypes.map(([type,label])=>`<option value="${type}"${type===part.documentType?' selected':''}>${label}</option>`).join('')}</select></label><div class="split-row-actions"><button type="button" class="secondary" data-preview>Seite ansehen</button><button type="button" class="secondary" data-merge>Mit vorherigem verbinden</button><button type="button" class="secondary" data-remove>Entfernen</button></div>`;

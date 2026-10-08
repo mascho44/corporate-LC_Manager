@@ -3,3 +3,23 @@ const source=fs.readFileSync('src/main/resources/static/app.js','utf8');const co
 vm.runInContext(source.slice(source.indexOf('function mergeInboxSplitRanges('),source.indexOf('async function openInboxSplit(')),context);
 test('merging adjacent ranges retains prior type and does not mutate input',()=>{const a={fromPage:3,toPage:4,documentType:'COMMERCIAL_INVOICE'},b={fromPage:5,toPage:6,documentType:'OTHER'};const result=context.mergeInboxSplitRanges(a,b);assert.equal(result.fromPage,3);assert.equal(result.toPage,6);assert.equal(result.documentType,a.documentType);assert.equal(a.toPage,4);});
 test('merge refuses gaps, overlaps, invalid numbers and reversed ranges',()=>{for(const b of [{fromPage:4,toPage:6},{fromPage:6,toPage:7},{fromPage:5,toPage:4},{fromPage:5.5,toPage:6}])assert.throws(()=>context.mergeInboxSplitRanges({fromPage:3,toPage:4},b));});
+const ranges=()=>[{fromPage:1,toPage:2,documentType:'OTHER'},{fromPage:3,toPage:4,documentType:'COMMERCIAL_INVOICE'},{fromPage:5,toPage:8,documentType:'PACKING_LIST'}];
+test('end boundary updates subsequent starts and cascades past consumed ranges',()=>{
+    const parts=ranges();parts[0].toPage=4;
+    const result=context.adjustInboxSplitRanges(parts,0,'toPage',8);
+    assert.deepEqual(Array.from(result,p=>[p.fromPage,p.toPage]),[[1,4],[5,5],[6,8]]);
+    assert.equal(result[1].documentType,'COMMERCIAL_INVOICE');assert.equal(parts[1].fromPage,3);
+});
+test('shrinking a range extends the next range without changing later boundaries',()=>{
+    const parts=ranges();parts[0].toPage=1;
+    assert.deepEqual(Array.from(context.adjustInboxSplitRanges(parts,0,'toPage',8),p=>[p.fromPage,p.toPage]),[[1,1],[2,4],[5,8]]);
+});
+test('editing a start adjusts the previous end and preserves full coverage',()=>{
+    const parts=ranges();parts[1].fromPage=2;
+    assert.deepEqual(Array.from(context.adjustInboxSplitRanges(parts,1,'fromPage',8),p=>[p.fromPage,p.toPage]),[[1,1],[2,4],[5,8]]);
+});
+test('invalid edits never mutate subsequent ranges or silently remove document types',()=>{
+    for(const value of [7,8,9,1.5,0]){const parts=ranges();parts[0].toPage=value;assert.throws(()=>context.adjustInboxSplitRanges(parts,0,'toPage',8));assert.equal(parts[1].fromPage,3);assert.equal(parts.length,3);}
+    const parts=ranges();parts[2].toPage=7;assert.throws(()=>context.adjustInboxSplitRanges(parts,2,'toPage',8));
+    parts[0].fromPage=2;assert.throws(()=>context.adjustInboxSplitRanges(parts,0,'fromPage',8));
+});
