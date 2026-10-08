@@ -40,16 +40,18 @@ public class DocumentExtractionService {
         // Authorization errors must escape, not become an extraction failure on a foreign object.
         de.corporate.lc.tenant.domain.TenantContext.require(document.getTenantId());
         document.setOcrEvidenceJson(null);
+        long started=System.nanoTime();
         try (var slot=PdfProcessingSafety.acquire()) {
-            String text = readText(document);
+            List<String> pdfPages=isPdf(document)?readPdfPages(document.getContent()):null;
+            String text = pdfPages==null?readText(document):String.join("\n",pdfPages);
             if (text == null) {
                 document.setExtractionStatus("UNSUPPORTED");
                 return;
             }
             boolean ocrUsed = false;
             text = normalize(text);
-            if (text.isBlank() && isPdf(document)) {
-                text = normalize(readPdfWithOcr(document,documentBudget));
+            if (pdfPages!=null&&pdfPages.stream().anyMatch(String::isBlank)) {
+                text = normalize(readPdfWithOcr(document,documentBudget,pdfPages));
                 ocrUsed = !text.isBlank();
             }
             document.setExtractedText(limit(text));
@@ -70,6 +72,7 @@ public class DocumentExtractionService {
             document.setExtractionStatus("FAILED");
         } finally {
             document.setClassificationHistoryJson(ClassificationHistory.automatic(document.getOriginalFilename(),document.getExtractedText()));
+            log.info("Document extraction completed: status={}, elapsedMillis={}",document.getExtractionStatus(),java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-started));
         }
     }
 
@@ -103,48 +106,66 @@ public class DocumentExtractionService {
         return null;
     }
 
-    private String readPdfWithOcr(LcDocument document,long documentBudget) throws Exception {
+    static List<String> readPdfPages(byte[] content)throws Exception{
+        try(var pdf=Loader.loadPDF(content)){
+            PdfProcessingSafety.validate(pdf);var stripper=new PDFTextStripper();var pages=new java.util.ArrayList<String>();
+            for(int page=1;page<=pdf.getNumberOfPages();page++){stripper.setStartPage(page);stripper.setEndPage(page);String text=stripper.getText(pdf);pages.add(text.length()>MAX_TEXT_LENGTH?text.substring(0,MAX_TEXT_LENGTH):text);}
+            return List.copyOf(pages);
+        }
+    }
+
+    static List<int[]> blankPageRanges(List<String> texts){
+        var ranges=new java.util.ArrayList<int[]>();int start=-1;
+        for(int i=0;i<=texts.size();i++){boolean blank=i<texts.size()&&texts.get(i).isBlank();if(blank&&start<0)start=i+1;if(!blank&&start>0){ranges.add(new int[]{start,i});start=-1;}}
+        return ranges;
+    }
+
+    private String readPdfWithOcr(LcDocument document,long documentBudget,List<String> pageTexts) throws Exception {
+        long requiredPages=pageTexts.stream().filter(String::isBlank).count();
+        if(requiredPages>MAX_OCR_PAGES)throw new IOException("OCR page limit exceeded");
         long started=System.nanoTime();
         Path directory = Files.createTempDirectory("lc-ocr-");
         try {
             Path input = directory.resolve("input.pdf");
             Files.write(input, document.getContent(), StandardOpenOption.CREATE_NEW);
-            ProcessBuilder render = new ProcessBuilder("pdftoppm", "-png", "-r", "200", "-f", "1", "-l",
-                    String.valueOf(MAX_OCR_PAGES), input.toString(), directory.resolve("page").toString())
-                    .redirectErrorStream(true);
-            runOcrStep(render,60);
-            List<Path> pages;
-            try (var files = Files.list(directory)) {
-                pages = files.filter(p -> p.getFileName().toString().startsWith("page-") && p.toString().endsWith(".png"))
-                        .sorted(Comparator.comparingInt(p->Integer.parseInt(p.getFileName().toString().replaceAll("[^0-9]","")))).limit(MAX_OCR_PAGES).toList();
+            for(int[] range:blankPageRanges(pageTexts)){
+                long remaining=documentBudget-java.util.concurrent.TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()-started);
+                if(remaining<=0)throw new BoundedProcess.TimeoutException("OCR");
+                runOcrStep(new ProcessBuilder("pdftoppm","-png","-r","200","-f",String.valueOf(range[0]),"-l",String.valueOf(range[1]),input.toString(),directory.resolve("page").toString()).redirectErrorStream(true),Math.min(60,remaining));
             }
-            if(pages.isEmpty())throw new IOException("PDF renderer produced no pages");
+            var images=new java.util.HashMap<Integer,Path>();
+            try(var files=Files.list(directory)){files.filter(p->p.getFileName().toString().matches("page-[0-9]+\\.png")).forEach(p->images.put(Integer.parseInt(p.getFileName().toString().replaceAll("[^0-9]","")),p));}
             StringBuilder result = new StringBuilder();
             java.util.ArrayList<OcrEvidence.Word> words=new java.util.ArrayList<>();
             String engineVersion=tesseractVersion(directory);
-            for (int index = 0; index < pages.size() && result.length() < MAX_TEXT_LENGTH; index++) {
+            for (int index = 0; index < pageTexts.size(); index++) {
+                if(!pageTexts.get(index).isBlank()){if(result.length()<MAX_TEXT_LENGTH)result.append(pageTexts.get(index)).append('\n');continue;}
+                Path image=images.get(index+1);if(image==null)throw new IOException("PDF renderer produced no page");
                 Path output = directory.resolve("ocr-" + index);
                 ProcessBuilder ocr;
-                ocr = new ProcessBuilder("tesseract", pages.get(index).toString(), output.toString(), "-l", "deu+eng",
+                ocr = new ProcessBuilder("tesseract", image.toString(), output.toString(), "-l", "deu+eng",
                     "-c", "tessedit_create_txt=1", "-c", "tessedit_create_tsv=1")
                     .redirectOutput(ProcessBuilder.Redirect.DISCARD).redirectErrorStream(true);
+                ocr.environment().put("OMP_THREAD_LIMIT","1");
                 long elapsed=java.util.concurrent.TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()-started);
                 long remaining=documentBudget-elapsed;
                 if(remaining<=0)throw new BoundedProcess.TimeoutException("OCR");
                 long pageBudget=Math.min(pageTimeoutSeconds(),remaining);
                 try{runOcrStep(ocr,pageBudget);}catch(BoundedProcess.TimeoutException timeout){
-                    log.warn("OCR timeout: page={}, pages={}, pageBudgetSeconds={}, documentBudgetSeconds={}, elapsedSeconds={}",index+1,pages.size(),pageBudget,documentBudget,java.util.concurrent.TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()-started));
+                    log.warn("OCR timeout: page={}, pages={}, pageBudgetSeconds={}, documentBudgetSeconds={}, elapsedSeconds={}",index+1,pageTexts.size(),pageBudget,documentBudget,java.util.concurrent.TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()-started));
                     throw timeout;
                 }
                 Path textFile = Path.of(output + ".txt");
                 if(!Files.isRegularFile(textFile))throw new IOException("OCR produced no text file");
                 if(Files.exists(textFile)&&Files.size(textFile)>10*1024*1024)throw new IOException("OCR-Ausgabe zu groß");
-                if (Files.exists(textFile)) result.append(Files.readString(textFile, StandardCharsets.UTF_8)).append('\n');
+                if (Files.exists(textFile)&&result.length()<MAX_TEXT_LENGTH) result.append(Files.readString(textFile, StandardCharsets.UTF_8)).append('\n');
                 Path tsvFile=Path.of(output+".tsv");
-                int page=Integer.parseInt(pages.get(index).getFileName().toString().replaceAll("[^0-9]",""));
+                int page=index+1;
                 if(Files.exists(tsvFile)&&Files.size(tsvFile)>10*1024*1024)throw new IOException("OCR-Ausgabe zu groß");
                 if(Files.exists(tsvFile))words.addAll(OcrEvidence.parseTsv(Files.readString(tsvFile,StandardCharsets.UTF_8),page));
+                Files.deleteIfExists(image);Files.deleteIfExists(textFile);Files.deleteIfExists(tsvFile);
             }
+            log.info("OCR completed: pages={}, ocrPages={}, textPages={}, elapsedMillis={}",pageTexts.size(),requiredPages,pageTexts.size()-requiredPages,java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-started));
             if(!Double.isFinite(ocrThreshold)||ocrThreshold<0||ocrThreshold>1)throw new IllegalArgumentException("Ungültige OCR-Konfidenzschwelle");
             document.setOcrEvidenceJson(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(new OcrEvidence(engineVersion,"TESSERACT_WORD_MIN_V2",200,ocrThreshold,List.copyOf(words))));
             return limit(result.toString());

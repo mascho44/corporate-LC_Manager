@@ -9,6 +9,17 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 class DocumentExtractionServiceTest {
+    @Test void groupsOnlyBlankPagesIntoMinimalRenderRanges(){
+        var ranges=DocumentExtractionService.blankPageRanges(java.util.List.of("Digital invoice"," ","","Digital packing list",""));
+        assertThat(ranges).hasSize(2);assertThat(ranges.get(0)).containsExactly(2,3);assertThat(ranges.get(1)).containsExactly(5,5);
+        assertThat(DocumentExtractionService.blankPageRanges(java.util.List.of("Digital only"))).isEmpty();
+    }
+    @Test void digitalPagesKeepTheirOrderWithoutNeedingOcr()throws Exception{
+        var content=PdfDocumentSplitterTest.pdf("COMMERCIAL INVOICE","PACKING LIST");
+        assertThat(DocumentExtractionService.readPdfPages(content)).hasSize(2);
+        var result=new DocumentExtractionService().extractFile(content,"synthetic.pdf","application/pdf");
+        assertThat(result.status()).isEqualTo("EXTRACTED");assertThat(result.text()).contains("COMMERCIAL INVOICE","PACKING LIST");assertThat(result.ocrEvidence()).isNull();
+    }
     @org.junit.jupiter.params.ParameterizedTest
     @org.junit.jupiter.params.provider.ValueSource(strings={"synchronous","background","recognized"})
     void rejectsForeignDocumentBeforeContentAccessOrMetadataMutation(String entryPoint){
