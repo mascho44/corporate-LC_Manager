@@ -25,6 +25,8 @@ class DocumentServiceTest {
         var lcId=UUID.randomUUID();var lc=new LetterOfCredit();var documents=mock(LcDocumentRepository.class);when(documents.save(any())).thenAnswer(call->call.getArgument(0));var lcs=mock(LetterOfCreditRepository.class);when(lcs.findById(lcId)).thenReturn(Optional.of(lc));var service=new DocumentService(documents,lcs,mock(DocumentExtractionService.class));
         var file=new MockMultipartFile("file","synthetic.pdf","application/pdf",new byte[]{1});
         assertThat(service.uploadBatch(lcId,List.of(file,file),List.of(DocumentType.OTHER,DocumentType.OTHER),List.of(0,3))).extracting("copyNumber").containsExactly(0,3);
+        assertThat(service.uploadBatch(lcId,List.of(file,file,file),List.of(DocumentType.BILL_OF_LADING,DocumentType.BILL_OF_LADING,DocumentType.BILL_OF_LADING),List.of(-1,-2,-3))).extracting("copyNumber").containsExactly(-1,-2,-3);
+        assertThat(service.uploadBatch(lcId,List.of(file),List.of(DocumentType.OTHER),List.of(-99))).extracting("copyNumber").containsExactly((Object)null);
     }
     @Test void importsZipEntriesAndClassifiesUnknownFilesAsAnnex()throws Exception{
         UUID lcId=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-ZIP-1");

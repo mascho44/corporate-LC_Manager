@@ -7,6 +7,11 @@ class DocumentCopyDetectorTest {
   assertThat(DocumentCopyDetector.detect("COPY 2").copyNumber()).isEqualTo(2);
   assertThat(DocumentCopyDetector.detect("3rd COPY").copyNumber()).isEqualTo(3);
   assertThat(DocumentCopyDetector.detect("KOPIE 1").copyNumber()).isEqualTo(1);
+  assertThat(DocumentCopyDetector.detect("2nd ORIGINAL").copyNumber()).isEqualTo(-2);
+  assertThat(DocumentCopyDetector.detect("ORIGINAL 3").copyNumber()).isEqualTo(-3);
+  assertThat(DocumentCopyDetector.detect("FIRST ORIGINAL").copyNumber()).isEqualTo(-1);
+  assertThat(DocumentCopyDetector.detect("SECOND ORIGINAL").copyNumber()).isEqualTo(-2);
+  assertThat(DocumentCopyDetector.detect("THIRD ORIGINAL").copyNumber()).isEqualTo(-3);
  }
  @Test void doesNotInventCopyNumbersOrInferFromRequirements(){
   assertThat(DocumentCopyDetector.detect("COPY").kind()).isEqualTo("COPY");

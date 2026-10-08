@@ -14,7 +14,7 @@ public class PdfPagePreviewService {
   try(var slot=PdfProcessingSafety.acquire();var pdf=Loader.loadPDF(content)){
    PdfProcessingSafety.validate(pdf);
    if(page<1||page>pdf.getNumberOfPages())throw new IllegalArgumentException("PDF-Seite nicht vorhanden.");
-   int max=enlarged?1400:280;
+   int max=enlarged?1400:560;
    // Poppler also decodes JPEG2000 scans without an optional Java image reader.
    var directory=Files.createTempDirectory("lc-page-preview-");
    var source=directory.resolve("source.pdf");

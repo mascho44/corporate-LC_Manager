@@ -8,3 +8,10 @@ test('unspecified is never inferred as original and numeric zero survives form c
 test('editing selects the stored designation, not a default original',()=>{
  assert.match(context.documentCopyOptions(null),/value="" selected/);assert.match(context.documentCopyOptions(0),/value="0" selected/);assert.match(context.documentCopyOptions(3),/value="3" selected/);
 });
+test('numbered originals remain distinct from copies',()=>{
+ for(let ordinal=1;ordinal<=3;ordinal++){
+  assert.equal(context.readDocumentCopy(String(-ordinal)),-ordinal);
+  assert.equal(context.documentCopyLabel(-ordinal),'Original '+ordinal);
+  assert.match(context.documentCopyOptions(-ordinal),new RegExp('value="-'+ordinal+'" selected'));
+ }
+});
