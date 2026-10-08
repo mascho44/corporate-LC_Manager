@@ -13,6 +13,7 @@ public class TenantInventoryStore {
  public TenantInventoryStore(JdbcTemplate jdbc){this.jdbc=jdbc;}
  public List<Category> categories(UUID tenant){
   var result=new ArrayList<Category>();
+  result.add(count("document_split_training","from document_split_training where tenant_id=?",tenant));
   for(String table:List.of("letter_of_credit","lc_amendment","lc_note","lc_task","document_draft","document_check_decision","lc_requirement_mapping","training_learning_control","company_profile","document_approval_threshold","swift_import_record","charge_profile","charge_estimate","internal_rule_pack","internal_rule_pack_version","audit_event","integration_outbox","app_role","tenant_membership","tenant_membership_suspension"))
    result.add(count(table,"from "+table+" where tenant_id=?",tenant));
   for(String table:List.of("lc_required_document","lc_additional_field","lc_condition","document_comparison","email_delivery"))

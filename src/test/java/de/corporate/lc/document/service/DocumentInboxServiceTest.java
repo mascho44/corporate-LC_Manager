@@ -23,10 +23,12 @@ class DocumentInboxServiceTest {
         when(inbox.findForUpdate(id)).thenReturn(Optional.of(original));when(lcs.findAssignmentTargets()).thenReturn(List.of());
         when(inbox.save(any())).thenAnswer(call->{DocumentInboxItem saved=call.getArgument(0);if(saved.getId()==null)ReflectionTestUtils.setField(saved,"id",UUID.randomUUID());return saved;});
         var actual=new DocumentInboxService(inbox,lcs,documents,new DocumentExtractionService(),checks);
+        var training=mock(SplitTrainingService.class);ReflectionTestUtils.setField(actual,"splitTraining",training);
         var result=actual.split(id,List.of(new PdfDocumentSplitter.Part(1,1,DocumentType.COMMERCIAL_INVOICE),new PdfDocumentSplitter.Part(2,2,DocumentType.PACKING_LIST)),"tester");
         assertThat(result).hasSize(2);assertThat(original.getStatus()).isEqualTo("SPLIT");assertThat(original.getContent()).isNotEmpty();
         assertThat(result.get(1).sourceInboxId()).isEqualTo(id);assertThat(result.get(1).sourceFromPage()).isEqualTo(2);assertThat(result.get(1).classification().suggestedType()).isEqualTo(DocumentType.PACKING_LIST);
         assertThat(result.get(0).extractionStatus()).isEqualTo("EXTRACTED");verifyNoInteractions(documents,checks);
+        verify(training).confirm(eq(original.getContent()),isNull(),eq(List.of(new PdfDocumentSplitter.Part(1,1,DocumentType.COMMERCIAL_INVOICE),new PdfDocumentSplitter.Part(2,2,DocumentType.PACKING_LIST))),eq("tester"));
         assertThatThrownBy(()->actual.split(id,List.of(new PdfDocumentSplitter.Part(1,1,DocumentType.OTHER),new PdfDocumentSplitter.Part(2,2,DocumentType.OTHER)),"tester")).isInstanceOf(IllegalStateException.class);
     }
     @Test void invalidSplitDoesNotChangeOriginalOrSaveParts() throws Exception {

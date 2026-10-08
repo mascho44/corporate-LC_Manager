@@ -34,6 +34,9 @@ public class LcDocument {
     @Column(nullable = false) private String contentType;
     @Column(nullable = false) private long fileSize;
     private LocalDate documentDate;
+    private Integer copyNumber;
+    public Integer getCopyNumber(){return copyNumber;}
+    public void setCopyNumber(Integer value){copyNumber=DocumentCopy.validate(value);}
     @Column(precision = 19, scale = 2) private BigDecimal amount;
     private String currency;
     @Column(length = 100) private String extractedReference;

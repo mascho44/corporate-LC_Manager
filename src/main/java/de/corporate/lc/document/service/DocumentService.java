@@ -37,6 +37,11 @@ public class DocumentService {
     @Transactional
     public DocumentView upload(UUID lcId, MultipartFile file, DocumentType type,
             LocalDate documentDate, BigDecimal amount, String currency) throws IOException {
+        return upload(lcId,file,type,documentDate,amount,currency,null);
+    }
+    @Transactional
+    public DocumentView upload(UUID lcId, MultipartFile file, DocumentType type,
+            LocalDate documentDate, BigDecimal amount, String currency,Integer copyNumber) throws IOException {
         if (file == null || file.isEmpty()) throw new IllegalArgumentException("Please select a non-empty file.");
         if (file.getSize() > MAX_FILE_SIZE) throw new IllegalArgumentException("File exceeds the 10 MB limit.");
         String filename = file.getOriginalFilename() == null ? "document" : file.getOriginalFilename();
@@ -45,6 +50,7 @@ public class DocumentService {
         LcDocument document = new LcDocument();
         document.setLetterOfCredit(lcs.findById(lcId).orElseThrow(() -> new NoSuchElementException("LC not found: " + lcId)));
         document.setDocumentType(type);
+        document.setCopyNumber(copyNumber);
         document.setOriginalFilename(filename);
         document.setContentType(file.getContentType() == null ? "application/octet-stream" : file.getContentType());
         document.setFileSize(file.getSize());
@@ -72,14 +78,20 @@ public class DocumentService {
 
     @Transactional
     public List<DocumentView> uploadBatch(UUID lcId,List<MultipartFile> files,List<DocumentType> types)throws IOException{
+        return uploadBatch(lcId,files,types,null);
+    }
+    @Transactional
+    public List<DocumentView> uploadBatch(UUID lcId,List<MultipartFile> files,List<DocumentType> types,List<Integer> copies)throws IOException{
         if(files==null||files.isEmpty())throw new IllegalArgumentException("Bitte mindestens eine Datei auswählen.");
         if(files.size()>100)throw new IllegalArgumentException("Ein Batch darf höchstens 100 Dateien enthalten.");
         if(types==null||types.size()!=files.size())throw new IllegalArgumentException("Für jede Datei muss ein Dokumenttyp angegeben werden.");
+        if(copies!=null){if(copies.size()!=files.size())throw new IllegalArgumentException("Kennzeichnung fehlt für eine Datei.");for(Integer value:copies)de.corporate.lc.document.domain.DocumentCopy.validate(value!=null&&value==-1?null:value);}
         long total=files.stream().mapToLong(MultipartFile::getSize).sum();if(total>50L*1024*1024)throw new IllegalArgumentException("Der Batch überschreitet 50 MB.");
         List<DocumentView> imported=new ArrayList<>();
         for(int index=0;index<files.size();index++){
             MultipartFile file=files.get(index);String name=file.getOriginalFilename()==null?"":file.getOriginalFilename().toLowerCase(Locale.ROOT);
-            if(name.endsWith(".zip"))imported.addAll(uploadArchive(lcId,file));else imported.add(upload(lcId,file,types.get(index),null,null,null));
+            Integer copy=copies==null?null:copies.get(index);if(copy!=null&&copy==-1)copy=null;
+            if(name.endsWith(".zip")){if(copy!=null)throw new IllegalArgumentException("ZIP-Inhalte bitte nach dem Import einzeln kennzeichnen.");imported.addAll(uploadArchive(lcId,file));}else imported.add(upload(lcId,file,types.get(index),null,null,null,copy));
         }
         return imported;
     }
@@ -122,6 +134,7 @@ public class DocumentService {
             document.setClassificationHistoryJson(ClassificationHistory.manual(document.getClassificationHistoryJson(),request.type(),auth==null?"unknown":auth.getName()));
         }
         document.setDocumentType(request.type());document.setDocumentDate(request.documentDate());document.setAmount(request.amount());
+        document.setCopyNumber(request.copyNumber());
         document.setCurrency(request.currency()==null||request.currency().isBlank()?null:request.currency().trim().toUpperCase(Locale.ROOT));
         return DocumentView.from(document);
     }
