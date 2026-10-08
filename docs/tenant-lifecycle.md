@@ -58,3 +58,15 @@ Bank/Corporate API gates, current/default suspension protection, revocation of a
 live session, denied login while suspended and reactivation with retained LC data.
 The synthetic SMTP/invitation regressions also passed. Test containers, database
 volumes and networks were removed; production was not changed.
+
+### Follow-up acceptance (2026-10-08)
+
+The disposable PostgreSQL/SMTP API workflow passed again. The acceptance runner
+now additionally generates a synthetic commercial invoice as PDF and DOCX in a
+Corporate-enabled tenant, checks their MIME types, non-empty sizes and downloaded
+PDF/ZIP signatures, denies generation for a Viewer and for a Bank-only profile,
+and verifies that both generated documents remain listed after suspension and
+reactivation. Existing documents remain readable when generation is disabled.
+The installation removed its own containers, database and network afterward.
+No production data or real email recipients were used. This is automated API
+acceptance, not a visual browser/Word/PDF layout or usability review.

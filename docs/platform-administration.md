@@ -77,14 +77,33 @@ expiry, credential/email changes, role-permission changes, or issuer suspension/
 platform-grant revocation. Self-service public completion is serialized with
 platform administration; cached token rows are checked against current storage.
 
-The pending list displays expiry and `PENDING_MAIL`, `SENT`, `MAIL_FAILED` or
-`EXPIRED`. Resend replaces the old secret; revoke deletes it while retaining the
+The pending list displays expiry, attempts, next retry, a safe error category and
+`PENDING_MAIL`, `MAIL_RETRY`, `SENT`, `MAIL_CANCELLED`, `MAIL_FAILED` or `EXPIRED`.
+Resend replaces the old secret; revoke deletes it while retaining the
 blocked identity. A matching blocked identity may be reinvited with an explicitly
 selected target; existing active identities cannot be overwritten.
-Issuance commits before the synchronous after-commit SMTP attempt. SMTP failures
-retain a visible, retryable invitation. A process interruption may leave
-`PENDING_MAIL`; resend is the recovery mechanism, not a promise of exactly-once
-delivery. No real mail is sent by the disposable tests.
+Invitation issuance and its encrypted mail payload commit atomically. A background
+worker resumes persisted work after restarts and retries SMTP failures up to five
+attempts, after 30 seconds, 2 minutes, 10 minutes and 30 minutes. It rechecks account,
+issuer, tenant and role eligibility before delivery. Expired or cancelled payloads,
+successful payloads and exhausted retries are cleared. Resend creates a fresh token
+and resets attempts. Pre-V70 invitations have no queued payload and require manual
+resend. No real mail is sent by the disposable tests.
+
+The temporary mail payload includes the bearer link encrypted with AES-256-GCM,
+a random nonce and invitation-hash binding. Configure `app.mail.invitation-encryption-key`
+with at least 32 characters or use the existing TOTP key with domain-separated key
+derivation. A missing key prevents issuance; changing the key makes old queued mail
+unreadable and requires resend. Backups may retain encrypted payloads according to
+backup retention. Neither plaintext links nor SMTP exception details appear in the
+administration API. SMTP calls use bounded timeouts and hold the administration lock
+for one delivery. SMTP acceptance followed by a process/database failure can cause
+a repeated email: delivery is not guaranteed exactly once.
+
+Local verification (2026-10-08): cipher/queue unit tests, real Spring/H2
+transactions (issuance rollback without a key, persisted SMTP failure and retry),
+frontend tests and disposable PostgreSQL V70 acceptance with a synthetic SMTP sink
+passed. This does not constitute a production SMTP or visual layout test.
 
 ## Platform grants and retired creation
 

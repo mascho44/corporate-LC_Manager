@@ -109,11 +109,11 @@ function swift(reference){return `:20:${reference}\n:31C:261001\n:31D:271231SYNT
  const invitePayload={username:'synthetic-email-invite',displayName:'Synthetic email invite',email:'invite@example.invalid',tenantId:created.id,roleId:viewer.id};
  await call('/api/platform/invitations','POST',{...invitePayload,roleId:homeViewer.id},404);
  const invited=await call('/api/platform/invitations','POST',invitePayload,201);assert.ok(!('token' in invited)&&!('tokenHash' in invited));
- let pendingInvitations=await call('/api/platform/invitations');assert.equal(pendingInvitations.find(i=>i.userId===invited.userId).status,'SENT');const replacedToken=syntheticSmtp.tokenFor(invitePayload.email);
+ const replacedToken=await syntheticSmtp.tokenFor(invitePayload.email);let pendingInvitations=await call('/api/platform/invitations');assert.ok(['PENDING_MAIL','SENT'].includes(pendingInvitations.find(i=>i.userId===invited.userId).status));
  await call('/api/platform/users/'+invited.userId+'/access','PUT',{active:true},400);await call('/api/platform/users/'+invited.userId+'/platform-grant','PUT',{granted:true},400);
- await call('/api/platform/invitations/'+invited.userId+'/resend','POST');const revokedToken=syntheticSmtp.tokenFor(invitePayload.email);assert.notEqual(replacedToken,revokedToken);
+ await call('/api/platform/invitations/'+invited.userId+'/resend','POST');const revokedToken=await syntheticSmtp.tokenFor(invitePayload.email,replacedToken);assert.notEqual(replacedToken,revokedToken);
  await call('/api/platform/invitations/'+invited.userId,'DELETE',undefined,204);
- await call('/api/platform/invitations','POST',invitePayload,201);const acceptedToken=syntheticSmtp.tokenFor(invitePayload.email);assert.notEqual(acceptedToken,revokedToken);
+ await call('/api/platform/invitations','POST',invitePayload,201);const acceptedToken=await syntheticSmtp.tokenFor(invitePayload.email,revokedToken);assert.notEqual(acceptedToken,revokedToken);
  const invitationAdminSession=[...cookies],invitationAdminCsrf=csrf;cookies.clear();csrf='';
  await call('/api/auth/invitation/accept','POST',{token:replacedToken,password:'SyntheticInvited123!'},400);
  await call('/api/auth/invitation/accept','POST',{token:revokedToken,password:'SyntheticInvited123!'},400);
@@ -135,7 +135,7 @@ function swift(reference){return `:20:${reference}\n:31C:261001\n:31D:271231SYNT
  cookies.clear();invitationAdminSession.forEach(([k,v])=>cookies.set(k,v));csrf=invitationAdminCsrf;
  // Invitations may explicitly grant the default tenant, but never other tenants implicitly.
  const defaultInvite=await call('/api/platform/invitations','POST',{username:'synthetic-default-invite',displayName:'Synthetic default invite',email:'default-invite@example.invalid',tenantId:home,roleId:homeViewer.id},201);
- const defaultToken=syntheticSmtp.tokenFor('default-invite@example.invalid');cookies.clear();csrf='';await call('/api/auth/invitation/accept','POST',{token:defaultToken,password:'SyntheticDefault123!'});
+ const defaultToken=await syntheticSmtp.tokenFor('default-invite@example.invalid');cookies.clear();csrf='';await call('/api/auth/invitation/accept','POST',{token:defaultToken,password:'SyntheticDefault123!'});
  await call('/api/auth/login','POST',{username:'synthetic-default-invite',password:'SyntheticDefault123!'});csrf=(await call('/api/auth/me')).csrfToken;assert.equal((await call('/api/tenants')).selectedTenantId,home);await call('/api/companies','POST',{legalName:'FORBIDDEN DEFAULT INVITE WRITE'},403);
  cookies.clear();invitationAdminSession.forEach(([k,v])=>cookies.set(k,v));csrf=invitationAdminCsrf;
  const newIdentityPayload={username:'synthetic-platform-new',displayName:'Synthetic platform new',email:'new@example.invalid',password:'SyntheticOnly789!'};
@@ -165,6 +165,8 @@ function swift(reference){return `:20:${reference}\n:31C:261001\n:31D:271231SYNT
  assert.equal((await call('/api/tenants')).selectedTenantId,created.id);
  // Central lifecycle: no tenant-role shortcut, profile gates and live suspension.
  const suspensionViewerSession=[...cookies],suspensionViewerCsrf=csrf;
+ const syntheticInvoice={type:'COMMERCIAL_INVOICE',documentNumber:'SYNTHETIC-INVOICE-001',documentDate:'2026-10-08',description:'Synthetic test goods only',quantity:'1',notes:'Disposable acceptance test'};
+ await call('/api/lcs/'+localLc.id+'/generated-documents','POST',syntheticInvoice,403); // A Viewer must never gain generation rights from a profile.
  await call('/api/platform/tenants','GET',undefined,403);
  cookies.clear();adminSession.forEach(([k,v])=>cookies.set(k,v));csrf=adminCsrf;
  // Restore the explicitly assigned full local role for module tests: platform
@@ -181,8 +183,16 @@ function swift(reference){return `:20:${reference}\n:31C:261001\n:31D:271231SYNT
  await call('/api/tenants/'+created.id+'/select','POST');csrf=(await call('/api/auth/me')).csrfToken;
  await call('/api/settings/approval-thresholds','GET',undefined,403);
  assert.ok(Array.isArray(await call('/api/document-templates')));assert.ok(Array.isArray(await call('/api/lcs')));
+ const generatedPdf=await call('/api/lcs/'+localLc.id+'/generated-documents','POST',syntheticInvoice);
+ assert.equal(generatedPdf.contentType,'application/pdf');assert.ok(generatedPdf.fileSize>0);
+ assert.ok((await call('/api/documents/'+generatedPdf.id+'/content','GET',undefined,200,'application/json',true)).startsWith('%PDF-'));
+ const generatedWord=await call('/api/lcs/'+localLc.id+'/generated-documents/docx','POST',syntheticInvoice);
+ assert.equal(generatedWord.contentType,'application/vnd.openxmlformats-officedocument.wordprocessingml.document');assert.ok(generatedWord.fileSize>0);
+ assert.ok((await call('/api/documents/'+generatedWord.id+'/content','GET',undefined,200,'application/json',true)).startsWith('PK'));
  await call('/api/platform/tenants/'+created.id,'PUT',{active:true,bankEnabled:true,corporateEnabled:false});
  await call('/api/document-templates','GET',undefined,403);assert.ok(Array.isArray(await call('/api/settings/approval-thresholds')));
+ await call('/api/lcs/'+localLc.id+'/generated-documents','POST',syntheticInvoice,403); // Bank profile cannot bypass generation gate, even for an Admin.
+ assert.ok((await call('/api/documents/'+generatedPdf.id+'/content','GET',undefined,200,'application/json',true)).startsWith('%PDF-')); // Existing documents remain readable.
  await call('/api/tenants/'+home+'/select','POST');csrf=(await call('/api/auth/me')).csrfToken;
  await call('/api/platform/tenants/'+created.id,'PUT',{active:false,bankEnabled:true,corporateEnabled:true});
  assert.equal((await call('/api/tenants')).workspaces.some(t=>t.id===created.id),false);
@@ -192,5 +202,6 @@ function swift(reference){return `:20:${reference}\n:31C:261001\n:31D:271231SYNT
  cookies.clear();lifecycleAdminSession.forEach(([k,v])=>cookies.set(k,v));csrf=lifecycleAdminCsrf;
  await call('/api/platform/tenants/'+created.id,'PUT',{active:true,bankEnabled:true,corporateEnabled:true});
  await call('/api/tenants/'+created.id+'/select','POST');csrf=(await call('/api/auth/me')).csrfToken;assert.equal((await call('/api/lcs')).length,1);
+ const retainedDocuments=(await call('/api/lcs/'+localLc.id+'/documents')).map(d=>d.id);assert.ok(retainedDocuments.includes(generatedPdf.id));assert.ok(retainedDocuments.includes(generatedWord.id));
  console.log('PASS: existing tenant/invitation regressions, central tenant creation, profile API gates, self/default suspension protection, suspended login/session denial and reactivation without data loss.');
 })().catch(error=>{console.error(error.message);process.exitCode=1;}).finally(async()=>{if(syntheticSmtp)await syntheticSmtp.close();});
