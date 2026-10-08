@@ -5,8 +5,9 @@ import java.util.List;
 
 /** Append a new version when semantics change; never relabel a heuristic as ICC compliance. */
 public final class RuleCatalog {
-    public static final String VERSION="2026-10-05.3";
+    public static final String VERSION="2026-10-08.1";
     private static final List<RuleDefinition> RULES=List.of(
+        new RuleDefinition("LC_PRESENTATION_COUNTS","1.0","Captured Original/Copy quantities","LC document requirement :46A:","Compares explicit required quantities against captured Original/Copy designations; numbered duplicates are counted once.","Not a physical presentation or authenticity check. Unknown designations, duplicate numbers, different document numbers and ambiguous requirements require human review.",null),
         new RuleDefinition("LC_AMOUNT_LIMIT","1.0","Rechnungsbetrag und LC-Höchstbetrag","LC-Bedingung :32B: / :39A:","Vergleicht Rechnungsbetrag und Währung mit dem LC-Höchstbetrag einschließlich erfasster Toleranz.","Interne Metadatenprüfung; keine vollständige fachliche Konformitätsprüfung.",null),
         new RuleDefinition("LC_EXPIRY_DATE","1.0","Dokumentdatum und LC-Verfall","LC-Bedingung :31D:","Meldet ein erfasstes Dokumentdatum nach dem LC-Verfallsdatum.","Dokumentdatum ist nicht das Präsentationsdatum. Keine vollständige Prüfung der Präsentationsfrist.",null),
         new RuleDefinition("LC_SHIPMENT_DATE","1.0","Versanddatum und LC-Versandfrist","LC-Bedingung :44C:","Vergleicht das erfasste Transportdokumentdatum mit dem letzten Versandtermin.","Erfasstes Dokumentdatum kann vom maßgeblichen Versanddatum abweichen; Original und Transportart fachlich prüfen.",null),
@@ -20,6 +21,7 @@ public final class RuleCatalog {
             case "DOCUMENT_AFTER_EXPIRY"->"LC_EXPIRY_DATE";
             case "SHIPMENT_DATE_EXCEEDED","SHIPMENT_DATE_OK","AIR_SHIPMENT_DATE_EXCEEDED","AIR_SHIPMENT_DATE_OK","CMR_SHIPMENT_DATE_EXCEEDED","CMR_SHIPMENT_DATE_OK"->"LC_SHIPMENT_DATE";
             case "MISSING_DOCUMENT","DOCUMENT_PRESENT"->"LC_REQUIRED_DOCUMENT";
+            case "DOCUMENT_ORIGINAL_COUNT","DOCUMENT_COPY_COUNT","DOCUMENT_COPIES_MANUAL_REVIEW"->"LC_PRESENTATION_COUNTS";
             default->null;
         };
         if(id!=null)return RULES.stream().filter(rule->rule.id().equals(id)).findFirst().orElseThrow();

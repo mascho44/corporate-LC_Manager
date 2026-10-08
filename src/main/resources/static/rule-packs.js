@@ -22,7 +22,7 @@
  get('packFile').onchange=async()=>{
   const current=++sequence;source=null;preview=null;get('packImport').disabled=true;message('');
   const file=get('packFile').files[0];if(!file)return;
-  if(file.size>512*1024){message('Datei überschreitet 512 KB.');return;}
+  if(file.size>5*1024*1024){message('Datei überschreitet 5 MB.');return;}
   get('packPreview').textContent='Datei wird validiert und getestet …';
   try{const text=await file.text();const result=await request(api+'/preview',{method:'POST',body:text});
    if(current!==sequence)return;source=text;preview=result;renderPreview(result);get('packImport').disabled=false;

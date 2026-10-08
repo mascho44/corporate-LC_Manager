@@ -8,6 +8,12 @@ import java.util.*;
 import static org.mockito.Mockito.*;
 import static org.assertj.core.api.Assertions.*;
 class FindingEvidenceControllerTest {
+ @Test void preliminaryEvidenceNeverReadsHumanReviewAndRejectsUnknownMode(){
+  var checks=mock(DocumentCheckService.class);var docs=mock(LcDocumentRepository.class);var id=UUID.randomUUID();var finding=new CheckResult(CheckResult.Severity.WARNING,"TEST","Review","LC condition","invoice.pdf","Invoice 123");
+  when(checks.precheck(id)).thenReturn(new ReviewSummary("YELLOW",0,1,0,List.of(finding),"PRECHECK"));
+  var controller=new FindingEvidenceController(checks,docs);assertThat(controller.evidence(id,"TEST","invoice.pdf",finding.reviewFingerprint(),"PRECHECK").mode()).isEqualTo("PRECHECK");verify(checks,never()).check(any());
+  assertThatThrownBy(()->controller.evidence(id,"TEST","invoice.pdf",null,"FINAL")).isInstanceOf(ResponseStatusException.class);
+ }
  @Test void fingerprintSelectsCorrectConditionAndRejectsStaleFinding(){
   var checks=mock(DocumentCheckService.class);var docs=mock(LcDocumentRepository.class);var id=UUID.randomUUID();
   var a=new CheckResult(CheckResult.Severity.WARNING,"TEST","Review","Condition A","invoice.pdf","A");

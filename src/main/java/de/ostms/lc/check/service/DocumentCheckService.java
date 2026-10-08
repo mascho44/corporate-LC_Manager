@@ -63,6 +63,8 @@ public class DocumentCheckService {
                 var present=uploaded.stream().filter(d->d.getDocumentType()==expected.get()).findFirst().orElseThrow();
                 results.add(finding(OK, "DOCUMENT_PRESENT", expected.get().getDisplayName() + " wurde vorgelegt.", requirement, present.getOriginalFilename(), "Dokumenttyp: "+expected.get().getDisplayName()));
                 checkFormalRequirement(requirement,present,results);
+                if(requirement.toLowerCase(Locale.ROOT).matches("(?s).*(original|copy|copies|duplicate|triplicate|kopie|kopien|ausfertigung).*"))
+                    results.addAll(DocumentPresentationCheck.evaluate(requirement,uploaded.stream().filter(d->d.getDocumentType()==expected.get()).toList()));
             }
         }
 
@@ -170,7 +172,8 @@ public class DocumentCheckService {
         uploaded.stream().filter(d -> d.getExtractedDocumentNumber() != null)
                 .collect(java.util.stream.Collectors.groupingBy(d -> d.getExtractedDocumentNumber().toUpperCase(Locale.ROOT)))
                 .forEach((number, matches) -> {
-                    if (matches.size() > 1) results.add(new CheckResult(WARNING, "DUPLICATE_DOCUMENT_NUMBER", "Document number " + number + " occurs more than once."));
+                    boolean designatedSet=matches.stream().map(d->d.getDocumentType()).distinct().count()==1&&matches.stream().allMatch(d->d.getCopyNumber()!=null)&&matches.stream().map(d->d.getCopyNumber()).distinct().count()==matches.size();
+                    if (matches.size() > 1&&!designatedSet) results.add(new CheckResult(WARNING, "DUPLICATE_DOCUMENT_NUMBER", "Document number " + number + " occurs more than once without distinct Original/Copy designations."));
                 });
 
         if (lc.getExpiryDate() != null && lc.getExpiryDate().isBefore(LocalDate.now()))
@@ -193,7 +196,7 @@ public class DocumentCheckService {
             }
         }
         long discrepancies=count(reviewedResults,DISCREPANCY),warnings=count(reviewedResults,WARNING);String status=discrepancies>0?"RED":warnings>0?"YELLOW":"GREEN";
-        return new ReviewSummary(status,discrepancies,warnings,count(reviewedResults,OK),reviewedResults);
+        return new ReviewSummary(status,discrepancies,warnings,count(reviewedResults,OK),reviewedResults,simulation?"SIMULATION":precheck?"PRECHECK":"REVIEW");
     }
 
     @Transactional public DocumentCheckDecision decide(UUID lcId,CheckDecisionRequest request,String username){
@@ -326,8 +329,6 @@ public class DocumentCheckService {
             boolean found=text.matches("(?s).*(signed|signature|signatory|authorized signature|unterzeichnet|unterschrift).*" );
             results.add(finding(found?OK:WARNING,"SIGNATURE_REQUIREMENT_"+(found?"EVIDENCED":"REVIEW"),found?"Ein Unterschriftenvermerk wurde im Dokument erkannt.":"Geforderte Unterschrift konnte nicht automatisch belegt werden und muss visuell geprüft werden.",requirement,document.getOriginalFilename(),found?textEvidence(document.getExtractedText(),Set.of("signed","signature","signatory","unterzeichnet","unterschrift")):"Kein eindeutiger Unterschriftenvermerk im ausgelesenen Text"));
         }
-        if(lower.matches("(?s).*(original|copy|copies|duplicate|triplicate|kopie|kopien|ausfertigung).*") )
-            results.add(finding(WARNING,"DOCUMENT_COPIES_MANUAL_REVIEW","Geforderte Anzahl von Originalen oder Kopien muss manuell geprüft werden.",requirement,document.getOriginalFilename(),"Die Anzahl körperlicher Originale/Kopien lässt sich aus einer einzelnen Datei nicht zuverlässig ableiten."));
     }
     private void checkParty(de.ostms.lc.document.domain.LcDocument document,String party,String label,String code,boolean discrepancy,List<CheckResult> results){if(party==null||party.isBlank())return;boolean found=mentionsParty(document.getExtractedText(),party);String role=label.startsWith("Begünstigter")?"Begünstigter":"Antragsteller",type=document.getDocumentType().getDisplayName();results.add(finding(found?OK:(discrepancy?DISCREPANCY:WARNING),code+(found?"_OK":"_NOT_FOUND"),found?role+" ist im Dokument "+type+" enthalten.":role+" konnte im Dokument "+type+" nicht sicher zugeordnet werden.",label+" "+party,document.getOriginalFilename(),found?partyEvidence(document.getExtractedText(),party):"Keine belastbare Fundstelle im Dokumenttext"));}
     private void checkPackingDetails(de.ostms.lc.document.domain.LcDocument document,List<CheckResult> results){

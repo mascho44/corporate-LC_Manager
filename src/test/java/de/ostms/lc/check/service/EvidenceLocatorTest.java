@@ -6,6 +6,14 @@ import org.junit.jupiter.api.Test;
 import java.io.ByteArrayOutputStream;
 import static org.assertj.core.api.Assertions.assertThat;
 class EvidenceLocatorTest {
+ @Test void dateMetadataLocatesFormattedValueWithoutClaimingExactQuote()throws Exception{
+  var doc=document("Other text","Document issued 08.10.2026");doc.setDocumentDate(java.time.LocalDate.of(2026,10,8));
+  var location=EvidenceLocator.locate(doc,"Dokumentdatum: 2026-10-08");assertThat(location.status()).isEqualTo("MATCH");assertThat(location.method()).isEqualTo("PDF_VALUE_ANCHOR");assertThat(location.pages()).containsExactly(2);
+ }
+ @Test void referenceAnchorsRemainAmbiguousAndNeverMatchSubstring()throws Exception{
+  var doc=document("Reference LC123456","Reference LC123456");doc.setExtractedReference("LC123456");assertThat(EvidenceLocator.locate(doc,"Reference captured: LC123456").status()).isEqualTo("AMBIGUOUS");
+  var other=document("Reference XLC123456Y");other.setExtractedReference("LC123456");assertThat(EvidenceLocator.locate(other,"Reference captured: LC123456").status()).isEqualTo("UNAVAILABLE");
+ }
  private LcDocument document(String... texts)throws Exception{
   var doc=new LcDocument();doc.setContentType("application/pdf");
   try(var pdf=new PDDocument();var out=new ByteArrayOutputStream()){

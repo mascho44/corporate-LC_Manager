@@ -8,14 +8,14 @@ import java.util.*;
 
 @Component
 public class PackCodec {
- public static final int MAX_BYTES=512*1024;
- public static final int MAX_RULES=50;
- public static final int MAX_TESTS=300;
+ public static final int MAX_BYTES=5*1024*1024;
+ public static final int MAX_RULES=500;
+ public static final int MAX_TESTS=3000;
  private final ObjectMapper json;
  public PackCodec(ObjectMapper mapper){json=mapper.copy().enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
   .enable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION);}
  public PackDefinition parse(byte[] bytes){
-  if(bytes.length>MAX_BYTES)throw new IllegalArgumentException("Rule Pack überschreitet 512 KB.");
+  if(bytes.length>MAX_BYTES)throw new IllegalArgumentException("Rule Pack überschreitet 5 MB.");
   try{var pack=json.readValue(bytes,PackDefinition.class);validate(pack);return pack;}
   catch(IllegalArgumentException e){throw e;}
   catch(Exception e){throw new IllegalArgumentException("Ungültiges Rule-Pack-JSON oder unbekannte Felder.");}

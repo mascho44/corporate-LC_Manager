@@ -2,7 +2,7 @@
 
 Diese Erweiterung schließt technische Teil-Lücken, nicht sämtliche fachlichen UCP-/ISBP-Regeln. Das öffentliche Beispiel enthält nur eigene synthetische Tests. Private lizenzbezogene Packs und Quellenunterlagen bleiben außerhalb des Repositorys.
 
-Ein einzelnes Pack darf bis zu 50 Regeln und 300 synthetische Tests enthalten. Das Uploadlimit bleibt 512 KiB. Dadurch lassen sich kleinere private Module zu einem Pack zusammenführen, ohne Quellenunterlagen öffentlich zu speichern. Beim Zusammenführen müssen Regel-IDs und Testnamen eindeutig bleiben; alte separat aktive Module sind nach Aktivierung der gemeinsamen Version zu deaktivieren, um doppelte Befunde zu vermeiden.
+Ein einzelnes Pack darf bis zu 500 Regeln und 3000 synthetische Tests enthalten. Das Uploadlimit bleibt 5 MiB. Dadurch lassen sich kleinere private Module zu einem Pack zusammenführen, ohne Quellenunterlagen öffentlich zu speichern. Beim Zusammenführen müssen Regel-IDs und Testnamen eindeutig bleiben; alte separat aktive Module sind nach Aktivierung der gemeinsamen Version zu deaktivieren, um doppelte Befunde zu vermeiden.
 
 ## Bearbeitbare Angaben
 

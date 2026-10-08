@@ -1,0 +1,8 @@
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const source=fs.readFileSync('src/main/resources/static/precheck.js','utf8');
+test('precheck findings open read-only evidence with the exact fingerprint',async()=>{
+ const elements=[];const node=tag=>{const value={tag,dataset:{},children:[],open:true,append(...items){this.children.push(...items);},setAttribute(){},replaceChildren(){this.children=[];},addEventListener(){},showModal(){},close(){this.open=false;}};elements.push(value);return value;};
+ const context=vm.createContext({document:{createElement:node,body:{append(){}},addEventListener(){}},activeLc:{id:'synthetic'},json:async()=>({checkedAt:'2026-10-08T10:00:00Z',summary:{discrepancies:1,warnings:0,passed:0,results:[{code:'TEST',message:'Review',documentName:'invoice.pdf',reviewFingerprint:'abc'}]}})});vm.runInContext(source,context);await context.openPrecheck();
+ const evidence=elements.find(e=>e.dataset.findingEvidence==='TEST');assert.ok(evidence);assert.equal(evidence.dataset.findingMode,'PRECHECK');assert.equal(evidence.dataset.findingFingerprint,'abc');assert.doesNotMatch(source,/data-evidence-decision|\/decisions/);
+});
+test('green automatic findings never claim final approval',()=>{const app=fs.readFileSync('src/main/resources/static/app.js','utf8');assert.doesNotMatch(app,/GREEN:\['Prüfung abgeschlossen'/);assert.match(app,/Keine Endprüfung oder Freigabe/);const evidence=fs.readFileSync('src/main/resources/static/finding-evidence.js','utf8');assert.match(evidence,/view\.mode!=='PRECHECK'&&can\('DOCUMENT_REVIEW'\)/);assert.match(evidence,/VALUE_ANCHOR/);});

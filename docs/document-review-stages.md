@@ -1,0 +1,7 @@
+# Document presentation and review
+
+1. Explicit LC quantities such as `3/3 originals and two copies` are compared against the captured Original/Copy designations of all files of the requested type. Numbered duplicates count once. Unknown designations, missing/different document numbers and conditional/ambiguous quantities require review. This is not verification of physical originals or authenticity. No document count is inferred from page count or a scanned stamp alone.
+2. Findings retain the effective LC condition, rule version and bound input fingerprint. Evidence pages use exact text first. Captured references and document dates may supply a fallback value anchor, labelled separately from an exact quote. Repeated anchors remain ambiguous; missing evidence does not produce a fabricated page.
+3. `PRECHECK` evaluates the current effective LC and documents without reading or changing human decisions. Evidence opened from this mode remains read-only. `REVIEW` applies current human finding decisions; simulations use `SIMULATION`. Summaries expose their mode, reviewed-finding count and `finalReview=false`: neither a green baseline nor a finding decision constitutes final approval. The existing document approval workflow remains separate.
+
+All checks are tenant scoped through the existing repositories. Rule-catalog version changes invalidate previous finding fingerprints conservatively; historic decisions remain preserved.

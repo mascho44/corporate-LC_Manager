@@ -24,3 +24,7 @@ test('testing a stored version invalidates any pending file import',async()=>{
  const {elements:e,calls}=await setup();e.packFile.files=[{size:2,text:async()=>'{}'}];await e.packFile.onchange();
  await e.packVersions.onclick({target:{closest:()=>({dataset:{test:'version-id'}})}});assert.equal(e.packImport.disabled,true);await e.packImport.onclick();assert.equal(calls.some(c=>c.url==='/api/settings/rule-packs'&&c.method==='POST'),false);
 });
+test('packs up to five MiB reach validation and larger files are rejected before reading',async()=>{
+ const {elements:e,calls}=await setup();e.packFile.files=[{size:5*1024*1024,text:async()=>'{}'}];await e.packFile.onchange();assert.equal(e.packImport.disabled,false);const requests=calls.length;
+ e.packFile.files=[{size:5*1024*1024+1,text:async()=>assert.fail('Oversized file must not be read')}];await e.packFile.onchange();assert.equal(calls.length,requests);assert.match(e.packMessage.textContent,/5 MB/);assert.equal(e.packImport.disabled,true);
+});
