@@ -15,3 +15,12 @@
 @media(max-width:760px){.inbox-split-row{grid-template-columns:1fr 1fr}.inbox-split-row .split-type{grid-column:1/-1}.split-row-actions button{flex:1 1 160px}}
 .document-batch-row{grid-template-columns:minmax(0,1fr) 220px 160px}
 @media(max-width:760px){.document-batch-row{grid-template-columns:1fr}}
+.inbox-assignment-workspace{display:grid;gap:20px;margin-top:16px;min-width:0}
+.inbox-assignment-workspace:has(.inbox-assignment-preview[open]){grid-template-columns:minmax(0,1.2fr) minmax(280px,1fr);align-items:start}
+.inbox-assignment-preview{min-width:0;border:1px solid #dce5f2;border-radius:12px;padding:14px;background:#f8fafc}
+.inbox-assignment-preview summary{cursor:pointer;font-weight:700}
+.inbox-assignment-preview iframe{display:block;width:100%;height:65vh;min-height:350px;margin-top:12px;border:1px solid #dce5f2;border-radius:8px;background:white}
+.inbox-assignment-preview img{display:block;max-width:100%;height:auto;margin-top:12px}
+.inbox-assignment-workspace:has(.inbox-assignment-preview[open]) .inbox-assignment{grid-template-columns:1fr 1fr;align-items:end}
+@media(max-width:900px){.inbox-assignment-workspace:has(.inbox-assignment-preview[open]){grid-template-columns:1fr}.inbox-assignment-preview iframe{height:50vh;min-height:280px}}
+@media(max-width:550px){.inbox-assignment-workspace:has(.inbox-assignment-preview[open]) .inbox-assignment{grid-template-columns:1fr}}
