@@ -11,3 +11,4 @@
 .evidence-document-viewport img{display:block;width:100%;height:auto;background:#fff;box-shadow:0 2px 8px #172b4d25}.evidence-document-viewport img.zoomed{width:160%;max-width:none}.evidence-document-viewport img[hidden]{display:none}
 .evidence-document [data-status]{color:#475467;font-size:14px}
 @media(max-width:850px){.evidence-workspace{grid-template-columns:1fr;padding:16px}.evidence-document{position:static}.evidence-document-viewport{height:60vh}}
+.finding-crop{margin:0 0 12px}.finding-crop img{max-width:100%;border:1px solid var(--line,#ccc);border-radius:6px}.finding-crop figcaption{font-size:.85em;opacity:.75;margin-top:4px}

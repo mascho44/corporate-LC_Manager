@@ -17,8 +17,22 @@ async function openFindingEvidence(button){
         dialog.querySelector('[data-evidence-close]').onclick=()=>dialog.close();
         dialog.querySelectorAll('[data-evidence-decision]').forEach(action=>action.onclick=async()=>{if(activeLc?.id!==lcId){alert('Die aktive Akte hat sich geändert. Belegansicht bitte erneut öffnen.');return;}dialog.close();await decideCheck(finding.code,finding.documentName||'',action.dataset.evidenceDecision,finding.reviewFingerprint);});
         const pdfPages=dialog.querySelector('[data-pdf-pages]');
+        const cropKind=/SIGNATURE/.test(finding.code)?'signature':/DATE/.test(finding.code)?'date':null;
+        if(cropKind&&view.documentId&&view.contentType==='application/pdf'&&pdfPages)showFindingCrop(dialog,pdfPages,lcId,view.documentId,cropKind);
         if(view.documentId&&view.contentType==='application/pdf'&&pdfPages)await renderFindingPdf(dialog,pdfPages,view.documentId,page||1);
     }catch(error){dialog.innerHTML=`<p class="error">${esc(error.message)}</p><button type="button">Schließen</button>`;dialog.querySelector('button').onclick=()=>dialog.close();}
+}
+async function showFindingCrop(dialog,container,lcId,documentId,kind){
+    try{
+        const response=await fetch(`/api/lcs/${lcId}/documents/${encodeURIComponent(documentId)}/finding-crop?kind=${kind}`);
+        if(!response.ok||!dialog.open)return;
+        const url=URL.createObjectURL(await response.blob());
+        const figure=document.createElement('figure');figure.className='finding-crop';
+        const image=document.createElement('img');image.src=url;image.alt=kind==='signature'?'Ausschnitt Unterschriftsbereich':'Ausschnitt Datum';
+        image.onload=()=>URL.revokeObjectURL(url);
+        const caption=document.createElement('figcaption');caption.textContent='Ausschnitt der betroffenen Stelle (orange markiert, automatisch erkannt – bitte prüfen)';
+        figure.append(image,caption);container.before(figure);
+    }catch(ignored){}
 }
 async function renderFindingPdf(dialog,container,documentId,initialPage){
     container.innerHTML='<div class="evidence-page-toolbar"><button type="button" data-prev disabled aria-label="Vorherige Seite">←</button><span data-page></span><button type="button" data-next disabled aria-label="Nächste Seite">→</button><button type="button" data-zoom>Vergrößern</button><button type="button" data-retry>Neu laden</button></div><p data-status role="status"></p><div class="evidence-document-viewport"><img alt="PDF-Seite" hidden></div>';
