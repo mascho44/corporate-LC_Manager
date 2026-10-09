@@ -21,7 +21,8 @@ class PlatformMembershipServiceTest {
  final TenantMembershipRepository memberships=mock(TenantMembershipRepository.class);final TenantMembershipSuspensionRepository suspensions=mock(TenantMembershipSuspensionRepository.class);
  final TenantMembershipService access=mock(TenantMembershipService.class);final TenantMembershipProvisioningStore store=mock(TenantMembershipProvisioningStore.class);
  final TenantAdministrationLock lock=mock(TenantAdministrationLock.class);final AuditService audit=mock(AuditService.class);
- final PlatformMembershipService service=new PlatformMembershipService(platform,tenants,roles,memberships,suspensions,access,store,lock,audit);
+ final de.ostms.lc.user.repository.AppUserRepository users=mock(de.ostms.lc.user.repository.AppUserRepository.class);
+ final PlatformMembershipService service=new PlatformMembershipService(platform,users,tenants,roles,memberships,suspensions,access,store,lock,audit);
  final TestingAuthenticationToken auth=new TestingAuthenticationToken("platform","x");
  final UUID tenantId=UUID.randomUUID(),userId=UUID.randomUUID(),oldRole=UUID.randomUUID(),newRole=UUID.randomUUID();
 
@@ -67,5 +68,30 @@ class PlatformMembershipServiceTest {
   var result=service.changeAccess(tenantId,userId,true,auth);
   assertThat(result.suspended()).isTrue();assertThat(result.active()).isFalse();
   verify(suspensions).save(any());verify(audit).recordChangeInTransaction(eq(auth),eq("PLATFORM_MEMBERSHIP_ACCESS_UPDATED"),eq("MEMBERSHIP"),eq(userId),anyString(),anyString(),anyString());
+ }
+ @Test void assignmentRequiresPlatformAccessAndAnEligibleExistingIdentity(){
+  doThrow(new AccessDeniedException("no")).when(platform).verifyLiveAccess(auth);
+  assertThatThrownBy(()->service.assignExistingIdentity(tenantId,"someone",newRole,auth)).isInstanceOf(AccessDeniedException.class);
+  verifyNoInteractions(store,audit,users);
+  reset(platform);
+  assertThatThrownBy(()->service.assignExistingIdentity(Tenant.DEFAULT_ID,"someone",newRole,auth)).isInstanceOf(AccessDeniedException.class);
+  tenantExists();var viewer=role(newRole,UserRole.VIEWER);when(roles.findById(newRole)).thenReturn(Optional.of(viewer));
+  when(users.findByUsernameIgnoreCase("missing")).thenReturn(Optional.empty());
+  assertThatThrownBy(()->service.assignExistingIdentity(tenantId,"missing",newRole,auth)).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("eligible");
+  var inactive=user(UUID.randomUUID());when(inactive.isActive()).thenReturn(false);when(users.findByUsernameIgnoreCase("inactive")).thenReturn(Optional.of(inactive));
+  assertThatThrownBy(()->service.assignExistingIdentity(tenantId,"inactive",newRole,auth)).isInstanceOf(IllegalArgumentException.class);
+  var home=user(tenantId);when(users.findByUsernameIgnoreCase("home")).thenReturn(Optional.of(home));
+  assertThatThrownBy(()->service.assignExistingIdentity(tenantId,"home",newRole,auth)).isInstanceOf(IllegalArgumentException.class);
+  verify(store,never()).create(any(),any(),any());
+ }
+ @Test void assignmentCreatesTheMembershipOnceAndAudits(){
+  tenantExists();var viewer=role(newRole,UserRole.VIEWER);when(roles.findById(newRole)).thenReturn(Optional.of(viewer));
+  var shared=user(UUID.randomUUID());when(shared.getId()).thenReturn(userId);when(users.findByUsernameIgnoreCase("shared.user")).thenReturn(Optional.of(shared));
+  when(access.forUser(userId)).thenReturn(Optional.empty());
+  var result=service.assignExistingIdentity(tenantId,"  shared.user ",newRole,auth);
+  assertThat(result.roleId()).isEqualTo(newRole);assertThat(result.active()).isTrue();
+  verify(store).create(tenantId,userId,newRole);verify(audit).recordChangeInTransaction(eq(auth),eq("PLATFORM_MEMBERSHIP_CREATED"),eq("MEMBERSHIP"),eq(userId),anyString(),isNull(),anyString());
+  when(access.forUser(userId)).thenReturn(Optional.of(view(newRole,false)));
+  assertThatThrownBy(()->service.assignExistingIdentity(tenantId,"shared.user",newRole,auth)).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("already has");
  }
 }

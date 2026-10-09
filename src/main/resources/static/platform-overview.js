@@ -10,6 +10,22 @@ async function setupPlatformOverview(section){
  const auditReload=node('button',t('platformOverview.auditReload','Load audit'),'secondary');auditReload.type='button';
  const auditStatus=node('p','');auditStatus.setAttribute('role','status');const auditList=document.createElement('div');
  auditBox.append(node('h3',t('platformOverview.audit','Platform audit (metadata only)')),node('p',t('platformOverview.auditNote','Time, tenant, user and action only. Details and values stay in the tenant audit log.')),tenantFilter,auditReload,auditStatus,auditList);
+ // Assign an existing identity (exact username) to a tenant role.
+ const assign=document.createElement('form');assign.className='platform-create-form';
+ const assignTenant=document.createElement('select'),assignRole=document.createElement('select'),assignName=document.createElement('input');
+ assignName.type='text';assignName.required=true;assignName.maxLength=100;assignName.autocomplete='off';const assignLabel=t('platformOverview.assignUser','Username of the existing identity');assignName.setAttribute('aria-label',assignLabel);assignName.placeholder=assignLabel;
+ assignTenant.required=true;assignRole.required=true;assignTenant.setAttribute('aria-label',t('platformOverview.assignTenant','Tenant'));assignRole.setAttribute('aria-label',t('platformOverview.role','Role'));
+ const assignButton=node('button',t('platformOverview.assign','Assign existing user'));assignButton.type='submit';
+ const assignStatus=node('small','');assignStatus.setAttribute('role','status');
+ const fillAssignRoles=()=>{assignRole.replaceChildren();(choices.find(c=>c.id===assignTenant.value)?.roles||[]).forEach(role=>{const o=document.createElement('option');o.value=role.id;o.textContent=role.name;assignRole.append(o);});};
+ assignTenant.onchange=fillAssignRoles;
+ assign.append(node('h4',t('platformOverview.assignTitle','Assign an existing user to a tenant')),node('small',t('platformOverview.assignNote','Exact username of an active account from another tenant. New people are invited instead.')),assignTenant,assignName,assignRole,assignButton,assignStatus);
+ assign.onsubmit=async event=>{event.preventDefault();if(assignButton.disabled||!assign.reportValidity())return;assignButton.disabled=true;assignStatus.textContent='';
+  try{if(!await confirmAction(t('platformOverview.confirmAssign','Assign this user to the selected tenant with the selected role?')+'\n\n'+assignName.value.trim()))return;
+   await json('/api/platform/memberships',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tenantId:assignTenant.value,username:assignName.value.trim(),roleId:assignRole.value})});
+   assignName.value='';assignStatus.textContent=t('platformOverview.assigned','Assigned.');await refreshMemberships();}
+  catch(failure){assignStatus.textContent=failure.message;}finally{assignButton.disabled=false;}};
+ membershipsBox.insertBefore?membershipsBox.insertBefore(assign,membershipsBox.children[2]):membershipsBox.append(assign);
  section.append(membershipsBox,auditBox);
  let rows=[],choices=[],generation=0;
  const yesNo=value=>value?t('platformOverview.yes','yes'):t('platformOverview.no','no');
@@ -41,7 +57,7 @@ async function setupPlatformOverview(section){
   membershipStatus.textContent=shown.length+' / '+rows.length+' '+t('platformOverview.membershipsShown','memberships');
  }
  filter.oninput=renderMemberships;
- async function refreshMemberships(){const request=++generation;membershipStatus.textContent=t('platformOverview.loading','Loading…');try{const [data,available]=await Promise.all([json('/api/platform/memberships'),json('/api/platform/invitations/choices').catch(()=>[])]);if(request!==generation)return;rows=data;choices=available||[];renderMemberships();}catch(failure){if(request===generation)membershipStatus.textContent=failure.message;}}
+ async function refreshMemberships(){const request=++generation;membershipStatus.textContent=t('platformOverview.loading','Loading…');try{const [data,available]=await Promise.all([json('/api/platform/memberships'),json('/api/platform/invitations/choices').catch(()=>[])]);if(request!==generation)return;rows=data;choices=available||[];const selectedTenant=assignTenant.value;assignTenant.replaceChildren(...choices.map(c=>{const o=document.createElement('option');o.value=c.id;o.textContent=c.name+' · '+c.code;return o;}));assignTenant.value=choices.some(c=>c.id===selectedTenant)?selectedTenant:(choices[0]?.id||'');fillAssignRoles();renderMemberships();}catch(failure){if(request===generation)membershipStatus.textContent=failure.message;}}
  async function refreshAudit(){
   auditStatus.textContent=t('platformOverview.loading','Loading…');auditList.replaceChildren();
   const query=new URLSearchParams({limit:'200'});if(tenantFilter.value.trim())query.set('tenant',tenantFilter.value.trim());
