@@ -1,0 +1,175 @@
+{
+  "version": "synthetic-text-v1",
+  "examples": [
+    {
+      "id": "commercial_invoice",
+      "pages": [
+        "COMMERCIAL INVOICE\nDocument date: 31.08.2026\nLC Reference: SYNLC1001\nORIGINAL"
+      ],
+      "expected": [
+        {
+          "fromPage": 1,
+          "toPage": 1,
+          "type": "COMMERCIAL_INVOICE",
+          "date": "2026-08-31",
+          "reference": "SYNLC1001",
+          "copy": 0
+        }
+      ]
+    },
+    {
+      "id": "packing_list",
+      "pages": [
+        "PACKING LIST\nDocument date: 31.08.2026\nLC Reference: SYNLC1001\nORIGINAL"
+      ],
+      "expected": [
+        {
+          "fromPage": 1,
+          "toPage": 1,
+          "type": "PACKING_LIST",
+          "date": "2026-08-31",
+          "reference": "SYNLC1001",
+          "copy": 0
+        }
+      ]
+    },
+    {
+      "id": "bill_of_lading",
+      "pages": [
+        "BILL OF LADING\nDocument date: 31.08.2026\nLC Reference: SYNLC1001\nORIGINAL"
+      ],
+      "expected": [
+        {
+          "fromPage": 1,
+          "toPage": 1,
+          "type": "BILL_OF_LADING",
+          "date": "2026-08-31",
+          "reference": "SYNLC1001",
+          "copy": 0
+        }
+      ]
+    },
+    {
+      "id": "air_waybill",
+      "pages": [
+        "AIR WAYBILL\nDocument date: 31.08.2026\nLC Reference: SYNLC1001\nORIGINAL"
+      ],
+      "expected": [
+        {
+          "fromPage": 1,
+          "toPage": 1,
+          "type": "AIR_WAYBILL",
+          "date": "2026-08-31",
+          "reference": "SYNLC1001",
+          "copy": 0
+        }
+      ]
+    },
+    {
+      "id": "certificate_of_origin",
+      "pages": [
+        "CERTIFICATE OF ORIGIN\nDocument date: 31.08.2026\nLC Reference: SYNLC1001\nORIGINAL"
+      ],
+      "expected": [
+        {
+          "fromPage": 1,
+          "toPage": 1,
+          "type": "CERTIFICATE_OF_ORIGIN",
+          "date": "2026-08-31",
+          "reference": "SYNLC1001",
+          "copy": 0
+        }
+      ]
+    },
+    {
+      "id": "insurance_certificate",
+      "pages": [
+        "INSURANCE CERTIFICATE\nDocument date: 31.08.2026\nLC Reference: SYNLC1001\nORIGINAL"
+      ],
+      "expected": [
+        {
+          "fromPage": 1,
+          "toPage": 1,
+          "type": "INSURANCE_CERTIFICATE",
+          "date": "2026-08-31",
+          "reference": "SYNLC1001",
+          "copy": 0
+        }
+      ]
+    },
+    {
+      "id": "numbered-bundle",
+      "pages": [
+        "COMMERCIAL INVOICE No. SYN-101\nPage 1 of 2",
+        "Goods details\nPage 2 of 2",
+        "PACKING LIST\nCOPY 2"
+      ],
+      "expected": [
+        {
+          "fromPage": 1,
+          "toPage": 2,
+          "type": "COMMERCIAL_INVOICE"
+        },
+        {
+          "fromPage": 3,
+          "toPage": 3,
+          "type": "PACKING_LIST",
+          "copy": 2
+        }
+      ]
+    },
+    {
+      "id": "reference-continuation",
+      "pages": [
+        "COMMERCIAL INVOICE No. SYN-101",
+        "Invoice No. SYN-101 continued details"
+      ],
+      "expected": [
+        {
+          "fromPage": 1,
+          "toPage": 2,
+          "type": "COMMERCIAL_INVOICE"
+        }
+      ]
+    },
+    {
+      "id": "ambiguous-headings",
+      "pages": [
+        "COMMERCIAL INVOICE\nPACKING LIST"
+      ],
+      "expected": [
+        {
+          "fromPage": 1,
+          "toPage": 1,
+          "type": "OTHER"
+        }
+      ]
+    },
+    {
+      "id": "conflicting-metadata",
+      "pages": [
+        "CERTIFICATE OF ORIGIN\nLC Reference: SYNLC1001\nLC Reference: SYNLC1002\nDocument date: 31.08.2026\nDocument date: 30.08.2026\nORIGINAL\nCOPY 1"
+      ],
+      "expected": [
+        {
+          "fromPage": 1,
+          "toPage": 1,
+          "type": "CERTIFICATE_OF_ORIGIN"
+        }
+      ]
+    },
+    {
+      "id": "unknown-cover",
+      "pages": [
+        "SYNTHETIC COVER LETTER ONLY"
+      ],
+      "expected": [
+        {
+          "fromPage": 1,
+          "toPage": 1,
+          "type": "OTHER"
+        }
+      ]
+    }
+  ]
+}

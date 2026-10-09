@@ -2,7 +2,9 @@
 
 ## Als Nächstes
 
-- Dokumentenerkennung ausbauen: Seitenwiederaufnahme, persistierte OCR-Zwischenstände, Seitenfehler und Metadaten-Fundstellen lokal ergänzt. Noch offen: repräsentativer gelabelter Holdout-Testbestand mit Kennzahlen je Dokumentart, sichere Rotation/Schräglagenkorrektur mit Koordinatenrückabbildung und weitergehende Layout-/Rückseitenerkennung. Synthetische Regressionstests und beobachtete Trainingskorrekturen sind kein Nachweis allgemeiner Erkennungsgenauigkeit.
+- Erkennungsbenchmark: synthetischer Text-Regressionsbestand mit 11 Fällen / 14 Seiten, Kennzahlen für Typen, Grenzen und Metadaten sowie Corpus-/Engine-Fingerprints lokal ergänzt. Echter privater Scan-Holdout und Vergleich vor/nach mandantenspezifischem Training bleiben offen; siehe [Benchmark-Konzept](docs/recognition-benchmark.md).
+
+- Dokumentenerkennung ausbauen: Seitenwiederaufnahme, persistierte OCR-Zwischenstände, Seitenfehler und Metadaten-Fundstellen deployed; begrenzte Rotation/Schräglagenkorrektur mit Koordinatenrückabbildung lokal ergänzt. Noch offen: repräsentativer gelabelter Holdout-Testbestand mit Kennzahlen je Dokumentart und weitergehende Layout-/Rückseitenerkennung. Synthetische Regressionstests und beobachtete Trainingskorrekturen sind kein Nachweis allgemeiner Erkennungsgenauigkeit.
 
 - RabbitMQ-Adapter bei konkretem externem Integrationsbedarf aktivieren
 - Löschkonzept umsetzen: [Technischer Konzeptentwurf](docs/tenant-retention-and-deletion.md) sowie reversible Archivierung und rein lesende mandantenbezogene Bestands-/Löschvorschau liegen vor. Fristen und Freigabepolitik sind noch zu bestätigen; Backups, temporäre Dateien und Löschsperren bleiben ausdrücklich ungeprüft. Als Nächstes Aufbewahrung und Sperren, Vier-Augen-Freigabe, wiederaufnehmbare Löschjobs sowie Backup-/Restore-Nachweise. Noch keine vollständige Mandantenlöschung implementiert.

@@ -189,25 +189,37 @@ public class DocumentExtractionService {
                 int page=index+1;
                 if(Files.exists(tsvFile)&&Files.size(tsvFile)>10*1024*1024)throw new IOException("OCR-Ausgabe zu groß");
                 var pageWords=Files.exists(tsvFile)?OcrEvidence.parseTsv(Files.readString(tsvFile,StandardCharsets.UTF_8),page):List.<OcrEvidence.Word>of();
-                int attempts=1;
+                int attempts=1;double correctionDegrees=0;
                 long retryBudget=documentBudget-java.util.concurrent.TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()-started);
                 if(OcrQualityPolicy.needsRetry(pageWords)&&retryBudget>=10){
                     attempts=2;Path alternative=directory.resolve("alternative-"+index);
-                    var retry=new ProcessBuilder("tesseract",image.toString(),alternative.toString(),"-l","deu+eng","--psm","11","-c","tessedit_create_txt=1","-c","tessedit_create_tsv=1").redirectOutput(ProcessBuilder.Redirect.DISCARD).redirectErrorStream(true);
-                    retry.environment().put("OMP_THREAD_LIMIT","1");
+                    ScanGeometry.Prepared prepared=null;
                     try{
+                        prepared=prepareScan(image,directory,index,Math.min(10,retryBudget));
+                        Path corrected=directory.resolve("corrected-"+index+".png");
+                        javax.imageio.ImageIO.write(prepared.image(),"png",corrected.toFile());
+                        retryBudget=documentBudget-java.util.concurrent.TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()-started);
+                        if(retryBudget<=0)throw new BoundedProcess.TimeoutException("OCR");
+                        var retry=new ProcessBuilder("tesseract",corrected.toString(),alternative.toString(),"-l","deu+eng","--psm","11","-c","tessedit_create_txt=1","-c","tessedit_create_tsv=1").redirectOutput(ProcessBuilder.Redirect.DISCARD).redirectErrorStream(true);
+                        retry.environment().put("OMP_THREAD_LIMIT","1");
                         runOcrStep(retry,Math.min(pageTimeoutSeconds(),retryBudget));
                         Path altText=Path.of(alternative+".txt"),altTsv=Path.of(alternative+".tsv");
                         if(Files.isRegularFile(altText)&&Files.isRegularFile(altTsv)&&Files.size(altText)<=10*1024*1024&&Files.size(altTsv)<=10*1024*1024){
                             var candidate=OcrEvidence.parseTsv(Files.readString(altTsv,StandardCharsets.UTF_8),page);
-                            if(OcrQualityPolicy.better(candidate,pageWords)){pageWords=candidate;recognized=Files.readString(altText,StandardCharsets.UTF_8);}
+                            if(OcrQualityPolicy.better(candidate,pageWords)){pageWords=prepared.map(candidate);recognized=Files.readString(altText,StandardCharsets.UTF_8);correctionDegrees=prepared.degrees();}
                         }
                     }catch(IOException failure){log.info("Alternative OCR kept primary result: page={}, reason={}",page,failure.getClass().getSimpleName());}
+                    finally{
+                        if(prepared!=null)prepared.image().flush();
+                        for(String suffix:List.of(".txt",".tsv"))Files.deleteIfExists(Path.of(alternative+suffix));
+                        Files.deleteIfExists(directory.resolve("corrected-"+index+".png"));
+                        Files.deleteIfExists(directory.resolve("orientation-"+index+".osd"));
+                    }
                 }
                 if(result.length()<MAX_TEXT_LENGTH)result.append(recognized).append('\n');
                 words.addAll(pageWords);
                 Files.deleteIfExists(image);Files.deleteIfExists(textFile);Files.deleteIfExists(tsvFile);
-                pages.set(index,new OcrEvidence.PageResult(page,recognized.isBlank()?"NO_TEXT":"OCR_EXTRACTED",attempts));
+                pages.set(index,new OcrEvidence.PageResult(page,recognized.isBlank()?"NO_TEXT":"OCR_EXTRACTED",attempts,correctionDegrees,limit(recognized)));
                 } catch(BoundedProcess.TimeoutException failure){
                     pages.set(index,new OcrEvidence.PageResult(index+1,"OCR_TIMEOUT",1));
                 } catch(BoundedProcess.UnavailableException failure){throw failure;
@@ -228,6 +240,26 @@ public class DocumentExtractionService {
     }
 
     public static OcrEvidence readEvidence(String json){if(json==null)return null;try{return new com.fasterxml.jackson.databind.ObjectMapper().readValue(json,OcrEvidence.class);}catch(Exception e){return null;}}
+
+    private ScanGeometry.Prepared prepareScan(Path image,Path directory,int index,long seconds)throws IOException,InterruptedException{
+        var source=ScanGeometry.read(image);
+        ScanGeometry.Prepared upright=null;
+        try{
+            int rotation=0;Path orientation=directory.resolve("orientation-"+index);
+            var process=new ProcessBuilder("tesseract",image.toString(),orientation.toString(),"-l","osd","--psm","0").redirectOutput(ProcessBuilder.Redirect.DISCARD).redirectErrorStream(true);
+            process.environment().put("OMP_THREAD_LIMIT","1");
+            try{runOcrStep(process,seconds);Path report=Path.of(orientation+".osd");if(Files.isRegularFile(report)&&Files.size(report)<=16_384)rotation=ScanGeometry.orientation(Files.readString(report,StandardCharsets.UTF_8));}
+            catch(IOException unavailable){log.debug("Scan orientation not available: reason={}",unavailable.getClass().getSimpleName());}
+            upright=ScanGeometry.rotate(source,rotation);
+            double skew=ScanGeometry.deskewAngle(upright.image());
+            if(skew==0)return upright;
+            var corrected=ScanGeometry.rotate(upright.image(),skew);
+            var inverse=new java.awt.geom.AffineTransform(upright.inverse());inverse.concatenate(corrected.inverse());
+            upright.image().flush();
+            return new ScanGeometry.Prepared(corrected.image(),inverse,source.getWidth(),source.getHeight(),rotation+skew);
+        }catch(IOException|RuntimeException failure){if(upright!=null)upright.image().flush();throw failure;}
+        finally{source.flush();}
+    }
 
     long pageTimeoutSeconds(){return Math.max(1,Math.min(300,ocrPageTimeoutSeconds));}
     long documentTimeoutSeconds(){return Math.max(60,Math.min(1800,ocrDocumentTimeoutSeconds));}
