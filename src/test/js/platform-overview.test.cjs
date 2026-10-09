@@ -43,3 +43,11 @@ test('an existing identity can be assigned to a tenant role with confirmation',a
  await form.onsubmit({preventDefault(){}});
  const write=f.writes.at(-1);assert.equal(write.url,'/api/platform/memberships');assert.deepEqual(write.body,{tenantId:'t1',username:'shared.user',roleId:'r9'});
 });
+
+test('audit chains are verified per tenant with head hash and breaks',async()=>{
+ const f=await fixture({'/api/platform/memberships':[],'/api/platform/audit':[],'/api/platform/audit/chain':[{tenantCode:'acme',ok:true,checked:10,unchained:3,headSeq:10,headHash:'f'.repeat(64)},{tenantCode:'beta',ok:false,checked:4,firstBadSeq:4,reason:'Inhalt veraendert'}]});await f.refresh();
+ await descendants(f.section).find(n=>n.tag==='button'&&n.textContent==='Verify audit chains').onclick();
+ const texts=descendants(f.section).map(n=>n.textContent);
+ assert.ok(texts.includes('acme'));assert.ok(texts.includes('Chain intact'));assert.ok(texts.some(x=>x.includes('10 entries checked')&&x.includes('3 older entries not chained')&&x.includes('#10 '+'f'.repeat(64))));
+ assert.ok(texts.includes('Chain broken'));assert.ok(texts.some(x=>x.includes('Break at no. 4')&&x.includes('Inhalt veraendert')));
+});

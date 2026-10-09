@@ -18,5 +18,6 @@ public class PlatformOverviewController {
  @PutMapping("/memberships/{tenantId}/{userId}/role") public de.ostms.lc.tenant.service.TenantMembershipService.Membership role(@PathVariable java.util.UUID tenantId,@PathVariable java.util.UUID userId,@jakarta.validation.Valid @RequestBody RoleChange request,Authentication auth){return membershipAdmin.changeRole(tenantId,userId,request.roleId(),auth);}
  @PutMapping("/memberships/{tenantId}/{userId}/access") public de.ostms.lc.tenant.service.TenantMembershipService.Membership access(@PathVariable java.util.UUID tenantId,@PathVariable java.util.UUID userId,@jakarta.validation.Valid @RequestBody AccessChange request,Authentication auth){return membershipAdmin.changeAccess(tenantId,userId,request.suspended(),auth);}
  @GetMapping("/memberships") public List<PlatformOverviewStore.Membership> memberships(Authentication auth){return service.memberships(auth);}
+ @GetMapping("/audit/chain") public List<de.ostms.lc.audit.service.AuditChainService.Chain> auditChains(Authentication auth){return service.auditChains(auth);}
  @GetMapping("/audit") public List<PlatformOverviewStore.AuditRow> audit(@RequestParam(required=false) String tenant,@RequestParam(required=false) Integer limit,Authentication auth){return service.audit(tenant,limit,auth);}
 }

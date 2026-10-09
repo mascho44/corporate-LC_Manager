@@ -314,5 +314,9 @@ const localInventory=await call('/api/platform/tenants/'+created.id+'/inventory'
  assert.ok(purged.categories.filter(c=>c.key!=='audit_event').every(c=>c.records===0));
  assert.ok(purged.categories.find(c=>c.key==='audit_event').records>0);
  await call('/api/platform/tenants/'+created.id+'/archive','PUT',{archived:false},400);
+ // Hash chain: written by the database for every audit row of the whole run, including the purged tenant's retained audit.
+ const chains=await call('/api/platform/audit/chain');
+ assert.ok(chains.length>=2);assert.ok(chains.every(c=>c.ok===true&&c.checked>0&&/^[0-9a-f]{64}$/.test(c.headHash)),JSON.stringify(chains));
+ const tenantChain=await call('/api/audit/chain');assert.equal(tenantChain.ok,true);assert.ok(tenantChain.checked>5);
  console.log('PASS: tenant lifecycle, isolation, async pretraining, reviewed split/attachment, raster previews, Original/Copy and full disposable business-data purge.');
 })().catch(error=>{console.error(error.message);process.exitCode=1;}).finally(async()=>{if(syntheticSmtp)await syntheticSmtp.close();});
