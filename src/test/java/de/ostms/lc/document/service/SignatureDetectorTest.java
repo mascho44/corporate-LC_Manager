@@ -24,13 +24,21 @@ class SignatureDetectorTest {
  }
  @Test void emptyFieldWithOnlyARuleAndPrintedTextIsReportedEmpty(){
   var image=page();printedRule(image,290,1640,420);
-  var g=image.createGraphics();g.setColor(Color.BLACK);g.setFont(new Font("SansSerif",Font.PLAIN,28));g.drawString("Signature",300,1690);g.dispose();
-  var result=SignatureDetector.analyze(image,List.of(word("Signature",.95,300,1660,160)),1);
+  var g=image.createGraphics();g.setColor(Color.BLACK);g.setFont(new Font("SansSerif",Font.PLAIN,28));var metrics=g.getFontMetrics();
+  g.drawString("Signature",300,1690);g.dispose();
+  var caption=new OcrEvidence.Word("Signature",.95,1,300,1690-metrics.getAscent(),metrics.stringWidth("Signature"),metrics.getHeight());
+  var result=SignatureDetector.analyze(image,List.of(caption),1);
   assertThat(result.anchors()).hasSize(1);assertThat(result.anchors().get(0).inkFound()).isFalse();
  }
  @Test void confidentlyReadTextIsNeverInkButLowConfidenceScribbleIs(){
-  var image=page();var g=image.createGraphics();g.setColor(Color.BLACK);g.setFont(new Font("SansSerif",Font.BOLD,40));g.drawString("COMMERCIAL INVOICE",300,1560);g.dispose();
-  var printedOnly=SignatureDetector.analyze(image,List.of(word("COMMERCIAL",.97,300,1530,230),word("INVOICE",.97,540,1530,200),word("Signature",.95,300,1660,160)),1);
+  var image=page();var g=image.createGraphics();g.setColor(Color.BLACK);var font=new Font("SansSerif",Font.BOLD,40);g.setFont(font);
+  // Box sizes come from the real font metrics so the test does not depend on the platform's font widths.
+  var metrics=g.getFontMetrics();int x=300,baseline=1560;
+  g.drawString("COMMERCIAL INVOICE",x,baseline);
+  int widthA=metrics.stringWidth("COMMERCIAL"),widthB=metrics.stringWidth("INVOICE"),space=metrics.stringWidth(" "),top=baseline-metrics.getAscent(),height=metrics.getHeight();
+  g.dispose();
+  var printed=List.of(new OcrEvidence.Word("COMMERCIAL",.97,1,x,top,widthA,height),new OcrEvidence.Word("INVOICE",.97,1,x+widthA+space,top,widthB,height),word("Signature",.95,300,1660,160));
+  var printedOnly=SignatureDetector.analyze(image,printed,1);
   assertThat(printedOnly.anchors().get(0).inkFound()).isFalse();
   var signed=page();scribble(signed,300,1500);
   // OCR often reads a scribble as junk with low confidence; that must not hide the ink.
