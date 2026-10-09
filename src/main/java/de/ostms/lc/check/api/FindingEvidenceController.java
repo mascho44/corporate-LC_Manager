@@ -27,6 +27,14 @@ public class FindingEvidenceController {
         var doc=matches.get(0);
         return new View(finding,doc.getId(),doc.getContentType(),EvidenceLocator.locate(doc,finding.documentEvidence()),mode);
     }
+    @org.springframework.beans.factory.annotation.Autowired private de.ostms.lc.document.service.FindingCropService crops;
+    @GetMapping(value="/api/lcs/{lcId}/documents/{id}/finding-crop",produces="image/png") @Transactional(readOnly=true)
+    public org.springframework.http.ResponseEntity<byte[]> crop(@PathVariable UUID lcId,@PathVariable UUID id,@RequestParam String kind)throws Exception{
+        var doc=documents.findById(id).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND));
+        if(!doc.getLetterOfCredit().getId().equals(lcId))throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        try{return org.springframework.http.ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore()).header("X-Content-Type-Options","nosniff").body(crops.crop(doc,kind));}
+        catch(NoSuchElementException none){throw new ResponseStatusException(HttpStatus.NOT_FOUND,"Kein Ausschnitt verfügbar.");}
+    }
     public View evidence(UUID lcId,String code,String documentName){return evidence(lcId,code,documentName,null);}
     public View evidence(UUID lcId,String code,String documentName,String fingerprint){return evidence(lcId,code,documentName,fingerprint,"REVIEW");}
 }
