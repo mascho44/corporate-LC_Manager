@@ -2,7 +2,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),vm=require(
 test('automatic split completion signals refresh without overwriting ongoing assignments',async()=>{const f=fixture([{id:'new-part',automaticallySplit:true,extractionStatus:'EXTRACTED'}]);f.list.innerHTML='user draft';vm.runInContext('inboxEditedItems.add("other")',f.context);await f.context.loadInbox(true);assert.equal(f.list.innerHTML,'user draft');assert.match(f.nodes.message.textContent,/Automatically split documents are available/);});
 function fixture(items){
  const timers=[],nodes={},articles=[],created=[],calls=[];const list={prepend(){},innerHTML:'',textContent:'',querySelectorAll(selector){return selector==='[data-inbox-id]'?articles:[];},querySelector(selector){return nodes[selector]||null;},contains(){return false;}};
- const context=vm.createContext({document:{addEventListener(){},activeElement:null,createElement:tag=>{const node={tag,dataset:{}};created.push(node);return node;}},$:selector=>selector==='#inboxList'?list:selector==='#inboxSection'?{classList:{contains:()=>false}}:nodes.message??={textContent:''},clearTimeout(){},setTimeout(fn,delay){timers.push([fn,delay]);return timers.length;},
+const context=vm.createContext({document:{addEventListener(){},activeElement:null,createElement:tag=>{const node={tag,dataset:{},append(){},after(){},addEventListener(){},replaceChildren(){}};created.push(node);return node;}},$:selector=>selector==='#inboxList'?list:selector==='#inboxSection'?{classList:{contains:()=>false}}:nodes.message??={textContent:''},clearTimeout(){},setTimeout(fn,delay){timers.push([fn,delay]);return timers.length;},
   confirmAction:async()=>true,json:async(url,options)=>{calls.push({url,options});return url==='/api/inbox'?items:[];},renderInboxItem:item=>`item:${item.id}`,esc:String,extractionLabel:status=>status,can:()=>true});
  const source=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/app.js'),'utf8');
  vm.runInContext(source.slice(source.indexOf('let inboxRefreshTimer='),source.indexOf('let appNavigate=')),context);
@@ -56,6 +56,13 @@ test('polling does not overwrite edited assignments and opens completed controls
 test('timed-out items can retry an existing file without uploading again',()=>{
  const f=fixture([]);assert.match(f.context.inboxStatusHtml({id:'test',extractionStatus:'OCR_TIMEOUT'}),/data-inbox-retry="test"/);
  assert.doesNotMatch(f.context.inboxStatusHtml({id:'test',extractionStatus:'PROCESSING'}),/data-inbox-retry/);
+});
+test('partial recognition reports failed pages and allows retry with numeric progress',()=>{
+ const f=fixture([]);
+ const pages=[{page:1,status:'OCR_EXTRACTED'},{page:2,status:'OCR_TIMEOUT'}];
+ assert.match(f.context.inboxStatusHtml({id:'test',extractionStatus:'OCR_PARTIAL',recognitionPages:pages}),/Seite 2: OCR_TIMEOUT/);
+ assert.match(f.context.inboxStatusHtml({id:'test',extractionStatus:'OCR_PARTIAL',recognitionPages:pages}),/data-inbox-retry/);
+ assert.match(f.context.inboxStatusHtml({id:'test',extractionStatus:'PROCESSING',recognitionPages:pages}),/value="1" max="2"/);
 });
 
 test('existing PDFs offer a confirmed explicit automatic split using the protected POST action',async()=>{const f=fixture([{id:'existing',contentType:'application/pdf',extractionStatus:'EXTRACTED'}]);f.articles.push({dataset:{inboxId:'existing'},querySelector:()=>({after(){}}),addEventListener(){},querySelectorAll:()=>[]});await f.context.loadInbox();let opened=false;f.context.openInboxSplit=async item=>{opened=item.id;};const button=f.created.find(n=>n.textContent==='Split automatically');assert.ok(button);f.context.confirmAction=async()=>false;await button.onclick();assert.equal(f.calls.some(c=>c.url.endsWith('/auto-split')),false);f.context.confirmAction=async()=>true;await button.onclick();assert.equal(f.calls.find(c=>c.url.endsWith('/auto-split')).options.method,'POST');assert.match(f.nodes.message.textContent,/No safe automatic split available/);assert.equal(opened,'existing');assert.match(button.className,/inbox-split-action/);});

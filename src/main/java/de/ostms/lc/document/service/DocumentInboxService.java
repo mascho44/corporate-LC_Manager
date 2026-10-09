@@ -199,7 +199,7 @@ public class DocumentInboxService {
     @Transactional
     public DocumentInboxItemView retryExtraction(UUID id){
         var item=lockedOpenItem(id);requireProcessed(item);
-        if(!List.of("FAILED","OCR_TIMEOUT","OCR_UNAVAILABLE","OCR_PAGE_LIMIT","NO_TEXT","NOT_PROCESSED").contains(item.getExtractionStatus()))
+        if(!List.of("FAILED","OCR_PARTIAL","OCR_TIMEOUT","OCR_UNAVAILABLE","OCR_PAGE_LIMIT","NO_TEXT","NOT_PROCESSED").contains(item.getExtractionStatus()))
             throw new IllegalStateException("Die Dokumentenerkennung ist bereits abgeschlossen.");
         item.setExtractionStatus("QUEUED");item.setExtractionStartedAt(null);item.setExtractionToken(null);
         return view(inbox.save(item));
