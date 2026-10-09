@@ -64,5 +64,7 @@ test('platform administrators reach the platform area without a tenant and may c
   await both.submit();
   assert.equal(both.redirects.length,0);
   const select=both.form.children.find(child=>child.tag==='label').children.find(child=>child.tag==='select');
-  assert.ok(select.children.some(option=>option.value==='__platform__'));
+  assert.ok(!select.children.some(option=>option.value==='__platform__'));
+  const consoleButton=both.form.children.find(child=>child.tag==='button'&&child.textContent==='Plattformverwaltung öffnen');
+  assert.ok(consoleButton);consoleButton.onclick();assert.ok(both.redirects.includes('/platform.html'));
 });
