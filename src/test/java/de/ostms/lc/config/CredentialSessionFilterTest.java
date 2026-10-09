@@ -11,6 +11,31 @@ import java.util.*;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 class CredentialSessionFilterTest {
+    @Test void platformAreaDoesNotRequireSelectedTenantMembershipOrChangeTheWorkspace()throws Exception{
+        var users=mock(AppUserRepository.class);var user=new AppUser();user.setPasswordHash("hash");user.setTotpEnabled(true);user.setPlatformAdministrator(true);
+        when(users.findByUsernameIgnoreCase("user")).thenReturn(Optional.of(user));
+        var memberships=mock(de.ostms.lc.tenant.service.TenantMembershipService.class);var selected=UUID.randomUUID();
+        for(String uri:List.of("/platform.html","/platform-shell.js","/platform-admin.js","/styles.css","/language-en.json","/api/platform/session","/api/platform/users")){
+            var request=new MockHttpServletRequest("GET",uri);var session=request.getSession();
+            session.setAttribute(CredentialSessionFilter.TENANT,selected);session.setAttribute(CredentialSessionFilter.STAMP,CredentialStamp.of("hash"));
+            session.setAttribute(CredentialSessionFilter.AUTHENTICATED_AT,System.currentTimeMillis());session.setAttribute(CredentialSessionFilter.TOTP_VERIFIED,true);
+            SecurityContextHolder.getContext().setAuthentication(UsernamePasswordAuthenticationToken.authenticated("user",null,List.of()));
+            var response=new MockHttpServletResponse();
+            new CredentialSessionFilter(users,memberships).doFilter(request,response,(req,res)->assertThat(de.ostms.lc.tenant.domain.TenantContext.currentId()).isEqualTo(de.ostms.lc.tenant.domain.Tenant.DEFAULT_ID));
+            assertThat(response.getStatus()).isEqualTo(200);assertThat(session.getAttribute(CredentialSessionFilter.TENANT)).isEqualTo(selected);
+        }
+        verifyNoInteractions(memberships);
+    }
+    @Test void platformGrantCannotBypassMembershipChecksForBusinessApis()throws Exception{
+        var users=mock(AppUserRepository.class);var user=new AppUser();user.setPasswordHash("hash");user.setTotpEnabled(true);user.setPlatformAdministrator(true);
+        when(users.findByUsernameIgnoreCase("user")).thenReturn(Optional.of(user));
+        var memberships=mock(de.ostms.lc.tenant.service.TenantMembershipService.class);when(memberships.requireActiveAccess(nullable(UUID.class))).thenThrow(new org.springframework.security.access.AccessDeniedException("Suspended tenant"));
+        var request=new MockHttpServletRequest("GET","/api/lcs");var session=request.getSession();
+        session.setAttribute(CredentialSessionFilter.STAMP,CredentialStamp.of("hash"));session.setAttribute(CredentialSessionFilter.AUTHENTICATED_AT,System.currentTimeMillis());session.setAttribute(CredentialSessionFilter.TOTP_VERIFIED,true);
+        SecurityContextHolder.getContext().setAuthentication(UsernamePasswordAuthenticationToken.authenticated("user",null,List.of()));
+        var response=new MockHttpServletResponse();var chain=mock(FilterChain.class);
+        new CredentialSessionFilter(users,memberships).doFilter(request,response,chain);assertThat(response.getStatus()).isEqualTo(401);verifyNoInteractions(chain);
+    }
     @Test void totpEnrollmentCannotUpgradeConcurrentPasswordOnlySession()throws Exception{
         var users=mock(AppUserRepository.class);var user=new AppUser();user.setPasswordHash("hash");user.setTotpEnabled(true);user.setPlatformAdministrator(true);when(users.findByUsernameIgnoreCase("user")).thenReturn(Optional.of(user));
         var request=new MockHttpServletRequest("GET","/api/platform/users");var session=request.getSession();session.setAttribute(CredentialSessionFilter.STAMP,CredentialStamp.of("hash"));session.setAttribute(CredentialSessionFilter.AUTHENTICATED_AT,System.currentTimeMillis());session.setAttribute(CredentialSessionFilter.AUTHORIZATION_STAMP,de.ostms.lc.user.service.AuthorizationStamp.of(user));

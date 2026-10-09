@@ -1,9 +1,10 @@
 /* Global account access is separate from local membership/role administration. */
-async function setupPlatformAdministration(){
+async function setupPlatformAdministration(standalone=false){
  const text=(key,fallback)=>{const value=globalThis.LcI18n?.t(key);return value&&value!==key?value:fallback;};
  const node=(tag,key,fallback)=>{const n=document.createElement(tag);n.textContent=text(key,fallback);if(key)n.dataset.i18n=key;return n;};
  let access;try{access=await json('/api/platform/access');}catch{return;}if(access.enabled!==true)return;
  const nav=node('button','platform.title','Platform administration');nav.id='appNavPlatform';nav.type='button';document.querySelector('#appNav nav').append(nav);
+ if(!standalone){nav.onclick=()=>location.assign('/platform.html');return;}
  const section=document.createElement('section');section.id='platformSection';section.className='panel hidden';
  const status=node('p','','');status.setAttribute('role','status');const list=document.createElement('div');let generation=0;
  const reload=node('button','platform.reload','Reload accounts');reload.type='button';reload.className='secondary';
@@ -56,5 +57,5 @@ async function setupPlatformAdministration(){
   finally{if(request===generation)section.setAttribute('aria-busy','false');}
  }
  const refreshTenants=await setupPlatformTenants(section);
- reload.onclick=()=>Promise.all([refresh(),refreshTenants()]);nav.onclick=()=>{appNavigate('platform',nav);return Promise.all([refresh(),refreshTenants()]);};
+ reload.onclick=()=>Promise.all([refresh(),refreshTenants()]);nav.onclick=()=>{section.classList.remove('hidden');return Promise.all([refresh(),refreshTenants()]);};
 }

@@ -30,6 +30,7 @@ class TenantWorkspaceSecurityTest {
  @MockitoBean TenantSettingsService settings;
  @MockitoBean TenantReadinessService readiness;
  @MockitoBean PlatformAdministrationService platform;
+ @MockitoBean de.ostms.lc.audit.service.AuditService audit;
  @MockitoBean PlatformAccountCreationService accountCreation;
  @MockitoBean PlatformInvitationService invitations;
  @MockitoBean PasswordResetLimiter invitationLimiter;
@@ -63,6 +64,17 @@ class TenantWorkspaceSecurityTest {
  }
  @Test void anonymousCannotReadSettings()throws Exception{mvc.perform(get("/api/tenants/current/settings")).andExpect(status().isUnauthorized());verifyNoInteractions(settings);}
  @Test void anonymousCannotReadGlobalAccounts()throws Exception{mvc.perform(get("/api/platform/users")).andExpect(status().isUnauthorized());verifyNoInteractions(platform);}
+ @Test void platformSessionCannotBeOpenedWithOnlyLocalPermissions()throws Exception{
+  doThrow(new org.springframework.security.access.AccessDeniedException("No global grant")).when(platform).verifyLiveAccess(any());
+  mvc.perform(get("/api/platform/session").session(session())).andExpect(status().isForbidden());
+ }
+ @Test void globalSessionOnlyReturnsIdentityAndCsrfAndLogoutRequiresCsrf()throws Exception{
+  var session=session();var token=token(session);
+  mvc.perform(get("/api/platform/session").session(session)).andExpect(status().isOk()).andExpect(jsonPath("$.username").value("synthetic-viewer")).andExpect(jsonPath("$.csrfToken").isString()).andExpect(jsonPath("$.permissions").doesNotExist()).andExpect(jsonPath("$.tenantId").doesNotExist());
+  mvc.perform(post("/api/platform/logout").session(session)).andExpect(status().isForbidden());verifyNoInteractions(audit);
+  mvc.perform(post("/api/platform/logout").session(session).header(token.getHeaderName(),token.getToken())).andExpect(status().isNoContent());
+  verify(audit).record(any(org.springframework.security.core.Authentication.class),eq("LOGOUT"),eq("SESSION"),isNull(),eq("Platform sign-out"));
+ }
  @Test void invitationAndGrantMutationsRequireCsrfAndValidateRequiredFields()throws Exception{
   var session=session();var token=token(session);String body="{\"username\":\"new\",\"displayName\":\"New\",\"email\":\"new@example.invalid\",\"tenantId\":\""+target+"\",\"roleId\":\""+target+"\"}";
   mvc.perform(post("/api/platform/invitations").session(session).contentType("application/json").content(body)).andExpect(status().isForbidden());verifyNoInteractions(invitations);
