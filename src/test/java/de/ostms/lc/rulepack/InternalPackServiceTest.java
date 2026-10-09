@@ -22,6 +22,29 @@ class InternalPackServiceTest {
   v.packId=p.packId();v.version=p.version();v.definitionJson=codec.canonical(p);v.checksum=codec.digest(v.definitionJson);v.testsPassed=true;
   when(versions.findById(v.id)).thenReturn(Optional.of(v));return v;
  }
+ @Test void missingInputsUseActivePacksAndRemoveAlreadyCapturedFacts()throws Exception{
+  byte[] source;try(var input=getClass().getResourceAsStream("/static/rule-pack-example-v2.json")){source=input.readAllBytes();}
+  var pack=codec.parse(source);var v=new StoredPackVersion();v.packId=pack.packId();v.version=pack.version();v.definitionJson=codec.canonical(pack);v.checksum=codec.digest(v.definitionJson);v.testsPassed=true;
+  when(versions.findById(v.id)).thenReturn(Optional.of(v));var selected=new PackSelection();selected.id=v.packId;selected.activeVersionId=v.id;when(selections.findAll()).thenReturn(List.of(selected));
+  var lc=new LetterOfCredit();var doc=new LcDocument();doc.setDocumentType(DocumentType.COMMERCIAL_INVOICE);
+  assertThat(service.missingDocumentFields(lc,doc)).contains(PackDefinition.Field.DOCUMENT_ISSUER);
+  doc.setRuleFactsJson(RuleFacts.encode(Map.of(PackDefinition.Field.DOCUMENT_ISSUER,"Synthetic issuer"),true));
+  assertThat(service.missingDocumentFields(lc,doc)).doesNotContain(PackDefinition.Field.DOCUMENT_ISSUER);
+  selected.activeVersionId=null;assertThat(service.missingDocumentFields(lc,doc)).isEmpty();
+ }
+ @Test void deletionRejectsActiveVersion()throws Exception{
+  var v=version();var selection=new PackSelection();selection.activeVersionId=v.id;
+  when(selections.locked(v.packId)).thenReturn(Optional.of(selection));
+  assertThatThrownBy(()->service.delete(v.id,auth)).isInstanceOf(IllegalArgumentException.class);
+  verify(versions,never()).delete(any(StoredPackVersion.class));verifyNoInteractions(audit);
+ }
+ @Test void deletionClearsPreviousPointerAndIsAudited()throws Exception{
+  var v=version();var selection=new PackSelection();selection.previousVersionId=v.id;
+  when(selections.locked(v.packId)).thenReturn(Optional.of(selection));
+  service.delete(v.id,auth);assertThat(selection.previousVersionId).isNull();
+  var order=inOrder(selections,versions);order.verify(selections).locked(v.packId);order.verify(selections).flush();order.verify(versions).delete(v);order.verify(versions).flush();
+  verify(audit).recordInTransaction(eq(auth),eq("LC_RULE_PACK_DELETED"),eq("RULE_PACK_VERSION"),eq(v.id),anyString());
+ }
  @Test void importedVersionIsInactiveImmutableAndAudited()throws Exception{
   when(selections.existsById(anyString())).thenReturn(true);
   var v=service.importPack(PackCodecTest.example(),auth);
@@ -54,7 +77,9 @@ class InternalPackServiceTest {
   selected.activeVersionId=v2.id;var changed=service.evaluate(lc,List.of(doc)).get(0);
   assertThat(changed.reviewFingerprint()).isNotEqualTo(finding.reviewFingerprint());
   doc.setAmount(null);assertThat(service.evaluate(lc,List.of(doc)).get(0).message()).contains("nicht prüfbar");
-  assertThat(service.evaluate(lc,List.of()).get(0).message()).contains("Dokument fehlt");
+  var withoutDocuments=service.evaluate(lc,List.of());
+  assertThat(withoutDocuments).hasSize(1);assertThat(withoutDocuments.get(0).severity().name()).isEqualTo("OK");
+  assertThat(withoutDocuments.get(0).documentEvidence()).contains("Dokumenttyp nicht vorgelegt");
  }
  @Test void schemaThreeUsesUniquePeersAndTracksTheirContent()throws Exception{
   byte[] source;try(var input=getClass().getResourceAsStream("/static/rule-pack-example-v3.json")){source=input.readAllBytes();}
@@ -90,7 +115,41 @@ class InternalPackServiceTest {
   var doc=new LcDocument();doc.setDocumentType(DocumentType.INSURANCE_CERTIFICATE);doc.setOriginalFilename("synthetic-cover.pdf");doc.setRuleFactsJson(RuleFacts.encode(Map.of(PackDefinition.Field.DOCUMENT_INSURED_AMOUNT,"1500",PackDefinition.Field.DOCUMENT_INSURANCE_CURRENCY,"EUR"),true));
   var first=service.evaluate(lc,List.of(doc)).get(0);assertThat(first.severity().name()).isEqualTo("OK");assertThat(first.documentEvidence()).contains("1200");
   lc.setRuleFactsJson(RuleFacts.encode(Map.of(PackDefinition.Field.LC_RULE_STANDARD,"UCP600",PackDefinition.Field.LC_CLAIMED_AMOUNT,"1000"),false));assertThat(service.evaluate(lc,List.of(doc)).get(0).message()).contains("nicht prüfbar");
-  lc.setRuleFactsJson(RuleFacts.encode(Map.of(PackDefinition.Field.LC_RULE_STANDARD,"OTHER"),false));assertThat(service.evaluate(lc,List.of()).get(0).message()).contains("nicht anwendbar").doesNotContain("fehlt");
+  lc.setRuleFactsJson(RuleFacts.encode(Map.of(PackDefinition.Field.LC_RULE_STANDARD,"OTHER"),false));var skipped=service.evaluate(lc,List.of());
+  assertThat(skipped).hasSize(1);assertThat(skipped.get(0).severity().name()).isEqualTo("OK");
+  assertThat(skipped.get(0).code()).endsWith(".NOT_APPLIED");assertThat(skipped.get(0).message()).contains("nicht angewendet");
+ }
+ @Test void supplementaryPeerFactsUseCapturedNumbersAndUniqueDocuments()throws Exception{
+  for(var pair:List.of(
+   List.of(PackDefinition.Field.DOCUMENT_INVOICE_REFERENCE,PackDefinition.Field.PEER_DOCUMENT_NUMBER),
+   List.of(PackDefinition.Field.DOCUMENT_PACKAGE_COUNT,PackDefinition.Field.PEER_PACKAGE_COUNT),
+   List.of(PackDefinition.Field.DOCUMENT_SHIPPING_MARKS,PackDefinition.Field.PEER_SHIPPING_MARKS))){
+   String value=pair.get(0)==PackDefinition.Field.DOCUMENT_PACKAGE_COUNT?"12":"SYNTHETIC-123";
+   var rule=new PackDefinition.Rule("peer-check","1.0.0",DocumentType.CERTIFICATE_OF_ORIGIN,pair.get(0),PackDefinition.Operator.EQ,pair.get(1),PackDefinition.Level.WARNING,"Synthetic peer","Internal",PackDefinition.Mode.AUTOMATIC,null,new PackDefinition.Parameters(DocumentType.COMMERCIAL_INVOICE,null,null,null,null,null));
+   var tests=List.of(new PackDefinition.TestCase("pass","peer-check",value,value,PackDefinition.Outcome.PASS),
+    new PackDefinition.TestCase("fail","peer-check",value,"13",PackDefinition.Outcome.FAIL),
+    new PackDefinition.TestCase("unknown","peer-check",null,value,PackDefinition.Outcome.NOT_EVALUABLE));
+   var pack=new PackDefinition(4,"synthetic-peer","1.0.0","Synthetic peer","OWN_INTERNAL","Internal","Synthetic only",List.of(rule),tests);codec.validate(pack);
+   var v=new StoredPackVersion();v.packId=pack.packId();v.version=pack.version();v.definitionJson=codec.canonical(pack);v.checksum=codec.digest(v.definitionJson);v.testsPassed=true;
+   when(versions.findById(v.id)).thenReturn(Optional.of(v));var selected=new PackSelection();selected.id=v.packId;selected.activeVersionId=v.id;when(selections.findAll()).thenReturn(List.of(selected));
+   var doc=new LcDocument();doc.setDocumentType(DocumentType.CERTIFICATE_OF_ORIGIN);doc.setOriginalFilename("synthetic-certificate.pdf");doc.setRuleFactsJson(RuleFacts.encode(Map.of(pair.get(0),value),true));
+   var peer=new LcDocument();peer.setDocumentType(DocumentType.COMMERCIAL_INVOICE);peer.setOriginalFilename("synthetic-invoice.pdf");peer.setContent(new byte[]{1});peer.setExtractedDocumentNumber(value);
+   peer.setRuleFactsJson(RuleFacts.encode(Map.of(PackDefinition.Field.DOCUMENT_PACKAGE_COUNT,"12",PackDefinition.Field.DOCUMENT_SHIPPING_MARKS,value),true));
+   assertThat(service.evaluate(new LetterOfCredit(),List.of(doc,peer)).get(0).severity().name()).isEqualTo("OK");
+   var duplicate=new LcDocument();duplicate.setDocumentType(DocumentType.COMMERCIAL_INVOICE);
+   assertThat(service.evaluate(new LetterOfCredit(),List.of(doc,peer,duplicate)).get(0).message()).contains("nicht prüfbar");
+  }
+ }
+ @Test void literalRuntimeUsesTheConfiguredValueAndReportsIt(){
+  var rule=new PackDefinition.Rule("synthetic-literal","1.0.0",DocumentType.SEA_WAYBILL,PackDefinition.Field.DOCUMENT_SIGNED,PackDefinition.Operator.EQ,PackDefinition.Field.LITERAL,PackDefinition.Level.DISCREPANCY,"Synthetic signature","Internal synthetic",PackDefinition.Mode.AUTOMATIC,null,null,"true");
+  var tests=List.of(new PackDefinition.TestCase("pass",rule.id(),"true",null,PackDefinition.Outcome.PASS),new PackDefinition.TestCase("fail",rule.id(),"false",null,PackDefinition.Outcome.FAIL),new PackDefinition.TestCase("missing",rule.id(),null,null,PackDefinition.Outcome.NOT_EVALUABLE));
+  var pack=new PackDefinition(5,"synthetic-literal","1.0.0","Synthetic literal","OWN_INTERNAL","Internal","Synthetic only",List.of(rule),tests);codec.validate(pack);
+  var v=new StoredPackVersion();v.packId=pack.packId();v.version=pack.version();v.definitionJson=codec.canonical(pack);v.checksum=codec.digest(v.definitionJson);v.testsPassed=true;
+  when(versions.findById(v.id)).thenReturn(Optional.of(v));var selected=new PackSelection();selected.id=v.packId;selected.activeVersionId=v.id;when(selections.findAll()).thenReturn(List.of(selected));
+  var doc=new LcDocument();doc.setDocumentType(DocumentType.SEA_WAYBILL);doc.setOriginalFilename("synthetic.pdf");doc.setRuleFactsJson(RuleFacts.encode(Map.of(PackDefinition.Field.DOCUMENT_SIGNED,"false"),true));
+  var result=service.evaluate(new LetterOfCredit(),List.of(doc)).get(0);
+  assertThat(result.severity().name()).isEqualTo("DISCREPANCY");assertThat(result.lcCondition()).contains("LITERAL = true");
+  doc.setRuleFactsJson("{}");assertThat(service.evaluate(new LetterOfCredit(),List.of(doc)).get(0).message()).contains("nicht prüfbar");
  }
  @Test void corruptedPackNeverProducesSuccessfulFinding()throws Exception{
   var v=version();v.definitionJson+=" ";var selected=new PackSelection();selected.id=v.packId;selected.activeVersionId=v.id;
@@ -109,8 +168,39 @@ class InternalPackServiceTest {
   assertThat(findings.get(2).severity().name()).isEqualTo("WARNING");assertThat(findings.get(2).message()).contains("Manuelle");
   var fingerprint=findings.get(0).reviewFingerprint();
   lc.setRuleFactsJson(RuleFacts.encode(Map.of(PackDefinition.Field.LC_TRANSFERRED,"true",PackDefinition.Field.LC_GOODS_DESCRIPTION,"Test items"),false));
-  var excluded=service.evaluate(lc,List.of(doc));assertThat(excluded).allMatch(f->f.severity().name().equals("WARNING"));
-  assertThat(excluded.get(0).message()).contains("nicht anwendbar");assertThat(excluded.get(0).reviewFingerprint()).isNotEqualTo(fingerprint);
+  var excluded=service.evaluate(lc,List.of(doc));
+  // Ausgeschlossene Regeln erzeugen keine Warnung mehr, sondern erscheinen nur in der Zusammenfassung des Packs
+  var summary=excluded.stream().filter(f->f.code().endsWith(".NOT_APPLIED")).findFirst().orElseThrow();
+  assertThat(summary.severity().name()).isEqualTo("OK");assertThat(summary.documentEvidence()).contains("Bedingung nicht erfüllt");
+  assertThat(excluded).noneMatch(f->f.message().contains("nicht anwendbar:"));
+  assertThat(excluded).noneMatch(f->f.code().equals(findings.get(0).code()));
+  assertThat(excluded.stream().filter(f->!f.code().endsWith(".NOT_APPLIED"))).allMatch(f->f.severity().name().equals("WARNING"));
   lc.setRuleFactsJson("{}");assertThat(service.evaluate(lc,List.of(doc))).allMatch(f->f.message().contains("nicht prüfbar"));
+ }
+
+ @Test void missingDocumentTypesProduceOnlyOneSummaryAndNoWarning()throws Exception{
+  var v=version();var selected=new PackSelection();selected.id=v.packId;selected.activeVersionId=v.id;when(selections.findAll()).thenReturn(List.of(selected));
+  var lc=new LetterOfCredit();var packingList=new LcDocument();packingList.setDocumentType(DocumentType.OTHER);
+  var result=service.evaluateSelected(lc,List.of(packingList),Set.of());
+  assertThat(result.findings()).isNotEmpty().allMatch(f->f.severity().name().equals("OK"));
+  assertThat(result.findings()).hasSize(1);assertThat(result.findings().get(0).code()).endsWith(".NOT_APPLIED");
+  assertThat(result.findings().get(0).documentEvidence()).contains("Dokumenttyp nicht vorgelegt");
+ }
+ @Test void selectionRestrictsEvaluationToTheChosenPacks()throws Exception{
+  var v=version();var selected=new PackSelection();selected.id=v.packId;selected.activeVersionId=v.id;when(selections.findAll()).thenReturn(List.of(selected));
+  var lc=new LetterOfCredit();
+  assertThat(service.evaluateSelected(lc,List.of(),Set.of("another-pack")).findings()).isEmpty();
+  assertThat(service.evaluateSelected(lc,List.of(),Set.of("another-pack")).automaticRuleIds()).isEmpty();
+  assertThat(service.evaluateSelected(lc,List.of(),Set.of(v.packId)).findings()).isNotEmpty();
+  assertThat(service.evaluateSelected(lc,List.of(),Set.of()).findings()).isNotEmpty();
+ }
+ @Test void automaticRuleIdsContainOnlyAutomaticRules()throws Exception{
+  byte[] source;try(var input=getClass().getResourceAsStream("/static/rule-pack-example-v2.json")){source=input.readAllBytes();}
+  var pack=codec.parse(source);var v=new StoredPackVersion();v.packId=pack.packId();v.version=pack.version();v.definitionJson=codec.canonical(pack);v.checksum=codec.digest(v.definitionJson);v.testsPassed=true;
+  when(versions.findById(v.id)).thenReturn(Optional.of(v));var selected=new PackSelection();selected.id=v.packId;selected.activeVersionId=v.id;when(selections.findAll()).thenReturn(List.of(selected));
+  var ids=service.evaluateSelected(new LetterOfCredit(),List.of(),Set.of()).automaticRuleIds();
+  var automatic=pack.rules().stream().filter(r->r.effectiveMode()==PackDefinition.Mode.AUTOMATIC).map(PackDefinition.Rule::id).toList();
+  var manual=pack.rules().stream().filter(r->r.effectiveMode()==PackDefinition.Mode.MANUAL).map(PackDefinition.Rule::id).toList();
+  assertThat(ids).containsExactlyInAnyOrderElementsOf(automatic);assertThat(ids).doesNotContainAnyElementsOf(manual);
  }
 }

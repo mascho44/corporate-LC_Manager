@@ -134,13 +134,18 @@ public class DocumentInboxService {
         document.setContentType(item.getContentType());
         document.setFileSize(item.getFileSize());
         document.setContent(item.getContent());
-        document.setDocumentDate(request.documentDate());
+        document.setDocumentDate(request.metadata()!=null?request.documentDate():request.documentDate()!=null?request.documentDate():DocumentDateDetector.detect(item.getExtractedText()).date());
         document.setAmount(item.getExtractedAmount());
         document.setCurrency(item.getExtractedCurrency());
         document.setExtractedReference(item.getExtractedReference());
         document.setExtractedDocumentNumber(item.getExtractedDocumentNumber());
         document.setExtractedAmount(item.getExtractedAmount());
         document.setExtractedCurrency(item.getExtractedCurrency());
+        if(request.metadata()!=null){
+            document.setExtractedReference(request.metadata().reference());
+            document.setExtractedDocumentNumber(request.metadata().documentNumber());
+            document.setAmount(request.metadata().amount());document.setCurrency(request.metadata().currency());
+        }
         document.setExtractedText(item.getExtractedText());
         document.setExtractionStatus(item.getExtractionStatus());
         document.setOcrEvidenceJson(item.getOcrEvidenceJson());
@@ -163,6 +168,8 @@ public class DocumentInboxService {
         return item;
     }
 
+    @Transactional
+    public void saveMetadataReview(UUID id,String json){var item=lockedOpenItem(id);requireProcessed(item);if(json==null||json.length()>4096)throw new IllegalArgumentException("Bearbeitungsstand zu groß.");item.setMetadataReviewJson(json);inbox.save(item);}
     private DocumentInboxItem lockedOpenItem(UUID id) {
         DocumentInboxItem item = inbox.findForUpdate(id).orElseThrow(() -> new NoSuchElementException("Inbox-Datei nicht gefunden."));
         de.ostms.lc.tenant.domain.TenantContext.require(item.getTenantId());
@@ -192,7 +199,7 @@ public class DocumentInboxService {
     @Transactional
     public DocumentInboxItemView retryExtraction(UUID id){
         var item=lockedOpenItem(id);requireProcessed(item);
-        if(!List.of("FAILED","OCR_TIMEOUT","OCR_UNAVAILABLE","OCR_PAGE_LIMIT","NO_TEXT","NOT_PROCESSED").contains(item.getExtractionStatus()))
+        if(!List.of("FAILED","OCR_PARTIAL","OCR_TIMEOUT","OCR_UNAVAILABLE","OCR_PAGE_LIMIT","NO_TEXT","NOT_PROCESSED").contains(item.getExtractionStatus()))
             throw new IllegalStateException("Die Dokumentenerkennung ist bereits abgeschlossen.");
         item.setExtractionStatus("QUEUED");item.setExtractionStartedAt(null);item.setExtractionToken(null);
         return view(inbox.save(item));

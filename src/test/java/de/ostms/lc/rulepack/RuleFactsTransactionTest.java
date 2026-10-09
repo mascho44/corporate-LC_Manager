@@ -25,6 +25,7 @@ class RuleFactsTransactionTest {
  @TestConfiguration static class Beans{
   @Bean AuditService audit(){return mock(AuditService.class);}
   @Bean DocumentCheckService checks(){return mock(DocumentCheckService.class);}
+  @Bean InternalPackService packs(){return mock(InternalPackService.class);}
  }
  @Autowired RuleFactsController controller;@Autowired LetterOfCreditRepository lcs;
  @Autowired LcDocumentRepository docs;@Autowired AuditService audit;
@@ -46,11 +47,12 @@ class RuleFactsTransactionTest {
   assertThat(lcs.findById(id).orElseThrow().getRuleRequirementsJson()).isNull();
   reset(target);
   controller.updateLc(id,Map.of(Field.LC_TRANSFERRED,"false"),auth);
-  controller.updateDocument(id,docId,Map.of(Field.DOCUMENT_ISSUER,"Demo"),auth);
-  controller.updateRequirements(id,DocumentType.BILL_OF_LADING,Map.of(Field.LC_REQUIRED_ORIGINAL_COUNT,"3"),auth);
+  controller.updateDocument(id,docId,Map.of(Field.DOCUMENT_ISSUER,"Demo",Field.DOCUMENT_PRESENTATION_DATE,"2026-10-08",Field.DOCUMENT_ON_BOARD_NOTATION_PRESENT,"true"),auth);
+  controller.updateRequirements(id,DocumentType.BILL_OF_LADING,Map.of(Field.LC_REQUIRED_ORIGINAL_COUNT,"3",Field.LC_REQUIRED_ISSUER,"Synthetic carrier"),auth);
   controller.updateRequirements(id,DocumentType.INSURANCE_CERTIFICATE,Map.of(Field.LC_SIGNATURE_REQUIRED,"true"),auth);
   assertThat(RuleRequirements.read(lcs.findById(id).orElseThrow().getRuleRequirementsJson()).get(DocumentType.BILL_OF_LADING)).containsEntry(Field.LC_REQUIRED_ORIGINAL_COUNT,"3");
   assertThat(controller.lc(id)).containsEntry(Field.LC_TRANSFERRED,"false");
-  assertThat(controller.document(id,docId)).containsEntry(Field.DOCUMENT_ISSUER,"Demo");
+  assertThat(controller.document(id,docId)).containsEntry(Field.DOCUMENT_ISSUER,"Demo").containsEntry(Field.DOCUMENT_PRESENTATION_DATE,"2026-10-08").containsEntry(Field.DOCUMENT_ON_BOARD_NOTATION_PRESENT,"true");
+  assertThat(RuleRequirements.read(lcs.findById(id).orElseThrow().getRuleRequirementsJson()).get(DocumentType.BILL_OF_LADING)).containsEntry(Field.LC_REQUIRED_ISSUER,"Synthetic carrier");
  }
 }

@@ -22,15 +22,15 @@ class DocumentExtractionServiceTest {
         var content=PdfDocumentSplitterTest.pdf("COMMERCIAL INVOICE","PACKING LIST");
         assertThat(DocumentExtractionService.readPdfPages(content)).hasSize(2);
         var result=new DocumentExtractionService().extractFile(content,"synthetic.pdf","application/pdf");
-        assertThat(result.status()).isEqualTo("EXTRACTED");assertThat(result.text()).contains("COMMERCIAL INVOICE","PACKING LIST");assertThat(result.ocrEvidence()).isNull();
+        assertThat(result.status()).isEqualTo("EXTRACTED");assertThat(result.text()).contains("COMMERCIAL INVOICE","PACKING LIST");assertThat(result.ocrEvidence().method()).isEqualTo("PDF_TEXT_POSITIONS");assertThat(result.ocrEvidence().words()).allMatch(word->word.confidence()==null);assertThat(result.ocrEvidence().words().stream().map(OcrEvidence.Word::page)).contains(1,2);
     }
     @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.ValueSource(strings={"synchronous","background","recognized"})
+    @org.junit.jupiter.params.provider.ValueSource(strings={"synchronous","background","checkpoint","recognized"})
     void rejectsForeignDocumentBeforeContentAccessOrMetadataMutation(String entryPoint){
         LcDocument foreign;try(var scope=de.ostms.lc.tenant.domain.TenantContext.open(java.util.UUID.randomUUID())){foreign=spy(new LcDocument());}
         foreign.setExtractionStatus("QUEUED");foreign.setExtractedText("Synthetic existing text");foreign.setOcrEvidenceJson("Synthetic existing evidence");foreign.setClassificationHistoryJson("Synthetic existing classification");clearInvocations(foreign);
         var service=new DocumentExtractionService();
-        assertThatThrownBy(()->{switch(entryPoint){case "synchronous"->service.extract(foreign);case "background"->service.extractInBackground(foreign);default->service.applyRecognizedText(foreign,"Synthetic replacement","EXTRACTED");}}).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+        assertThatThrownBy(()->{switch(entryPoint){case "synchronous"->service.extract(foreign);case "background"->service.extractInBackground(foreign);case "checkpoint"->service.extractInBackground(foreign,ignored->{throw new AssertionError("Foreign checkpoint");});default->service.applyRecognizedText(foreign,"Synthetic replacement","EXTRACTED");}}).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
         verify(foreign,never()).getContent();verify(foreign,never()).setExtractionStatus(any());verify(foreign,never()).setExtractedText(any());verify(foreign,never()).setOcrEvidenceJson(any());verify(foreign,never()).setClassificationHistoryJson(any());
         assertThat(foreign.getExtractionStatus()).isEqualTo("QUEUED");assertThat(foreign.getExtractedText()).isEqualTo("Synthetic existing text");assertThat(foreign.getOcrEvidenceJson()).isEqualTo("Synthetic existing evidence");
     }

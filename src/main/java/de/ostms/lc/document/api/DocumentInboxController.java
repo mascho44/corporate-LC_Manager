@@ -18,6 +18,45 @@ import java.util.UUID;
 public class DocumentInboxController {
     private final DocumentInboxService service;
     private final AuditService audit;
+    @org.springframework.beans.factory.annotation.Autowired private de.ostms.lc.document.service.DocumentMetadataTraining metadataTraining;
+    @org.springframework.beans.factory.annotation.Autowired private de.ostms.lc.document.service.SpatialLayoutTraining spatialTraining;
+    @org.springframework.beans.factory.annotation.Autowired private com.fasterxml.jackson.databind.ObjectMapper reviewJson;
+    @PostMapping("/{id}/metadata-review") @ResponseStatus(HttpStatus.NO_CONTENT)
+    @org.springframework.transaction.annotation.Transactional
+    public void saveReview(@PathVariable UUID id,@Valid @RequestBody InboxMetadataReview request,Authentication auth)throws Exception{
+        var draft=new InboxMetadataReview(request.lcId(),request.documentType(),request.copyNumber(),request.documentDate(),request.metadata(),request.profile(),false);
+        service.saveMetadataReview(id,reviewJson.writeValueAsString(draft));audit.recordInTransaction(auth,"DOCUMENT_METADATA_REVIEW_SAVED","DOCUMENT_INBOX",id,"Bearbeitungsstand gespeichert · noch nicht bestätigt");
+    }
+
+    @GetMapping("/{id}/metadata-training")
+    public de.ostms.lc.document.service.DocumentMetadataTraining.Proposal metadataSuggestion(@PathVariable UUID id){return metadataTraining.suggest(service.openItem(id).getExtractedText());}
+    @GetMapping("/{id}/recognition-facts")
+    public ResponseEntity<java.util.List<de.ostms.lc.document.service.RecognitionFacts.Field>> recognitionFacts(@PathVariable UUID id){
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(de.ostms.lc.document.service.RecognitionFacts.from(service.openItem(id)));
+    }
+    @GetMapping("/{id}/metadata-positions")
+    public java.util.Map<String,de.ostms.lc.document.service.SpatialMetadata.Field> metadataPositions(@PathVariable UUID id,@RequestParam(required=false) String profile)throws Exception{return spatialTraining.suggest(de.ostms.lc.document.service.DocumentExtractionService.readEvidence(service.openItem(id).getOcrEvidenceJson()),profile);}
+    @PostMapping("/{id}/spatial-training") @ResponseStatus(HttpStatus.NO_CONTENT)
+    @org.springframework.transaction.annotation.Transactional
+    public void confirmSpatial(@PathVariable UUID id,@Valid @RequestBody de.ostms.lc.document.service.SpatialLayoutTraining.Confirmation request,Authentication auth)throws Exception{
+        spatialTraining.confirm(de.ostms.lc.document.service.DocumentExtractionService.readEvidence(service.openItem(id).getOcrEvidenceJson()),request,auth.getName());
+        audit.recordInTransaction(auth,"DOCUMENT_SPATIAL_LAYOUT_TRAINED","DOCUMENT_INBOX",id,"Räumlich bestätigtes Profil: "+request.profile());
+    }
+    @GetMapping(value="/{id}/metadata-positions/{field}/preview",produces="image/png")
+    public ResponseEntity<byte[]> spatialPreview(@PathVariable UUID id,@PathVariable String field,@RequestParam(required=false) String profile)throws Exception{
+        var item=service.openItem(id);if(!"application/pdf".equals(item.getContentType()))throw new IllegalArgumentException("Nur PDF-Ausschnitte unterstützt.");
+        var found=spatialTraining.suggest(de.ostms.lc.document.service.DocumentExtractionService.readEvidence(item.getOcrEvidenceJson()),profile).get(field);if(found==null)throw new IllegalArgumentException("Keine eindeutige Fundstelle vorhanden.");
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).header("X-Content-Type-Options","nosniff").body(pagePreview.markedCrop(item.getContent(),found));
+    }
+
+    @PostMapping("/{id}/metadata-training") @ResponseStatus(HttpStatus.NO_CONTENT)
+    @org.springframework.transaction.annotation.Transactional
+    public void confirmMetadata(@PathVariable UUID id,@Valid @RequestBody de.ostms.lc.document.service.DocumentMetadataTraining.Confirmation request,Authentication auth){
+        var item=service.openItem(id);
+        metadataTraining.confirm(item.getExtractedText(),request,auth.getName());
+        try{var previous=item.getMetadataReviewJson()==null?null:reviewJson.readValue(item.getMetadataReviewJson(),InboxMetadataReview.class);service.saveMetadataReview(id,reviewJson.writeValueAsString(new InboxMetadataReview(previous==null?null:previous.lcId(),previous==null?null:previous.documentType(),previous==null?null:previous.copyNumber(),request.documentDate(),request.metadata(),previous==null?null:previous.profile(),true)));}catch(com.fasterxml.jackson.core.JsonProcessingException e){throw new IllegalStateException(e);}
+        audit.recordInTransaction(auth,"DOCUMENT_METADATA_TRAINED","DOCUMENT_INBOX",id,"Dokumentmetadaten ausdrücklich bestätigt · mandantenspezifisches Textmuster");
+    }
     @org.springframework.beans.factory.annotation.Autowired private de.ostms.lc.document.service.PdfPagePreviewService pagePreview;
 
     @GetMapping(value="/{id}/pages/{page}/preview",produces="image/png")
@@ -51,6 +90,22 @@ public class DocumentInboxController {
         return received;
     }
 
+    @GetMapping("/{id}/metadata-evidence")
+    public java.util.Map<String,String> metadataEvidence(@PathVariable UUID id){
+        var item=service.openItem(id);var result=new java.util.LinkedHashMap<String,String>();
+        String text=item.getExtractedText()==null?"":item.getExtractedText();
+        String[] lines=text.split("\\R",-1);
+        for(int i=0;i<lines.length;i++){
+            String line=lines[i],lower=line.toLowerCase(java.util.Locale.ROOT);
+            String excerpt=line+(i+1<lines.length?"\n"+lines[i+1]:"");
+            if(excerpt.length()>600)excerpt=excerpt.substring(0,600);
+            if(item.getExtractedReference()!=null&&line.contains(item.getExtractedReference()))result.putIfAbsent("reference",excerpt);
+            if(item.getExtractedDocumentNumber()!=null&&line.contains(item.getExtractedDocumentNumber()))result.putIfAbsent("documentNumber",excerpt);
+            if((lower.contains("date")||lower.contains("datum"))&&de.ostms.lc.document.service.DocumentDateDetector.detect(excerpt).date()!=null)result.putIfAbsent("documentDate",excerpt);
+            if(lower.contains("total")||lower.contains("amount due")||lower.contains("invoice amount"))result.putIfAbsent("amount",excerpt);
+        }
+        return result;
+    }
     @GetMapping("/{id}/content")
     public ResponseEntity<byte[]> content(@PathVariable UUID id) {
         DocumentInboxItem item = service.openItem(id);
@@ -84,7 +139,7 @@ public class DocumentInboxController {
         return service.splitProposal(id);
     }
 
-    public record SplitRequest(@jakarta.validation.constraints.NotNull @jakarta.validation.constraints.Size(min=2,max=100)
+    public record SplitRequest(@jakarta.validation.constraints.NotNull @jakarta.validation.constraints.Size(min=1,max=100)
                                List<de.ostms.lc.document.service.PdfDocumentSplitter.Part> parts) {}
 
     @PostMapping("/{id}/split")

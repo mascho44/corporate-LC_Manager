@@ -13,11 +13,12 @@ normalized username is `admin`. Existing installations without that identity do
 not silently promote another user. A protected API now grants and revokes this
 flag independently of tenant roles.
 
-The **Platform administration** menu opens a page, not a dialog. An active flagged
-identity with enrolled TOTP can list global home identities and activate/suspend
-accounts without switching to the default workspace. Normal authenticated-session
-and selected-membership validation still applies: this is not a separate platform
-login independent of all tenant memberships.
+The **Platform administration** menu opens the separate /platform.html area.
+An active flagged identity with a verified TOTP session can list global identities
+and activate/suspend accounts without a tenant workspace. Platform requests verify
+global credentials and rights independently of the selected membership. After sign-in, a platform administrator without any tenant
+membership is sent directly to /platform.html; with memberships the workspace chooser
+additionally offers "Plattformverwaltung (ohne Mandant)".
 
 `GET /api/platform/access` reports only whether the current identity can use the
 page. `GET /api/platform/users` and `PUT /api/platform/users/{id}/access` validate
@@ -152,3 +153,36 @@ local-only users, required email, duplicate rejection, no default/foreign login
 before assignment, explicit local assignment, continued default-login denial and
 viewer-only access in the assigned tenant. Audit-failure rollback was verified
 with real Spring transactions. The test installation was removed afterward.
+
+# Global platform area
+
+Platform administration is available at /platform.html, separately from the
+tenant workspace. The workspace menu links to this page rather than rendering
+platform functions inside the LC application.
+
+The page has no tenant selector, LC cockpit or business-data requests. Its
+client accepts only /api/platform/ URLs. Accounts, invitations and tenant
+lifecycle remain explicitly global operations; local roles and memberships
+remain in the tenant workspace.
+
+An active global platform administrator and a verified two-factor session are
+required. Global requests do not depend on the selected tenant membership
+or permission stamp. Credentials, global account activation, session lifetime
+and verified 2FA are still checked. Services verify live platform rights.
+Business requests continue to enforce tenant membership. The prior workspace
+selection is retained only for returning to the business application; opening
+platform administration does not switch it or grant access to it.
+
+Login continues to use the existing authenticated sign-in flow. This change
+separates the administration area and its request authorization, not the
+initial login flow or global identity storage.
+
+## Cross-tenant overview (read-only)
+
+The platform page lists all memberships across tenants (`GET /api/platform/memberships`:
+user, tenant, role name, account/membership/tenant state) and a metadata-only audit view
+(`GET /api/platform/audit?tenant=<code>&limit=<=500`: time, tenant code, user, action,
+entity type, result). Both re-verify live platform access on every call and use fixed
+read-only SQL. Audit details, before/after values, object IDs, IP addresses and all
+business data stay in the tenant audit log. Memberships and roles are still changed
+only by each tenant's administrators.

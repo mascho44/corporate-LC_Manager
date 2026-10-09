@@ -7,6 +7,12 @@ public class LetterOfCredit {
  public UUID getTenantId(){return tenantId;}
  @PrePersist @PreUpdate @PreRemove private void validateTenant(){de.ostms.lc.tenant.domain.TenantContext.require(tenantId);}
  @Column(columnDefinition="text") @com.fasterxml.jackson.annotation.JsonIgnore private String ruleFactsJson;
+ @Column(length=16) @com.fasterxml.jackson.annotation.JsonIgnore private String ruleSourceOverride;
+ @Column(length=600) @com.fasterxml.jackson.annotation.JsonIgnore private String rulePackIds;
+ public String getRuleSourceOverride(){return ruleSourceOverride;}
+ public void setRuleSourceOverride(String value){ruleSourceOverride=value;}
+ public String getRulePackIds(){return rulePackIds;}
+ public void setRulePackIds(String value){rulePackIds=value;}
  public String getRuleFactsJson(){return ruleFactsJson;}
  public void setRuleFactsJson(String value){ruleFactsJson=value;}
  @Column(columnDefinition="text") @com.fasterxml.jackson.annotation.JsonIgnore private String ruleRequirementsJson;

@@ -34,7 +34,10 @@ public class CredentialSessionFilter extends OncePerRequestFilter {
             valid=valid&&(selected==null||selected instanceof java.util.UUID);
             // Enrollment alone never upgrades a concurrent password-only session.
             valid=valid&&(account==null||!account.isTotpEnabled()||Boolean.TRUE.equals(session==null?null:session.getAttribute(TOTP_VERIFIED)));
-            if(valid){
+            String uri=request.getRequestURI();
+            boolean platformResource=uri.startsWith("/api/platform/")||java.util.Set.of("/platform.html","/platform-shell.js","/platform.css","/platform-admin.js","/platform-tenants.js","/tenant-inventory.js","/i18n.js","/language-en.json","/language-de.json","/ui-feedback.js","/ui-feedback.css","/styles.css","/controls.css","/tenants.css").contains(uri);
+            boolean globalAccess=valid&&platformResource&&account.isPlatformAdministrator()&&account.isTotpEnabled()&&Boolean.TRUE.equals(session.getAttribute(TOTP_VERIFIED));
+            if(valid&&!globalAccess){
                 try(var scope=de.ostms.lc.tenant.domain.TenantContext.open(tenantId)){
                     var access=memberships.requireActiveAccess(account.getId());
                     valid=(access.baseRole()!=de.ostms.lc.user.domain.UserRole.ADMIN||account.isTotpEnabled())&&
@@ -47,7 +50,7 @@ public class CredentialSessionFilter extends OncePerRequestFilter {
                 return;
             }
             // Own identity self-service remains in the identity's home scope; business APIs use selected membership.
-            String uri=request.getRequestURI();boolean selfService=(uri.startsWith("/api/profile")&&!uri.startsWith("/api/profile/language"))||uri.equals("/api/auth/password")||uri.startsWith("/api/auth/totp/");
+            boolean selfService=platformResource||(uri.startsWith("/api/profile")&&!uri.startsWith("/api/profile/language"))||uri.equals("/api/auth/password")||uri.startsWith("/api/auth/totp/");
             try(var scope=de.ostms.lc.tenant.domain.TenantContext.open(selfService?account.getTenantId():tenantId)){chain.doFilter(request,response);}
             return;
         }

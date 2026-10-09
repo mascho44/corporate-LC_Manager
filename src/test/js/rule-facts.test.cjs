@@ -3,14 +3,14 @@ const source=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
 function setup(allowed=true){
  const calls=[],dialogs={};let click;const close={},context={},requirementButton={},submit={disabled:false};
- const form={elements:{},querySelector:()=>submit,querySelectorAll:()=>Object.values(form.elements)};
+ const form={elements:{},querySelector:selector=>selector==='.dialoghead'?{after(){}}:submit,querySelectorAll:()=>Object.values(form.elements)};
  const dialog={open:false,showModal(){this.open=true;},close(){this.open=false;},querySelector(selector){return selector==='form'?form:selector==='[data-context]'?context:selector==='[data-requirements]'?requirementButton:{textContent:''};},querySelectorAll:()=>[close]};
  Object.defineProperty(dialog,'innerHTML',{set(html){this.html=html;form.elements={};for(const m of html.matchAll(/<(textarea|select) name="([^"]+)"[^>]*>([\s\S]*?)<\/\1>/g)){const selected=m[1]==='select'?m[3].match(/<option value="([^"]+)" selected/):null;form.elements[m[2]]={value:m[1]==='textarea'?m[3]:selected?.[1]||''};}for(const m of html.matchAll(/<input name="([^"]+)"[^>]*value="([^"]*)"/g))form.elements[m[1]]={value:m[2]};}});
  const descriptor=(field,kind='TEXT',choices=[])=>({field,label:field,kind,choices,maxLength:500});
  const definitions={document:[descriptor('DOCUMENT_ISSUER'),descriptor('DOCUMENT_RECIPIENT'),descriptor('DOCUMENT_GOODS_DESCRIPTION')],lc:[descriptor('LC_TRANSFERRED','BOOLEAN',['true','false']),descriptor('LC_RULE_STANDARD','TEXT',['UCP600','OTHER'])],requirements:[descriptor('LC_SIGNATURE_REQUIRED','BOOLEAN',['true','false']),descriptor('LC_REQUIRED_ORIGINAL_COUNT','NUMBER')]};
- const document={getElementById:id=>dialogs[id],createElement:()=>dialog,body:{append:element=>dialogs[element.id]=element},addEventListener:(type,handler)=>click=handler};
+ const document={getElementById:id=>dialogs[id],createElement:tag=>tag==='dialog'?dialog:{append(){},textContent:''},body:{append:element=>dialogs[element.id]=element},addEventListener:(type,handler)=>click=handler};
  const globals={document,activeLc:{id:'test-lc'},can:()=>allowed,esc:value=>String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'),alert:assert.fail,show:async id=>calls.push({refresh:id}),json:async(url,options)=>{
-  calls.push({url,...options});return url.endsWith('/definitions')?definitions:url.includes('/documents/')?{DOCUMENT_ISSUER:'<unsafe>'}:{};
+  calls.push({url,...options});return url.endsWith('/missing')?[]:url.endsWith('/definitions')?definitions:url.includes('/documents/')?{DOCUMENT_ISSUER:'<unsafe>'}:{};
  }};
  vm.runInNewContext(source,globals);
  return {calls,dialog,form,context,close,requirementButton,click:()=>click({target:{closest:()=>({dataset:{ruleFacts:'test-document',ruleFactsType:'COMMERCIAL_INVOICE'}})}})};

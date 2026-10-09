@@ -40,6 +40,14 @@ class PdfDocumentSplitterTest {
         assertThat(output.get(0).text()).contains("COMMERCIAL INVOICE").doesNotContain("PACKING LIST");
         assertThat(output.get(1).text()).contains("PACKING LIST","Packing details");
     }
+    @Test void singleCompleteRangePreservesAllPagesAndDesignation()throws Exception{
+        var part=new PdfDocumentSplitter.Part(1,2,DocumentType.BILL_OF_LADING,-2);
+        var output=PdfDocumentSplitter.split(pdf("BILL OF LADING","Terms and conditions"),null,List.of(part));
+        assertThat(output).hasSize(1);assertThat(output.get(0).part()).isEqualTo(part);
+        try(var document=Loader.loadPDF(output.get(0).content())){assertThat(document.getNumberOfPages()).isEqualTo(2);}
+        assertThatThrownBy(()->PdfDocumentSplitter.validate(List.of(),2)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(()->PdfDocumentSplitter.validate(List.of(new PdfDocumentSplitter.Part(1,1,DocumentType.BILL_OF_LADING)),2)).isInstanceOf(IllegalArgumentException.class);
+    }
     @Test void rejectsOmissionsOverlapsAndInvalidTypes() {
         for(var parts:List.of(List.of(new PdfDocumentSplitter.Part(1,1,DocumentType.OTHER),new PdfDocumentSplitter.Part(3,3,DocumentType.OTHER)),List.of(new PdfDocumentSplitter.Part(1,2,DocumentType.OTHER),new PdfDocumentSplitter.Part(2,3,DocumentType.OTHER)),List.of(new PdfDocumentSplitter.Part(1,1,null),new PdfDocumentSplitter.Part(2,3,DocumentType.OTHER)),List.of(new PdfDocumentSplitter.Part(1,1,DocumentType.OTHER),new PdfDocumentSplitter.Part(2,2,DocumentType.OTHER))))
             assertThatThrownBy(()->PdfDocumentSplitter.validate(parts,3)).isInstanceOf(IllegalArgumentException.class);

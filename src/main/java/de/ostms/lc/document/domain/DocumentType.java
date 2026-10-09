@@ -16,7 +16,13 @@ public enum DocumentType {
     ADVISING_LETTER("Avisierungsschreiben"),
     SWIFT_MT700("SWIFT MT700 / Akkreditiveröffnung"),
     ANNEX("Annex / Anlage"),
-    OTHER("Other");
+    OTHER("Other"),
+    SEA_WAYBILL("Sea Waybill"),
+    CHARTER_PARTY_BILL_OF_LADING("Charter Party Bill of Lading"),
+    MULTIMODAL_TRANSPORT_DOCUMENT("Multimodal Transport Document"),
+    WEIGHT_LIST("Weight List"),
+    POST_RECEIPT("Post Receipt"),
+    DOCUMENT_SUBMISSION("Dokumenteneinreichung");
 
     private final String displayName;
 

@@ -37,6 +37,16 @@ UPLOAD_ANTIVIRUS_HOST=clamav
 UPLOAD_ANTIVIRUS_PORT=3310
 ```
 
+Die Compose-Datei enthält dafür das Profil `antivirus` (Dienst `clamav`, nur im
+internen Netzwerk, Signaturen im Volume `lc-clamav`, Start dauert einige Minuten):
+
+```bash
+docker compose -f docker-compose.prod.yml --profile antivirus up -d
+```
+
+Ohne das Profil startet kein Scanner; der Standard bleibt aus. Erst danach
+`UPLOAD_ANTIVIRUS_ENABLED=true` setzen, sonst werden Uploads bei aktivem Scan abgelehnt.
+
 Keinen Scanner-Port öffentlich veröffentlichen. ClamAV muss mindestens 50 MB
 INSTREAM unterstützen. Archiv-/Dateigrößenlimits und Warnungen bei überschrittenen
 Scanlimits müssen passend eingerichtet und getestet werden. Es gibt keinen

@@ -17,15 +17,20 @@
  }
  async function refresh(){
   const rows=await request(api);
-  get('packVersions').innerHTML=rows.length?'<div class="pack-table-wrap"><table class="pack-table"><thead><tr><th>Pack / Version</th><th>Status</th><th>Aktionen</th></tr></thead><tbody>'+rows.map(p=>'<tr><td><b>'+escape(p.name)+'</b><small>'+escape(p.packId+' v'+p.version)+'</small><small>'+escape(p.importedBy+' · '+p.importedAt)+'</small><details><summary>Prüfsumme</summary><span class="pack-checksum">'+escape(p.checksum)+'</span></details></td><td>'+(p.active?'Aktiv':p.previous?'Vorherige Version':'Inaktiv')+'<small>Tests '+(p.testsPassed?'bestanden':'fehlgeschlagen')+'</small></td><td><button class="secondary" data-test="'+p.id+'">Testlauf</button>'+(p.active?'<button class="secondary" data-deactivate="'+escape(p.packId)+'">Deaktivieren</button>':'<button data-activate="'+p.id+'" data-label="'+escape(p.packId+' v'+p.version)+'" '+(p.testsPassed?'':'disabled')+'>'+(p.previous?'Vorherige Version aktivieren':'Aktivieren')+'</button>')+'</td></tr>').join('')+'</tbody></table></div>':'Noch keine Packs importiert.';
+  get('packVersions').innerHTML=rows.length?'<div class="pack-table-wrap"><table class="pack-table"><thead><tr><th>Pack / Version</th><th>Status</th><th>Aktionen</th></tr></thead><tbody>'+rows.map(p=>'<tr><td><b>'+escape(p.name)+'</b><small>'+escape(p.packId+' v'+p.version)+'</small><small>'+escape(p.importedBy+' · '+p.importedAt)+'</small><details><summary>Prüfsumme</summary><span class="pack-checksum">'+escape(p.checksum)+'</span></details></td><td>'+(p.active?'Aktiv':p.previous?'Vorherige Version':'Inaktiv')+'<small>Tests '+(p.testsPassed?'bestanden':'fehlgeschlagen')+'</small></td><td><button class="secondary" data-test="'+p.id+'">Testlauf</button>'+(p.active?'<button class="secondary" data-deactivate="'+escape(p.packId)+'">Deaktivieren</button>':'<button data-activate="'+p.id+'" data-label="'+escape(p.packId+' v'+p.version)+'" '+(p.testsPassed?'':'disabled')+'>'+(p.previous?'Vorherige Version aktivieren':'Aktivieren')+'</button>')+'<button class="danger" data-delete="'+p.id+'" data-label="'+escape(p.packId+' v'+p.version)+'" '+(p.active?'disabled title="Zuerst deaktivieren"':'')+'>Löschen</button></td></tr>').join('')+'</tbody></table></div>':'Noch keine Packs importiert.';
  }
  get('packFile').onchange=async()=>{
   const current=++sequence;source=null;preview=null;get('packImport').disabled=true;message('');
   const file=get('packFile').files[0];if(!file)return;
-  if(file.size>512*1024){message('Datei überschreitet 512 KB.');return;}
+  if(file.size>5*1024*1024){message('Datei überschreitet 5 MB.');return;}
   get('packPreview').textContent='Datei wird validiert und getestet …';
   try{const text=await file.text();const result=await request(api+'/preview',{method:'POST',body:text});
-   if(current!==sequence)return;source=text;preview=result;renderPreview(result);get('packImport').disabled=false;
+   if(current!==sequence)return;
+   if(result.kind==='SPECIFICATION'){
+    get('packPreview').innerHTML='<h3>Erweiterungsspezifikation · Kompatibilität</h3><p>'+result.supported+' von '+result.rules+' Regeln strukturell unterstützt · Schema '+result.schemaVersion+'</p><p>'+escape(result.message)+'</p><ul>'+[...(result.configurationRequirements||[]).map(reason=>({ruleId:'Konfiguration',reason})),...result.issues].map(i=>'<li>'+escape(i.ruleId)+': '+escape(i.reason)+'</li>').join('')+'</ul>';
+    message('Spezifikation geprüft, nicht gespeichert oder aktiviert.');return;
+   }
+   source=text;preview=result;renderPreview(result);get('packImport').disabled=false;
   }catch(error){if(current===sequence){message(error.message);get('packPreview').textContent='Keine gültige Vorschau.';}}
  };
  get('packImport').onclick=async()=>{
@@ -42,18 +47,31 @@
    if(!confirm(button.dataset.label+' für alle LC-Akten aktivieren?'))return;
   }
   if(button.dataset.deactivate&&!confirm('Pack '+button.dataset.deactivate+' für alle LC-Akten deaktivieren?'))return;
+  if(button.dataset.delete&&!confirm(button.dataset.label+' endgültig löschen? Audit-Protokolle und bisherige Befunde bleiben erhalten.'))return;
   busy=true;button.disabled=true;message('');
   try{
    if(button.dataset.test){++sequence;source=null;preview=null;get('packImport').disabled=true;get('packFile').disabled=true;renderPreview(await request(api+'/'+button.dataset.test+'/test',{method:'POST'}));}
    else if(button.dataset.activate){await request(api+'/'+button.dataset.activate+'/activate',{method:'POST',body:JSON.stringify({rightsConfirmed:true})});get('packRights').checked=false;await refresh();message('Pack-Version aktiviert.');}
    else if(button.dataset.deactivate){await request(api+'/'+encodeURIComponent(button.dataset.deactivate)+'/deactivate',{method:'POST'});await refresh();message('Pack deaktiviert.');}
+   else if(button.dataset.delete){await request(api+'/'+button.dataset.delete,{method:'DELETE'});get('packPreview').textContent='';await refresh();message('Pack-Version gelöscht.');}
   }catch(error){message(error.message);}
   finally{busy=false;button.disabled=false;get('packFile').disabled=false;}
+ };
+ const ruleSourceApi='/api/settings/rule-source';
+ async function loadRuleSource(){
+  const current=await request(ruleSourceApi);get('ruleSourceMode').value=current.mode;
+  get('ruleSourceMode').disabled=false;get('ruleSourceSave').disabled=false;
+ }
+ get('ruleSourceSave').onclick=async()=>{
+  const button=get('ruleSourceSave');button.disabled=true;
+  try{const saved=await request(ruleSourceApi,{method:'PUT',body:JSON.stringify({mode:get('ruleSourceMode').value})});get('ruleSourceMode').value=saved.mode;message('Regelquelle gespeichert.');}
+  catch(error){message(error.message);}
+  finally{button.disabled=false;}
  };
  (async()=>{
   try{const user=await request('/api/auth/me');csrf=user.csrfToken;
    if(!user.permissions?.includes('SETTINGS_MANAGE'))throw Error('Für Rule Packs wird das Recht SETTINGS_MANAGE benötigt.');
-   get('packFile').disabled=false;get('packRefresh').disabled=false;await refresh();
+   get('packFile').disabled=false;get('packRefresh').disabled=false;await refresh();await loadRuleSource();
   }catch(error){message(error.message);get('packVersions').textContent='Verwaltung nicht verfügbar.';}
  })();
 })();

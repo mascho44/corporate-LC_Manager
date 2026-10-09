@@ -16,6 +16,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class DocumentInboxServiceTest {
+    @Test void metadataReviewIsSavedWithoutTrainingAndRejectsUnavailableItems(){
+        var id=UUID.randomUUID();var original=item();when(inbox.findForUpdate(id)).thenReturn(Optional.of(original));
+        service.saveMetadataReview(id,"{\"confirmed\":false}");
+        assertThat(original.getMetadataReviewJson()).isEqualTo("{\"confirmed\":false}");verify(inbox).save(original);verifyNoInteractions(documents,checks);
+        original.setExtractionStatus("PROCESSING");assertThatThrownBy(()->service.saveMetadataReview(id,"{}")).isInstanceOf(IllegalStateException.class);
+        original.setExtractionStatus("EXTRACTED");assertThatThrownBy(()->service.saveMetadataReview(id,"x".repeat(4097))).isInstanceOf(IllegalArgumentException.class);
+    }
     @Test void existingProcessedPdfCanBeAutomaticallySplitWithoutAnotherUpload()throws Exception{var id=UUID.randomUUID();var source=item();ReflectionTestUtils.setField(source,"id",id);source.setContentType("application/pdf");source.setOriginalFilename("synthetic-old.pdf");source.setExtractionStatus("EXTRACTED");source.setReceivedBy("original-uploader");source.setContent(PdfDocumentSplitterTest.pdf("COMMERCIAL INVOICE","PACKING LIST"));when(inbox.findForUpdate(id)).thenReturn(Optional.of(source));when(lcs.findAssignmentTargets()).thenReturn(List.of());when(inbox.saveAndFlush(any())).thenAnswer(call->{DocumentInboxItem saved=call.getArgument(0);if(saved.getId()==null)ReflectionTestUtils.setField(saved,"id",UUID.randomUUID());return saved;});var audit=mock(de.ostms.lc.audit.service.AuditService.class);ReflectionTestUtils.setField(service,"automaticSplitter",new InboxAutomaticSplitter(inbox,new DocumentExtractionService(),audit));var parts=service.automaticSplit(id,"requesting-user");assertThat(parts).hasSize(2).allMatch(part->part.automaticallySplit()&&part.classification().status().equals("SUGGESTED"));assertThat(source.getStatus()).isEqualTo("SPLIT");assertThat(source.getContent()).isNotEmpty();verify(audit).recordInTransaction(argThat(a->a.getName().equals("requesting-user")),eq("DOCUMENT_INBOX_AUTO_SPLIT"),eq("DOCUMENT_INBOX"),eq(id),anyString());verifyNoInteractions(documents,checks);}
     @Test void automaticSplitRejectsForeignPayloadBeforeReadingIt()throws Exception{var foreign=mock(DocumentInboxItem.class);when(foreign.getTenantId()).thenReturn(UUID.randomUUID());var id=UUID.randomUUID();when(inbox.findForUpdate(id)).thenReturn(Optional.of(foreign));assertThatThrownBy(()->service.automaticSplit(id,"tester")).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);verify(foreign,never()).getContent();}
     @Test void splitKeepsOriginalAndStoresSelectedTypesAndPageOrigins() throws Exception {
@@ -70,6 +77,13 @@ class DocumentInboxServiceTest {
         verifyNoInteractions(documents,checks,extraction);
     }
 
+    @Test void correctedMetadataIsTransferredWithoutChangingLcMasterData(){
+        UUID id=UUID.randomUUID(),lcId=UUID.randomUUID();var item=item();item.setExtractedText("Invoice date: 25.08.2026");when(inbox.findForUpdate(id)).thenReturn(Optional.of(item));
+        var lc=new LetterOfCredit();lc.setReference("LC-UNCHANGED");ReflectionTestUtils.setField(lc,"id",lcId);when(lcs.findById(lcId)).thenReturn(Optional.of(lc));
+        when(documents.save(any())).thenAnswer(call->{LcDocument doc=call.getArgument(0);ReflectionTestUtils.setField(doc,"id",UUID.randomUUID());assertThat(doc.getExtractedReference()).isEqualTo("LC-CORRECTED");assertThat(doc.getExtractedDocumentNumber()).isEqualTo("INV-42");assertThat(doc.getAmount()).isEqualByComparingTo("42.50");assertThat(doc.getCurrency()).isEqualTo("EUR");assertThat(doc.getDocumentDate()).isNull();return doc;});
+        service.attach(id,new DocumentInboxAttachRequest(lcId,DocumentType.COMMERCIAL_INVOICE,null,null,new DocumentInboxAttachRequest.Metadata("LC-CORRECTED","INV-42",new java.math.BigDecimal("42.50"),"EUR")));
+        assertThat(lc.getReference()).isEqualTo("LC-UNCHANGED");
+    }
     @Test void confirmedAssignmentMovesContentAndInvalidatesOldChecks() {
         UUID id=UUID.randomUUID(),lcId=UUID.randomUUID(),documentId=UUID.randomUUID();
         DocumentInboxItem item=item();when(inbox.findForUpdate(id)).thenReturn(Optional.of(item));

@@ -5,27 +5,41 @@ import java.util.regex.Pattern;
 
 /** Resolves only explicit, uniquely labelled address blocks; never treats all conditions as an address. */
 public final class BeneficiaryReferenceResolver {
-    private static final Pattern REFERENCE = Pattern.compile("(?i)\\b(?:SEE|REFER TO|SIEHE)\\s+(?:FIELD|FELD)\\s*:?\\s*(\\d{2}[A-Z]?)\\b");
-    private static final Pattern HEADER = Pattern.compile("(?i)^\\s*(?:[+*-]|\\d+[.)])?\\s*(?:BENEFICIARY(?:'S)?(?:\\s+(?:NAME AND ADDRESS|ADDRESS|DETAILS))?|BEGÜNSTIGTER|BEGÜNSTIGTENADRESSE)\\s*:\\s*(.*)$");
+    private static final Pattern REFERENCE = Pattern.compile("(?i)\\b(?:SEE|REFER(?:\\s{1,5}+TO)?|SIEHE|VIDE)\\s{1,5}+(?:(?:FIELD|FLD|TAG|FELD)\\s{0,5}+:?\\s{0,5}+)?(\\d{2}[A-Z]?)\\b");
+    private static String headerFor(String role,String german){
+        return "(?i)^\\s{0,5}+(?:[+*-]|\\d+[.)])?\\s{0,5}+(?:(?:FULL\\s{1,5}+)?(?:ADDRESS|NAME(?:\\s{1,5}+AND\\s{1,5}+ADDRESS)?)\\s{1,5}+OF\\s{1,5}+(?:THE\\s{1,5}+)?"+role
+            +"|"+role+"(?:'S)?(?:\\s{1,5}+FULL)?(?:\\s{1,5}+(?:NAME(?:\\s{0,5}+(?:AND|&|/)\\s{0,5}+ADDRESS)?|ADDRESS|DETAILS))?|"+german+")\\s{0,5}+[:\\-]\\s{0,5}+(.*)$";
+    }
+    private static final Pattern HEADER = Pattern.compile(headerFor("BENEFICIARY","BEGÜNSTIGTER|BEGÜNSTIGTENADRESSE"));
+    private static final Pattern APPLICANT_HEADER = Pattern.compile(headerFor("APPLICANT","AUFTRAGGEBER|ANTRAGSTELLER|AUFTRAGGEBERADRESSE"));
 
     private BeneficiaryReferenceResolver() {}
 
     public record Resolution(String value, String source, boolean resolved) {}
 
     public static Resolution resolve(Map<String, String> fields) {
-        String original = fields.get("59");
+        return resolve(fields, "59", HEADER);
+    }
+
+    /** Field 50: the applicant's address may likewise be given in a labelled block of another field, typically 47A. */
+    public static Resolution resolveApplicant(Map<String, String> fields) {
+        return resolve(fields, "50", APPLICANT_HEADER);
+    }
+
+    private static Resolution resolve(Map<String, String> fields, String ownField, Pattern headerPattern) {
+        String original = fields.get(ownField);
         if (original == null) return new Resolution(null, null, false);
         var reference = REFERENCE.matcher(original);
         if (!reference.find()) return new Resolution(original, null, false);
         String source = reference.group(1).toUpperCase(java.util.Locale.ROOT);
-        if (reference.find() || source.equals("59")) return new Resolution(original, source, false);
+        if (reference.find() || source.equals(ownField)) return new Resolution(original, source, false);
         String text = fields.get(source);
         if (text == null) return new Resolution(original, source, false);
         StringBuilder address = new StringBuilder();
         boolean collecting = false;
         int matches = 0;
         for (String line : text.split("\\R")) {
-            var header = HEADER.matcher(line);
+            var header = headerPattern.matcher(line);
             if (header.matches()) {
                 matches++;
                 collecting = true;

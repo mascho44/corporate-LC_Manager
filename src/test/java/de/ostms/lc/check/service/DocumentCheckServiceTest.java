@@ -23,6 +23,7 @@ class DocumentCheckServiceTest {
         var result=new DocumentCheckService(lcs,docs,decisions).precheck(id);
         assertThat(result.results()).anyMatch(r->r.code().equals("MISSING_DOCUMENT"));
         assertThat(result.results()).allMatch(r->r.reviewDecision()==null);
+        assertThat(result.mode()).isEqualTo("PRECHECK");assertThat(result.finalReview()).isFalse();assertThat(result.reviewedFindings()).isZero();
         verifyNoInteractions(decisions);verify(lcs,never()).save(any());verify(docs,never()).save(any());
     }
     @Test void requiresAndStoresAcceptanceReason(){
@@ -96,17 +97,17 @@ class DocumentCheckServiceTest {
         LcDocument invoice=document(DocumentType.COMMERCIAL_INVOICE,"invoice.pdf","Authorized signature: Jane Doe");
         var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(invoice));
         var result=service(lcs,docs).check(id);
-        assertThat(result.results()).extracting("code").contains("SIGNATURE_REQUIREMENT_EVIDENCED","DOCUMENT_COPIES_MANUAL_REVIEW");
+        assertThat(result.results()).extracting("code").contains("SIGNATURE_REQUIREMENT_EVIDENCED","DOCUMENT_ORIGINAL_COUNT","DOCUMENT_COPY_COUNT");
     }
 
     @Test void acceptedManualDecisionClosesWarning() {
         UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-13");lc.setRequiredDocuments(List.of("COMMERCIAL INVOICE IN 2 ORIGINALS"));LcDocument invoice=document(DocumentType.COMMERCIAL_INVOICE,"invoice.pdf","Invoice");
-        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);var decisions=mock(DocumentCheckDecisionRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(invoice));DocumentCheckDecision decision=new DocumentCheckDecision();decision.setFindingCode("DOCUMENT_COPIES_MANUAL_REVIEW");decision.setDocumentName("invoice.pdf");decision.setDecision("ACCEPTED");decision.setReviewedBy("checker");when(decisions.findByLcId(id)).thenReturn(List.of(decision));
+        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);var decisions=mock(DocumentCheckDecisionRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(invoice));DocumentCheckDecision decision=new DocumentCheckDecision();decision.setFindingCode("DOCUMENT_ORIGINAL_COUNT");decision.setDocumentName("invoice.pdf");decision.setDecision("ACCEPTED");decision.setReviewedBy("checker");when(decisions.findByLcId(id)).thenReturn(List.of(decision));
         when(decisions.findByLcId(id)).thenReturn(List.of());var checkService=new DocumentCheckService(lcs,docs,decisions);
-        decision.setFindingFingerprint(checkService.check(id).results().stream().filter(item->item.code().equals("DOCUMENT_COPIES_MANUAL_REVIEW")).findFirst().orElseThrow().reviewFingerprint());
+        decision.setFindingFingerprint(checkService.check(id).results().stream().filter(item->item.code().equals("DOCUMENT_ORIGINAL_COUNT")).findFirst().orElseThrow().reviewFingerprint());
         when(decisions.findByLcId(id)).thenReturn(List.of(decision));var result=checkService.check(id);
-        assertThat(result.results()).filteredOn(item->item.code().equals("DOCUMENT_COPIES_MANUAL_REVIEW")).allMatch(item->item.severity()==de.ostms.lc.check.api.CheckResult.Severity.OK&&"ACCEPTED".equals(item.reviewDecision()));
-        assertThat(result.results()).filteredOn(item->item.code().equals("DOCUMENT_COPIES_MANUAL_REVIEW")).isNotEmpty().allMatch(item->item.automaticSeverity()==de.ostms.lc.check.api.CheckResult.Severity.WARNING);
+        assertThat(result.results()).filteredOn(item->item.code().equals("DOCUMENT_ORIGINAL_COUNT")).allMatch(item->item.severity()==de.ostms.lc.check.api.CheckResult.Severity.OK&&"ACCEPTED".equals(item.reviewDecision()));
+        assertThat(result.results()).filteredOn(item->item.code().equals("DOCUMENT_ORIGINAL_COUNT")).isNotEmpty().allMatch(item->item.automaticSeverity()==de.ostms.lc.check.api.CheckResult.Severity.WARNING);
     }
 
     @Test void exposesEffectiveAdditionalConditionsForManualReview() {
@@ -311,4 +312,14 @@ class DocumentCheckServiceTest {
 
     private LcDocument document(DocumentType type,String name,String text){LcDocument document=new LcDocument();document.setDocumentType(type);document.setOriginalFilename(name);document.setExtractionStatus("GENERATED");document.setExtractedText(text);document.setDocumentDate(LocalDate.now());return document;}
     private DocumentCheckService service(LetterOfCreditRepository lcs,LcDocumentRepository docs){DocumentCheckDecisionRepository decisions=mock(DocumentCheckDecisionRepository.class);when(decisions.findByLcId(any())).thenReturn(List.of());return new DocumentCheckService(lcs,docs,decisions);}
+
+    @Test void missingTransportDocumentProducesNoContentWarningAboutIt(){
+        UUID id=UUID.randomUUID();var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);var decisions=mock(DocumentCheckDecisionRepository.class);
+        var lc=new LetterOfCredit();lc.setRequiredDocuments(List.of("COMMERCIAL INVOICE","BILL OF LADING"));lc.setRawMessage(":20:X\n:48:21 DAYS\n");
+        var invoice=new LcDocument();invoice.setOriginalFilename("inv.pdf");invoice.setDocumentType(DocumentType.COMMERCIAL_INVOICE);org.springframework.test.util.ReflectionTestUtils.setField(invoice,"uploadedAt",java.time.LocalDateTime.now());
+        when(lcs.findById(id)).thenReturn(Optional.of(lc));when(decisions.findByLcId(id)).thenReturn(List.of());when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(invoice));
+        var results=new DocumentCheckService(lcs,docs,decisions).check(id).results();
+        assertThat(results).anyMatch(r->r.code().equals("MISSING_DOCUMENT"));
+        assertThat(results).noneMatch(r->r.code().equals("PRESENTATION_PERIOD_REVIEW"));
+    }
 }

@@ -37,14 +37,19 @@ public class DocumentExtractionService {
         extract(document,Math.min(300,documentTimeoutSeconds()));
     }
     public void extractInBackground(LcDocument document){extract(document,documentTimeoutSeconds());}
+    public void extractInBackground(LcDocument document,java.util.function.Consumer<LcDocument> checkpoint){extract(document,documentTimeoutSeconds(),checkpoint);}
 
     private void extract(LcDocument document,long documentBudget) {
+        extract(document,documentBudget,ignored->{});
+    }
+    private void extract(LcDocument document,long documentBudget,java.util.function.Consumer<LcDocument> checkpoint) {
         // Authorization errors must escape, not become an extraction failure on a foreign object.
         de.ostms.lc.tenant.domain.TenantContext.require(document.getTenantId());
+        var priorEvidence=readEvidence(document.getOcrEvidenceJson());
         document.setOcrEvidenceJson(null);
         long started=System.nanoTime();
         try (var slot=PdfProcessingSafety.acquire()) {
-            List<String> pdfPages=isPdf(document)?readPdfPages(document.getContent()):null;
+            List<String> pdfPages=isPdf(document)?resumePages(readPdfPages(document.getContent()),priorEvidence):null;
             String text = pdfPages==null?readText(document):String.join("\n",pdfPages);
             if (text == null) {
                 document.setExtractionStatus("UNSUPPORTED");
@@ -52,8 +57,9 @@ public class DocumentExtractionService {
             }
             boolean ocrUsed = false;
             text = normalize(text);
+            if(pdfPages!=null){var positions=new java.util.ArrayList<>(PdfWordPositions.read(document.getContent()));if(priorEvidence!=null)positions.addAll(priorEvidence.words().stream().filter(w->w.confidence()!=null).toList());document.setOcrEvidenceJson(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(new OcrEvidence("PDFBOX","PDF_TEXT_POSITIONS",200,ocrThreshold,positions,priorEvidence==null?List.of():priorEvidence.pages())));}
             if (pdfPages!=null&&pdfPages.stream().anyMatch(String::isBlank)) {
-                text = normalize(readPdfWithOcr(document,documentBudget,pdfPages));
+                text = normalize(readPdfWithOcr(document,documentBudget,pdfPages,checkpoint));
                 ocrUsed = !text.isBlank();
             }
             document.setExtractedText(limit(text));
@@ -61,7 +67,9 @@ public class DocumentExtractionService {
                 document.setExtractionStatus("NO_TEXT");
                 return;
             }
-            applyRecognizedText(document,text,ocrUsed ? "OCR_EXTRACTED" : "EXTRACTED");
+            var evidence=readEvidence(document.getOcrEvidenceJson());
+            boolean failed=evidence!=null&&evidence.pages().stream().anyMatch(p->!List.of("EXTRACTED","OCR_EXTRACTED").contains(p.status()));
+            applyRecognizedText(document,text,failed?"OCR_PARTIAL":ocrUsed||priorEvidence!=null&&!priorEvidence.pages().isEmpty() ? "OCR_EXTRACTED" : "EXTRACTED");
         } catch (PageLimitException exception) {
             document.setExtractionStatus("OCR_PAGE_LIMIT");
         } catch (BoundedProcess.TimeoutException exception) {
@@ -84,8 +92,9 @@ public class DocumentExtractionService {
     public void applyRecognizedText(LcDocument document,String recognized,String status) {
             de.ostms.lc.tenant.domain.TenantContext.require(document.getTenantId());
             String text=limit(normalize(recognized));document.setExtractedText(text);
+            if(document.getDocumentDate()==null)document.setDocumentDate(DocumentDateDetector.detect(text).date());
             match(DOCUMENT_NUMBER, text, 1).ifPresent(document::setExtractedDocumentNumber);
-            match(LC_REFERENCE, text, 1).ifPresent(document::setExtractedReference);
+            document.setExtractedReference(DocumentReferenceDetector.detect(text));
             var amountMatcher = AMOUNT.matcher(text);
             if (amountMatcher.find()) {
                 String currency = amountMatcher.group(1) != null ? amountMatcher.group(1) : amountMatcher.group(3);
@@ -118,13 +127,20 @@ public class DocumentExtractionService {
         }
     }
 
+    static List<String> resumePages(List<String> texts,OcrEvidence evidence){
+        if(evidence==null)return texts;
+        var result=new java.util.ArrayList<>(texts);
+        for(int i=0;i<result.size();i++)if(result.get(i).isBlank()){String completed=evidence.completedPageText(i+1);if(completed!=null&&!completed.isBlank())result.set(i,completed);}
+        return List.copyOf(result);
+    }
+
     static List<int[]> blankPageRanges(List<String> texts){
         var ranges=new java.util.ArrayList<int[]>();int start=-1;
         for(int i=0;i<=texts.size();i++){boolean blank=i<texts.size()&&texts.get(i).isBlank();if(blank&&start<0)start=i+1;if(!blank&&start>0){ranges.add(new int[]{start,i});start=-1;}}
         return ranges;
     }
 
-    private String readPdfWithOcr(LcDocument document,long documentBudget,List<String> pageTexts) throws Exception {
+    private String readPdfWithOcr(LcDocument document,long documentBudget,List<String> pageTexts,java.util.function.Consumer<LcDocument> checkpoint) throws Exception {
         long requiredPages=pageTexts.stream().filter(String::isBlank).count();
         int limit=Math.max(1,Math.min(200,maxOcrPages));
         if(requiredPages>limit){log.warn("OCR page limit: scannedPages={}, maxPages={}",requiredPages,limit);throw new PageLimitException();}
@@ -136,9 +152,13 @@ public class DocumentExtractionService {
             var images=new java.util.HashMap<Integer,Path>();
             StringBuilder result = new StringBuilder();
             java.util.ArrayList<OcrEvidence.Word> words=new java.util.ArrayList<>();
+            var digital=readEvidence(document.getOcrEvidenceJson());if(digital!=null)words.addAll(digital.words());
+            var pages=new java.util.ArrayList<OcrEvidence.PageResult>();
+            for(int i=0;i<pageTexts.size();i++)pages.add(new OcrEvidence.PageResult(i+1,pageTexts.get(i).isBlank()?"QUEUED":"EXTRACTED",0));
             String engineVersion=tesseractVersion(directory);
             for (int index = 0; index < pageTexts.size(); index++) {
-                if(!pageTexts.get(index).isBlank()){if(result.length()<MAX_TEXT_LENGTH)result.append(pageTexts.get(index)).append('\n');continue;}
+                if(!pageTexts.get(index).isBlank()){if(result.length()<MAX_TEXT_LENGTH)result.append(pageTexts.get(index)).append('\n');int number=index+1;var previous=digital==null?null:digital.pages().stream().filter(p->p.page()==number&&"OCR_EXTRACTED".equals(p.status())).findFirst().orElse(null);pages.set(index,previous==null?new OcrEvidence.PageResult(number,"EXTRACTED",0):previous);continue;}
+                try {
                 if(!images.containsKey(index+1)){
                     int last=index;while(last+1<pageTexts.size()&&last-index<2&&pageTexts.get(last+1).isBlank())last++;
                     long remaining=documentBudget-java.util.concurrent.TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()-started);
@@ -164,16 +184,55 @@ public class DocumentExtractionService {
                 Path textFile = Path.of(output + ".txt");
                 if(!Files.isRegularFile(textFile))throw new IOException("OCR produced no text file");
                 if(Files.exists(textFile)&&Files.size(textFile)>10*1024*1024)throw new IOException("OCR-Ausgabe zu groß");
-                if (Files.exists(textFile)&&result.length()<MAX_TEXT_LENGTH) result.append(Files.readString(textFile, StandardCharsets.UTF_8)).append('\n');
+                String recognized=Files.readString(textFile,StandardCharsets.UTF_8);
                 Path tsvFile=Path.of(output+".tsv");
                 int page=index+1;
                 if(Files.exists(tsvFile)&&Files.size(tsvFile)>10*1024*1024)throw new IOException("OCR-Ausgabe zu groß");
-                if(Files.exists(tsvFile))words.addAll(OcrEvidence.parseTsv(Files.readString(tsvFile,StandardCharsets.UTF_8),page));
+                var pageWords=Files.exists(tsvFile)?OcrEvidence.parseTsv(Files.readString(tsvFile,StandardCharsets.UTF_8),page):List.<OcrEvidence.Word>of();
+                int attempts=1;double correctionDegrees=0;
+                long retryBudget=documentBudget-java.util.concurrent.TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()-started);
+                if(OcrQualityPolicy.needsRetry(pageWords)&&retryBudget>=10){
+                    attempts=2;Path alternative=directory.resolve("alternative-"+index);
+                    ScanGeometry.Prepared prepared=null;
+                    try{
+                        prepared=prepareScan(image,directory,index,Math.min(10,retryBudget));
+                        Path corrected=directory.resolve("corrected-"+index+".png");
+                        javax.imageio.ImageIO.write(prepared.image(),"png",corrected.toFile());
+                        retryBudget=documentBudget-java.util.concurrent.TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()-started);
+                        if(retryBudget<=0)throw new BoundedProcess.TimeoutException("OCR");
+                        var retry=new ProcessBuilder("tesseract",corrected.toString(),alternative.toString(),"-l","deu+eng","--psm","11","-c","tessedit_create_txt=1","-c","tessedit_create_tsv=1").redirectOutput(ProcessBuilder.Redirect.DISCARD).redirectErrorStream(true);
+                        retry.environment().put("OMP_THREAD_LIMIT","1");
+                        runOcrStep(retry,Math.min(pageTimeoutSeconds(),retryBudget));
+                        Path altText=Path.of(alternative+".txt"),altTsv=Path.of(alternative+".tsv");
+                        if(Files.isRegularFile(altText)&&Files.isRegularFile(altTsv)&&Files.size(altText)<=10*1024*1024&&Files.size(altTsv)<=10*1024*1024){
+                            var candidate=OcrEvidence.parseTsv(Files.readString(altTsv,StandardCharsets.UTF_8),page);
+                            if(OcrQualityPolicy.better(candidate,pageWords)){pageWords=prepared.map(candidate);recognized=Files.readString(altText,StandardCharsets.UTF_8);correctionDegrees=prepared.degrees();}
+                        }
+                    }catch(IOException failure){log.info("Alternative OCR kept primary result: page={}, reason={}",page,failure.getClass().getSimpleName());}
+                    finally{
+                        if(prepared!=null)prepared.image().flush();
+                        for(String suffix:List.of(".txt",".tsv"))Files.deleteIfExists(Path.of(alternative+suffix));
+                        Files.deleteIfExists(directory.resolve("corrected-"+index+".png"));
+                        Files.deleteIfExists(directory.resolve("orientation-"+index+".osd"));
+                    }
+                }
+                if(result.length()<MAX_TEXT_LENGTH)result.append(recognized).append('\n');
+                words.addAll(pageWords);
                 Files.deleteIfExists(image);Files.deleteIfExists(textFile);Files.deleteIfExists(tsvFile);
+                pages.set(index,new OcrEvidence.PageResult(page,recognized.isBlank()?"NO_TEXT":"OCR_EXTRACTED",attempts,correctionDegrees,limit(recognized)));
+                } catch(BoundedProcess.TimeoutException failure){
+                    pages.set(index,new OcrEvidence.PageResult(index+1,"OCR_TIMEOUT",1));
+                } catch(BoundedProcess.UnavailableException failure){throw failure;
+                } catch(IOException failure){
+                    pages.set(index,new OcrEvidence.PageResult(index+1,"FAILED",1));
+                }
+                document.setExtractedText(limit(result.toString()));
+                document.setOcrEvidenceJson(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(new OcrEvidence(engineVersion,"TESSERACT_WORD_MIN_V2",200,ocrThreshold,words,pages)));
+                checkpoint.accept(document);
             }
             log.info("OCR completed: pages={}, ocrPages={}, textPages={}, elapsedMillis={}",pageTexts.size(),requiredPages,pageTexts.size()-requiredPages,java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-started));
             if(!Double.isFinite(ocrThreshold)||ocrThreshold<0||ocrThreshold>1)throw new IllegalArgumentException("Ungültige OCR-Konfidenzschwelle");
-            document.setOcrEvidenceJson(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(new OcrEvidence(engineVersion,"TESSERACT_WORD_MIN_V2",200,ocrThreshold,List.copyOf(words))));
+            document.setOcrEvidenceJson(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(new OcrEvidence(engineVersion,"TESSERACT_WORD_MIN_V2",200,ocrThreshold,List.copyOf(words),pages)));
             return limit(result.toString());
         } finally {
             deleteDirectory(directory);
@@ -181,6 +240,26 @@ public class DocumentExtractionService {
     }
 
     public static OcrEvidence readEvidence(String json){if(json==null)return null;try{return new com.fasterxml.jackson.databind.ObjectMapper().readValue(json,OcrEvidence.class);}catch(Exception e){return null;}}
+
+    private ScanGeometry.Prepared prepareScan(Path image,Path directory,int index,long seconds)throws IOException,InterruptedException{
+        var source=ScanGeometry.read(image);
+        ScanGeometry.Prepared upright=null;
+        try{
+            int rotation=0;Path orientation=directory.resolve("orientation-"+index);
+            var process=new ProcessBuilder("tesseract",image.toString(),orientation.toString(),"-l","osd","--psm","0").redirectOutput(ProcessBuilder.Redirect.DISCARD).redirectErrorStream(true);
+            process.environment().put("OMP_THREAD_LIMIT","1");
+            try{runOcrStep(process,seconds);Path report=Path.of(orientation+".osd");if(Files.isRegularFile(report)&&Files.size(report)<=16_384)rotation=ScanGeometry.orientation(Files.readString(report,StandardCharsets.UTF_8));}
+            catch(IOException unavailable){log.debug("Scan orientation not available: reason={}",unavailable.getClass().getSimpleName());}
+            upright=ScanGeometry.rotate(source,rotation);
+            double skew=ScanGeometry.deskewAngle(upright.image());
+            if(skew==0)return upright;
+            var corrected=ScanGeometry.rotate(upright.image(),skew);
+            var inverse=new java.awt.geom.AffineTransform(upright.inverse());inverse.concatenate(corrected.inverse());
+            upright.image().flush();
+            return new ScanGeometry.Prepared(corrected.image(),inverse,source.getWidth(),source.getHeight(),rotation+skew);
+        }catch(IOException|RuntimeException failure){if(upright!=null)upright.image().flush();throw failure;}
+        finally{source.flush();}
+    }
 
     long pageTimeoutSeconds(){return Math.max(1,Math.min(300,ocrPageTimeoutSeconds));}
     long documentTimeoutSeconds(){return Math.max(60,Math.min(1800,ocrDocumentTimeoutSeconds));}
@@ -201,7 +280,7 @@ public class DocumentExtractionService {
         try (var paths = Files.walk(directory)) { paths.sorted(Comparator.reverseOrder()).forEach(path -> { try { Files.deleteIfExists(path); } catch (IOException ignored) {} }); }
         catch (IOException ignored) {}
     }
-    private void runOcrStep(ProcessBuilder builder,long seconds)throws IOException,InterruptedException {
+    void runOcrStep(ProcessBuilder builder,long seconds)throws IOException,InterruptedException {
         try { BoundedProcess.run(builder,seconds); }
         catch(IOException failure) {
             // BoundedProcess messages contain only fixed tool names and exit/timeout status.
