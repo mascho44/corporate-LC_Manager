@@ -1,0 +1,20 @@
+/* Posteingang-Upload und Operationsmonitor: klare Karten, helle Standard-Buttons, Primäraktionen blau. */
+.inbox-upload{gap:14px;margin:0 22px 22px;padding:22px 24px;background:#fff;border:1px solid #e1e7f0;border-radius:14px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.inbox-upload label{font-weight:600;color:#14213d}
+.inbox-upload input[type=file]{width:100%;padding:18px;background:#f7f9fd;border:2px dashed #c5d0e2;border-radius:12px;font-weight:400;color:#42506b;cursor:pointer}
+.inbox-upload input[type=file]:hover{border-color:#3156a3;background:#f1f5fc}
+.inbox-upload input[type=file]::file-selector-button{margin-right:14px;padding:8px 16px;background:#fff;color:#14213d;border:1px solid #c5d0e2;border-radius:10px;font:600 14px inherit;cursor:pointer}
+.inbox-upload input[type=file]::file-selector-button:hover{background:#eef2f9;border-color:#9fb0cc}
+.inbox-upload small{line-height:1.5}
+.inbox-upload button[type=submit]{background:#3156a3;color:#fff;padding:11px 20px}
+.inbox-upload button[type=submit]:hover:not(:disabled){background:#264585}
+#inboxList>button.secondary{background:#fff;color:#14213d;border:1px solid #c5d0e2;font-weight:600;padding:9px 16px;margin:0 22px 14px}
+#inboxList>button.secondary:hover{background:#eef2f9;border-color:#9fb0cc}
+.monitoring-grid{grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
+.monitoring-grid .card{display:flex;flex-direction:column;gap:6px;padding:18px 20px;background:#fff;border:1px solid #e1e7f0;border-radius:14px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.monitoring-grid .card small{margin:0;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#52607a}
+.monitoring-grid .card b{font-size:30px;line-height:1.1;color:#14213d}
+.monitoring-grid .card p{margin:2px 0 0;font-size:13px;color:#52607a}
+.monitoring-grid .monitoring-unavailable{background:#f7f9fc;border-style:dashed;box-shadow:none}
+.monitoring-grid .monitoring-unavailable b{font-size:16px;font-weight:600;color:#7a869e}
+.monitoring-timestamp{padding-bottom:4px;color:#52607a}
