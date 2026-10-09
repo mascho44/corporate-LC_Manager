@@ -107,8 +107,9 @@ public class DocumentInboxController {
         return result;
     }
     @GetMapping("/{id}/content")
-    public ResponseEntity<byte[]> content(@PathVariable UUID id) {
+    public ResponseEntity<byte[]> content(@PathVariable UUID id, Authentication authentication) {
         DocumentInboxItem item = service.openItem(id);
+        audit.record(authentication, "DOCUMENT_INBOX_VIEWED", "DOCUMENT_INBOX", id, item.getOriginalFilename());
         MediaType type = switch (item.getContentType()) {
             case "application/pdf" -> MediaType.APPLICATION_PDF;
             case "image/png" -> MediaType.IMAGE_PNG;
