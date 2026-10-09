@@ -48,6 +48,6 @@ class OperationsMonitoringServiceTest {
         assertThat(summary.failedBackgroundJobs().value()).isEqualTo(5);
         assertThat(summary.waitingForCustomer().available()).isTrue();assertThat(summary.waitingForCustomer().value()).isEqualTo(1);
         assertThat(summary.ebicsErrors().available()).isFalse();
-        verify(checks, times(2)).check(any());
+        verify(checks, times(3)).check(any());
     }
 }
