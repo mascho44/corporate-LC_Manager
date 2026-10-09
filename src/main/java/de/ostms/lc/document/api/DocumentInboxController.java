@@ -129,8 +129,8 @@ public class DocumentInboxController {
 
     @PostMapping("/{id}/retry")
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public DocumentInboxItemView retry(@PathVariable UUID id,Authentication authentication){
-        var result=service.retryExtraction(id);
+    public DocumentInboxItemView retry(@PathVariable UUID id,@RequestParam(defaultValue="false") boolean force,Authentication authentication){
+        var result=service.retryExtraction(id,force);
         audit.record(authentication,"DOCUMENT_INBOX_EXTRACTION_RETRIED","DOCUMENT_INBOX",id,"Erkennung erneut in Warteschlange aufgenommen");
         return result;
     }

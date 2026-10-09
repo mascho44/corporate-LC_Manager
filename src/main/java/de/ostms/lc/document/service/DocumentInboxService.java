@@ -198,9 +198,14 @@ public class DocumentInboxService {
     }
 
     @Transactional
-    public DocumentInboxItemView retryExtraction(UUID id){
+    public DocumentInboxItemView retryExtraction(UUID id){return retryExtraction(id,false);}
+    /** With force a finished recognition is run again with the current rules; the result replaces the recognised text, never the user's own entries. */
+    @Transactional
+    public DocumentInboxItemView retryExtraction(UUID id,boolean force){
         var item=lockedOpenItem(id);requireProcessed(item);
-        if(!List.of("FAILED","OCR_PARTIAL","OCR_TIMEOUT","OCR_UNAVAILABLE","OCR_PAGE_LIMIT","NO_TEXT","NOT_PROCESSED").contains(item.getExtractionStatus()))
+        var retryable=new java.util.ArrayList<>(List.of("FAILED","OCR_PARTIAL","OCR_TIMEOUT","OCR_UNAVAILABLE","OCR_PAGE_LIMIT","NO_TEXT","NOT_PROCESSED"));
+        if(force)retryable.addAll(List.of("EXTRACTED","OCR_EXTRACTED"));
+        if(!retryable.contains(item.getExtractionStatus()))
             throw new IllegalStateException("Die Dokumentenerkennung ist bereits abgeschlossen.");
         item.setExtractionStatus("QUEUED");item.setExtractionStartedAt(null);item.setExtractionToken(null);
         return view(inbox.save(item));
