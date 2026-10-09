@@ -142,6 +142,25 @@ public class InternalPackService {
   }
   return List.copyOf(findings);
  }
+ @Transactional(readOnly=true)
+ public Set<Field> missingDocumentFields(LetterOfCredit lc,LcDocument doc){
+  de.ostms.lc.tenant.domain.TenantContext.require(lc.getTenantId());
+  de.ostms.lc.tenant.domain.TenantContext.require(doc.getTenantId());
+  var fields=EnumSet.noneOf(Field.class);
+  for(var selection:selections.findAll()){
+   if(selection.activeVersionId==null)continue;
+   var stored=versions.findById(selection.activeVersionId).orElseThrow();
+   if(!stored.testsPassed)throw new IllegalStateException("Aktives Pack ist nicht erfolgreich getestet.");
+   for(var rule:read(stored).rules()){
+    if(rule.documentType()!=doc.getDocumentType())continue;
+    if(rule.left()!=null)fields.add(rule.left());if(rule.right()!=null)fields.add(rule.right());
+    if(rule.conditions()!=null)rule.conditions().forEach(c->fields.add(c.field()));
+    if(rule.parameters()!=null){if(rule.parameters().daysField()!=null)fields.add(rule.parameters().daysField());if(rule.parameters().percentField()!=null)fields.add(rule.parameters().percentField());}
+   }
+  }
+  fields.removeIf(field->!RuleFacts.DOCUMENT.contains(field)||field.peer()||value(field,lc,doc)!=null&&!value(field,lc,doc).isBlank());
+  return fields;
+ }
  private String value(Field field,LetterOfCredit lc,LcDocument doc){
   Object value=switch(field){
    case DOCUMENT_AMOUNT->doc.getAmount();case DOCUMENT_CURRENCY->doc.getCurrency();case DOCUMENT_DATE->doc.getDocumentDate();

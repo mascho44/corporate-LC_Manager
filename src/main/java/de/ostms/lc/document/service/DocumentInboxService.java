@@ -168,6 +168,8 @@ public class DocumentInboxService {
         return item;
     }
 
+    @Transactional
+    public void saveMetadataReview(UUID id,String json){var item=lockedOpenItem(id);requireProcessed(item);if(json==null||json.length()>4096)throw new IllegalArgumentException("Bearbeitungsstand zu groß.");item.setMetadataReviewJson(json);inbox.save(item);}
     private DocumentInboxItem lockedOpenItem(UUID id) {
         DocumentInboxItem item = inbox.findForUpdate(id).orElseThrow(() -> new NoSuchElementException("Inbox-Datei nicht gefunden."));
         de.ostms.lc.tenant.domain.TenantContext.require(item.getTenantId());

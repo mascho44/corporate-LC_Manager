@@ -1,13 +1,27 @@
 const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs'),path=require('node:path');
 test('automatic split completion signals refresh without overwriting ongoing assignments',async()=>{const f=fixture([{id:'new-part',automaticallySplit:true,extractionStatus:'EXTRACTED'}]);f.list.innerHTML='user draft';vm.runInContext('inboxEditedItems.add("other")',f.context);await f.context.loadInbox(true);assert.equal(f.list.innerHTML,'user draft');assert.match(f.nodes.message.textContent,/Automatically split documents are available/);});
 function fixture(items){
- const timers=[],nodes={},articles=[],created=[],calls=[];const list={innerHTML:'',textContent:'',querySelectorAll(selector){return selector==='[data-inbox-id]'?articles:[];},querySelector(selector){return nodes[selector]||null;},contains(){return false;}};
+ const timers=[],nodes={},articles=[],created=[],calls=[];const list={prepend(){},innerHTML:'',textContent:'',querySelectorAll(selector){return selector==='[data-inbox-id]'?articles:[];},querySelector(selector){return nodes[selector]||null;},contains(){return false;}};
  const context=vm.createContext({document:{addEventListener(){},activeElement:null,createElement:tag=>{const node={tag,dataset:{}};created.push(node);return node;}},$:selector=>selector==='#inboxList'?list:selector==='#inboxSection'?{classList:{contains:()=>false}}:nodes.message??={textContent:''},clearTimeout(){},setTimeout(fn,delay){timers.push([fn,delay]);return timers.length;},
   confirmAction:async()=>true,json:async(url,options)=>{calls.push({url,options});return url==='/api/inbox'?items:[];},renderInboxItem:item=>`item:${item.id}`,esc:String,extractionLabel:status=>status,can:()=>true});
  const source=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/app.js'),'utf8');
  vm.runInContext(source.slice(source.indexOf('let inboxRefreshTimer='),source.indexOf('let appNavigate=')),context);
  return {context,list,timers,nodes,articles,created,calls};
 }
+test('saved review restores explicit blanks, numbered copies and confirmed status',()=>{
+ const f=fixture([]),status={textContent:''},quality={textContent:''};
+ const elements=Object.fromEntries(['lcId','documentType','copyNumber','documentDate','spatialProfile','metadataReference','metadataNumber','metadataAmount','metadataCurrency'].map(name=>[name,{value:'automatic'}]));
+ const form={elements,querySelector:()=>status,querySelectorAll:()=>[quality]};
+ f.context.restoreInboxReview(form,{metadataReviewJson:JSON.stringify({lcId:null,documentType:'PACKING_LIST',copyNumber:-2,documentDate:null,metadata:{reference:null,documentNumber:'PL42',amount:0,currency:'EUR'},profile:'Bank',confirmed:true})});
+ assert.equal(elements.metadataReference.value,'');assert.equal(elements.lcId.value,'');assert.equal(elements.documentDate.value,'');assert.equal(elements.copyNumber.value,-2);assert.equal(elements.metadataAmount.value,0);assert.equal(elements.metadataNumber.value,'PL42');assert.match(quality.textContent,/bestätigt/);
+ f.context.restoreInboxReview(form,{metadataReviewJson:'invalid'});assert.match(status.textContent,/konnte nicht geladen/);
+});
+test('saving a review does not train and persists assignment and profile',async()=>{
+ const f=fixture([]);f.context.readDocumentCopy=value=>Number(value);
+ const elements=Object.fromEntries(Object.entries({lcId:'lc',documentType:'PACKING_LIST',copyNumber:'2',documentDate:'2026-10-08',spatialProfile:' Bank ',metadataReference:'LC42',metadataNumber:'PL42',metadataAmount:'0',metadataCurrency:'EUR'}).map(([key,value])=>[key,{value}]));
+ await f.context.saveInboxReview({elements,dataset:{inboxAttach:'item'}});
+ assert.equal(f.calls[0].url,'/api/inbox/item/metadata-review');const payload=JSON.parse(f.calls[0].options.body);assert.equal(payload.confirmed,false);assert.equal(payload.profile,'Bank');assert.equal(payload.lcId,'lc');assert.equal(payload.metadata.amount,0);
+});
 test('attachment preserves per-document corrections and explicit empty metadata',()=>{
  const f=fixture([]);f.context.readDocumentCopy=value=>value===''?null:Number(value);
  const elements=Object.fromEntries(Object.entries({documentType:'PACKING_LIST',documentDate:'2026-08-25',copyNumber:'2',metadataReference:' LC123 ',metadataNumber:' INV42 ',metadataAmount:'42.50',metadataCurrency:'EUR'}).map(([key,value])=>[key,{value}]));

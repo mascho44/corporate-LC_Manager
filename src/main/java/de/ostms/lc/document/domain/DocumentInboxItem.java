@@ -10,6 +10,9 @@ import java.util.UUID;
 @Entity
 @Table(name = "document_inbox_item")
 public class DocumentInboxItem {
+    @Column(columnDefinition="text") private String metadataReviewJson;
+    public String getMetadataReviewJson(){return metadataReviewJson;}
+    public void setMetadataReviewJson(String value){metadataReviewJson=value;}
     private Integer copyNumber;
     public Integer getCopyNumber(){return copyNumber;}
     public void setCopyNumber(Integer value){copyNumber=DocumentCopy.validate(value);}

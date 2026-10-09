@@ -22,6 +22,16 @@ class InternalPackServiceTest {
   v.packId=p.packId();v.version=p.version();v.definitionJson=codec.canonical(p);v.checksum=codec.digest(v.definitionJson);v.testsPassed=true;
   when(versions.findById(v.id)).thenReturn(Optional.of(v));return v;
  }
+ @Test void missingInputsUseActivePacksAndRemoveAlreadyCapturedFacts()throws Exception{
+  byte[] source;try(var input=getClass().getResourceAsStream("/static/rule-pack-example-v2.json")){source=input.readAllBytes();}
+  var pack=codec.parse(source);var v=new StoredPackVersion();v.packId=pack.packId();v.version=pack.version();v.definitionJson=codec.canonical(pack);v.checksum=codec.digest(v.definitionJson);v.testsPassed=true;
+  when(versions.findById(v.id)).thenReturn(Optional.of(v));var selected=new PackSelection();selected.id=v.packId;selected.activeVersionId=v.id;when(selections.findAll()).thenReturn(List.of(selected));
+  var lc=new LetterOfCredit();var doc=new LcDocument();doc.setDocumentType(DocumentType.COMMERCIAL_INVOICE);
+  assertThat(service.missingDocumentFields(lc,doc)).contains(PackDefinition.Field.DOCUMENT_ISSUER);
+  doc.setRuleFactsJson(RuleFacts.encode(Map.of(PackDefinition.Field.DOCUMENT_ISSUER,"Synthetic issuer"),true));
+  assertThat(service.missingDocumentFields(lc,doc)).doesNotContain(PackDefinition.Field.DOCUMENT_ISSUER);
+  selected.activeVersionId=null;assertThat(service.missingDocumentFields(lc,doc)).isEmpty();
+ }
  @Test void deletionRejectsActiveVersion()throws Exception{
   var v=version();var selection=new PackSelection();selection.activeVersionId=v.id;
   when(selections.locked(v.packId)).thenReturn(Optional.of(selection));
