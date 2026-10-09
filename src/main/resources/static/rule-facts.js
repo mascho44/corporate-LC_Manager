@@ -41,6 +41,25 @@
     button.onclick=()=>{filtered=!filtered;fields.forEach(d=>{const label=form.elements[d.field].closest('label');label.hidden=filtered&&!missing.has(d.field);});form.querySelectorAll('.rule-facts-section').forEach(group=>{group.hidden=filtered&&![...group.querySelectorAll('label')].some(label=>!label.hidden);});button.textContent=filtered?'Alle Prüfdaten anzeigen':'Nur fehlende Angaben anzeigen';};
     box.append(note,button);form.querySelector('.dialoghead').after(box);
    }
+   if(documentId&&!requirements&&allowed){
+    try{
+     const suggestions=await json(url+'/suggestions');
+     if(current===sequence&&suggestions.length){
+      const box=document.createElement('div');box.className='rule-facts-suggestions';
+      const head=document.createElement('p');head.textContent='Vorschläge aus dem Dokument (bitte prüfen, nichts wird automatisch gespeichert):';box.append(head);
+      const byField=Object.fromEntries(fields.map(d=>[d.field,d]));
+      suggestions.forEach(s=>{
+       const d=byField[s.field];if(!d||!form.elements[s.field])return;
+       const b=document.createElement('button');b.type='button';b.className='secondary';
+       const shown=s.value==='true'?'Ja':s.value==='false'?'Nein':s.value;
+       b.textContent=d.label+': '+shown+' übernehmen';b.title=s.source;
+       b.onclick=()=>{form.elements[s.field].value=s.value;b.disabled=true;};
+       box.append(b);
+      });
+      if(box.querySelector('button'))form.querySelector('.dialoghead').after(box);
+     }
+    }catch(ignored){}
+   }
    if(!allowed)form.querySelectorAll('input,textarea,select').forEach(input=>input.disabled=true);
    dialog.querySelectorAll('[data-close]').forEach(button=>button.onclick=()=>{++sequence;dialog.close();});
    const context=dialog.querySelector('[data-context]');if(context)context.onclick=()=>openFacts(null,documentType);
