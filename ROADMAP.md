@@ -2,6 +2,7 @@
 
 ## Als Nächstes
 
+- Regelquelle und Pack-Auswahl: Mandanteneinstellung „Beides / Nur eingebaut / Nur importiert“ mit Überschreibung und Pack-Auswahl je Akte (Schaltfläche „Regelquelle“), Unterdrückung doppelter eingebauter Vergleiche nur bei automatischer Pack-Regel, nicht angewendete Regeln als eine Zusammenfassung je Pack statt Warnungen; Standard bleibt das bisherige Verhalten. Offen: Abgleich der Zuordnung eingebaut zu Pack durch die Fachseite ([Dokumentation](docs/internal-rule-packs.md)).
 - Erkennungsbenchmark: synthetischer Text-Regressionsbestand mit 11 Fällen / 14 Seiten, Kennzahlen für Typen, Grenzen und Metadaten sowie Corpus-/Engine-Fingerprints lokal ergänzt. Echter privater Scan-Holdout und Vergleich vor/nach mandantenspezifischem Training bleiben offen; siehe [Benchmark-Konzept](docs/recognition-benchmark.md).
 
 - Dokumentenerkennung ausbauen: Seitenwiederaufnahme, persistierte OCR-Zwischenstände, Seitenfehler und Metadaten-Fundstellen deployed; begrenzte Rotation/Schräglagenkorrektur mit Koordinatenrückabbildung lokal ergänzt. Noch offen: repräsentativer gelabelter Holdout-Testbestand mit Kennzahlen je Dokumentart und weitergehende Layout-/Rückseitenerkennung. Synthetische Regressionstests und beobachtete Trainingskorrekturen sind kein Nachweis allgemeiner Erkennungsgenauigkeit.

@@ -19,6 +19,7 @@ import static de.ostms.lc.check.api.CheckResult.Severity.*;
 @Service
 public class DocumentCheckService {
     @Autowired(required=false) private de.ostms.lc.rulepack.InternalPackService internalPacks;
+    @Autowired(required=false) private de.ostms.lc.rulepack.RuleSourceService ruleSource;
     private final LetterOfCreditRepository lcs;
     private final LcDocumentRepository documents;private final DocumentCheckDecisionRepository decisions;private final LcRequirementMappingRepository mappings;private final AmendmentRepository amendments;
 
@@ -47,6 +48,16 @@ public class DocumentCheckService {
 
     private ReviewSummary evaluate(UUID lcId,LetterOfCredit lc,List<de.ostms.lc.document.domain.LcDocument> uploaded,boolean simulation){
         return evaluate(lcId,lc,uploaded,simulation,false);
+    }
+    /** Regelquelle: "Eingebaut" lässt Packs weg, "Importiert" entfernt eingebaute Vergleiche, die eine automatische Pack-Regel abdeckt. */
+    private void addImportedRules(LetterOfCredit lc,List<de.ostms.lc.document.domain.LcDocument> uploaded,List<CheckResult> results){
+        if(internalPacks==null)return;
+        var source=ruleSource==null?de.ostms.lc.rulepack.RuleSourceService.Effective.defaults():ruleSource.effective(lc);
+        if(source.mode()==de.ostms.lc.rulepack.RuleSourceMode.EMBEDDED)return;
+        var evaluation=internalPacks.evaluateSelected(lc,uploaded,source.packIds());
+        if(source.mode()==de.ostms.lc.rulepack.RuleSourceMode.IMPORTED)
+            results.removeIf(r->de.ostms.lc.rulepack.RuleSourceService.covered(r.code(),evaluation.automaticRuleIds()));
+        results.addAll(evaluation.findings());
     }
     private ReviewSummary evaluate(UUID lcId,LetterOfCredit lc,List<de.ostms.lc.document.domain.LcDocument> uploaded,boolean simulation,boolean precheck){
         List<CheckResult> results = new ArrayList<>();
@@ -178,7 +189,7 @@ public class DocumentCheckService {
 
         if (lc.getExpiryDate() != null && lc.getExpiryDate().isBefore(LocalDate.now()))
             results.add(new CheckResult(WARNING, "LC_EXPIRED", "The LC has expired."));
-        if(internalPacks!=null)results.addAll(internalPacks.evaluate(lc,uploaded));
+        addImportedRules(lc,uploaded,results);
         if (results.isEmpty()) results.add(new CheckResult(WARNING, "NO_RULES_APPLIED", "No automated rule could be applied."));
         String inputFingerprint=ReviewInputFingerprint.of(lc,uploaded);
         List<DocumentCheckDecision> reviewed=simulation||precheck?List.of():decisions.findByLcId(lcId);

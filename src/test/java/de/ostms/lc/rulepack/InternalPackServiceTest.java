@@ -77,7 +77,9 @@ class InternalPackServiceTest {
   selected.activeVersionId=v2.id;var changed=service.evaluate(lc,List.of(doc)).get(0);
   assertThat(changed.reviewFingerprint()).isNotEqualTo(finding.reviewFingerprint());
   doc.setAmount(null);assertThat(service.evaluate(lc,List.of(doc)).get(0).message()).contains("nicht prüfbar");
-  assertThat(service.evaluate(lc,List.of()).get(0).message()).contains("Dokument fehlt");
+  var withoutDocuments=service.evaluate(lc,List.of());
+  assertThat(withoutDocuments).hasSize(1);assertThat(withoutDocuments.get(0).severity().name()).isEqualTo("OK");
+  assertThat(withoutDocuments.get(0).documentEvidence()).contains("Dokumenttyp nicht vorgelegt");
  }
  @Test void schemaThreeUsesUniquePeersAndTracksTheirContent()throws Exception{
   byte[] source;try(var input=getClass().getResourceAsStream("/static/rule-pack-example-v3.json")){source=input.readAllBytes();}
@@ -113,7 +115,9 @@ class InternalPackServiceTest {
   var doc=new LcDocument();doc.setDocumentType(DocumentType.INSURANCE_CERTIFICATE);doc.setOriginalFilename("synthetic-cover.pdf");doc.setRuleFactsJson(RuleFacts.encode(Map.of(PackDefinition.Field.DOCUMENT_INSURED_AMOUNT,"1500",PackDefinition.Field.DOCUMENT_INSURANCE_CURRENCY,"EUR"),true));
   var first=service.evaluate(lc,List.of(doc)).get(0);assertThat(first.severity().name()).isEqualTo("OK");assertThat(first.documentEvidence()).contains("1200");
   lc.setRuleFactsJson(RuleFacts.encode(Map.of(PackDefinition.Field.LC_RULE_STANDARD,"UCP600",PackDefinition.Field.LC_CLAIMED_AMOUNT,"1000"),false));assertThat(service.evaluate(lc,List.of(doc)).get(0).message()).contains("nicht prüfbar");
-  lc.setRuleFactsJson(RuleFacts.encode(Map.of(PackDefinition.Field.LC_RULE_STANDARD,"OTHER"),false));assertThat(service.evaluate(lc,List.of()).get(0).message()).contains("nicht anwendbar").doesNotContain("fehlt");
+  lc.setRuleFactsJson(RuleFacts.encode(Map.of(PackDefinition.Field.LC_RULE_STANDARD,"OTHER"),false));var skipped=service.evaluate(lc,List.of());
+  assertThat(skipped).hasSize(1);assertThat(skipped.get(0).severity().name()).isEqualTo("OK");
+  assertThat(skipped.get(0).code()).endsWith(".NOT_APPLIED");assertThat(skipped.get(0).message()).contains("nicht angewendet");
  }
  @Test void supplementaryPeerFactsUseCapturedNumbersAndUniqueDocuments()throws Exception{
   for(var pair:List.of(
@@ -164,8 +168,39 @@ class InternalPackServiceTest {
   assertThat(findings.get(2).severity().name()).isEqualTo("WARNING");assertThat(findings.get(2).message()).contains("Manuelle");
   var fingerprint=findings.get(0).reviewFingerprint();
   lc.setRuleFactsJson(RuleFacts.encode(Map.of(PackDefinition.Field.LC_TRANSFERRED,"true",PackDefinition.Field.LC_GOODS_DESCRIPTION,"Test items"),false));
-  var excluded=service.evaluate(lc,List.of(doc));assertThat(excluded).allMatch(f->f.severity().name().equals("WARNING"));
-  assertThat(excluded.get(0).message()).contains("nicht anwendbar");assertThat(excluded.get(0).reviewFingerprint()).isNotEqualTo(fingerprint);
+  var excluded=service.evaluate(lc,List.of(doc));
+  // Ausgeschlossene Regeln erzeugen keine Warnung mehr, sondern erscheinen nur in der Zusammenfassung des Packs
+  var summary=excluded.stream().filter(f->f.code().endsWith(".NOT_APPLIED")).findFirst().orElseThrow();
+  assertThat(summary.severity().name()).isEqualTo("OK");assertThat(summary.documentEvidence()).contains("Bedingung nicht erfüllt");
+  assertThat(excluded).noneMatch(f->f.message().contains("nicht anwendbar:"));
+  assertThat(excluded).noneMatch(f->f.code().equals(findings.get(0).code()));
+  assertThat(excluded.stream().filter(f->!f.code().endsWith(".NOT_APPLIED"))).allMatch(f->f.severity().name().equals("WARNING"));
   lc.setRuleFactsJson("{}");assertThat(service.evaluate(lc,List.of(doc))).allMatch(f->f.message().contains("nicht prüfbar"));
+ }
+
+ @Test void missingDocumentTypesProduceOnlyOneSummaryAndNoWarning()throws Exception{
+  var v=version();var selected=new PackSelection();selected.id=v.packId;selected.activeVersionId=v.id;when(selections.findAll()).thenReturn(List.of(selected));
+  var lc=new LetterOfCredit();var packingList=new LcDocument();packingList.setDocumentType(DocumentType.OTHER);
+  var result=service.evaluateSelected(lc,List.of(packingList),Set.of());
+  assertThat(result.findings()).isNotEmpty().allMatch(f->f.severity().name().equals("OK"));
+  assertThat(result.findings()).hasSize(1);assertThat(result.findings().get(0).code()).endsWith(".NOT_APPLIED");
+  assertThat(result.findings().get(0).documentEvidence()).contains("Dokumenttyp nicht vorgelegt");
+ }
+ @Test void selectionRestrictsEvaluationToTheChosenPacks()throws Exception{
+  var v=version();var selected=new PackSelection();selected.id=v.packId;selected.activeVersionId=v.id;when(selections.findAll()).thenReturn(List.of(selected));
+  var lc=new LetterOfCredit();
+  assertThat(service.evaluateSelected(lc,List.of(),Set.of("another-pack")).findings()).isEmpty();
+  assertThat(service.evaluateSelected(lc,List.of(),Set.of("another-pack")).automaticRuleIds()).isEmpty();
+  assertThat(service.evaluateSelected(lc,List.of(),Set.of(v.packId)).findings()).isNotEmpty();
+  assertThat(service.evaluateSelected(lc,List.of(),Set.of()).findings()).isNotEmpty();
+ }
+ @Test void automaticRuleIdsContainOnlyAutomaticRules()throws Exception{
+  byte[] source;try(var input=getClass().getResourceAsStream("/static/rule-pack-example-v2.json")){source=input.readAllBytes();}
+  var pack=codec.parse(source);var v=new StoredPackVersion();v.packId=pack.packId();v.version=pack.version();v.definitionJson=codec.canonical(pack);v.checksum=codec.digest(v.definitionJson);v.testsPassed=true;
+  when(versions.findById(v.id)).thenReturn(Optional.of(v));var selected=new PackSelection();selected.id=v.packId;selected.activeVersionId=v.id;when(selections.findAll()).thenReturn(List.of(selected));
+  var ids=service.evaluateSelected(new LetterOfCredit(),List.of(),Set.of()).automaticRuleIds();
+  var automatic=pack.rules().stream().filter(r->r.effectiveMode()==PackDefinition.Mode.AUTOMATIC).map(PackDefinition.Rule::id).toList();
+  var manual=pack.rules().stream().filter(r->r.effectiveMode()==PackDefinition.Mode.MANUAL).map(PackDefinition.Rule::id).toList();
+  assertThat(ids).containsExactlyInAnyOrderElementsOf(automatic);assertThat(ids).doesNotContainAnyElementsOf(manual);
  }
 }
