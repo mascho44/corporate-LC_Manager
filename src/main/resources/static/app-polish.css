@@ -1,0 +1,18 @@
+/* Einheitliche Optik fuer die gesamte Anwendung: ruhige Primaeraktion (blau), helle Sekundaer- und Gefahr-Buttons, einheitliche Felder und Fokusrahmen. */
+button:not([class]):not(.app-nav button){background:#3156a3;color:#fff;font-weight:600;transition:background .15s,border-color .15s}
+button:not([class]):hover:not(:disabled):not(.app-nav button){background:#264585}
+button.secondary:not(.app-nav button){background:#fff;color:#14213d;border:1px solid #c5d0e2}
+button.secondary:hover:not(:disabled):not(.app-nav button){background:#eef2f9;border-color:#9fb0cc}
+button.danger:not(.app-nav button){background:#fff;color:#b42318;border:1px solid #f0b4ae}
+button.danger:hover:not(:disabled):not(.app-nav button){background:#fdecea;border-color:#b42318}
+button.ghost:not(.app-nav button){background:transparent;color:#667085;border:0}
+button.ghost:hover:not(:disabled):not(.app-nav button){background:#eef2f9}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:2px solid #3156a3;outline-offset:2px}
+input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea{border:1px solid #c5d0e2;border-radius:10px;background:#fff;font:inherit;color:#14213d}
+input:not([type=checkbox]):not([type=radio]):not([type=file]):focus,select:focus,textarea:focus{border-color:#3156a3}
+.form-grid{gap:16px 20px}
+.panel{border-color:#e1e7f0;border-radius:14px}
+.card{background:#fff;border-color:#e1e7f0;border-radius:14px}
+dialog{border:0;border-radius:16px;box-shadow:0 24px 80px #0a142859}
+dialog::backdrop{background:#0f172a8f}
+.empty{color:#7a869e}
