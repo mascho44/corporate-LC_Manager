@@ -30,9 +30,9 @@ class OcrPipelineIntegrationTest {
    var scan=new PDPage();pdf.addPage(scan);try(var stream=new PDPageContentStream(pdf,scan)){stream.drawImage(LosslessFactory.createFromImage(pdf,image),0,0,scan.getMediaBox().getWidth(),scan.getMediaBox().getHeight());}
    pdf.save(out);var mixed=new DocumentExtractionService().extractFile(out.toByteArray(),"mixed.pdf","application/pdf");
    assertThat(mixed.status()).isEqualTo("OCR_EXTRACTED");assertThat(mixed.text()).contains("SYNTHETIC DIGITAL COVER");
-   var scan=mixed.ocrEvidence().pages().stream().filter(p->p.page()==2&&p.status().equals("OCR_EXTRACTED")).findFirst().orElseThrow();
-   assertThat(scan.recognizedText()).isNotBlank();
-   assertThat(mixed.text()).contains(scan.recognizedText().replaceAll("[\\t ]+"," ").trim());
+   var recognizedScan=mixed.ocrEvidence().pages().stream().filter(p->p.page()==2&&p.status().equals("OCR_EXTRACTED")).findFirst().orElseThrow();
+   assertThat(recognizedScan.recognizedText()).isNotBlank();
+   assertThat(mixed.text()).contains(recognizedScan.recognizedText().replaceAll("[\\t ]+"," ").trim());
    assertThat(mixed.ocrEvidence().words()).isNotEmpty();
    assertThat(mixed.ocrEvidence().words().stream().filter(w->w.confidence()!=null)).isNotEmpty().allMatch(w->w.page()==2);
    assertThat(mixed.ocrEvidence().words().stream().filter(w->w.confidence()==null)).isNotEmpty().allMatch(w->w.page()==1);
