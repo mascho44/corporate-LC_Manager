@@ -158,9 +158,10 @@ public class DocumentInboxController {
         DocumentInboxAttachResult result = service.attach(id, request);
         String assignmentSource=result.inboxItem().assignmentCandidates().stream().filter(candidate->candidate.lcId().equals(request.lcId()))
                 .findFirst().map(candidate->" · LC-Vorschlag bestätigt: "+candidate.reason()).orElse(" · Manuell zugeordnet");
-        audit.record(authentication, "DOCUMENT_INBOX_ATTACHED", "LETTER_OF_CREDIT",
+        audit.recordChange(authentication, "DOCUMENT_INBOX_ATTACHED", "LETTER_OF_CREDIT",
                 request.lcId(), result.document().originalFilename() + " · " + request.documentType()
-                        + " · Posteingang " + id + " · Dokument " + result.document().id() + assignmentSource);
+                        + " · Posteingang " + id + " · Dokument " + result.document().id() + assignmentSource,
+                null, de.ostms.lc.audit.service.AuditSnapshots.document(result.document()));
         return result;
     }
 
@@ -183,7 +184,7 @@ public class DocumentInboxController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable UUID id, Authentication authentication) {
         DocumentInboxItem item = service.delete(id);
-        audit.record(authentication, "DOCUMENT_INBOX_DELETED", "DOCUMENT_INBOX", id,
-                item.getOriginalFilename());
+        audit.recordChange(authentication, "DOCUMENT_INBOX_DELETED", "DOCUMENT_INBOX", id,
+                item.getOriginalFilename(), de.ostms.lc.audit.service.AuditSnapshots.inboxItem(item), null);
     }
 }

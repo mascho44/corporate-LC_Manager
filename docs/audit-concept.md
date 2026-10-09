@@ -17,3 +17,20 @@ new columns after the previous ones. The append-only triggers (no UPDATE, DELETE
 
 Next steps: structured before/after for all changing actions, hash chain with verification, read access
 logging, filters, full export and retention (see the programme in the project notes).
+
+## Step 2: change evidence (before/after)
+
+Changing actions now write structured JSON into the before/after columns (allowlisted fields only,
+never file contents, extracted text or free-form notes; always valid JSON within the 4000-character column):
+
+| Action | Before | After |
+|---|---|---|
+| `LC_DELETED` | LC master data, document count and up to 20 documents (filename, type, short hash) | – |
+| `DOCUMENT_UPLOADED`, `DOCUMENT_INBOX_ATTACHED` | – | document (id, filename, type, copy, date, amount, currency, size) |
+| `DOCUMENT_DELETED` | document incl. SHA-256 of the content | – |
+| `DOCUMENT_INBOX_DELETED` | inbox item incl. SHA-256 | – |
+| `LC_ASSIGNED` | previous assignee | new assignee |
+| `LC_UPDATED`, `DOCUMENT_UPDATED`, role/membership actions | (unchanged, already structured) | |
+
+`TRAINING_PROGRESS_SAVED` (every autosave, about a quarter of all events) is no longer written to the audit log;
+`TRAINING_CONFIRMED` remains.

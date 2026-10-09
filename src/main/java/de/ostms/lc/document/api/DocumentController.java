@@ -51,7 +51,7 @@ public class DocumentController {
             @RequestParam(required = false) String currency,@RequestParam(required=false) Integer copyNumber, Authentication authentication) throws IOException {
         DocumentView document = service.upload(lcId, file, type, documentDate, amount, currency,copyNumber);
         resetChecks(lcId,authentication,"Dokument hochgeladen");
-        audit.record(authentication, "DOCUMENT_UPLOADED", "LETTER_OF_CREDIT", lcId, file.getOriginalFilename()+" · "+type);
+        audit.recordChange(authentication, "DOCUMENT_UPLOADED", "LETTER_OF_CREDIT", lcId, file.getOriginalFilename()+" · "+type, null, de.ostms.lc.audit.service.AuditSnapshots.document(document));
         return document;
     }
     @PostMapping(value="/lcs/{lcId}/documents/archive",consumes=MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -74,7 +74,7 @@ public class DocumentController {
     public void delete(@PathVariable UUID lcId,@PathVariable UUID id,Authentication authentication) {
         LcDocument document=service.delete(lcId,id);
         resetChecks(lcId,authentication,"Dokument gelöscht");
-        audit.record(authentication,"DOCUMENT_DELETED","LETTER_OF_CREDIT",lcId,document.getOriginalFilename()+" · "+document.getDocumentType());
+        audit.recordChange(authentication,"DOCUMENT_DELETED","LETTER_OF_CREDIT",lcId,document.getOriginalFilename()+" · "+document.getDocumentType(),de.ostms.lc.audit.service.AuditSnapshots.document(document),null);
     }
 
     @PutMapping("/lcs/{lcId}/documents/{id}")

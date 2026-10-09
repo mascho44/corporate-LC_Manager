@@ -86,9 +86,10 @@ public class LetterOfCreditController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable UUID id, Authentication authentication) {
-        String reference = service.one(id).getReference();
+        var lc = service.one(id);String reference = lc.getReference();
+        String previous = de.ostms.lc.audit.service.AuditSnapshots.letterOfCredit(lc, documents.findByLetterOfCreditIdOrderByUploadedAtDesc(id));
         service.delete(id);
-        audit.record(authentication, "LC_DELETED", "LETTER_OF_CREDIT", id, reference);
+        audit.recordChange(authentication, "LC_DELETED", "LETTER_OF_CREDIT", id, reference, previous, null);
         return ResponseEntity.noContent().build();
     }
 
