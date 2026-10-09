@@ -112,7 +112,6 @@ public class TrainingController {
         if("CONFIRMED".equals(s.getStatus())) throw new IllegalArgumentException("Ein bestätigter Trainingsdatensatz kann nicht mehr verändert werden.");
         s.setCorrectedText(request.correctedRawMessage());
         s.setReviewsJson(data.preserveOcrConfidence(s,request.reviewsJson()));
-        audit.record(auth,"TRAINING_PROGRESS_SAVED","TRAINING_SESSION",s.getId(),s.getFilename()+" · Bearbeitungsstand gespeichert");
         return Map.of("status","SAVED");
     }
 

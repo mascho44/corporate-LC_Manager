@@ -39,8 +39,10 @@ public class LcTimelineController {
 
     @PostMapping("/assign-to-me")
     public LetterOfCredit assignToMe(@PathVariable UUID lcId, Authentication authentication) {
+        String before = lettersOfCredit.one(lcId).getAssignedTo();
         LetterOfCredit lc = lettersOfCredit.assignTo(lcId, authentication.getName());
-        audit.record(authentication, "LC_ASSIGNED", "LETTER_OF_CREDIT", lcId, lc.getReference() + " · " + authentication.getName());
+        audit.recordChange(authentication, "LC_ASSIGNED", "LETTER_OF_CREDIT", lcId, lc.getReference() + " · " + authentication.getName(),
+                de.ostms.lc.audit.service.AuditSnapshots.assignment(before), de.ostms.lc.audit.service.AuditSnapshots.assignment(lc.getAssignedTo()));
         return lc;
     }
 }
