@@ -43,7 +43,7 @@ class PlatformMembershipServiceTest {
   tenantExists();var homeUser=user(tenantId);var homeRole=role(oldRole,UserRole.USER);var homeMembership=membership(homeUser,homeRole);when(memberships.findByUserId(userId)).thenReturn(Optional.of(homeMembership));
   assertThatThrownBy(()->service.changeRole(tenantId,userId,newRole,auth)).isInstanceOf(AccessDeniedException.class).hasMessageContaining("Home identities");
   assertThatThrownBy(()->service.changeAccess(tenantId,userId,true,auth)).isInstanceOf(AccessDeniedException.class);
-  verify(store,never()).updateRole(any(),any(),any());verify(suspensions,never()).save(any());
+  verify(store,never()).updateRole(any(),any(),any());verify(suspensions,never()).saveAndFlush(any());
  }
  @Test void lastActiveAdministratorCannotBeDemotedOrSuspended(){
   tenantExists();var admin=role(oldRole,UserRole.ADMIN);var viewer=role(newRole,UserRole.VIEWER);
@@ -67,7 +67,7 @@ class PlatformMembershipServiceTest {
   when(access.forUser(userId)).thenReturn(Optional.of(view(oldRole,false)));when(suspensions.findByUserId(userId)).thenReturn(Optional.empty());
   var result=service.changeAccess(tenantId,userId,true,auth);
   assertThat(result.suspended()).isTrue();assertThat(result.active()).isFalse();
-  verify(suspensions).save(any());verify(audit).recordChangeInTransaction(eq(auth),eq("PLATFORM_MEMBERSHIP_ACCESS_UPDATED"),eq("MEMBERSHIP"),eq(userId),anyString(),anyString(),anyString());
+  verify(suspensions).saveAndFlush(any());verify(audit).recordChangeInTransaction(eq(auth),eq("PLATFORM_MEMBERSHIP_ACCESS_UPDATED"),eq("MEMBERSHIP"),eq(userId),anyString(),anyString(),anyString());
  }
  @Test void assignmentRequiresPlatformAccessAndAnEligibleExistingIdentity(){
   doThrow(new AccessDeniedException("no")).when(platform).verifyLiveAccess(auth);

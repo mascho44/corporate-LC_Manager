@@ -95,7 +95,7 @@ public class PlatformMembershipService {
     throw new IllegalArgumentException("The last active administrator of the tenant cannot be suspended.");
    if(!suspended&&(!membership.isActive()||!membership.getUser().isActive()))throw new IllegalArgumentException("The global account and membership must be active before access can be enabled.");
    var state=suspensions.findByUserId(userId).orElseGet(()->new TenantMembershipSuspension(userId));TenantContext.require(state.getTenantId());
-   state.setSuspended(suspended);suspensions.save(state);
+   state.setSuspended(suspended);suspensions.saveAndFlush(state); // flush inside the tenant scope: the entity validates its tenant at flush time
    var user=membership.getUser();var role=membership.getRole();
    var after=new TenantMembershipService.Membership(tenantId,userId,user.getUsername(),role.getId(),role.getName(),Set.copyOf(role.getPermissions()),membership.isActive()&&user.isActive()&&!suspended,suspended,user.isActive());
    audit.recordChangeInTransaction(authentication,"PLATFORM_MEMBERSHIP_ACCESS_UPDATED","MEMBERSHIP",userId,"Membership access changed by platform administration",AdministrationAuditSnapshot.membership(before),AdministrationAuditSnapshot.membership(after));
