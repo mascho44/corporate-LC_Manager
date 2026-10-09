@@ -41,4 +41,10 @@ class InboxRecognitionImprovementsTest {
   assertThat(result.suggestedType()).isEqualTo(DocumentType.BILL_OF_LADING);
   assertThat(result.status()).isEqualTo("REVIEW");assertThat(result.score()).isLessThan(.8);
  }
+ @Test void pageNumbersWithoutTotalContinueAndNumberedContinuationsDoNotBlockAutomaticSplit()throws Exception{
+  var proposal=PdfDocumentSplitter.propose(PdfDocumentSplitterTest.pdf("COMMERCIAL INVOICE No. INV-1 Page 1","Items Page 2","PACKING LIST"),null);
+  assertThat(proposal.parts()).hasSize(2);
+  assertThat(proposal.parts().get(0).toPage()).isEqualTo(2);
+  assertThat(InboxAutomaticSplitter.eligible(proposal)).isTrue();
+ }
 }

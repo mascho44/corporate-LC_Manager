@@ -26,7 +26,8 @@ public class InboxAutomaticSplitter {
   }
   return new Plan(PdfDocumentSplitter.split(document.getContent(),document.getOcrEvidenceJson(),proposal.parts()));
  }
- static boolean eligible(PdfDocumentSplitter.Proposal proposal){return proposal.parts().size()>=2&&proposal.parts().size()<=100&&proposal.parts().stream().map(PdfDocumentSplitter.Part::documentType).distinct().count()>=2&&proposal.pages().stream().allMatch(p->p.classification().suggestedType()!=null&&p.classification().score()>=.9&&"SUGGESTED".equals(p.classification().status()));}
+ static boolean eligible(PdfDocumentSplitter.Proposal proposal){return proposal.parts().size()>=2&&proposal.parts().size()<=100&&proposal.parts().stream().map(PdfDocumentSplitter.Part::documentType).distinct().count()>=2&&proposal.pages().stream().allMatch(InboxAutomaticSplitter::reliablePage);}
+ static boolean reliablePage(PdfDocumentSplitter.Page p){var c=p.classification();if(c.suggestedType()==null)return false;if(c.score()>=.9&&"SUGGESTED".equals(c.status()))return true;return c.score()>=.8&&("PAGE_SEQUENCE_V1".equals(c.method())||"DOCUMENT_REFERENCE_V1".equals(c.method()));}
  @Transactional(propagation=Propagation.MANDATORY,rollbackFor=Exception.class)
  public List<DocumentInboxItem> persist(DocumentInboxItem original,Plan plan)throws Exception{
   return persist(original,plan,original.getReceivedBy());
