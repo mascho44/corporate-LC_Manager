@@ -56,6 +56,6 @@ async function setupPlatformAdministration(standalone=false){
   }catch(failure){if(request===generation)status.textContent=failure.message||text('platform.error','Global accounts could not be loaded.');}
   finally{if(request===generation)section.setAttribute('aria-busy','false');}
  }
- const refreshTenants=await setupPlatformTenants(section);
- reload.onclick=()=>Promise.all([refresh(),refreshTenants()]);nav.onclick=()=>{section.classList.remove('hidden');return Promise.all([refresh(),refreshTenants()]);};
+ const refreshTenants=await setupPlatformTenants(section);const refreshOverview=await setupPlatformOverview(section);
+ reload.onclick=()=>Promise.all([refresh(),refreshTenants(),refreshOverview()]);nav.onclick=()=>{section.classList.remove('hidden');return Promise.all([refresh(),refreshTenants(),refreshOverview()]);};
 }

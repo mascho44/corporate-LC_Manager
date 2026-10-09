@@ -41,6 +41,32 @@ public class LetterOfCreditService {
         return repo.findById(id).orElseThrow(() -> new NoSuchElementException("Akkreditiv nicht gefunden"));
     }
 
+    public record RequirementReparse(boolean changed,String reason,List<String> current,List<String> proposed){}
+
+    /** Rebuilds the document conditions from the stored MT700 only while they still equal the old line-by-line split, so manual or amended changes are never overwritten. */
+    @Transactional(readOnly=true)
+    public RequirementReparse reparsePreview(UUID id){
+        LetterOfCredit lc=one(id);
+        var field=de.ostms.lc.swift.Mt700Parser.requiredDocumentsField(lc.getRawMessage());
+        List<String> current=List.copyOf(lc.getRequiredDocuments());
+        if(field.isEmpty())return new RequirementReparse(false,"Keine SWIFT-Nachricht mit Feld 46A gespeichert.",current,current);
+        List<String> proposed=de.ostms.lc.swift.Mt700Parser.splitConditions(field.get());
+        if(proposed.equals(current))return new RequirementReparse(false,"Die Bedingungen entsprechen bereits der aktuellen Aufteilung.",current,proposed);
+        if(!current.equals(de.ostms.lc.swift.Mt700Parser.legacyConditions(field.get())))
+            return new RequirementReparse(false,"Die Bedingungen wurden nach dem Import geändert und werden nicht automatisch ersetzt.",current,proposed);
+        return new RequirementReparse(true,"Umgebrochene Zeilen werden zur jeweiligen Bedingung zusammengeführt.",current,proposed);
+    }
+
+    @Transactional
+    public RequirementReparse reparse(UUID id){
+        var preview=reparsePreview(id);
+        if(!preview.changed())return preview;
+        LetterOfCredit lc=one(id);
+        lc.getRequiredDocuments().clear();lc.getRequiredDocuments().addAll(preview.proposed());
+        repo.save(lc);
+        return preview;
+    }
+
     @Transactional
     public LetterOfCredit update(UUID id, LetterOfCreditUpdateRequest request) {
         LetterOfCredit lc = one(id);
