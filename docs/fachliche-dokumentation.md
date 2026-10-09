@@ -198,3 +198,9 @@ geregelt werden.
 Löschkonzept, Sanktionslisten-Screening und Compliance-Zugang sind
 Roadmap-Punkte. Ebenso EBICS, Enterprise-SSO und umfassende Mandantentrennung.
 Aktuelle Planung: [Roadmap](../ROADMAP.md).
+
+## MT710 (Avis eines Akkreditivs durch eine Zweitbank)
+Der SWIFT-Import erkennt MT710 (Block `{2:…710`, Text „MT 710“ oder das Feldprofil `:21:` plus `:52A:/:52D:` ohne `:26E:`).
+Die Akkreditivnummer ist `:21:` und wird als Referenz der Akte verwendet; `:20:` (Referenz der avisierenden Bank) und
+die Nachrichtenart werden als weitere Angaben gespeichert, die ausstellende Bank (`:52a:`) ebenfalls. Alle übrigen Felder
+werden wie bei MT700 gelesen. Eine bereits vorhandene Referenz wird als Duplikat abgelehnt.
