@@ -23,6 +23,7 @@ import java.util.*;
 @Service
 public class PlatformMembershipService {
  private final PlatformAdministrationService platform;
+ private final AppUserRepository users;
  private final TenantRepository tenants;
  private final AppRoleRepository roles;
  private final TenantMembershipRepository memberships;
@@ -31,14 +32,32 @@ public class PlatformMembershipService {
  private final TenantMembershipProvisioningStore store;
  private final TenantAdministrationLock lock;
  private final AuditService audit;
- public PlatformMembershipService(PlatformAdministrationService platform,TenantRepository tenants,AppRoleRepository roles,TenantMembershipRepository memberships,TenantMembershipSuspensionRepository suspensions,TenantMembershipService access,TenantMembershipProvisioningStore store,TenantAdministrationLock lock,AuditService audit){
-  this.platform=platform;this.tenants=tenants;this.roles=roles;this.memberships=memberships;this.suspensions=suspensions;this.access=access;this.store=store;this.lock=lock;this.audit=audit;
+ public PlatformMembershipService(PlatformAdministrationService platform,AppUserRepository users,TenantRepository tenants,AppRoleRepository roles,TenantMembershipRepository memberships,TenantMembershipSuspensionRepository suspensions,TenantMembershipService access,TenantMembershipProvisioningStore store,TenantAdministrationLock lock,AuditService audit){
+  this.platform=platform;this.users=users;this.tenants=tenants;this.roles=roles;this.memberships=memberships;this.suspensions=suspensions;this.access=access;this.store=store;this.lock=lock;this.audit=audit;
  }
 
  private void requireManageable(UUID tenantId){
   if(Tenant.DEFAULT_ID.equals(tenantId))throw new AccessDeniedException("Shared identity administration is not enabled in the bootstrap tenant.");
   var tenant=tenants.findById(tenantId).orElseThrow(()->new NoSuchElementException("Tenant not found."));
   if(tenant.isArchived())throw new IllegalArgumentException("Archived tenants cannot be changed. Restore the tenant first.");
+ }
+
+ /** Assigns an existing, active foreign identity (exact username) to a tenant role; never creates identities. */
+ @Transactional
+ public TenantMembershipService.Membership assignExistingIdentity(UUID tenantId,String username,UUID roleId,Authentication authentication){
+  platform.verifyLiveAccess(authentication);requireManageable(tenantId);
+  if(username==null||username.isBlank()||roleId==null)throw new IllegalArgumentException("Username and tenant role are required.");
+  try(var scope=TenantContext.open(tenantId)){
+   lock.acquire();
+   var role=roles.findById(roleId).orElseThrow(()->new NoSuchElementException("Role not found."));TenantContext.require(role.getTenantId());
+   var user=users.findByUsernameIgnoreCase(username.trim()).orElseThrow(()->new IllegalArgumentException("An eligible existing identity is required."));
+   if(!user.isActive()||user.isInvitationPending()||tenantId.equals(user.getTenantId()))throw new IllegalArgumentException("An eligible existing identity is required.");
+   if(access.forUser(user.getId()).isPresent())throw new IllegalArgumentException("This identity already has a tenant membership.");
+   store.create(tenantId,user.getId(),role.getId());
+   var result=new TenantMembershipService.Membership(tenantId,user.getId(),user.getUsername(),role.getId(),role.getName(),Set.copyOf(role.getPermissions()),true,false,true);
+   audit.recordChangeInTransaction(authentication,"PLATFORM_MEMBERSHIP_CREATED","MEMBERSHIP",user.getId(),"Existing identity assigned by platform administration",null,AdministrationAuditSnapshot.membership(result));
+   return result;
+  }
  }
 
  @Transactional
