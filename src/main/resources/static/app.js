@@ -47,7 +47,8 @@ return `<article class="inbox-item" data-inbox-id="${item.id}"><div class="inbox
 }
 function inboxAssignmentPreview(item){
     const url=`/api/inbox/${encodeURIComponent(item.id)}/content`,label=esc(item.originalFilename||'Dokument');
-    const content=item.contentType==='application/pdf'?`<iframe data-preview-src="${url}" title="PDF-Vorschau: ${label}"></iframe>`:
+    const pages=`/api/inbox/${encodeURIComponent(item.id)}/pages/1/preview?enlarged=true`;
+    const content=item.contentType==='application/pdf'?`<div class="inbox-pdf-pages" data-pdf-page="1"><div class="inbox-pdf-nav"><button type="button" class="secondary" data-pdf-prev disabled>Vorherige Seite</button><span data-pdf-label>Seite 1</span><button type="button" class="secondary" data-pdf-next>Nächste Seite</button></div><img data-preview-src="${pages}" alt="PDF-Seite: ${label}"></div>`:
         ['image/png','image/jpeg'].includes(item.contentType)?`<img data-preview-src="${url}" alt="Dokumentvorschau: ${label}">`:'<p>Für dieses Format bitte das Original separat öffnen.</p>';
     return `<details class="inbox-assignment-preview"><summary>Vorschau zur Zuordnung</summary><div>${content}<p>Falls die Vorschau blockiert wird: <a target="_blank" rel="noopener" href="${url}">Original separat öffnen</a></p></div></details>`;
 }
@@ -418,6 +419,15 @@ async function openInboxSplit(item){
         };
     }catch(error){if(dialog.isConnected)dialog.querySelector('p').textContent=error.message;}
 }
+document.addEventListener('click',event=>{
+    const button=event.target.closest?.('[data-pdf-prev],[data-pdf-next]');if(!button)return;
+    const box=button.closest('[data-pdf-page]'),image=box?.querySelector('img'),url=image?.getAttribute('src')||image?.dataset.previewSrc;if(!url)return;
+    const current=Number(box.dataset.pdfPage),target=current+(button.hasAttribute('data-pdf-next')?1:-1);if(target<1)return;
+    const next=url.replace(/\/pages\/\d+\//,`/pages/${target}/`);
+    image.onerror=()=>{image.onerror=null;image.src=url;box.querySelector('[data-pdf-next]').disabled=true;};
+    image.onload=()=>{box.dataset.pdfPage=String(target);box.querySelector('[data-pdf-label]').textContent=`Seite ${target}`;box.querySelector('[data-pdf-prev]').disabled=target<=1;box.querySelector('[data-pdf-next]').disabled=false;};
+    image.src=next;
+});
 let appNavigate=null;
 document.addEventListener('toggle',event=>{
     const preview=event.target;if(!preview.matches?.('.inbox-assignment-preview')||!preview.open)return;
