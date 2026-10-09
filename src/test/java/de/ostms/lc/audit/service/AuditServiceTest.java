@@ -21,6 +21,6 @@ class AuditServiceTest {
         AuditEvent event=new AuditEvent();event.setUsername("administrator");event.setAction("DOCUMENT_UPDATED");event.setEntityType("LETTER_OF_CREDIT");event.setEntityId("LC-1");event.setDetails("Rechnung; geändert");event.setSuccessful(true);
         AuditEventRepository repository=mock(AuditEventRepository.class);when(repository.findTop200ByOrderByOccurredAtDesc()).thenReturn(List.of(event));
         String csv=new String(new AuditService(repository,mock(OutboxService.class)).csv(),StandardCharsets.UTF_8);
-        assertThat(csv).startsWith("\uFEFFZeitpunkt;Ergebnis").contains("\"Erfolgreich\"","\"administrator\"","\"Rechnung; geändert\"");
+        assertThat(csv).startsWith("\uFEFFZeitpunkt;Ergebnis").contains("Zeitpunkt (UTC);Rolle;Sitzung;Anfrage-ID;User-Agent;Fehlergrund").contains("\"Erfolgreich\"","\"administrator\"","\"Rechnung; geändert\"");
     }
 }
