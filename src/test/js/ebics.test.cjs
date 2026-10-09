@@ -27,3 +27,19 @@ test('navigation entry loads the connection and sends trimmed identifiers',async
  await form.onsubmit({preventDefault(){}});
  const put=f.calls.find(c=>c.options?.method==='PUT');assert.deepEqual(JSON.parse(put.options.body),{url:'https://bank.example/ebicsweb',hostId:'HOST',partnerId:'P1',userId:'U1'});
 });
+
+test('active connection offers fetching and lists messages with import only for importable ones',async()=>{
+ const state={configured:true,status:'ACTIVE',encryptionConfigured:true,url:'u',hostId:'h',partnerId:'p',userId:'u'};
+ const f=fixture(true,state);
+ const original=f.context.json;
+ f.context.json=async(url,options)=>{
+  if(url==='/api/ebics/messages')return [{id:'1',messageType:'MT700',reference:'LC1',status:'NEW',importable:true,receivedAt:'2026-10-09T10:00:00'},{id:'2',messageType:'MT760',reference:'G1',status:'NEW',importable:false,receivedAt:'2026-10-09T10:01:00'}];
+  return original(url,options);
+ };
+ f.context.can=()=>true;
+ await f.context.setupEbics();await f.nav.children[0].onclick();
+ const all=[];(function walk(n){all.push(n);(n.children||[]).forEach(walk);})(f.main);
+ const rows=all.filter(n=>n.className==='membership-row');assert.equal(rows.length,2);
+ const labels=r=>r.children.filter(c=>c.tag==='button').map(b=>b.textContent);
+ assert.deepEqual(labels(rows[0]),['Ansehen','Importieren','Verwerfen']);assert.deepEqual(labels(rows[1]),[]);
+});

@@ -22,5 +22,14 @@ Einrichtung unter *EBICS-Bankanbindung* (Recht `SETTINGS_MANAGE`):
   Interne Hosts müssen in `EBICS_ALLOWED_HOSTS` (kommagetrennt) freigegeben werden.
 - Alle Aktionen (Anlegen, Schlüssel senden, HPB, Zurücksetzen) stehen im Audit-Protokoll, ohne Schlüsselmaterial.
 
+## Teil 2: Nachrichten abholen
+Bei aktiver Verbindung holt *Nachrichten abholen* MT700, MT707, MT710 und MT760 per BTD (Service `TRC`, MsgName = Nachrichtentyp).
+- Jede Nachricht wird einmal je Mandant abgelegt (SHA-256 des Inhalts); erneutes Abholen derselben Nachricht zählt als „bereits bekannt“.
+- **Nichts wird automatisch angelegt.** Pro Nachricht: *Ansehen* (Vorschau des SWIFT-Imports mit Fehlern und Hinweisen),
+  *Importieren* (wie der manuelle SWIFT-Import; MT707 setzt Prüfentscheidungen zurück) oder *Verwerfen*.
+- MT760 wird nur abgelegt, ein Import ist nicht vorgesehen.
+- Recht: `SWIFT_IMPORT` für Liste, Abruf, Vorschau, Import und Verwerfen. Alle Aktionen stehen im Audit-Protokoll.
+- Antworten der Bank werden als Text (UTF-8, höchstens 512 KB) geprüft; Fehler eines Nachrichtentyps stoppen die anderen nicht.
+
 ## Geplant
-Teil 2: Abruf von MT700/707/710/760 per BTD (Service `TRC`) in den SWIFT-Import; Teil 3: zeitgesteuerter Abruf.
+Teil 3: zeitgesteuerter Abruf.

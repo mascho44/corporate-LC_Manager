@@ -99,6 +99,13 @@ public class EbicsConnectionService {
   return view();
  }
 
+ /** Rebuilds the subscriber from the encrypted blobs; only for ACTIVE connections. */
+ org.kopi.ebics.client.User loadUser(EbicsConnection c)throws Exception{
+  String row=c.getId().toString();
+  var bank=EbicsSerialisierung.bankLesen(cipher.decrypt(row,c.getBankBlob()));
+  var partner=EbicsSerialisierung.partnerLesen(cipher.decrypt(row,c.getPartnerBlob()),bank);
+  return EbicsSerialisierung.userLesen(cipher.decrypt(row,c.getUserBlob()),partner);
+ }
  /** Short, actionable message for the user; the full detail stays in the audit log. */
  static String hint(Exception e){
   String m=String.valueOf(e.getMessage());

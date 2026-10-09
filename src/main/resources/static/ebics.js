@@ -17,7 +17,11 @@ async function setupEbics(){
  const keys=node('button','Schlüssel erzeugen und senden (INI/HIA)'),bank=node('button','Bankschlüssel abholen (HPB)'),reset=node('button','Zurücksetzen');
  [keys,bank,reset].forEach(b=>{b.type='button';b.className='secondary';actions.append(b);});
  const prints=document.createElement('pre');prints.setAttribute('aria-label','Fingerabdrücke');prints.hidden=true;
- section.append(node('h2','EBICS-Bankanbindung'),node('p','Eigener Teilnehmer für den Abruf von Akkreditivnachrichten (MT700/707/710/760). Ablauf: Verbindung speichern, Schlüssel senden, Teilnehmer bankseitig freigeben lassen (INI-Brief mit den Fingerabdrücken), danach Bankschlüssel abholen.'),message,info,form,actions,prints);
+ const messagesBox=document.createElement('div');messagesBox.hidden=true;
+ const fetchButton=node('button','Nachrichten abholen (MT700/707/710/760)');fetchButton.type='button';
+ const list=document.createElement('div');list.className='ebics-messages';
+ messagesBox.append(node('h3','Abgeholte Nachrichten'),node('p','Nichts wird automatisch angelegt: Nachrichten erst ansehen, dann importieren oder verwerfen. MT760 wird nur abgelegt.'),fetchButton,list);
+ section.append(node('h2','EBICS-Bankanbindung'),node('p','Eigener Teilnehmer für den Abruf von Akkreditivnachrichten (MT700/707/710/760). Ablauf: Verbindung speichern, Schlüssel senden, Teilnehmer bankseitig freigeben lassen (INI-Brief mit den Fingerabdrücken), danach Bankschlüssel abholen.'),message,info,form,actions,prints,messagesBox);
  document.querySelector('main').append(section);
  const labels={NEW:'Neu – Schlüssel fehlen',KEYS_SENT:'Schlüssel gesendet – wartet auf Freigabe durch die Bank',ACTIVE:'Aktiv',ERROR:'Fehler'};
  let busy=false;
@@ -32,12 +36,37 @@ async function setupEbics(){
    save.disabled=c.configured&&c.status!=='NEW'&&c.status!=='ERROR';
    keys.disabled=!c.configured||!c.encryptionConfigured||c.status==='KEYS_SENT'||c.status==='ACTIVE';
    bank.disabled=c.status!=='KEYS_SENT';reset.disabled=!c.configured||c.status==='NEW';
+   messagesBox.hidden=!(c.status==='ACTIVE'&&typeof can==='function'&&can('SWIFT_IMPORT'));
+   if(!messagesBox.hidden)await loadMessages();
    if(c.configured&&c.status!=='NEW'){try{showPrints(await json('/api/ebics/connection/fingerprints'));}catch(e){prints.hidden=true;}}else prints.hidden=true;
   }catch(error){message.textContent=error.message;}
  }
+ const statusLabel={NEW:'Neu',IMPORTED:'Importiert',DISCARDED:'Verworfen'};
+ async function loadMessages(){
+  try{
+   const rows=await json('/api/ebics/messages');list.replaceChildren();
+   if(!rows.length){list.append(node('p','Noch keine Nachrichten abgeholt.'));return;}
+   rows.forEach(m=>{
+    const row=document.createElement('article');row.className='membership-row';
+    row.append(node('b',m.messageType+' · '+(m.reference||'ohne Referenz')),node('span',' '+(statusLabel[m.status]||m.status)+' · '+String(m.receivedAt||'').replace('T',' ').slice(0,16)));
+    if(m.importable){
+     const view=node('button','Ansehen'),imp=node('button','Importieren'),drop=node('button','Verwerfen');
+     [view,imp,drop].forEach(b=>{b.type='button';b.className='secondary';row.append(b);});
+     view.onclick=async()=>{try{const p=await json('/api/ebics/messages/'+m.id+'/preview');
+       message.textContent=[(p.valid?'Import möglich':'Import nicht möglich')+' · Referenz '+(p.reference||'-')+(p.currency?' · '+p.currency+' '+p.amount:''),...(p.errors||[]),...(p.warnings||[])].join(' | ');}
+      catch(error){message.textContent=error.message;}};
+     imp.onclick=async()=>{if(await confirmAction('Nachricht '+m.messageType+' '+(m.reference||'')+' jetzt importieren?'))run(()=>json('/api/ebics/messages/'+m.id+'/import',{method:'POST'}),'Importiert.');};
+     drop.onclick=async()=>{if(await confirmAction('Nachricht verwerfen? Sie wird nicht importiert.'))run(()=>json('/api/ebics/messages/'+m.id+'/discard',{method:'POST'}),'Verworfen.');};
+    }else if(m.messageType==='MT760'&&m.status==='NEW')row.append(node('span',' · nur abgelegt'));
+    list.append(row);
+   });
+  }catch(error){list.replaceChildren(node('p',error.message));}
+ }
+ fetchButton.onclick=()=>run(async()=>{const r=await json('/api/ebics/messages/fetch',{method:'POST'});message.textContent='';
+   return {done:r};},'');
  async function run(task,done){
   if(busy)return;busy=true;message.textContent='';
-  try{const result=await task();if(result&&result.a005)showPrints(result);message.textContent=done;}
+  try{const result=await task();if(result&&result.a005)showPrints(result);if(result&&result.done){const r=result.done;message.textContent=r.fetched+' neue Nachricht(en), '+r.alreadyKnown+' bereits bekannt'+(r.errors&&r.errors.length?' · Fehler: '+r.errors.join('; '):'')+'.';}else message.textContent=done;}
   catch(error){message.textContent=error.message;}
   finally{busy=false;await refreshKeepMessage();}
  }
