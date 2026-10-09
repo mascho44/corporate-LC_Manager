@@ -28,7 +28,12 @@ public class TenantWorkspaceService {
  @Transactional(readOnly=true) public Overview overview(Authentication auth){
   var user=identity(auth);var current=access.requireActiveAccess(user.getId());
   var choices=memberships.findWorkspaceMemberships(user.getId()).stream().map(m->tenants.findById(m.getTenantId()).orElseThrow()).filter(Tenant::isActive).map(t->new Workspace(t.getId(),t.getCode(),t.getName())).sorted(Comparator.comparing(Workspace::name)).toList();
-  return new Overview(TenantContext.currentId(),choices,false);
+  return new Overview(TenantContext.currentId(),withoutPlatformHome(choices,TenantContext.currentId()),false);
+ }
+ /** The bootstrap tenant is the identity home of all accounts, not a workspace to work in: hide it once real workspaces exist (unless it is the selected one). */
+ static List<Workspace> withoutPlatformHome(List<Workspace> choices,UUID selected){
+  if(Tenant.DEFAULT_ID.equals(selected)||choices.size()<2)return choices;
+  return choices.stream().filter(w->!Tenant.DEFAULT_ID.equals(w.id())).toList();
  }
  @Transactional public Workspace create(String code,String name,String language,boolean bank,boolean corporate,Authentication auth){
   throw new AccessDeniedException("Tenant creation is available only in platform administration.");

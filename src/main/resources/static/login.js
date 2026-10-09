@@ -8,14 +8,16 @@ async function chooseWorkspace(){
   const overview=await response.json().catch(()=>({}));
   const platform=await platformEnabled();
   if(!response.ok&&!platform)throw Error(overview.error||'Mandanten konnten nicht geladen werden.');
-  const workspaces=response.ok&&Array.isArray(overview.workspaces)?overview.workspaces:[];
+  const all=response.ok&&Array.isArray(overview.workspaces)?overview.workspaces:[];
+  // The bootstrap tenant (code "default") only homes the accounts; offer it only when nothing else is available.
+  const workspaces=all.length>1?all.filter(workspace=>workspace.code!=='default'):all;
   if(!workspaces.length){if(platform){location.replace('/platform.html');return;}throw Error('Kein berechtigter Mandant verfügbar.');}
   if(workspaces.length===1&&!platform){location.replace('/');return;}
   form.replaceChildren();
   const label=document.createElement('label');label.textContent='Mandant auswählen';
   const select=document.createElement('select');select.required=true;
   workspaces.forEach(workspace=>{const option=document.createElement('option');option.value=workspace.id;option.textContent=workspace.name;select.append(option);});
-  select.value=overview.selectedTenantId;label.append(select);
+  select.value=workspaces.some(workspace=>workspace.id===overview.selectedTenantId)?overview.selectedTenantId:workspaces[0].id;label.append(select);
   const proceed=document.createElement('button');proceed.type='button';proceed.textContent='Mandant öffnen';
   form.append(label,error,proceed);
   if(platform){const console=document.createElement('button');console.type='button';console.className='secondary';console.textContent='Plattformverwaltung öffnen';console.onclick=()=>location.replace('/platform.html');form.append(console);}
