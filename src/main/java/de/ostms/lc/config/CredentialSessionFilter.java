@@ -35,7 +35,7 @@ public class CredentialSessionFilter extends OncePerRequestFilter {
             // Enrollment alone never upgrades a concurrent password-only session.
             valid=valid&&(account==null||!account.isTotpEnabled()||Boolean.TRUE.equals(session==null?null:session.getAttribute(TOTP_VERIFIED)));
             String uri=request.getRequestURI();
-            boolean platformResource=uri.startsWith("/api/platform/")||java.util.Set.of("/platform.html","/platform-shell.js","/platform.css","/platform-admin.js","/platform-tenants.js","/tenant-inventory.js","/i18n.js","/language-en.json","/language-de.json","/ui-feedback.js","/ui-feedback.css","/styles.css","/controls.css","/tenants.css").contains(uri);
+            boolean platformResource=uri.startsWith("/api/platform/")||uri.equals("/platform")||uri.startsWith("/platform.")||uri.startsWith("/platform-")||java.util.Set.of("/tenant-inventory.js","/i18n.js","/language-en.json","/language-de.json","/ui-feedback.js","/ui-feedback.css","/styles.css","/controls.css","/tenants.css").contains(uri);
             boolean globalAccess=valid&&platformResource&&account.isPlatformAdministrator()&&account.isTotpEnabled()&&Boolean.TRUE.equals(session.getAttribute(TOTP_VERIFIED));
             if(valid&&!globalAccess){
                 try(var scope=de.ostms.lc.tenant.domain.TenantContext.open(tenantId)){
@@ -46,7 +46,7 @@ public class CredentialSessionFilter extends OncePerRequestFilter {
             }
             if(!valid){if(session!=null)session.invalidate();SecurityContextHolder.clearContext();
                 if(request.getRequestURI().startsWith("/api/")){response.setStatus(401);response.setContentType("application/json");response.getWriter().write("{\"error\":\"Bitte erneut anmelden.\"}");}
-                else response.sendRedirect("/login.html");
+                else response.sendRedirect(uri.equals("/platform")||uri.startsWith("/platform.")||uri.startsWith("/platform-")?"/platform-login.html":"/login.html");
                 return;
             }
             // Own identity self-service remains in the identity's home scope; business APIs use selected membership.

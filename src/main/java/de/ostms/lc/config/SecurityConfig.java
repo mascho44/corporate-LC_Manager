@@ -5,6 +5,7 @@ import de.ostms.lc.user.service.AppUserDetailsService; import jakarta.servlet.ht
  @Bean AuthenticationManager authenticationManager(AuthenticationConfiguration c)throws Exception{return c.getAuthenticationManager();}
  @Bean SecurityFilterChain security(HttpSecurity http,AppUserDetailsService users,de.ostms.lc.user.repository.AppUserRepository accounts,de.ostms.lc.tenant.service.TenantMembershipService memberships)throws Exception{return http.userDetailsService(users)
   .authorizeHttpRequests(a->a
+   .requestMatchers("/platform-login.html","/platform-login.js","/platform-login.css").permitAll()
    .requestMatchers("/invitation.html","/invitation.js","/api/auth/invitation/accept").permitAll()
    .requestMatchers("/password-reset.html","/password-reset.js","/api/auth/password-reset/request","/api/auth/password-reset/complete","/login.html","/login.js","/login-background.css","/login-background-v1.png","/styles.css","/info.html","/info.css","/info.js","/license.txt","/oss-components.json","/oss-notices.txt","/api/auth/login","/api/auth/login/totp","/api/health","/actuator/health","/actuator/health/liveness","/actuator/health/readiness").permitAll()
    .requestMatchers("/actuator/**").hasRole("ADMIN")
@@ -62,7 +63,7 @@ import de.ostms.lc.user.service.AppUserDetailsService; import jakarta.servlet.ht
    .anyRequest().authenticated())
   .csrf(c->c.ignoringRequestMatchers("/api/auth/login","/api/auth/login/totp","/api/auth/password-reset/request","/api/auth/password-reset/complete","/api/auth/invitation/accept"))
   .addFilterAfter(new CredentialSessionFilter(accounts,memberships),org.springframework.security.web.context.SecurityContextHolderFilter.class)
-  .exceptionHandling(e->e.defaultAuthenticationEntryPointFor(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),new AntPathRequestMatcher("/api/**")))
+  .exceptionHandling(e->e.defaultAuthenticationEntryPointFor(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),new AntPathRequestMatcher("/api/**")).defaultAuthenticationEntryPointFor(new org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint("/platform-login.html"),new org.springframework.security.web.util.matcher.OrRequestMatcher(new AntPathRequestMatcher("/platform"),new AntPathRequestMatcher("/platform.html"))))
   .formLogin(f->f.loginPage("/login.html").permitAll()).logout(l->l.disable())
   .headers(h->h.frameOptions(f->f.disable()).contentTypeOptions(c->{}).addHeaderWriter(new BrowserSecurityHeaders()))
   .build();}

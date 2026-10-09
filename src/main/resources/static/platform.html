@@ -5,11 +5,11 @@
 <link rel="stylesheet" href="/controls.css?v=20261004-1">
 <link rel="stylesheet" href="/tenants.css?v=20261008-inventory-1">
 <link rel="stylesheet" href="/ui-feedback.css?v=20261006-1">
-<link rel="stylesheet" href="/platform.css?v=20261009-1"></head>
+<link rel="stylesheet" href="/platform.css?v=20261009-1"><link rel="stylesheet" href="/platform-console.css?v=20261009-2"></head>
 <body class="platform-shell">
-<header><div><span class="brand">LC</span><b data-i18n="platform.title">Platform administration</b></div>
-<div class="header-actions"><span id="platformIdentity"></span><a class="button-link" href="/">Return to workspace</a><button type="button" id="platformLogout">Sign out</button></div></header>
-<aside id="appNav" class="app-nav"><div class="app-nav-title"><span class="brand">LC</span><span><b>Platform</b><small>Global administration</small></span></div><nav></nav></aside>
+<header class="platform-header"><div class="platform-brand"><span class="brand">LC</span><div><b data-i18n="platform.title">Platform administration</b><small>Globale Verwaltung · außerhalb der Mandanten</small></div><span class="platform-badge">PLATTFORM</span></div>
+<div class="header-actions"><span id="platformIdentity"></span><a class="button-link" href="/">Zur Mandantenanwendung</a><button type="button" id="platformLogout">Abmelden</button></div></header>
+<aside id="appNav" class="app-nav" hidden><nav></nav></aside>
 <main><section class="panel"><p class="eyebrow">GLOBAL SCOPE</p><h1 data-i18n="platform.title">Platform administration</h1><p>No tenant is selected in this area. Manage global accounts, invitations and tenant lifecycle here. Business data and local roles remain in the tenant workspace.</p><p id="platformError" class="error" role="alert"></p></section></main>
 <script src="/i18n.js?v=20261007-profile-1"></script>
 <script src="/ui-feedback.js?v=20261007-switch-confirm-1"></script>

@@ -15,7 +15,7 @@ class CredentialSessionFilterTest {
         var users=mock(AppUserRepository.class);var user=new AppUser();user.setPasswordHash("hash");user.setTotpEnabled(true);user.setPlatformAdministrator(true);
         when(users.findByUsernameIgnoreCase("user")).thenReturn(Optional.of(user));
         var memberships=mock(de.ostms.lc.tenant.service.TenantMembershipService.class);var selected=UUID.randomUUID();
-        for(String uri:List.of("/platform.html","/platform-shell.js","/platform-admin.js","/styles.css","/language-en.json","/api/platform/session","/api/platform/users")){
+        for(String uri:List.of("/platform","/platform.html","/platform-shell.js","/platform-admin.js","/platform-overview.js","/platform-console.css","/styles.css","/language-en.json","/api/platform/session","/api/platform/users")){
             var request=new MockHttpServletRequest("GET",uri);var session=request.getSession();
             session.setAttribute(CredentialSessionFilter.TENANT,selected);session.setAttribute(CredentialSessionFilter.STAMP,CredentialStamp.of("hash"));
             session.setAttribute(CredentialSessionFilter.AUTHENTICATED_AT,System.currentTimeMillis());session.setAttribute(CredentialSessionFilter.TOTP_VERIFIED,true);

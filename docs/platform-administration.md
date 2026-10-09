@@ -186,3 +186,14 @@ entity type, result). Both re-verify live platform access on every call and use 
 read-only SQL. Audit details, before/after values, object IDs, IP addresses and all
 business data stay in the tenant audit log. Memberships and roles are still changed
 only by each tenant's administrators.
+
+## Separate platform console
+
+The platform area is a standalone console: `/platform` (forwarding to `/platform.html`) with its
+own sign-in `/platform-login.html`, its own dark header with a PLATFORM badge and no tenant
+navigation. The sign-in uses the existing credential and TOTP endpoints and then requires
+`GET /api/platform/access` to be enabled; otherwise the session is ended and no tenant chooser is
+shown. Unauthenticated requests to `/platform` or `/platform.html` are redirected to
+`/platform-login.html`. All `/platform*` static files are served to platform administrators
+without a tenant membership (previously a fixed file list, which would have blocked newly
+added scripts for administrators without membership).
