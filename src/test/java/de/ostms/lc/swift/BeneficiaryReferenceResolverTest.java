@@ -38,4 +38,11 @@ class BeneficiaryReferenceResolverTest {
         assertThat(BeneficiaryReferenceResolver.resolve(Map.of("59","X\nSEE 47A","47A","FULL ADDRESS OF THE BENEFICIARY - KESSLER GMBH\nMUSTERWEG 1")).value()).isEqualTo("KESSLER GMBH\nMUSTERWEG 1");
         assertThat(BeneficiaryReferenceResolver.resolve(Map.of("59","X\nSEE 47A","47A","DOCUMENTS TO BE PRESENTED THROUGH BENEFICIARY'S BANKER WITHIN 21 DAYS")).resolved()).isFalse();
     }
+    @Test void applicantMayAlsoReferToTheAdditionalConditions() {
+        String raw=":20:REF\n:50:ACME GMBH\nSEE 47A\n:59:SEE FIELD 47A\n:32B:EUR1,\n:47A:+APPLICANT: ACME GMBH\nHAUPTSTRASSE 1\nBERLIN\n+BENEFICIARY: ZHONGHUA LTD\nROAD 5\nSHANGHAI\n+ALL DOCUMENTS IN ENGLISH";
+        var lc=new Mt700Parser().parse(raw);
+        assertThat(lc.getApplicant()).isEqualTo("ACME GMBH\nHAUPTSTRASSE 1\nBERLIN");
+        assertThat(lc.getBeneficiary()).isEqualTo("ZHONGHUA LTD\nROAD 5\nSHANGHAI");
+        assertThat(BeneficiaryReferenceResolver.resolveApplicant(Map.of("50","PLAIN APPLICANT")).value()).isEqualTo("PLAIN APPLICANT");
+    }
 }

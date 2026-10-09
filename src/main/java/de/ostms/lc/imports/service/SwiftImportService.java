@@ -158,6 +158,11 @@ public class SwiftImportService {
             if(beneficiaryReference.source()!=null) warnings.add(beneficiaryReference.resolved()
                     ? "Begünstigter aus Feld :"+beneficiaryReference.source()+": übernommen. Bitte die Adresse fachlich prüfen; der Originaltext bleibt erhalten."
                     : "Verweis im Begünstigtenfeld auf :"+beneficiaryReference.source()+": konnte nicht eindeutig aufgelöst werden. Bitte die Adresse in :59: ergänzen.");
+            var applicantReference=de.ostms.lc.swift.BeneficiaryReferenceResolver.resolveApplicant(parseFields(raw));
+            if(applicantReference.source()!=null) warnings.add(applicantReference.resolved()
+                    ? "Auftraggeber aus Feld :"+applicantReference.source()+": übernommen. Bitte die Adresse fachlich prüfen; der Originaltext bleibt erhalten."
+                    : "Verweis im Auftraggeberfeld auf :"+applicantReference.source()+": konnte nicht eindeutig aufgelöst werden. Bitte die Adresse in :50: ergänzen.");
+            if(!lc.getAdditionalFields().isEmpty()) warnings.add(lc.getAdditionalFields().size()+" nicht zuordenbare Felder werden als weitere Angaben angelegt: "+String.join(", ",lc.getAdditionalFields().keySet().stream().map(k->k.split(" - ",2)[0]).toList()));
             if(lc.getExpiryDate()==null) errors.add("Pflichtfeld :31D: (Ablaufdatum) fehlt.");
             if(lc.getAmount()==null||lc.getCurrency()==null) errors.add("Pflichtfeld :32B: (Währung und Betrag) fehlt.");
             if(lc.getApplicant()==null) warnings.add("Feld :50: (Applicant) fehlt.");
