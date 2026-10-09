@@ -9,7 +9,20 @@ import de.ostms.lc.lc.domain.LetterOfCredit; import org.springframework.stereoty
   if(f.containsKey("32B")){String x=f.get("32B").replace("\n","").trim();lc.setCurrency(x.substring(0,3));lc.setAmount(new BigDecimal(x.substring(3).trim().replace(" ","").replace(".","").replace(',','.')));}
   if(f.containsKey("44C"))lc.setLatestShipmentDate(leadingDate("44C",f.get("44C")).date());
   lc.setApplicant(f.get("50")); lc.setBeneficiary(BeneficiaryReferenceResolver.resolve(f).value());
-  if(f.containsKey("46A")) lc.setRequiredDocuments(Arrays.stream(f.get("46A").split("\\R")).map(String::trim).filter(s->!s.isBlank()).map(s->s.replaceFirst("^[+*-]\\s*","")).toList()); return lc;
+  if(f.containsKey("46A")) lc.setRequiredDocuments(splitConditions(f.get("46A"))); return lc;
+ }
+ private static final Pattern CONDITION_MARKER=Pattern.compile("^(?:[+*-]|\\(?\\d{1,2}[.)])\\s*");
+ /** SWIFT wraps lines at 65 characters: a line without "+", "-", "*" or "1." continues the previous condition. Without any marker every line stays its own condition. */
+ static List<String> splitConditions(String field){
+  List<String> lines=Arrays.stream(field.split("\\R")).map(String::trim).filter(x->!x.isBlank()).toList();
+  boolean marked=lines.stream().anyMatch(x->CONDITION_MARKER.matcher(x).find());
+  List<String> result=new ArrayList<>();
+  for(String line:lines){
+   var marker=CONDITION_MARKER.matcher(line);
+   if(!marked||marker.find()||result.isEmpty())result.add(marked&&marker.reset().find()?line.substring(marker.end()):line);
+   else result.set(result.size()-1,result.get(result.size()-1)+" "+line);
+  }
+  return List.copyOf(result);
  }
  private String req(Map<String,String> f,String k){if(!f.containsKey(k)) throw new IllegalArgumentException("MT700 field :"+k+": is required"); return f.get(k);}
  private record ParsedDate(LocalDate date,String rest){}
