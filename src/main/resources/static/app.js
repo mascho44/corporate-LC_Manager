@@ -729,7 +729,7 @@ document.addEventListener('click',async event=>{
 });
 document.addEventListener('click',event=>{const decision=event.target.closest('[data-check-decision]');if(decision)decideCheck(decision.dataset.checkCode,decision.dataset.checkDocument,decision.dataset.checkDecision,decision.dataset.checkFingerprint);const deletion=event.target.closest('[data-document-id]');if(deletion)deleteDocument(deletion);const edit=event.target.closest('[data-document-edit]');if(edit)openDocumentEdit(edit)});
 function label(s){return s==='OK'?'Erfüllt':s==='WARNING'?'Hinweis':'Abweichung'}
-function statusLabel(s){return ({RECEIVED:'Eingegangen',ACTIVE:'Aktiv',AMENDED:'Geändert',DOCUMENTS_PRESENTED:'Dokumente eingereicht',EXPIRED:'Abgelaufen',CLOSED:'Abgeschlossen'})[s]||s}
+function statusLabel(s){return ({RECEIVED:'Eingegangen',ACTIVE:'Aktiv',AMENDED:'Geändert',DOCUMENTS_PRESENTED:'Dokumente eingereicht',EXPIRED:'Abgelaufen',CLOSED:'Abgeschlossen',WAITING_FOR_CUSTOMER:'Wartet auf Kunde'})[s]||s}
 function fileExtension(name){const x=(name.split('.').pop()||'FILE').toUpperCase();return x.length<=4?x:'FILE'}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 async function loadSwiftFile(inputId,textareaId,nameId,errorId){const input=$(inputId),file=input.files?.[0];if(!file)return;if(file.size>1048576){input.value='';$(nameId).textContent='TXT oder SWIFT, maximal 1 MB';$(errorId).textContent='Die Datei ist größer als 1 MB.';return}try{$(textareaId).value=await file.text();$(nameId).textContent=`${file.name} · ${fileSize(file.size)}`;$(errorId).textContent=''}catch(e){$(errorId).textContent='Die Datei konnte nicht gelesen werden.'}}
