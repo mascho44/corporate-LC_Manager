@@ -16,8 +16,9 @@ flag independently of tenant roles.
 The **Platform administration** menu opens the separate /platform.html area.
 An active flagged identity with a verified TOTP session can list global identities
 and activate/suspend accounts without a tenant workspace. Platform requests verify
-global credentials and rights independently of the selected membership. Initial
-sign-in continues to use the existing login flow.
+global credentials and rights independently of the selected membership. After sign-in, a platform administrator without any tenant
+membership is sent directly to /platform.html; with memberships the workspace chooser
+additionally offers "Plattformverwaltung (ohne Mandant)".
 
 `GET /api/platform/access` reports only whether the current identity can use the
 page. `GET /api/platform/users` and `PUT /api/platform/users/{id}/access` validate

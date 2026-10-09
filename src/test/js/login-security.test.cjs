@@ -48,10 +48,21 @@ test('throttled login displays error and allows later retry',async()=>{
 });
 test('tenant code is sent only at password stage, not in the second-factor request',async()=>{const f=fixture([{requiresTotp:true},{username:'user'}],'synthetic');await f.submit();assert.equal(JSON.parse(f.calls[0].options.body).tenantCode,'synthetic');await f.submit();assert.deepEqual(JSON.parse(f.calls[1].options.body),{code:'123456'});});
 test('multiple authorized workspaces are selected after authentication with CSRF protection',async()=>{
- const f=fixture([{username:'user'},{selectedTenantId:'one',workspaces:[{id:'one',name:'First'},{id:'two',name:'Second'}]},{csrfToken:'token'},{tenantId:'two'}]);
+ const f=fixture([{username:'user'},{selectedTenantId:'one',workspaces:[{id:'one',name:'First'},{id:'two',name:'Second'}]},{enabled:false},{csrfToken:'token'},{tenantId:'two'}]);
  await f.submit();assert.equal(f.redirects.length,0);assert.equal(f.calls[1].url,'/api/tenants');
  const label=f.form.children.find(child=>child.tag==='label');const select=label.children[0];select.value='two';
  await f.form.children.find(child=>child.tag==='button').onclick();
- assert.equal(f.calls[3].url,'/api/tenants/two/select');assert.equal(f.calls[3].options.headers['X-CSRF-TOKEN'],'token');assert.deepEqual(f.redirects,['/']);
+ assert.equal(f.calls[4].url,'/api/tenants/two/select');assert.equal(f.calls[4].options.headers['X-CSRF-TOKEN'],'token');assert.deepEqual(f.redirects,['/']);
 });
 test('login page no longer requests a tenant code',()=>{assert.doesNotMatch(fs.readFileSync('src/main/resources/static/login.html','utf8'),/name="tenantCode"/);});
+
+test('platform administrators reach the platform area without a tenant and may choose it next to workspaces',async()=>{
+  const none=fixture([{requiresTotp:false},{error:'Kein Mandant',workspaces:[]},{enabled:true}]);
+  await none.submit();
+  assert.ok(none.redirects.includes('/platform.html'));
+  const both=fixture([{requiresTotp:false},{selectedTenantId:'one',workspaces:[{id:'one',name:'A'}]},{enabled:true}]);
+  await both.submit();
+  assert.equal(both.redirects.length,0);
+  const select=both.form.children.find(child=>child.tag==='label').children.find(child=>child.tag==='select');
+  assert.ok(select.children.some(option=>option.value==='__platform__'));
+});
