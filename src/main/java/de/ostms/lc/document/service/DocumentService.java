@@ -48,7 +48,8 @@ public class DocumentService {
         if (filename.contains("/") || filename.contains("\\")) throw new IllegalArgumentException("Invalid filename.");
 
         LcDocument document = new LcDocument();
-        document.setLetterOfCredit(lcs.findById(lcId).orElseThrow(() -> new NoSuchElementException("LC not found: " + lcId)));
+        var lc = lcs.findById(lcId).orElseThrow(() -> new NoSuchElementException("LC not found: " + lcId));
+        document.setLetterOfCredit(lc);
         document.setDocumentType(type);
         document.setCopyNumber(copyNumber);
         document.setOriginalFilename(filename);
@@ -61,7 +62,9 @@ public class DocumentService {
         extraction.extract(document);document.setClassificationHistoryJson(ClassificationHistory.manual(document.getClassificationHistoryJson(),document.getDocumentType(),ClassificationHistory.actor()));
         if (document.getAmount() == null) document.setAmount(document.getExtractedAmount());
         if (document.getCurrency() == null) document.setCurrency(document.getExtractedCurrency());
-        return DocumentView.from(documents.save(document));
+        var savedDocument = documents.save(document);
+        if (lc.releaseWaitingForCustomer()) lcs.save(lc);
+        return DocumentView.from(savedDocument);
     }
 
     @Transactional
