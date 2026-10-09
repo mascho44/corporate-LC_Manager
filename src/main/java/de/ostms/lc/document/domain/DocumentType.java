@@ -21,7 +21,8 @@ public enum DocumentType {
     CHARTER_PARTY_BILL_OF_LADING("Charter Party Bill of Lading"),
     MULTIMODAL_TRANSPORT_DOCUMENT("Multimodal Transport Document"),
     WEIGHT_LIST("Weight List"),
-    POST_RECEIPT("Post Receipt");
+    POST_RECEIPT("Post Receipt"),
+    DOCUMENT_SUBMISSION("Dokumenteneinreichung");
 
     private final String displayName;
 

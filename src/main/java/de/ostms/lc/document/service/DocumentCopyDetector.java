@@ -6,7 +6,7 @@ import java.util.regex.Pattern;
 /** Conservative text/OCR stamp hints, never proof that a document is an original. */
 public final class DocumentCopyDetector {
  private static final String ORIGINAL="[o0]r[il1]g[il1]n[a4][il1]";
- private static final String KIND="("+ORIGINAL+"|copy|kopie|abschrift|duplicate|duplikat)";
+ private static final String KIND="("+ORIGINAL+"|originale|copy|kop[il1t]+e|copie|copia|abschrift|durchschrift|duplicate|duplikat)";
  private static final String OF="(?:[\\t ]*+(?:/|of|von)[\\t ]*+[1-9])?";
  private static final Pattern MARK=Pattern.compile("(?i)^(?:([1-3])(?:st|nd|rd)?"+OF+"[\\t ]++)?"+KIND+"(?:[\\t ]++(?:no\\.?[\\t ]*+)?([1-3])"+OF+")?[\\t ]*+$");
  private static final Pattern NEGOTIABLE=Pattern.compile("(?i)[\\t ]*+[-–/,]?[\\t ]*+(?:non|not)[\\t -]*+negotiable[\\t ]*+");
@@ -43,8 +43,13 @@ public final class DocumentCopyDetector {
     stamp=clean(NEGOTIABLE.matcher(stamp).replaceAll(" "));
     if(SPACED.matcher(stamp).matches())stamp=stamp.replace(" ","");
     stamp=ordinals(stamp);
+    var words=stamp.split("[\\t ]+".replace("[\\t ]+"," +"));
+    if(words.length>=2&&words.length<=4&&Arrays.stream(words).allMatch(w->WORD_KIND.matcher(w).matches())){
+     boolean firstOriginal=words[0].toLowerCase(Locale.ROOT).matches(ORIGINAL+"|originale");
+     if(Arrays.stream(words).allMatch(w->w.toLowerCase(Locale.ROOT).matches(ORIGINAL+"|originale")==firstOriginal))stamp=words[0]; // "KOPIE COPY": the same word in several languages
+    }
     var matcher=MARK.matcher(stamp);if(!matcher.matches())continue;
-    boolean original=matcher.group(2).toLowerCase(Locale.ROOT).matches(ORIGINAL);
+    boolean original=matcher.group(2).toLowerCase(Locale.ROOT).matches(ORIGINAL+"|originale");
     kinds.add(original?"ORIGINAL":"COPY");
     Integer ordinal=matcher.group(3)!=null?Integer.valueOf(matcher.group(3)):matcher.group(1)!=null?Integer.valueOf(matcher.group(1)):null;
     if(original)numbers.add(ordinal==null?0:-ordinal);

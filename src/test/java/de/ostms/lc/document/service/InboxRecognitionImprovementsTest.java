@@ -54,4 +54,21 @@ class InboxRecognitionImprovementsTest {
   assertThat(DocumentCopyDetector.detect("Invoice\nPlease present original invoice\n").kind()).isEqualTo("UNKNOWN");
   assertThat(DocumentCopyDetector.detect("\n".repeat(0)+"a\n".repeat(20)+"munksjo ORIGINAL").kind()).isEqualTo("UNKNOWN");
  }
+ @Test void layoutsFromRealOcrAreRead(){
+  var expected=LocalDate.of(2026,7,21);
+  for(String value:new String[]{"SHANGHAI, CHINA DATE: 21.07.2026\nL/C NO. X DTD. 09.06.2026","Frankfurt, 2026-07-21 PREMIUM PAID","21.07.2026\nPlace and date of issue; name, signature and stamp","21.07.2026\nOrt und Datum der Ausstellung; Stempel","INVOICE DATE: 21.07.2026\nL/C NO. X DTD. 09.06.2026 PAYABLE AT 60 DAYS AFTER B/L DATE"})
+   assertThat(DocumentDateDetector.detect(value).date()).as(value).isEqualTo(expected);
+  assertThat(DocumentDateDetector.detect("Date Shipped on Board: 30 Jul 2026").date()).isNull();
+  assertThat(DocumentDateDetector.detect("Place and date of issuance:\n30 Jul 2026").date()).isEqualTo(LocalDate.of(2026,7,30));
+  assertThat(DocumentDateDetector.detect("Shipment date: 25.08.2026 Expiry date: 30.09.2026").date()).isNull();
+ }
+ @Test void testPdfLayoutsFromTheTestSet(){
+  assertThat(DocumentClassifier.classify(null,"Versicherung\nMARINE INSURANCE POLICY No. 050.060\nThis is to certify").suggestedType()).isEqualTo(DocumentType.INSURANCE_CERTIFICATE);
+  assertThat(DocumentClassifier.classify(null,"Dokumenteneinreichung\nAkkreditiv 123").suggestedType()).isEqualTo(DocumentType.DOCUMENT_SUBMISSION);
+  assertThat(DocumentCopyDetector.detect("KOPIE COPY - COPIE - COPIA").kind()).isEqualTo("COPY");
+  assertThat(DocumentCopyDetector.detect("A 40449622 DURCHSCHRIFT").kind()).isEqualTo("COPY");
+  assertThat(DocumentCopyDetector.detect("DURCHSCHRIFT").kind()).isEqualTo("COPY");
+  assertThat(DocumentDateDetector.detect("BILL OF LADING\nDate Shipped on Board:\n\n30 Jul 2026\n").date()).isEqualTo(LocalDate.of(2026,7,30));
+  assertThat(DocumentDateDetector.detect("Date Shipped on Board: 30 Jul 2026").date()).isNull();
+ }
 }

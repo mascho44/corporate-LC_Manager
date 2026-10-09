@@ -17,12 +17,13 @@ public final class DocumentClassifier {
   HEADINGS.put(DocumentType.POST_RECEIPT,"(?:post receipt|postal receipt|posteinlieferungsbeleg)");
   HEADINGS.put(DocumentType.AIR_WAYBILL,"(?:air waybill|airway bill|luftfrachtbrief)");
   HEADINGS.put(DocumentType.CERTIFICATE_OF_ORIGIN,"(?:certificate of non[- ]preferential origin|certificate of origin|ursprungszeugnis)");
-  HEADINGS.put(DocumentType.INSURANCE_CERTIFICATE,"(?:insurance certificate|certificate of insurance|insurance policy|versicherungszertifikat)");
+  HEADINGS.put(DocumentType.INSURANCE_CERTIFICATE,"(?:marine insurance policy|marine insurance certificate|insurance certificate|certificate of insurance|insurance policy|versicherungszertifikat|versicherungspolice)");
   HEADINGS.put(DocumentType.ROAD_CONSIGNMENT_NOTE,"(?:cmr|road consignment note|international consignment note)");
   HEADINGS.put(DocumentType.INSPECTION_CERTIFICATE,"(?:inspection certificate|certificate of inspection|inspektionszertifikat)");
   HEADINGS.put(DocumentType.BILL_OF_EXCHANGE,"(?:bill of exchange|draft|wechsel)");
   HEADINGS.put(DocumentType.BENEFICIARY_CERTIFICATE,"(?:beneficiary.?s certificate|beneficiary certificate|begünstigtenzertifikat)");
   HEADINGS.put(DocumentType.QUALITY_CERTIFICATE,"(?:quality certificate|certificate of quality|certificate of analysis|qualitätszertifikat)");
+  HEADINGS.put(DocumentType.DOCUMENT_SUBMISSION,"(?:dokumenteneinreichung|einreichung der dokumente|dokumentenvorlage|document submission|submission of documents|presentation of documents|document presentation|presentation letter)");
   HEADINGS.put(DocumentType.COURIER_RECEIPT,"(?:courier receipt|courier delivery receipt|kurierbeleg)");
  }
  private DocumentClassifier(){}
