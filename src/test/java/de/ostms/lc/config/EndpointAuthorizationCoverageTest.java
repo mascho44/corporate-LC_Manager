@@ -42,6 +42,8 @@ class EndpointAuthorizationCoverageTest {
         Map.entry("POST /api/platform/invitations/*/resend", "Plattformadministration, Prüfung im Dienst (PlatformInvitationService.authorize)"),
         Map.entry("DELETE /api/platform/invitations/*", "Plattformadministration, Prüfung im Dienst (PlatformInvitationService.authorize)"),
         Map.entry("POST /api/platform/logout", "Abmeldung der eigenen Sitzung"),
+        Map.entry("PUT /api/platform/memberships/*/*/role", "Plattformadministration, Prüfung im Dienst (PlatformMembershipService.verifyLiveAccess)"),
+        Map.entry("PUT /api/platform/memberships/*/*/access", "Plattformadministration, Prüfung im Dienst (PlatformMembershipService.verifyLiveAccess)"),
         Map.entry("PUT /api/platform/users/*/access", "Plattformadministration, Prüfung im Dienst (PlatformAdministrationService)"),
         Map.entry("PUT /api/platform/users/*/platform-grant", "Plattformadministration, Prüfung im Dienst (PlatformAdministrationService)"),
         Map.entry("PUT /api/profile", "Selbstbedienung: ändert nur das eigene Konto"),

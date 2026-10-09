@@ -197,3 +197,16 @@ shown. Unauthenticated requests to `/platform` or `/platform.html` are redirecte
 `/platform-login.html`. All `/platform*` static files are served to platform administrators
 without a tenant membership (previously a fixed file list, which would have blocked newly
 added scripts for administrators without membership).
+
+## Role and access changes for shared identities
+
+The membership list on the platform page now lets a platform administrator change the role
+(`PUT /api/platform/memberships/{tenantId}/{userId}/role`, body `{roleId}`) and suspend or restore
+access (`.../access`, body `{suspended}`) of identities that belong to another tenant. Rules, identical
+to the tenant-local services: live platform access with verified two-factor on every call; the
+bootstrap tenant and archived tenants are refused; home identities (those whose home is the tenant
+itself) stay with the tenant's own user administration; the last active administrator cannot be
+demoted or suspended; access can only be restored while the global account and membership are active.
+Changes run under the tenant's administration lock and are audited inside that tenant
+(`PLATFORM_MEMBERSHIP_ROLE_UPDATED`, `PLATFORM_MEMBERSHIP_ACCESS_UPDATED`) with before/after
+snapshots. Granting a new membership is still done by the tenant administrators or by invitation.
