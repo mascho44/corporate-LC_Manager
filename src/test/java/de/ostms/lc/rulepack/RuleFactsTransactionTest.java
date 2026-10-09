@@ -25,6 +25,7 @@ class RuleFactsTransactionTest {
  @TestConfiguration static class Beans{
   @Bean AuditService audit(){return mock(AuditService.class);}
   @Bean DocumentCheckService checks(){return mock(DocumentCheckService.class);}
+  @Bean InternalPackService packs(){return mock(InternalPackService.class);}
  }
  @Autowired RuleFactsController controller;@Autowired LetterOfCreditRepository lcs;
  @Autowired LcDocumentRepository docs;@Autowired AuditService audit;
