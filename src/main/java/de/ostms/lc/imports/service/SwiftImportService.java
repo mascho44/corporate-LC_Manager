@@ -71,6 +71,16 @@ public class SwiftImportService {
             Map.entry("40C", "Applicable Rules"), Map.entry("45C", "Document and Presentation Instructions"),
             Map.entry("45L", "Underlying Transaction Details"), Map.entry("77C", "Details of Guarantee"),
             Map.entry("77U", "Undertaking Terms and Conditions"));
+    /** MT710 advises a credit issued by another bank: the credit number is :21:, :20: is only the advising bank's own reference. */
+    private static final Map<String,String> MT710_LABELS = Map.ofEntries(
+            Map.entry("20", "Referenz der avisierenden Bank (Sender's Reference)"),
+            Map.entry("21", "Dokumentenakkreditivnummer (Documentary Credit Number)"));
+    private static final Map<String,String> MT710_TARGETS = Map.ofEntries(
+            Map.entry("21", "reference"), Map.entry("27", "sequence"), Map.entry("31C", "issueDate"),
+            Map.entry("31D", "expiryDateAndPlace"), Map.entry("32B", "amountAndCurrency"),
+            Map.entry("44C", "latestShipmentDate"), Map.entry("46A", "requiredDocuments"),
+            Map.entry("50", "applicant"), Map.entry("52A", "issuingBank"),
+            Map.entry("57A", "advisingBank"), Map.entry("59", "beneficiary"));
     private static final Map<String,String> MT700_TARGETS = Map.ofEntries(
             Map.entry("20", "reference"), Map.entry("27", "sequence"), Map.entry("31C", "issueDate"),
             Map.entry("31D", "expiryDateAndPlace"), Map.entry("32B", "amountAndCurrency"),
@@ -213,6 +223,7 @@ public class SwiftImportService {
         String upper=raw==null?"":raw.toUpperCase(Locale.ROOT);
         if(upper.matches("(?s).*\\{2:[IO]760.*")||upper.matches("(?s).*\\bMT\\s*760\\b.*")||upper.matches("(?ms).*^:(40C|77C|77U|22D|23H|45L):.*")) return "MT760";
         if(upper.matches("(?s).*\\{2:[IO]707.*")||upper.matches("(?s).*\\bMT\\s*707\\b.*")||upper.matches("(?ms).*^:(26E|31E|45B|46B|47B):.*")) return "MT707";
+        if(upper.matches("(?s).*\\{2:[IO]710.*")||upper.matches("(?s).*\\bMT\\s*710\\b.*")||(upper.matches("(?ms).*^:21:.*")&&upper.matches("(?ms).*^:52[AD]:.*")))return "MT710";
         return "MT700";
     }
 
@@ -228,7 +239,7 @@ public class SwiftImportService {
             boolean unusual=value.isBlank()||duplicate||misplaced;
             String notice=value.isBlank()?"Das Feld ist leer.":duplicate?"Dieses Kernfeld kommt mehrfach vor und muss geprüft werden.":misplaced?"Der Inhalt deutet eher auf „"+TARGET_LABELS.get(inferred)+"“ hin.":target==null&&inferred!=null?"Der Inhalt könnte zu „"+TARGET_LABELS.get(inferred)+"“ gehören.":null;
             if(target==null&&inferred!=null){target=inferred;unusual=true;}
-            if(code.equals("50")&&type.equals("MT700")) {
+            if(code.equals("50")&&(type.equals("MT700")||type.equals("MT710"))) {
                 var reference=de.ostms.lc.swift.BeneficiaryReferenceResolver.resolveApplicant(parseFields(raw));
                 if(reference.source()!=null) {
                     unusual=true;
@@ -237,7 +248,7 @@ public class SwiftImportService {
                             : "Verweis auf :"+reference.source()+": nicht eindeutig auflösbar. In :"+reference.source()+": wurde kein eindeutig beschrifteter Auftraggeber-Block gefunden (z. B. „APPLICANT: …“). Bitte Adresse ergänzen.";
                 }
             }
-            if(code.equals("59")&&type.equals("MT700")) {
+            if(code.equals("59")&&(type.equals("MT700")||type.equals("MT710"))) {
                 var reference=de.ostms.lc.swift.BeneficiaryReferenceResolver.resolve(parseFields(raw));
                 if(reference.source()!=null) {
                     unusual=true;
@@ -246,7 +257,7 @@ public class SwiftImportService {
                             : "Verweis auf :"+reference.source()+": nicht eindeutig auflösbar. In :"+reference.source()+": wurde kein eindeutig beschrifteter Begünstigten-Block gefunden (z. B. „BENEFICIARY: …“). Bitte Adresse ergänzen.";
                 }
             }
-            boolean kept=type.equals("MT700")&&target==null&&!value.isBlank();
+            boolean kept=(type.equals("MT700")||type.equals("MT710"))&&target==null&&!value.isBlank();
             double confidenceScore=unusual||(target==null&&!kept)?0.45:0.95;
             String confidence=confidencePolicy.uncertain(confidenceScore)?"LOW":"HIGH";
             String reason=kept?"Kein eigenes Feld in der Akte: wird als weitere Angabe angelegt und geht nicht verloren.":target==null?"Für dieses SWIFT-Feld gibt es in diesem Profil noch kein festes Zielfeld.":unusual?"Inhaltsbasierter Prüfhinweis – manuelle Bestätigung erforderlich.":"Standardzuordnung für "+type+"-Feld :"+code+":";
@@ -256,8 +267,8 @@ public class SwiftImportService {
     }
 
     private Map<String,String> parseFields(String raw){Map<String,String> values=new LinkedHashMap<>();var m=FIELD.matcher(raw.strip());while(m.find())values.put(m.group(1),m.group(2).trim());return values;}
-    private Map<String,String> targets(String type){return type.equals("MT760")?MT760_TARGETS:type.equals("MT707")?MT707_TARGETS:MT700_TARGETS;}
-    private String label(String type,String code){String special=type.equals("MT760")?MT760_LABELS.get(code):type.equals("MT707")?MT707_LABELS.get(code):MT700_LABELS.get(code);return special!=null?special:COMMON_LABELS.getOrDefault(code,"Weiteres SWIFT-Feld");}
+    private Map<String,String> targets(String type){return type.equals("MT710")?MT710_TARGETS:type.equals("MT760")?MT760_TARGETS:type.equals("MT707")?MT707_TARGETS:MT700_TARGETS;}
+    private String label(String type,String code){String special=type.equals("MT710")&&MT710_LABELS.containsKey(code)?MT710_LABELS.get(code):type.equals("MT760")?MT760_LABELS.get(code):type.equals("MT707")?MT707_LABELS.get(code):MT700_LABELS.get(code);return special!=null?special:COMMON_LABELS.getOrDefault(code,"Weiteres SWIFT-Feld");}
     private void require(Map<String,String> values,String code,String name,List<String> errors){if(blank(values.get(code)))errors.add("Pflichtfeld :"+code+": ("+name+") fehlt.");}
     private boolean blank(String value){return value==null||value.isBlank();}
     private String inferTarget(String value){String text=value==null?"":value.toLowerCase(Locale.ROOT);if(text.matches("(?s).*\\b(applicant|auftraggeber|antragsteller)\\b.*"))return "applicant";if(text.matches("(?s).*\\b(beneficiary|begünstigte[rrn]?)\\b.*"))return "beneficiary";if(text.matches("(?s).*\\b(expiry|expiration|ablaufdatum|valid until)\\b.*"))return "expiryDateAndPlace";if(text.matches("(?s).*\\b(latest shipment|späteste[rn]? versand)\\b.*"))return "latestShipmentDate";if(text.matches("(?s).*\\b(documents required|required documents|vorzulegende dokumente)\\b.*"))return "requiredDocuments";if(text.matches("(?s).*\\b(amount|betrag|total)\\b.*\\b(eur|usd|gbp|chf|jpy)\\b.*"))return "amountAndCurrency";return null;}
