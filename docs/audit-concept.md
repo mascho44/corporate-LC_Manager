@@ -34,3 +34,26 @@ never file contents, extracted text or free-form notes; always valid JSON within
 
 `TRAINING_PROGRESS_SAVED` (every autosave, about a quarter of all events) is no longer written to the audit log;
 `TRAINING_CONFIRMED` remains.
+
+## Step 3: tamper evidence (hash chain)
+
+The database itself chains the audit rows of each tenant (trigger `trg_audit_event_chain`, migration V85):
+each new row gets `chain_seq` (1, 2, 3 ...), `prev_hash` (hash of the previous row, 64 zeros for the first one)
+and `entry_hash` = SHA-256 over `prev_hash` and all audit fields of the row (`audit_event_hash`, timestamps
+rendered independent of the session time zone). Writers of the same tenant are serialized with an advisory lock
+until their transaction ends, so the chain has no forks or gaps.
+
+* **Start:** the chain starts with an anchor event `AUDIT_CHAIN_STARTED` per tenant (migration time). Rows written
+  before that stay unchained (NULL) and are only counted as "unchained" in the verification.
+* **Verification:** `verify_audit_chain(tenant)` walks the chain and reports the first broken position
+  (`Inhalt veraendert`, `Verkettung unterbrochen`, `Luecke in der Folge`), the head sequence number and head hash.
+  Tenant administrators with audit permission use the button "Kette prüfen" in the audit dialog
+  (`GET /api/audit/chain`, the check itself is audited as `AUDIT_CHAIN_VERIFIED`); platform administrators verify all
+  tenants in the platform console (`GET /api/platform/audit/chain`).
+* **What it proves:** edits and deletions of chained rows (also by someone who disables the append-only trigger as a
+  database administrator) break the chain and are located. It does not stop a database administrator who rewrites
+  the whole chain from a point onward. **Operational control:** record the head hash regularly outside the system
+  (for example in the monthly report or by mail); a later check against it exposes a rewritten tail. The CSV export
+  contains `Kettennr`, `Vorgaenger-Hash` and `Hash` for independent re-computation.
+* **Performance note:** each audit write takes a tenant-wide advisory lock until its transaction ends; audit events
+  written inside business transactions therefore serialize with each other per tenant.

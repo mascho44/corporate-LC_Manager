@@ -29,6 +29,11 @@ public class AuditEvent {
     @Column(length = 40) private String requestId;
     @Column(length = 300) private String userAgent;
     @Column(length = 500) private String failureReason;
+    // Written by the database trigger (hash chain); never by the application.
+    @Column(name="chain_seq",insertable=false,updatable=false) private Long chainSeq;
+    @Column(name="prev_hash",insertable=false,updatable=false,length=64) private String prevHash;
+    @Column(name="entry_hash",insertable=false,updatable=false,length=64) private String entryHash;
+    public Long getChainSeq(){return chainSeq;} public String getPrevHash(){return prevHash;} public String getEntryHash(){return entryHash;}
     public java.time.Instant getOccurredAtUtc(){return occurredAtUtc;}
     public String getActorRoles(){return actorRoles;} public void setActorRoles(String v){actorRoles=v;}
     public String getSessionRef(){return sessionRef;} public void setSessionRef(String v){sessionRef=v;}

@@ -9,7 +9,8 @@ async function setupPlatformOverview(section){
  const tenantFilter=document.createElement('input');tenantFilter.placeholder=t('platformOverview.auditTenant','Tenant code (optional)');tenantFilter.maxLength=100;tenantFilter.setAttribute('aria-label',tenantFilter.placeholder);
  const auditReload=node('button',t('platformOverview.auditReload','Load audit'),'secondary');auditReload.type='button';
  const auditStatus=node('p','');auditStatus.setAttribute('role','status');const auditList=document.createElement('div');
- auditBox.append(node('h3',t('platformOverview.audit','Platform audit (metadata only)')),node('p',t('platformOverview.auditNote','Time, tenant, user and action only. Details and values stay in the tenant audit log.')),tenantFilter,auditReload,auditStatus,auditList);
+ const chainButton=node('button',t('platformOverview.verifyChains','Verify audit chains'),'secondary');chainButton.type='button';const chainOutput=document.createElement('div');chainOutput.setAttribute('role','status');
+ auditBox.append(node('h3',t('platformOverview.audit','Platform audit (metadata only)')),node('p',t('platformOverview.auditNote','Time, tenant, user and action only. Details and values stay in the tenant audit log.')),tenantFilter,auditReload,auditStatus,auditList,chainButton,chainOutput);
  // Assign an existing identity (exact username) to a tenant role.
  const assign=document.createElement('form');assign.className='platform-create-form';
  const assignTenant=document.createElement('select'),assignRole=document.createElement('select'),assignName=document.createElement('input');
@@ -67,6 +68,16 @@ async function setupPlatformOverview(section){
    auditStatus.textContent=events.length+' '+t('platformOverview.events','events');
   }catch(failure){auditStatus.textContent=failure.message;}
  }
+
+ chainButton.onclick=async()=>{
+  chainButton.disabled=true;chainOutput.replaceChildren(node('p',t('platformOverview.loading','Loading…')));
+  try{const chains=await json('/api/platform/audit/chain');chainOutput.replaceChildren();
+   chains.forEach(c=>{const row=document.createElement('article');row.className='membership-row';
+    row.append(node('b',c.tenantCode),node('span',c.ok?t('platformOverview.chainOk','Chain intact'):t('platformOverview.chainBroken','Chain broken'),'import-status '+(c.ok?'success':'rejected')),
+     node('small',c.ok?c.checked+' '+t('platformOverview.chainChecked','entries checked')+(c.unchained?' · '+c.unchained+' '+t('platformOverview.chainUnchained','older entries not chained'):'')+(c.headHash?' · #'+c.headSeq+' '+c.headHash:''):t('platformOverview.chainBreakAt','Break at no.')+' '+c.firstBadSeq+' · '+(c.reason||'')));
+    chainOutput.append(row);});}
+  catch(failure){chainOutput.replaceChildren(node('p',failure.message));}finally{chainButton.disabled=false;}
+ };
  auditReload.onclick=refreshAudit;
  return async()=>{await refreshMemberships();await refreshAudit();};
 }
