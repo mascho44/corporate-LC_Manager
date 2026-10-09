@@ -59,6 +59,11 @@ public class RuleFactsController {
  }
  @GetMapping("/documents/{id}/rule-facts") @Transactional(readOnly=true)
  public Map<Field,String> document(@PathVariable UUID lcId,@PathVariable UUID id){return RuleFacts.read(documentInLc(lcId,id).getRuleFactsJson());}
+ @org.springframework.beans.factory.annotation.Autowired(required=false) private DocumentFactSuggester suggester;
+ @GetMapping("/documents/{id}/rule-facts/suggestions") @Transactional(readOnly=true)
+ public List<DocumentFactSuggester.Suggestion> suggestions(@PathVariable UUID lcId,@PathVariable UUID id){
+  return suggester==null?List.of():suggester.suggest(documentInLc(lcId,id));
+ }
  @PutMapping("/documents/{id}/rule-facts") @Transactional
  public Map<Field,String> saveDocument(@PathVariable UUID lcId,@PathVariable UUID id,jakarta.servlet.http.HttpServletRequest request,Authentication auth)throws java.io.IOException{
   return updateDocument(lcId,id,RuleFacts.decodeRequest(request.getInputStream().readNBytes(RuleFacts.MAX_BYTES+1)),auth);
