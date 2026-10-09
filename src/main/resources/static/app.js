@@ -266,6 +266,12 @@ function divideInboxSplitRange(part){
     if(!part||![part.fromPage,part.toPage].every(Number.isInteger)||part.fromPage<1||part.toPage<=part.fromPage)throw Error('Dieser Bereich enthält keine abtrennbare Seite.');
     return [{...part,toPage:part.toPage-1},{...part,fromPage:part.toPage,documentType:'OTHER',copyNumber:null}];
 }
+function explodeInboxSplitRange(parts,index){
+    const part=parts?.[index];
+    if(!part||![part.fromPage,part.toPage].every(Number.isInteger)||part.fromPage<1||part.toPage<=part.fromPage)throw Error('Dieser Bereich besteht nur aus einer Seite und kann nicht weiter aufgelöst werden.');
+    const pages=[];for(let page=part.fromPage;page<=part.toPage;page++)pages.push({fromPage:page,toPage:page,documentType:'OTHER',copyNumber:null});
+    return [...parts.slice(0,index).map(p=>({...p})),...pages,...parts.slice(index+1).map(p=>({...p}))];
+}
 function dissolveInboxSplitRange(parts,index){
     if(!Number.isInteger(index)||index<0||index>=parts.length||parts.length<2)throw Error('Der letzte Bereich kann nicht aufgelöst werden.');
     const result=parts.map(part=>({...part})),neighbor=index>0?index-1:1;
@@ -366,21 +372,22 @@ async function openInboxSplit(item){
         });
         const add=part=>{
             const row=document.createElement('div');row.className='inbox-split-row';
-            row.innerHTML=`<label>Von Seite<input name="fromPage" type="number" min="1" max="${proposal.pageCount}" value="${part.fromPage}" required></label><label>Bis Seite<input name="toPage" type="number" min="1" max="${proposal.pageCount}" value="${part.toPage}" required></label><label class="split-type">Dokumenttyp<select name="documentType" required>${inboxDocumentTypes.map(([type,label])=>`<option value="${type}"${type===part.documentType?' selected':''}>${label}</option>`).join('')}</select></label><label>Kennzeichnung<select name="copyNumber" ${item.pretraining?'disabled':''}>${documentCopyOptions(part.copyNumber)}</select></label><div class="split-row-actions"><button type="button" class="secondary" data-preview>Seite ansehen</button><button type="button" class="secondary" data-merge>Mit vorherigem verbinden</button><button type="button" class="secondary" data-remove>Bereich auflösen</button></div>`;
+            row.innerHTML=`<label>Von Seite<input name="fromPage" type="number" min="1" max="${proposal.pageCount}" value="${part.fromPage}" required></label><label>Bis Seite<input name="toPage" type="number" min="1" max="${proposal.pageCount}" value="${part.toPage}" required></label><label class="split-type">Dokumenttyp<select name="documentType" required>${inboxDocumentTypes.map(([type,label])=>`<option value="${type}"${type===part.documentType?' selected':''}>${label}</option>`).join('')}</select></label><label>Kennzeichnung<select name="copyNumber" ${item.pretraining?'disabled':''}>${documentCopyOptions(part.copyNumber)}</select></label><div class="split-row-actions"><button type="button" class="secondary" data-preview>Seite ansehen</button><button type="button" class="secondary" data-merge>Mit vorherigem verbinden</button><button type="button" class="secondary" data-remove>Bereich auflösen (in Einzelseiten)</button></div>`;
             row.querySelector('[data-remove]').onclick=()=>{
                 const error=dialog.querySelector('[data-error]');error.textContent='';
-                const neighbor=row.previousElementSibling||row.nextElementSibling;
-                if(!neighbor){error.textContent='Der letzte Bereich kann nicht entfernt werden; alle PDF-Seiten müssen enthalten bleiben.';return;}
+                const range=readRange(row);
+                if(!Number.isInteger(range.fromPage)||range.toPage<=range.fromPage){error.textContent='Dieser Bereich besteht nur aus einer Seite und kann nicht weiter aufgelöst werden.';return;}
                 row.querySelector('.split-dissolve-confirm')?.remove();
-                const confirmation=document.createElement('div');confirmation.className='split-dissolve-confirm';confirmation.innerHTML='<p></p><div class="split-row-actions"><button type="button" data-confirm>Ja, Bereich auflösen</button><button type="button" class="secondary" data-cancel>Abbrechen</button></div>';
-                const target=readRange(neighbor);confirmation.querySelector('p').textContent=`Seiten diesem ${row.previousElementSibling?'vorherigen':'folgenden'} Bereich (${target.fromPage}–${target.toPage}) zuordnen? Dessen Dokumenttyp und Kennzeichnung bleiben erhalten. Keine PDF-Seite wird gelöscht.`;
+                const confirmation=document.createElement('div');confirmation.className='split-dissolve-confirm';confirmation.innerHTML='<p></p><div class="split-row-actions"><button type="button" data-confirm>Ja, in Einzelseiten zerlegen</button><button type="button" class="secondary" data-cancel>Abbrechen</button></div>';
+                confirmation.querySelector('p').textContent=`Bereich ${range.fromPage}–${range.toPage} in ${range.toPage-range.fromPage+1} Einzelseiten zerlegen? Jede Seite wird ein eigener Bereich mit Dokumenttyp „Sonstiges“, den Sie danach einzeln einordnen. Keine PDF-Seite wird gelöscht.`;
                 confirmation.querySelector('[data-cancel]').onclick=()=>{confirmation.remove();row.querySelector('[data-remove]').focus({preventScroll:true});};
                 confirmation.querySelector('[data-confirm]').onclick=()=>{
                     try{
-                        const all=[...rows.children],index=all.indexOf(row),adjusted=dissolveInboxSplitRange(all.map(readRange),index);
+                        const all=[...rows.children],index=all.indexOf(row),exploded=explodeInboxSplitRange(all.map(readRange),index);
                         if(row.contains(preview))preview.hidden=true;
-                        row.remove();[...rows.children].forEach((remaining,i)=>{remaining.querySelector('[name=fromPage]').value=adjusted[i].fromPage;remaining.querySelector('[name=toPage]').value=adjusted[i].toPage;});
-                        refreshMergeButtons();renderThumbs(neighbor);neighbor.querySelector('[name=fromPage]').focus({preventScroll:true});submitStatus.textContent='Bereich aufgelöst. Seiten dem angrenzenden Bereich zugeordnet; bitte prüfen.';
+                        rows.replaceChildren();exploded.forEach(add);
+                        refreshMergeButtons();
+                        const first=rows.children[index];first?.querySelector('[name=fromPage]').focus({preventScroll:true});submitStatus.textContent='Bereich in Einzelseiten zerlegt. Bitte Dokumenttypen prüfen.';
                     }catch(failure){error.textContent=failure.message;confirmation.querySelector('p').textContent=failure.message;}
                 };
                 row.append(confirmation);confirmation.querySelector('[data-cancel]').focus({preventScroll:true});confirmation.scrollIntoView({behavior:'smooth',block:'nearest'});
