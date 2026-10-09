@@ -176,3 +176,13 @@ platform administration does not switch it or grant access to it.
 Login continues to use the existing authenticated sign-in flow. This change
 separates the administration area and its request authorization, not the
 initial login flow or global identity storage.
+
+## Cross-tenant overview (read-only)
+
+The platform page lists all memberships across tenants (`GET /api/platform/memberships`:
+user, tenant, role name, account/membership/tenant state) and a metadata-only audit view
+(`GET /api/platform/audit?tenant=<code>&limit=<=500`: time, tenant code, user, action,
+entity type, result). Both re-verify live platform access on every call and use fixed
+read-only SQL. Audit details, before/after values, object IDs, IP addresses and all
+business data stay in the tenant audit log. Memberships and roles are still changed
+only by each tenant's administrators.
