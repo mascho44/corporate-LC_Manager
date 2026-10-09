@@ -24,6 +24,8 @@
    const definitions=await json(base+'/rule-facts/definitions');
    const values=await json(url);if(current!==sequence||activeLc?.id!==lcId)return;
    const fields=definitions[requirements?'requirements':documentId?'document':'lc'],keys=fields.map(d=>d.field);
+   const missing=documentId&&!requirements?new Set(await json(url+'/missing')):null;
+   if(current!==sequence||activeLc?.id!==lcId)return;
    let dialog=document.getElementById('ruleFactsDialog');
    if(!dialog){dialog=document.createElement('dialog');dialog.id='ruleFactsDialog';dialog.className='wide-dialog';document.body.append(dialog);}
    if(dialog.open)dialog.close();
@@ -32,6 +34,13 @@
    const title=requirements?'LC-Anforderungen · '+documentType:documentId?'Dokument-Prüfdaten':'LC-Prüfkontext';
    dialog.innerHTML='<form><div class="dialoghead"><h2>'+esc(title)+'</h2><button type="button" data-close class="ghost">×</button></div><p>Nur fachlich geprüfte Angaben erfassen. Leer bedeutet unbekannt, nicht „nein“. Änderungen setzen bisherige Prüfentscheidungen zurück. Die Dokumentensatzkennung muss bei zusammengehörigen Dokumenten übereinstimmen.</p>'+Array.from(groups,([name,items])=>'<details class="rule-facts-section" open><summary>'+esc(name)+'</summary><div class="form-grid">'+items.map(d=>'<label class="'+(d.field.includes('GOODS_DESCRIPTION')||d.field.endsWith('RISKS')?'wide':'')+'">'+esc(d.label)+widget(d,values[d.field])+'</label>').join('')+'</div></details>').join('')+'<p class="error" data-message role="alert"></p><div class="actions">'+(documentId||requirements?'<button type="button" class="secondary" data-context>LC-Prüfkontext</button>':'')+(documentType&&!requirements?'<button type="button" class="secondary" data-requirements>LC-Anforderungen für diesen Dokumenttyp</button>':'')+'<button type="button" class="secondary" data-close>Schließen</button>'+(allowed?'<button type="submit">Prüfdaten speichern</button>':'')+'</div></form>';
    const form=dialog.querySelector('form');
+   if(missing){
+    const box=document.createElement('div'),note=document.createElement('p'),button=document.createElement('button');
+    note.textContent=missing.size+' noch fehlende Dokumentangaben für aktive Rule Packs. Dies sind mögliche Prüfeingaben, keine pauschalen Pflichtangaben; die fachliche Anwendbarkeit muss geprüft werden.';
+    button.type='button';button.className='secondary';button.textContent='Nur fehlende Angaben anzeigen';let filtered=false;
+    button.onclick=()=>{filtered=!filtered;fields.forEach(d=>{const label=form.elements[d.field].closest('label');label.hidden=filtered&&!missing.has(d.field);});form.querySelectorAll('.rule-facts-section').forEach(group=>{group.hidden=filtered&&![...group.querySelectorAll('label')].some(label=>!label.hidden);});button.textContent=filtered?'Alle Prüfdaten anzeigen':'Nur fehlende Angaben anzeigen';};
+    box.append(note,button);form.querySelector('.dialoghead').after(box);
+   }
    if(!allowed)form.querySelectorAll('input,textarea,select').forEach(input=>input.disabled=true);
    dialog.querySelectorAll('[data-close]').forEach(button=>button.onclick=()=>{++sequence;dialog.close();});
    const context=dialog.querySelector('[data-context]');if(context)context.onclick=()=>openFacts(null,documentType);

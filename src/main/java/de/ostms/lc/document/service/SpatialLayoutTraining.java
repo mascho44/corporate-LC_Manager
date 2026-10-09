@@ -40,10 +40,20 @@ public class SpatialLayoutTraining {
  public Map<String,SpatialMetadata.Field> suggest(OcrEvidence evidence,String profile)throws Exception{
   if(profile==null||profile.isBlank())return SpatialMetadata.detect(evidence);
   if(profile.length()>100)throw new IllegalArgumentException("Layoutprofil zu lang.");
-  var patterns=jdbc.queryForList("select distinct labels_json from document_spatial_layout where tenant_id=? and profile=? limit 2",String.class,TenantContext.currentId(),profile.strip());
+  var patterns=jdbc.queryForList("select distinct labels_json from document_spatial_layout where tenant_id=? and profile=? and active=true limit 2",String.class,TenantContext.currentId(),profile.strip());
   if(patterns.size()>1)throw new IllegalArgumentException("Widersprüchliche Layoutbestätigungen. Bitte Profil fachlich prüfen.");
   if(patterns.isEmpty())return SpatialMetadata.detect(evidence);
   return SpatialMetadata.detect(evidence,json.readValue(patterns.get(0),new TypeReference<Map<String,List<String>>>(){}));
+ }
+ @Transactional(readOnly=true)
+ public List<Map<String,Object>> layouts(){
+  return jdbc.queryForList("select id,profile,active,labels_json,confirmed_by,confirmed_at from document_spatial_layout where tenant_id=? order by profile,confirmed_at desc",TenantContext.currentId());
+ }
+ @Transactional
+ public void updateLayout(UUID id,String profile,boolean active){
+  if(profile==null||profile.isBlank()||profile.strip().length()>100)throw new IllegalArgumentException("Profilname erforderlich, maximal 100 Zeichen.");
+  int changed=jdbc.update("update document_spatial_layout set profile=?,active=? where id=? and tenant_id=?",profile.strip(),active,id,TenantContext.currentId());
+  if(changed!=1)throw new NoSuchElementException("Layout nicht gefunden.");
  }
  private static boolean equal(Object a,Object b){return a instanceof java.math.BigDecimal x&&b instanceof java.math.BigDecimal y?x.compareTo(y)==0:Objects.equals(a,b);}
 }

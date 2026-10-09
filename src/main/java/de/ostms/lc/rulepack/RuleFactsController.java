@@ -13,6 +13,11 @@ import static de.ostms.lc.rulepack.PackDefinition.Field;
 public class RuleFactsController {
  private final LetterOfCreditRepository lcs;private final LcDocumentRepository documents;
  private final AuditService audit;private final DocumentCheckService checks;
+ @org.springframework.beans.factory.annotation.Autowired private InternalPackService packs;
+ @GetMapping("/documents/{id}/rule-facts/missing") @Transactional(readOnly=true)
+ public Set<Field> missing(@PathVariable UUID lcId,@PathVariable UUID id){
+  return packs.missingDocumentFields(lcs.findById(lcId).orElseThrow(),documentInLc(lcId,id));
+ }
  public RuleFactsController(LetterOfCreditRepository l,LcDocumentRepository d,AuditService a,DocumentCheckService c){lcs=l;documents=d;audit=a;checks=c;}
  @GetMapping("/rule-facts") @Transactional(readOnly=true)
  public Map<Field,String> lc(@PathVariable UUID lcId){return RuleFacts.read(lcs.findById(lcId).orElseThrow().getRuleFactsJson());}

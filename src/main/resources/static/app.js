@@ -81,8 +81,52 @@ document.addEventListener('click',async event=>{
  await loadInbox(true);$('#inboxMessage').textContent=failures.length?`${attached} zugeordnet, ${failures.length} nicht zugeordnet: ${failures[0]}`:`${attached} Dokumente zugeordnet.`;
  };
 });
-function inboxMetadataFields(item){return `<details><summary>Metadaten prüfen und korrigieren</summary><label>LC-Referenz im Dokument<input name="metadataReference" maxlength="255" value="${esc(item.extractedReference||'')}"><small data-field-quality="metadataReference">${item.extractedReference?'Erkannt – prüfen':'Nicht erkannt / unsicher'}</small></label><label>Dokumentnummer<input name="metadataNumber" maxlength="255" value="${esc(item.extractedDocumentNumber||'')}"><small data-field-quality="metadataNumber">${item.extractedDocumentNumber?'Erkannt – prüfen':'Nicht erkannt / unsicher'}</small></label><label>Betrag<input name="metadataAmount" type="number" min="0" step="0.01" value="${item.extractedAmount??''}"><small data-field-quality="metadataAmount">${item.extractedAmount!=null?'Erkannt – prüfen':'Nicht erkannt / unsicher'}</small></label><label>Währung<input name="metadataCurrency" maxlength="3" pattern="[A-Z]{3}" value="${esc(item.extractedCurrency||'')}"><small data-field-quality="metadataCurrency">${item.extractedCurrency?'Erkannt – prüfen':'Nicht erkannt / unsicher'}</small></label><label>Firmen-/Banklayoutprofil<input name="spatialProfile" maxlength="100" placeholder="Zum Beispiel Exporteur – Rechnungen"></label><button type="button" class="secondary" data-spatial-confirm>Layout bestätigen & lernen</button><button type="button" class="secondary" data-metadata-positions>Positionsbasierte Vorschläge</button><button type="button" class="secondary" data-metadata-suggest>Gelernte Vorschläge prüfen</button><button type="button" class="secondary" data-metadata-confirm>Metadaten bestätigen & lernen</button><p data-metadata-training-status role="status"></p><button type="button" class="secondary" data-inbox-evidence="${item.id}">Fundstellen anzeigen</button><div data-metadata-evidence></div><small>Korrekturen werden bei der Zuordnung übernommen. Die LC-Stammdaten ändern sich nicht.</small></details>`;}
+function inboxMetadataFields(item){return `<details><summary>Metadaten prüfen und korrigieren</summary><label>LC-Referenz im Dokument<input name="metadataReference" maxlength="255" value="${esc(item.extractedReference||'')}"><small data-field-quality="metadataReference">${item.extractedReference?'Erkannt – prüfen':'Nicht erkannt / unsicher'}</small></label><label>Dokumentnummer<input name="metadataNumber" maxlength="255" value="${esc(item.extractedDocumentNumber||'')}"><small data-field-quality="metadataNumber">${item.extractedDocumentNumber?'Erkannt – prüfen':'Nicht erkannt / unsicher'}</small></label><label>Betrag<input name="metadataAmount" type="number" min="0" step="0.01" value="${item.extractedAmount??''}"><small data-field-quality="metadataAmount">${item.extractedAmount!=null?'Erkannt – prüfen':'Nicht erkannt / unsicher'}</small></label><label>Währung<input name="metadataCurrency" maxlength="3" pattern="[A-Z]{3}" value="${esc(item.extractedCurrency||'')}"><small data-field-quality="metadataCurrency">${item.extractedCurrency?'Erkannt – prüfen':'Nicht erkannt / unsicher'}</small></label><label>Firmen-/Banklayoutprofil<input name="spatialProfile" maxlength="100" placeholder="Zum Beispiel Exporteur – Rechnungen"></label><button type="button" class="secondary" data-metadata-save>Bearbeitungsstand speichern</button><button type="button" class="secondary" data-spatial-confirm>Layout bestätigen & lernen</button><button type="button" class="secondary" data-metadata-positions>Positionsbasierte Vorschläge</button><button type="button" class="secondary" data-metadata-suggest>Gelernte Vorschläge prüfen</button><button type="button" class="secondary" data-metadata-confirm>Metadaten bestätigen & lernen</button><p data-metadata-training-status role="status"></p><button type="button" class="secondary" data-inbox-evidence="${item.id}">Fundstellen anzeigen</button><div data-metadata-evidence></div><small>Korrekturen werden bei der Zuordnung übernommen. Die LC-Stammdaten ändern sich nicht.</small></details>`;}
 function inboxAttachment(form,lcId){return {lcId,documentType:form.elements.documentType.value,documentDate:form.elements.documentDate.value||null,copyNumber:readDocumentCopy(form.elements.copyNumber.value),metadata:{reference:form.elements.metadataReference.value.trim()||null,documentNumber:form.elements.metadataNumber.value.trim()||null,amount:form.elements.metadataAmount.value===''?null:Number(form.elements.metadataAmount.value),currency:form.elements.metadataCurrency.value.trim()||null}};}
+async function openDocumentDuplicates(url){
+ try{
+ const report=await json(url);
+ let dialog=document.getElementById('documentDuplicatesDialog');if(!dialog){dialog=document.createElement('dialog');dialog.id='documentDuplicatesDialog';dialog.className='wide-dialog';document.body.append(dialog);}if(dialog.open)dialog.close();
+ dialog.innerHTML='<h2>Identische Dateien prüfen</h2><p>'+report.checked+' Dateien geprüft'+(report.limited?' · begrenzte Prüfung (maximal 100 Dateien / 100 MB)':'')+'. Verglichen wird der Dateiinhalt, nicht die Echtheit eines Originals. Originale und Kopien bleiben getrennt; es wird nichts automatisch gelöscht.</p>'+report.groups.map(group=>'<article class="card"><b>Identischer Dateiinhalt</b><ul>'+group.documents.map(doc=>'<li>'+esc(doc.filename)+' · '+esc(doc.copyNumber==null?'Nicht gekennzeichnet':doc.copyNumber===0?'Original':doc.copyNumber<0?'Original '+Math.abs(doc.copyNumber):'Copy '+doc.copyNumber)+'</li>').join('')+'</ul></article>').join('')+(!report.groups.length?'<p>Keine identischen Dateien im geprüften Bestand gefunden.</p>':'')+'<button type="button">Schließen</button>';
+ dialog.querySelector('button').onclick=()=>dialog.close();dialog.showModal();
+ }catch(error){alert('Dublettenprüfung fehlgeschlagen: '+error.message);}
+}
+async function openDocumentLayouts(){
+ try{
+ const rows=await json('/api/settings/document-layouts');
+ let dialog=document.getElementById('documentLayoutsDialog');if(!dialog){dialog=document.createElement('dialog');dialog.id='documentLayoutsDialog';dialog.className='wide-dialog';document.body.append(dialog);}if(dialog.open)dialog.close();
+ const active=new Map();rows.filter(row=>row.active).forEach(row=>{if(!active.has(row.profile))active.set(row.profile,new Set());active.get(row.profile).add(row.labels_json);});
+ dialog.innerHTML='<div class="dialoghead"><h2>Gelernte Layoutprofile</h2><button type="button" data-close>Schließen</button></div><p>Bestätigungen bleiben erhalten. Deaktivierte Muster werden nicht mehr verwendet. Bei widersprüchlichen aktiven Mustern bitte fachlich entscheiden, welche Bestätigung gültig ist.</p>'+rows.map(row=>'<form data-layout-id="'+esc(row.id)+'"><label>Profilname<input name="profile" maxlength="100" required value="'+esc(row.profile)+'"></label><label><input type="checkbox" name="active" '+(row.active?'checked':'')+'> Aktiv</label><p>'+esc(row.confirmed_by)+' · '+esc(String(row.confirmed_at))+'</p>'+(active.get(row.profile)?.size>1?'<p class="error">Widersprüchliche aktive Muster in diesem Profil</p>':'')+'<pre>'+esc(row.labels_json)+'</pre><button type="submit">Änderungen speichern</button><p data-status role="status"></p></form>').join('');
+ dialog.querySelector('[data-close]').onclick=()=>dialog.close();
+ dialog.querySelectorAll('[data-layout-id]').forEach(form=>form.onsubmit=async event=>{event.preventDefault();const button=form.querySelector('button');button.disabled=true;try{await json('/api/settings/document-layouts/'+form.dataset.layoutId,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({profile:form.elements.profile.value.trim(),active:form.elements.active.checked})});await openDocumentLayouts();}catch(error){form.querySelector('[data-status]').textContent=error.message;}finally{button.disabled=false;}});
+ dialog.showModal();
+ }catch(error){$('#inboxMessage').textContent='Layoutprofile konnten nicht geladen werden: '+error.message;}
+}
+function restoreInboxReview(form,item){
+ if(!form||!item.metadataReviewJson)return;
+ try{const review=JSON.parse(item.metadataReviewJson),m=review.metadata||{};
+ const values={lcId:review.lcId,documentType:review.documentType,copyNumber:review.copyNumber,documentDate:review.documentDate,spatialProfile:review.profile,metadataReference:m.reference,metadataNumber:m.documentNumber,metadataAmount:m.amount,metadataCurrency:m.currency};
+ Object.entries(values).forEach(([name,value])=>{if(form.elements[name])form.elements[name].value=value??'';});
+ form.querySelectorAll('[data-field-quality]').forEach(node=>node.textContent=review.confirmed?'Manuell bestätigt':'Gespeicherte Korrektur – prüfen');
+ form.querySelector('[data-metadata-training-status]').textContent=review.confirmed?'Gespeicherte Bestätigung wiederhergestellt.':'Gespeicherter Bearbeitungsstand wiederhergestellt – noch nicht bestätigt.';
+ }catch(error){form.querySelector('[data-metadata-training-status]').textContent='Gespeicherter Bearbeitungsstand konnte nicht geladen werden. Bitte erneut prüfen.';}
+}
+function inboxReviewPayload(form){
+ const payload={...inboxAttachment(form,form.elements.lcId.value||null),profile:form.elements.spatialProfile.value.trim()||null,confirmed:false};
+ payload.documentType=payload.documentType||null;return payload;
+}
+async function saveInboxReview(form){
+ const payload=inboxReviewPayload(form);
+ await json(`/api/inbox/${form.dataset.inboxAttach}/metadata-review`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+ return payload;
+}
+document.addEventListener('click',async event=>{
+ const button=event.target.closest('[data-metadata-save]');if(!button)return;
+ const form=button.closest('[data-inbox-attach]'),status=form.querySelector('[data-metadata-training-status]');
+ if(['documentDate','metadataReference','metadataNumber','metadataAmount','metadataCurrency','spatialProfile'].some(name=>!form.elements[name].reportValidity()))return;
+ button.disabled=true;
+ try{const saved=await saveInboxReview(form);const current=inboxReviewPayload(form);status.textContent=JSON.stringify(saved)===JSON.stringify(current)?'Bearbeitungsstand gespeichert – noch nicht als Training bestätigt.':'Bearbeitungsstand gespeichert; neuere Eingaben sind noch nicht gespeichert.';}catch(error){status.textContent='Speichern fehlgeschlagen: '+error.message;}finally{button.disabled=false;}
+});
 document.addEventListener('input',event=>{
  const form=event.target.closest('[data-inbox-attach]');if(!form||!['documentDate','metadataReference','metadataNumber','metadataAmount','metadataCurrency'].includes(event.target.name))return;
  const quality=form.querySelector(`[data-field-quality="${event.target.name}"]`);if(quality)quality.textContent='Manuell bearbeitet – noch nicht bestätigt';
@@ -98,7 +142,7 @@ document.addEventListener('click',async event=>{
  }
  button.disabled=true;
  try{
-  if(button.hasAttribute('data-metadata-confirm')){const values=inboxAttachment(form,null);await json(`/api/inbox/${id}/metadata-training`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({metadata:values.metadata,documentDate:values.documentDate})});if(JSON.stringify(values)!==JSON.stringify(inboxAttachment(form,null))){status.textContent='Bestätigung gespeichert, aber die Eingaben wurden inzwischen geändert. Erneut prüfen.';return;}form.querySelectorAll('[data-field-quality]').forEach(node=>node.textContent='Manuell bestätigt');status.textContent='Bestätigung gespeichert. Lernen ist unabhängig von der LC-Zuordnung.';}
+  if(button.hasAttribute('data-metadata-confirm')){const values=inboxAttachment(form,null);await saveInboxReview(form);await json(`/api/inbox/${id}/metadata-training`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({metadata:values.metadata,documentDate:values.documentDate})});if(JSON.stringify(values)!==JSON.stringify(inboxAttachment(form,null))){status.textContent='Bestätigung gespeichert, aber die Eingaben wurden inzwischen geändert. Erneut prüfen.';return;}form.querySelectorAll('[data-field-quality]').forEach(node=>node.textContent='Manuell bestätigt');status.textContent='Bestätigung gespeichert. Lernen ist unabhängig von der LC-Zuordnung.';}
   else{const proposal=await json(`/api/inbox/${id}/metadata-training`);if(!['LEARNED_REVIEW','ANCHOR_REVIEW'].includes(proposal.status)){status.textContent=proposal.status==='CONFLICT'?'Widersprüchliche Bestätigungen – keine automatische Übernahme.':'Kein eindeutig passendes bestätigtes Textmuster vorhanden.';return;}
    status.textContent=proposal.status==='ANCHOR_REVIEW'?'Gelernte Textanker: neue Werte aus diesem Dokument gelesen. Bitte prüfen.':'Bestätigtes Muster mit identischem Text gefunden. Bitte prüfen.';
    if(!await confirmAction('Gelernten Vorschlag in die Bearbeitungsfelder übernehmen? Aktuelle Eingaben werden ersetzt.'))return;
@@ -165,6 +209,8 @@ async function loadInbox(silent=false){
             return;
         }
         list.innerHTML=items.length?inboxBulkToolbar()+'<p class="inbox-limit">'+items.length+' offene Dateien'+(items.length===100?' · die neuesten 100 werden angezeigt':'')+'</p>'+items.map(item=>renderInboxItem(item,inboxLcs)).join(''):'<div class="empty compact">Keine offenen Dateien im Posteingang.</div>';
+        if(can('SETTINGS_MANAGE')){const manage=document.createElement('button');manage.type='button';manage.className='secondary';manage.textContent='Layoutprofile verwalten';manage.onclick=openDocumentLayouts;list.prepend(manage);}
+        if(items.length>1){const duplicates=document.createElement('button');duplicates.type='button';duplicates.className='secondary';duplicates.textContent='Identische Dateien prüfen';duplicates.onclick=()=>openDocumentDuplicates('/api/inbox/duplicates');list.prepend(duplicates);}
         list.querySelectorAll('[data-inbox-candidate]').forEach(button=>button.onclick=()=>{
             const form=list.querySelector(`[data-inbox-attach="${button.dataset.inboxItem}"]`),lc=inboxLcs.find(value=>value.id===button.dataset.inboxCandidate);
             if(!form||!lc){$('#inboxMessage').textContent='Die vorgeschlagene Akte ist nicht mehr verfügbar. Bitte aktualisieren.';return;}
@@ -186,6 +232,7 @@ async function loadInbox(silent=false){
         });
         list.querySelectorAll('[data-inbox-id]').forEach(article=>{
             const item=items.find(value=>value.id===article.dataset.inboxId);
+            restoreInboxReview(article.querySelector('[data-inbox-attach]'),item);
             const status=document.createElement('div');status.dataset.inboxStatus=item.id;status.innerHTML=inboxStatusHtml(item);article.querySelector('.inbox-item-head').after(status);
             article.addEventListener('input',event=>{if(!event.target.matches('[data-inbox-select]'))inboxEditedItems.add(item.id);});article.addEventListener('change',event=>{if(!event.target.matches('[data-inbox-select]'))inboxEditedItems.add(item.id);});
             article.dataset.pending=String(inboxPending(item));
@@ -979,6 +1026,7 @@ show=async function(id){
     if(activeLc?.id!==id||!block.isConnected)return;
     block.innerHTML='<h3>LC-Cockpit</h3><div class="grid">'+lcCockpitCards(activeLc,documents,review,tasks,deadlines).map(([title,value,note,section])=>`<div class="card"><small>${esc(title)}</small><b>${esc(value)}</b><p>${esc(note)}</p><button type="button" class="secondary" data-cockpit-section="${section}">${esc(title)} öffnen</button></div>`).join('')+'</div>';
     block.querySelectorAll('[data-cockpit-section]').forEach(button=>button.onclick=()=>activateDossierSection(button.dataset.cockpitSection));
+    const duplicates=document.createElement('button');duplicates.type='button';duplicates.className='secondary';duplicates.textContent='Identische Dokumentdateien prüfen';duplicates.onclick=()=>openDocumentDuplicates('/api/lcs/'+id+'/documents/duplicates');block.append(duplicates);
     const activity=document.createElement('section');
     activity.innerHTML='<div class="sectionhead"><h3>Letzte Aktivitäten</h3><button type="button" class="secondary">Gesamten Verlauf öffnen</button></div><div class="timeline-list">'+(timeline==null?'<p>Der Verlauf konnte nicht geladen werden. Bitte die Akte erneut öffnen.</p>':timelineHtml(timeline.slice(0,5)))+'</div>';
     activity.querySelector('button').onclick=()=>activateDossierSection('history');
