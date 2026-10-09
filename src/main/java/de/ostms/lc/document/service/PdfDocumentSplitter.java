@@ -53,10 +53,13 @@ public final class PdfDocumentSplitter {
                 boolean differentReference=reference!=null&&nextReference!=null&&!reference.equals(nextReference);
                 boolean numberedContinuation=number!=null&&previousNumber!=null&&number[0]==previousNumber[0]+1&&(number[1]==previousNumber[1]||number[1]==0||previousNumber[1]==0);
                 boolean referenceContinuation=number==null&&reference!=null&&reference.equals(nextReference);
-                boolean continuation=i>0&&current!=null&&(numberedContinuation||referenceContinuation)&&!differentReference&&!differentCopy&&!restart;
-                if(detected==null&&"UNKNOWN".equals(classification.status())&&!texts.get(i).isBlank()&&continuation){
+                // A blank page (scanner back side) or an unnumbered page after "Page 1 of 3" belongs to the running document.
+                boolean blankPage=texts.get(i).replaceAll("[^\\p{L}\\p{N}]","").length()<5;
+                boolean impliedByTotal=!blankPage&&number==null&&previousNumber!=null&&previousNumber[1]>previousNumber[0];
+                boolean continuation=i>0&&current!=null&&(numberedContinuation||referenceContinuation||blankPage||impliedByTotal)&&!differentReference&&!differentCopy&&!restart;
+                if(detected==null&&"UNKNOWN".equals(classification.status())&&continuation){
                     detected=current;
-                    classification=new DocumentClassifier.Classification(current,.8,"REVIEW",numberedContinuation?"PAGE_SEQUENCE_V1":"DOCUMENT_REFERENCE_V1",List.of(numberedContinuation?"Fortsetzungsseite "+number[0]+" / "+number[1]+"; bitte prüfen":"Gleiche Dokumentnummer wie vorherige Seite; bitte prüfen"));
+                    classification=new DocumentClassifier.Classification(current,.8,"REVIEW",numberedContinuation?"PAGE_SEQUENCE_V1":referenceContinuation?"DOCUMENT_REFERENCE_V1":blankPage?"BLANK_PAGE_V1":"PAGE_TOTAL_V1",List.of(numberedContinuation?"Fortsetzungsseite "+number[0]+" / "+number[1]+"; bitte prüfen":referenceContinuation?"Gleiche Dokumentnummer wie vorherige Seite; bitte prüfen":blankPage?"Leere Seite, der vorherigen zugeordnet; bitte prüfen":"Vorherige Seite kündigt weitere Seiten an; bitte prüfen"));
                 }
                 pages.add(new Page(i+1,classification,texts.get(i).isBlank()?"UNAVAILABLE":"PAGE_TEXT",DocumentCopyDetector.detect(texts.get(i))));
                 // Unknown pages are isolated instead of silently treated as continuations.
@@ -67,7 +70,7 @@ public final class PdfDocumentSplitter {
                 current=detected;
                 if(!copy.kind().equals("UNKNOWN"))previousCopy=copy;
                 else if(start==i+1)previousCopy=copy;
-                previousNumber=number;if(nextReference!=null)reference=nextReference;
+                if(!blankPage)previousNumber=number!=null||!(impliedByTotal&&continuation)?number:new int[]{previousNumber[0]+1,previousNumber[1]};if(nextReference!=null)reference=nextReference;
             }
             parts.add(new Part(start,texts.size(),current==null?DocumentType.OTHER:current));
             var suggestedParts=parts.stream().map(part->new Part(part.fromPage(),part.toPage(),part.documentType(),DocumentCopyDetector.detect(String.join("\n",texts.subList(part.fromPage()-1,part.toPage()))).copyNumber())).toList();
