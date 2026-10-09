@@ -41,15 +41,22 @@ public class InboxExtractionQueue {
         Work work=transaction.execute(status->claim());
         if(work==null)return;
         try(var scope=de.ostms.lc.tenant.domain.TenantContext.open(work.tenantId())){
-        try{extraction.extractInBackground(work.document());}catch(Exception failure){work.document().setExtractionStatus("FAILED");}
+        try{extraction.extractInBackground(work.document(),result->checkpoint(work,result));}catch(Exception failure){work.document().setExtractionStatus("FAILED");}
         if(work.document().getExtractionStatus()==null)work.document().setExtractionStatus("FAILED");
         if(Thread.currentThread().isInterrupted())return; // Leave claim recoverable after shutdown.
         InboxAutomaticSplitter.Plan plan=InboxAutomaticSplitter.Plan.none();
-        if(autoSplitEnabled&&automaticSplitter!=null&&work.automaticEligible())try{plan=automaticSplitter.prepare(work.document());}catch(Exception failure){log.warn("Automatic PDF splitting requires manual review: type={}",failure.getClass().getSimpleName());}
+        if(autoSplitEnabled&&automaticSplitter!=null&&work.automaticEligible()&&List.of("EXTRACTED","OCR_EXTRACTED").contains(work.document().getExtractionStatus()))try{plan=automaticSplitter.prepare(work.document());}catch(Exception failure){log.warn("Automatic PDF splitting requires manual review: type={}",failure.getClass().getSimpleName());}
         var prepared=plan;
         Boolean completed=transaction.execute(status->{try{return finish(work,prepared);}catch(Exception failure){throw new IllegalStateException("Inbox completion failed.",failure);}});
-        if(Boolean.TRUE.equals(completed))audit.record(work.username(),"DOCUMENT_INBOX_EXTRACTED","DOCUMENT_INBOX",work.id(),work.document().getExtractionStatus(),!List.of("FAILED","OCR_TIMEOUT","OCR_UNAVAILABLE").contains(work.document().getExtractionStatus()),null);
+        if(Boolean.TRUE.equals(completed))audit.record(work.username(),"DOCUMENT_INBOX_EXTRACTED","DOCUMENT_INBOX",work.id(),work.document().getExtractionStatus(),List.of("EXTRACTED","OCR_EXTRACTED").contains(work.document().getExtractionStatus()),null);
         }
+    }
+    private void checkpoint(Work work,LcDocument result){
+        transaction.executeWithoutResult(status->{
+            var item=inbox.findForUpdate(work.id()).orElse(null);
+            if(item==null||!work.tenantId().equals(item.getTenantId())||!"OPEN".equals(item.getStatus())||!"PROCESSING".equals(item.getExtractionStatus())||!work.token().equals(item.getExtractionToken()))return;
+            item.setOcrEvidenceJson(result.getOcrEvidenceJson());item.setExtractedText(result.getExtractedText());inbox.save(item);
+        });
     }
     private Work claim(){
         // Longer than the maximum configured document budget (30 min), plus margin.
@@ -65,7 +72,7 @@ public class InboxExtractionQueue {
             if(!queued&&!stale)continue;
             var token=UUID.randomUUID();item.setExtractionStatus("PROCESSING");item.setExtractionStartedAt(LocalDateTime.now());item.setExtractionToken(token);
             inbox.save(item);
-            var document=new LcDocument();document.setOriginalFilename(item.getOriginalFilename());document.setContentType(item.getContentType());document.setContent(item.getContent());document.setDocumentType(DocumentType.ANNEX);
+            var document=new LcDocument();document.setOriginalFilename(item.getOriginalFilename());document.setContentType(item.getContentType());document.setContent(item.getContent());document.setDocumentType(DocumentType.ANNEX);document.setOcrEvidenceJson(item.getOcrEvidenceJson());
             return new Work(id,token,item.getTenantId(),document,item.getReceivedBy(),item.getSourceInboxId()==null&&ClassificationHistory.selectedType(item.getClassificationHistoryJson())==null);
         }
         return null;

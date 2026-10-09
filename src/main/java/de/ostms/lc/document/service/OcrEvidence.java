@@ -2,7 +2,17 @@ package de.ostms.lc.document.service;
 
 import java.util.*;
 /** Coordinates are pixels in the 200-DPI rendered page, not PDF points. */
-public record OcrEvidence(String engineVersion,String method,int dpi,double threshold,List<Word> words) {
+public record OcrEvidence(String engineVersion,String method,int dpi,double threshold,List<Word> words,List<PageResult> pages) {
+ public OcrEvidence(String engineVersion,String method,int dpi,double threshold,List<Word> words){this(engineVersion,method,dpi,threshold,words,List.of());}
+ public OcrEvidence {words=words==null?List.of():List.copyOf(words);pages=pages==null?List.of():List.copyOf(pages);}
+ public record PageResult(int page,String status,int attempts){}
+ /** Reuse only explicitly completed OCR pages. Never treat partial word output as complete. */
+ public String completedPageText(int page){
+  if(pages.stream().noneMatch(p->p.page()==page&&"OCR_EXTRACTED".equals(p.status())))return null;
+  StringBuilder text=new StringBuilder();int top=-1;
+  for(var word:words)if(word.page()==page){text.append(top>=0&&Math.abs(word.top()-top)>8?'\n':' ');text.append(word.text());top=word.top();}
+  return text.toString();
+ }
  public record Word(String text,Double confidence,int page,int left,int top,int width,int height){}
  public record Assessment(Double score,Double meanScore,String status,String method,String engineVersion,
                           double threshold,String originalValue,List<Word> words){}

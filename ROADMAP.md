@@ -2,6 +2,8 @@
 
 ## Als Nächstes
 
+- Dokumentenerkennung ausbauen: Seitenwiederaufnahme, persistierte OCR-Zwischenstände, Seitenfehler und Metadaten-Fundstellen lokal ergänzt. Noch offen: repräsentativer gelabelter Holdout-Testbestand mit Kennzahlen je Dokumentart, sichere Rotation/Schräglagenkorrektur mit Koordinatenrückabbildung und weitergehende Layout-/Rückseitenerkennung. Synthetische Regressionstests und beobachtete Trainingskorrekturen sind kein Nachweis allgemeiner Erkennungsgenauigkeit.
+
 - RabbitMQ-Adapter bei konkretem externem Integrationsbedarf aktivieren
 - Löschkonzept umsetzen: [Technischer Konzeptentwurf](docs/tenant-retention-and-deletion.md) sowie reversible Archivierung und rein lesende mandantenbezogene Bestands-/Löschvorschau liegen vor. Fristen und Freigabepolitik sind noch zu bestätigen; Backups, temporäre Dateien und Löschsperren bleiben ausdrücklich ungeprüft. Als Nächstes Aufbewahrung und Sperren, Vier-Augen-Freigabe, wiederaufnehmbare Löschjobs sowie Backup-/Restore-Nachweise. Noch keine vollständige Mandantenlöschung implementiert.
 - OFAC- und EU-Sanktionslisten anbinden: täglicher Abruf der OFAC-SDN-/Non-SDN-Listen und der konsolidierten EU-Finanzsanktionsliste, XML-/CSV-Import mit Quelle, Versionsstand, Abrufzeit und Prüfsumme. Antragsteller, Begünstigte, Banken und weitere Beteiligte einschließlich Aliasnamen prüfen; mögliche Treffer fachlich bewerten, Warn-/Sperrlogik und erneutes Screening bei Listenänderungen vorsehen. Veraltete oder nicht verfügbare Listen sichtbar machen und Prüfungen sowie Entscheidungen auditieren.

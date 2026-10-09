@@ -30,6 +30,10 @@ public class DocumentInboxController {
 
     @GetMapping("/{id}/metadata-training")
     public de.ostms.lc.document.service.DocumentMetadataTraining.Proposal metadataSuggestion(@PathVariable UUID id){return metadataTraining.suggest(service.openItem(id).getExtractedText());}
+    @GetMapping("/{id}/recognition-facts")
+    public ResponseEntity<java.util.List<de.ostms.lc.document.service.RecognitionFacts.Field>> recognitionFacts(@PathVariable UUID id){
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(de.ostms.lc.document.service.RecognitionFacts.from(service.openItem(id)));
+    }
     @GetMapping("/{id}/metadata-positions")
     public java.util.Map<String,de.ostms.lc.document.service.SpatialMetadata.Field> metadataPositions(@PathVariable UUID id,@RequestParam(required=false) String profile)throws Exception{return spatialTraining.suggest(de.ostms.lc.document.service.DocumentExtractionService.readEvidence(service.openItem(id).getOcrEvidenceJson()),profile);}
     @PostMapping("/{id}/spatial-training") @ResponseStatus(HttpStatus.NO_CONTENT)
