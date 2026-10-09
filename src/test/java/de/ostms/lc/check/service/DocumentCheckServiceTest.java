@@ -322,4 +322,21 @@ class DocumentCheckServiceTest {
         assertThat(results).anyMatch(r->r.code().equals("MISSING_DOCUMENT"));
         assertThat(results).noneMatch(r->r.code().equals("PRESENTATION_PERIOD_REVIEW"));
     }
+
+    @Test void printedSignatureWordWithoutInkIsNoLongerEvidenceWhenTheImageWasAnalysed() {
+        UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-13");lc.setRequiredDocuments(List.of("SIGNED COMMERCIAL INVOICE"));
+        LcDocument invoice=document(DocumentType.COMMERCIAL_INVOICE,"invoice.pdf","Authorized signature: ");
+        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(invoice));
+        var box=new de.ostms.lc.document.service.SignatureDetector.Box(100,1900,160,30);
+        var anchorEmpty=new de.ostms.lc.document.service.SignatureDetector.PageResult(1,List.of(new de.ostms.lc.document.service.SignatureDetector.Anchor("signature",box,false,null)),0,List.of());
+        var anchorInk=new de.ostms.lc.document.service.SignatureDetector.PageResult(1,List.of(new de.ostms.lc.document.service.SignatureDetector.Anchor("signature",box,true,new de.ostms.lc.document.service.SignatureDetector.Box(100,1700,300,120))),0,List.of());
+        var signatures=mock(de.ostms.lc.document.service.SignatureEvidenceService.class);
+        var service=service(lcs,docs);org.springframework.test.util.ReflectionTestUtils.setField(service,"signatures",signatures);
+        when(signatures.evidence(any())).thenReturn(new de.ostms.lc.document.service.SignatureEvidenceService.Evidence(true,List.of(anchorEmpty)));
+        assertThat(service.check(id).results()).extracting("code").contains("SIGNATURE_REQUIREMENT_MISSING_SUSPECTED").doesNotContain("SIGNATURE_REQUIREMENT_EVIDENCED");
+        when(signatures.evidence(any())).thenReturn(new de.ostms.lc.document.service.SignatureEvidenceService.Evidence(true,List.of(anchorInk)));
+        assertThat(service.check(id).results()).extracting("code").contains("SIGNATURE_REQUIREMENT_EVIDENCED");
+        when(signatures.evidence(any())).thenReturn(new de.ostms.lc.document.service.SignatureEvidenceService.Evidence(true,List.of(new de.ostms.lc.document.service.SignatureDetector.PageResult(1,List.of(),0,List.of()))));
+        assertThat(service.check(id).results()).extracting("code").contains("SIGNATURE_REQUIREMENT_REVIEW").doesNotContain("SIGNATURE_REQUIREMENT_EVIDENCED");
+    }
 }
