@@ -147,4 +147,10 @@ class DocumentInboxServiceTest {
         assertThat(service.retryExtraction(id).extractionStatus()).isEqualTo("QUEUED");assertThat(item.getContent()).containsExactly(1,2);verifyNoInteractions(extraction);
         assertThatThrownBy(()->service.retryExtraction(id)).isInstanceOf(IllegalStateException.class);
     }
+    @Test void finishedRecognitionIsOnlyRestartedWhenForcedAndNeverWhileRunning(){
+        var id=UUID.randomUUID();var item=item();item.setExtractionStatus("OCR_EXTRACTED");when(inbox.findForUpdate(id)).thenReturn(Optional.of(item));when(inbox.save(any())).thenAnswer(call->call.getArgument(0));
+        assertThatThrownBy(()->service.retryExtraction(id)).isInstanceOf(IllegalStateException.class).hasMessageContaining("abgeschlossen");
+        assertThat(service.retryExtraction(id,true).extractionStatus()).isEqualTo("QUEUED");assertThat(item.getContent()).containsExactly(1,2);
+        assertThatThrownBy(()->service.retryExtraction(id,true)).isInstanceOf(IllegalStateException.class).hasMessageContaining("läuft noch");
+    }
 }

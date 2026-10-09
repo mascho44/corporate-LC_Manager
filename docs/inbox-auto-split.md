@@ -77,3 +77,19 @@ includes retained original bytes, page ranges, tenant isolation, atomic rollback
 retry without duplicate parts, uncertain-page fallback and manual splitting.
 Only synthetic PDFs were used. This verification does not constitute a production
 deployment.
+
+## Neu erkennen (Bestandsdokumente)
+
+The recognition rules (OCR at 300 DPI, dates, stamps, document types, signatures) only applied to new uploads.
+Two entry points run the current recognition again:
+
+* **Stored documents of a dossier:** button "Neu erkennen" per document and "Alle neu erkennen" in the document list
+  (permission: document upload). `POST /api/lcs/{lcId}/documents/{id}/re-recognition` recognises the stored file
+  (up to 10 pages) and returns a before/after list **without storing anything**; `.../re-recognition/apply` with the
+  returned token (single use, 15 minutes, bound to user, document and dossier) stores it. Machine-derived values
+  (status, text, evidence, number, reference, recognised amount/currency) are replaced; human-maintained values
+  (date, mark, amount, currency) are only filled when empty; the document type is only suggested. The dossier check
+  decisions are reset (as for other document data changes) and the change is audited as `DOCUMENT_RE_RECOGNIZED`
+  with before/after.
+* **Inbox items:** "Neu erkennen" appears for finished items (`POST /api/inbox/{id}/retry?force=true`) and re-queues the
+  recognition; user entries in the form remain.

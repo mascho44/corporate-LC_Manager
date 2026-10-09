@@ -85,6 +85,18 @@ public class DocumentController {
 
     private String documentAuditState(DocumentView document){return "Datei="+document.originalFilename()+" | Typ="+document.documentType()+" | Kennzeichnung="+de.ostms.lc.document.domain.DocumentCopy.label(document.copyNumber())+" | Datum="+(document.documentDate()==null?"-":document.documentDate())+" | Betrag="+(document.currency()==null?"-":document.currency())+" "+(document.amount()==null?"-":document.amount());}
 
+    @org.springframework.beans.factory.annotation.Autowired private de.ostms.lc.document.service.DocumentReRecognitionService reRecognition;
+    public record ReRecognitionApply(@jakarta.validation.constraints.NotBlank String token){}
+    /** Runs the current recognition again and returns what would change; nothing is stored until it is confirmed. */
+    @PostMapping("/lcs/{lcId}/documents/{id}/re-recognition")
+    public de.ostms.lc.document.service.DocumentReRecognitionService.Preview reRecognize(@PathVariable UUID lcId,@PathVariable UUID id,Authentication authentication){
+        return reRecognition.preview(lcId,id,authentication);
+    }
+    @PostMapping("/lcs/{lcId}/documents/{id}/re-recognition/apply")
+    public DocumentView applyReRecognition(@PathVariable UUID lcId,@PathVariable UUID id,@Valid @RequestBody ReRecognitionApply request,Authentication authentication){
+        return reRecognition.apply(lcId,id,request.token(),authentication);
+    }
+
     @GetMapping("/documents/{id}/content")
     public ResponseEntity<byte[]> download(@PathVariable UUID id, Authentication authentication) {
         return content(id, false, authentication);
