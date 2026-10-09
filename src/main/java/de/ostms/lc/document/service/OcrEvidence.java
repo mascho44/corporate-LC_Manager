@@ -5,10 +5,14 @@ import java.util.*;
 public record OcrEvidence(String engineVersion,String method,int dpi,double threshold,List<Word> words,List<PageResult> pages) {
  public OcrEvidence(String engineVersion,String method,int dpi,double threshold,List<Word> words){this(engineVersion,method,dpi,threshold,words,List.of());}
  public OcrEvidence {words=words==null?List.of():List.copyOf(words);pages=pages==null?List.of():List.copyOf(pages);}
- public record PageResult(int page,String status,int attempts){}
+ public record PageResult(int page,String status,int attempts,double correctionDegrees,String recognizedText){
+  public PageResult(int page,String status,int attempts){this(page,status,attempts,0,null);}
+ }
  /** Reuse only explicitly completed OCR pages. Never treat partial word output as complete. */
  public String completedPageText(int page){
-  if(pages.stream().noneMatch(p->p.page()==page&&"OCR_EXTRACTED".equals(p.status())))return null;
+  var completed=pages.stream().filter(p->p.page()==page&&"OCR_EXTRACTED".equals(p.status())).findFirst().orElse(null);
+  if(completed==null)return null;
+  if(completed.recognizedText()!=null)return completed.recognizedText();
   StringBuilder text=new StringBuilder();int top=-1;
   for(var word:words)if(word.page()==page){text.append(top>=0&&Math.abs(word.top()-top)>8?'\n':' ');text.append(word.text());top=word.top();}
   return text.toString();

@@ -99,7 +99,9 @@ public final class PdfDocumentSplitter {
                 if(evidence!=null) {
                     var words=evidence.words().stream().filter(w->w.page()>=part.fromPage()&&w.page()<=part.toPage())
                         .map(w->new OcrEvidence.Word(w.text(),w.confidence(),w.page()-part.fromPage()+1,w.left(),w.top(),w.width(),w.height())).toList();
-                    mapped=new OcrEvidence(evidence.engineVersion(),evidence.method(),evidence.dpi(),evidence.threshold(),words);
+                    var pageResults=evidence.pages().stream().filter(p->p.page()>=part.fromPage()&&p.page()<=part.toPage())
+                        .map(p->new OcrEvidence.PageResult(p.page()-part.fromPage()+1,p.status(),p.attempts(),p.correctionDegrees(),p.recognizedText())).toList();
+                    mapped=new OcrEvidence(evidence.engineVersion(),evidence.method(),evidence.dpi(),evidence.threshold(),words,pageResults);
                 }
                 results.add(new Output(part,bytes.toByteArray(),String.join("\n",texts.subList(part.fromPage()-1,part.toPage())),mapped));
             }
@@ -123,6 +125,8 @@ public final class PdfDocumentSplitter {
         for(int page=1;page<=pdf.getNumberOfPages();page++) {
             stripper.setStartPage(page);stripper.setEndPage(page);String text=stripper.getText(pdf);
             if(text.isBlank()&&evidence!=null) {
+                String completed=evidence.completedPageText(page);
+                if(completed!=null){result.add(completed.length()>100_000?completed.substring(0,100_000):completed);continue;}
                 int number=page;var words=evidence.words().stream().filter(w->w.page()==number).toList();
                 StringBuilder rebuilt=new StringBuilder();int top=-1;
                 for(var word:words) {if(top>=0&&Math.abs(word.top()-top)>8)rebuilt.append('\n');else rebuilt.append(' ');rebuilt.append(word.text());top=word.top();}

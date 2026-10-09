@@ -64,5 +64,9 @@ test('partial recognition reports failed pages and allows retry with numeric pro
  assert.match(f.context.inboxStatusHtml({id:'test',extractionStatus:'OCR_PARTIAL',recognitionPages:pages}),/data-inbox-retry/);
  assert.match(f.context.inboxStatusHtml({id:'test',extractionStatus:'PROCESSING',recognitionPages:pages}),/value="1" max="2"/);
 });
+test('accepted scan correction is visible but the original stays unchanged',()=>{
+ const f=fixture([]);
+ assert.match(f.context.inboxStatusHtml({extractionStatus:'OCR_EXTRACTED',recognitionPages:[{page:1,status:'OCR_EXTRACTED',correctionDegrees:90}]}),/90° korrigiert · Original unverändert/);
+});
 
 test('existing PDFs offer a confirmed explicit automatic split using the protected POST action',async()=>{const f=fixture([{id:'existing',contentType:'application/pdf',extractionStatus:'EXTRACTED'}]);f.articles.push({dataset:{inboxId:'existing'},querySelector:()=>({after(){}}),addEventListener(){},querySelectorAll:()=>[]});await f.context.loadInbox();let opened=false;f.context.openInboxSplit=async item=>{opened=item.id;};const button=f.created.find(n=>n.textContent==='Split automatically');assert.ok(button);f.context.confirmAction=async()=>false;await button.onclick();assert.equal(f.calls.some(c=>c.url.endsWith('/auto-split')),false);f.context.confirmAction=async()=>true;await button.onclick();assert.equal(f.calls.find(c=>c.url.endsWith('/auto-split')).options.method,'POST');assert.match(f.nodes.message.textContent,/No safe automatic split available/);assert.equal(opened,'existing');assert.match(button.className,/inbox-split-action/);});
