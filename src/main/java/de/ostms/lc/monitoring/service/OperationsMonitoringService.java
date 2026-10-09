@@ -40,6 +40,7 @@ public class OperationsMonitoringService {
     public OperationsMonitoringSummary snapshot() {
         List<LetterOfCredit> active = lettersOfCredit.findAll().stream().filter(this::active).toList();
         long openExaminations = active.stream().filter(lc -> lc.getStatus() == LetterOfCreditStatus.DOCUMENTS_PRESENTED).count();
+        long waitingForCustomer = active.stream().filter(lc -> lc.getStatus() == LetterOfCreditStatus.WAITING_FOR_CUSTOMER).count();
         long discrepancies = active.stream().mapToLong(lc -> checks.check(lc.getId()).discrepancies()).sum();
         LocalDate today = LocalDate.now();
         LocalDate horizon = today.plusDays(30);
@@ -49,7 +50,7 @@ public class OperationsMonitoringService {
                 .filter(draft -> draft.getStatus() == DocumentDraftStatus.SUBMITTED || draft.getStatus() == DocumentDraftStatus.REVIEWED).count();
         return new OperationsMonitoringSummary(LocalDateTime.now(),
                 metric(openExaminations, "Akkreditive mit präsentierten Dokumenten."),
-                unavailable("Im LC-Statusmodell gibt es noch keinen Status für ausstehende Kundenrückmeldungen."),
+                metric(waitingForCustomer, "Akkreditive im Status „Wartet auf Kunde“ (ausstehende Rückmeldung)."),
                 metric(discrepancies, "Offene automatische Dokumentenabweichungen über aktive Akten."),
                 metric(upcomingDeadlines, "Fällige Termine innerhalb der nächsten 30 Tage."),
                 metric(approvalQueue, "Dokumententwürfe zur Prüfung oder Freigabe."),
