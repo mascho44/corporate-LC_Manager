@@ -12,7 +12,6 @@ final class DocumentPresentationCheck {
   for(var doc:docs){
    if(doc.getExtractedDocumentNumber()!=null&&!doc.getExtractedDocumentNumber().isBlank())references.add(doc.getExtractedDocumentNumber().strip().toUpperCase(Locale.ROOT));
    Integer copy=doc.getCopyNumber();if(copy==null){unknown++;continue;}
-   if(!numbers.add(copy)){duplicates=true;if(copy!=0)continue;}
    if(copy<=0)originals++;else copies++;
   }
   return new Counts(originals,copies,unknown,duplicates,references.size()>1||(docs.size()>1&&docs.stream().anyMatch(d->d.getExtractedDocumentNumber()==null||d.getExtractedDocumentNumber().isBlank())));
@@ -29,7 +28,7 @@ final class DocumentPresentationCheck {
  }
  static List<CheckResult> evaluate(String requirement,List<LcDocument> docs){
   if(docs.isEmpty())return List.of();var counts=count(docs);var results=new ArrayList<CheckResult>();
-  String evidence="Captured designations: "+counts.originals()+" originals, "+counts.copies()+" copies, "+counts.unspecified()+" unspecified. Numbered duplicates counted once. Physical originals and authenticity require human review.";
+  String evidence="Captured designations: "+counts.originals()+" originals, "+counts.copies()+" copies, "+counts.unspecified()+" unspecified. Each document counts once. Physical originals and authenticity require human review.";
   String name=docs.get(0).getOriginalFilename();boolean uncertain=counts.unspecified()>0||counts.duplicateNumbers()||counts.multipleDocuments();
   var original=required(requirement,true);var copy=required(requirement,false);
   for(boolean originals:new boolean[]{true,false}){

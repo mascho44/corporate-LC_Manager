@@ -312,4 +312,14 @@ class DocumentCheckServiceTest {
 
     private LcDocument document(DocumentType type,String name,String text){LcDocument document=new LcDocument();document.setDocumentType(type);document.setOriginalFilename(name);document.setExtractionStatus("GENERATED");document.setExtractedText(text);document.setDocumentDate(LocalDate.now());return document;}
     private DocumentCheckService service(LetterOfCreditRepository lcs,LcDocumentRepository docs){DocumentCheckDecisionRepository decisions=mock(DocumentCheckDecisionRepository.class);when(decisions.findByLcId(any())).thenReturn(List.of());return new DocumentCheckService(lcs,docs,decisions);}
+
+    @Test void missingTransportDocumentProducesNoContentWarningAboutIt(){
+        UUID id=UUID.randomUUID();var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);var decisions=mock(DocumentCheckDecisionRepository.class);
+        var lc=new LetterOfCredit();lc.setRequiredDocuments(List.of("COMMERCIAL INVOICE","BILL OF LADING"));lc.setRawMessage(":20:X\n:48:21 DAYS\n");
+        var invoice=new LcDocument();invoice.setOriginalFilename("inv.pdf");invoice.setDocumentType(DocumentType.COMMERCIAL_INVOICE);org.springframework.test.util.ReflectionTestUtils.setField(invoice,"uploadedAt",java.time.LocalDateTime.now());
+        when(lcs.findById(id)).thenReturn(Optional.of(lc));when(decisions.findByLcId(id)).thenReturn(List.of());when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(invoice));
+        var results=new DocumentCheckService(lcs,docs,decisions).check(id).results();
+        assertThat(results).anyMatch(r->r.code().equals("MISSING_DOCUMENT"));
+        assertThat(results).noneMatch(r->r.code().equals("PRESENTATION_PERIOD_REVIEW"));
+    }
 }

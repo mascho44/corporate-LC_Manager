@@ -12,8 +12,11 @@ public class Tenant {
  @Column(nullable=false) private boolean bankEnabled=true;
  @Column(nullable=false) private boolean corporateEnabled=false;
  @Column(nullable=false) private boolean active=true;
+ @Column(nullable=false,length=16) private String ruleSourceMode="BOTH";
  @Column private java.time.Instant archivedAt;
  @Column private java.time.Instant deletedAt;
+ public String getRuleSourceMode(){return ruleSourceMode;}
+ public void setRuleSourceMode(String mode){if(!java.util.List.of("EMBEDDED","IMPORTED","BOTH").contains(mode))throw new IllegalArgumentException("Unknown rule source mode.");this.ruleSourceMode=mode;}
  public boolean isDeleted(){return deletedAt!=null;}
  public void markDeleted(){if(active||!isArchived()||DEFAULT_ID.equals(id))throw new IllegalArgumentException("Only archived, non-default tenants can be deleted.");deletedAt=java.time.Instant.now();}
  public Tenant(){}

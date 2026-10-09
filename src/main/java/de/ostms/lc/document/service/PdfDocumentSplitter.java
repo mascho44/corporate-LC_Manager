@@ -51,7 +51,7 @@ public final class PdfDocumentSplitter {
                 boolean differentCopy=!copy.kind().equals("UNKNOWN")&&!previousCopy.kind().equals("UNKNOWN")&&(!copy.kind().equals(previousCopy.kind())||copy.copyNumber()!=null&&previousCopy.copyNumber()!=null&&!copy.copyNumber().equals(previousCopy.copyNumber()));
                 boolean restart=i>0&&number!=null&&number[0]==1;
                 boolean differentReference=reference!=null&&nextReference!=null&&!reference.equals(nextReference);
-                boolean numberedContinuation=number!=null&&previousNumber!=null&&number[0]==previousNumber[0]+1&&number[1]==previousNumber[1];
+                boolean numberedContinuation=number!=null&&previousNumber!=null&&number[0]==previousNumber[0]+1&&(number[1]==previousNumber[1]||number[1]==0||previousNumber[1]==0);
                 boolean referenceContinuation=number==null&&reference!=null&&reference.equals(nextReference);
                 boolean continuation=i>0&&current!=null&&(numberedContinuation||referenceContinuation)&&!differentReference&&!differentCopy&&!restart;
                 if(detected==null&&"UNKNOWN".equals(classification.status())&&!texts.get(i).isBlank()&&continuation){
@@ -75,10 +75,16 @@ public final class PdfDocumentSplitter {
         }
     }
 
+    /** {page,total}; total is 0 when the page states only "Page 2". */
     private static int[] pageNumber(String text){
-        var matcher=java.util.regex.Pattern.compile("(?i)\\b(?:page|seite)\\s*(\\d{1,3})\\s*(?:of|von|/)\\s*(\\d{1,3})\\b").matcher(text);
+        var matcher=java.util.regex.Pattern.compile("(?i)\\b(?:page|seite)\\s{0,3}(\\d{1,3})(?:\\s{0,3}(?:of|von|/)\\s{0,3}(\\d{1,3}))?\\b").matcher(text);
         int[] result=null;
-        while(matcher.find()){int page=Integer.parseInt(matcher.group(1)),total=Integer.parseInt(matcher.group(2));if(page<1||page>total)return null;if(result!=null&&(result[0]!=page||result[1]!=total))return null;result=new int[]{page,total};}
+        while(matcher.find()){
+            int page=Integer.parseInt(matcher.group(1)),total=matcher.group(2)==null?0:Integer.parseInt(matcher.group(2));
+            if(page<1||total!=0&&page>total)return null;
+            if(result!=null&&(result[0]!=page||result[1]!=total))return null;
+            result=new int[]{page,total};
+        }
         return result;
     }
     private static String documentReference(String text){

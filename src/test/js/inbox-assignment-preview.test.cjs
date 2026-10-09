@@ -4,7 +4,7 @@ const context=vm.createContext({esc:value=>String(value).replaceAll('&','&amp;')
 vm.runInContext(source.slice(source.indexOf('function inboxAssignmentPreview('),source.indexOf('function documentCopyLabel(')),context);
 test('PDF and image previews are lazy, same-origin and escape names',()=>{
  const pdf=context.inboxAssignmentPreview({id:'synthetic',contentType:'application/pdf',originalFilename:'<script>.pdf'});
- assert.match(pdf,/<iframe data-preview-src="\/api\/inbox\/synthetic\/content"/);assert.doesNotMatch(pdf,/<iframe[^>]*\ssrc=/);assert.doesNotMatch(pdf,/<script>/);assert.match(pdf,/Original separat öffnen/);
+ assert.match(pdf,/<img data-preview-src="\/api\/inbox\/synthetic\/pages\/1\/preview\?enlarged=true"/);assert.doesNotMatch(pdf,/<iframe|<img[^>]*\ssrc=/);assert.doesNotMatch(pdf,/<script>/);assert.match(pdf,/Original separat öffnen/);
  const image=context.inboxAssignmentPreview({id:'synthetic',contentType:'image/png',originalFilename:'scan.png'});assert.match(image,/<img data-preview-src=/);
 });
 test('active or unsupported formats cannot be embedded',()=>{

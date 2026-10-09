@@ -57,6 +57,21 @@ public class LetterOfCreditController {
         return deadlines.forLc(id);
     }
 
+    @GetMapping("/{id}/required-documents/reparse-preview")
+    public LetterOfCreditService.RequirementReparse reparsePreview(@PathVariable UUID id) {
+        return service.reparsePreview(id);
+    }
+
+    @PostMapping("/{id}/required-documents/reparse")
+    public LetterOfCreditService.RequirementReparse reparse(@PathVariable UUID id, Authentication authentication) {
+        var result = service.reparse(id);
+        if (result.changed())
+            audit.recordChange(authentication, "LC_REQUIREMENTS_REPARSED", "LETTER_OF_CREDIT", id,
+                result.current().size() + " → " + result.proposed().size() + " Dokumentenbedingungen aus SWIFT neu aufgebaut",
+                String.join(" | ", result.current()), String.join(" | ", result.proposed()));
+        return result;
+    }
+
     @PutMapping("/{id}")
     public LetterOfCredit update(@PathVariable UUID id, @Valid @RequestBody LetterOfCreditUpdateRequest request, Authentication authentication) {
         String previous=auditState(service.one(id));

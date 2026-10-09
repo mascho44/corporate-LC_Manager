@@ -57,10 +57,21 @@
   }catch(error){message(error.message);}
   finally{busy=false;button.disabled=false;get('packFile').disabled=false;}
  };
+ const ruleSourceApi='/api/settings/rule-source';
+ async function loadRuleSource(){
+  const current=await request(ruleSourceApi);get('ruleSourceMode').value=current.mode;
+  get('ruleSourceMode').disabled=false;get('ruleSourceSave').disabled=false;
+ }
+ get('ruleSourceSave').onclick=async()=>{
+  const button=get('ruleSourceSave');button.disabled=true;
+  try{const saved=await request(ruleSourceApi,{method:'PUT',body:JSON.stringify({mode:get('ruleSourceMode').value})});get('ruleSourceMode').value=saved.mode;message('Regelquelle gespeichert.');}
+  catch(error){message(error.message);}
+  finally{button.disabled=false;}
+ };
  (async()=>{
   try{const user=await request('/api/auth/me');csrf=user.csrfToken;
    if(!user.permissions?.includes('SETTINGS_MANAGE'))throw Error('Für Rule Packs wird das Recht SETTINGS_MANAGE benötigt.');
-   get('packFile').disabled=false;get('packRefresh').disabled=false;await refresh();
+   get('packFile').disabled=false;get('packRefresh').disabled=false;await refresh();await loadRuleSource();
   }catch(error){message(error.message);get('packVersions').textContent='Verwaltung nicht verfügbar.';}
  })();
 })();
