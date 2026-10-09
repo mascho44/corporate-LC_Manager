@@ -83,13 +83,22 @@ public class InternalPackService {
   if(!pack.packId().equals(v.packId)||!pack.version().equals(v.version))throw new IllegalStateException("Pack-Identität stimmt nicht.");
   return pack;
  }
+ /** Befunde plus die IDs der AUTOMATISCHEN Regeln der ausgewerteten Packs (für die Regelquelle "Importiert"). */
+ public record PackEvaluation(List<CheckResult> findings,Set<String> automaticRuleIds){}
  @Transactional(readOnly=true)
  public List<CheckResult> evaluate(LetterOfCredit lc,List<LcDocument> documents){
+  return evaluateSelected(lc,documents,Set.of()).findings();
+ }
+ /** Wertet die aktiven Packs aus; eine nicht leere Auswahl beschränkt auf diese Pack-IDs. Regeln, die nicht angewendet werden (Dokumenttyp nicht vorgelegt oder Bedingung nicht erfüllt), ergeben je Pack nur eine Zusammenfassung ohne Warnung. */
+ @Transactional(readOnly=true)
+ public PackEvaluation evaluateSelected(LetterOfCredit lc,List<LcDocument> documents,Set<String> selectedPackIds){
   de.ostms.lc.tenant.domain.TenantContext.require(lc.getTenantId());
   documents.forEach(d->de.ostms.lc.tenant.domain.TenantContext.require(d.getTenantId()));
   var findings=new ArrayList<CheckResult>();
+  var automaticRuleIds=new HashSet<String>();
   for(var selection:selections.findAll().stream().sorted(Comparator.comparing(s->s.id)).toList()){
    if(selection.activeVersionId==null)continue;
+   if(!selectedPackIds.isEmpty()&&!selectedPackIds.contains(selection.id))continue;
    var stored=versions.findById(selection.activeVersionId).orElseThrow();
    PackDefinition definition;
    try{definition=read(stored);if(!stored.testsPassed)throw new IllegalStateException("Pack wurde nicht erfolgreich getestet.");}
@@ -98,24 +107,18 @@ public class InternalPackService {
      "Aktives internes Rule Pack konnte nicht ausgewertet werden. Administration informieren.",
      "Pack "+selection.id,null,"Version "+selection.activeVersionId));continue;
    }
+   var notApplied=new TreeMap<String,Integer>();
+   var notAppliedByCondition=new ArrayList<String>();
    for(var rule:definition.rules()){
+    if(rule.effectiveMode()==PackDefinition.Mode.AUTOMATIC)automaticRuleIds.add(rule.id());
     String code="PACK."+definition.packId()+"."+rule.id();
     var metadata=new RuleDefinition(code,definition.version()+"/"+rule.version(),definition.name()+" · "+rule.id(),
      "Internes Pack "+definition.packId()+" v"+definition.version()+" · "+rule.sourceReference(),
      rule.message(),"Deklarativer Metadatenvergleich. Keine vollständige Dokumentenprüfung oder Rechtsfreigabe.",null);
     var matching=documents.stream().filter(d->d.getDocumentType()==rule.documentType()).toList();
     if(matching.isEmpty()){
-     if(definition.schemaVersion()>=4){
-      var scopeFacts=new EnumMap<Field,String>(Field.class);var placeholder=new LcDocument();placeholder.setDocumentType(rule.documentType());
-      try{for(var field:Field.values())if(!field.document()&&!field.peer())scopeFacts.put(field,value(field,lc,placeholder));}
-      catch(RuntimeException invalidScope){scopeFacts.clear();}
-      if(PackEvaluator.evaluate(rule,scopeFacts,definition.calendars()==null?List.of():definition.calendars(),true)==Outcome.NOT_APPLICABLE){
-       findings.add(new CheckResult(CheckResult.Severity.WARNING,code,"Regel nicht anwendbar: "+rule.message(),metadata.basis(),null,"Ergebnis NOT_APPLICABLE · SHA-256 "+stored.checksum+" · Prüfdaten "+scopeFacts).withRule(metadata));
-       continue;
-      }
-     }
-     findings.add(new CheckResult(CheckResult.Severity.WARNING,code,"Interne Pack-Regel nicht prüfbar: passendes Dokument fehlt.",
-      metadata.basis(),null,"Erforderlicher Typ: "+rule.documentType()+" · SHA-256 "+stored.checksum).withRule(metadata));
+     notApplied.merge(rule.documentType().getDisplayName(),1,Integer::sum);
+     continue;
     }
     for(var document:matching){
      var facts=new EnumMap<Field,String>(Field.class);
@@ -131,6 +134,7 @@ public class InternalPackService {
      catch(RuntimeException invalidFacts){facts.clear();}
      String left=facts.get(rule.left()),right=PackEvaluator.right(rule,facts);
      var outcome=PackEvaluator.evaluate(rule,facts,definition.calendars()==null?List.of():definition.calendars(),definition.schemaVersion()>=3);
+     if(outcome==Outcome.NOT_APPLICABLE){notAppliedByCondition.add(rule.id());continue;}
      var level=outcome==Outcome.PASS?CheckResult.Severity.OK:outcome!=Outcome.FAIL||rule.severity()==Level.WARNING?CheckResult.Severity.WARNING:CheckResult.Severity.DISCREPANCY;
      String outcomeLabel=switch(outcome){case PASS->"Regel erfüllt: ";case FAIL->"Regel verletzt: ";case NOT_APPLICABLE->"Regel nicht anwendbar: ";case MANUAL_REVIEW->"Manuelle fachliche Prüfung erforderlich: ";case NOT_EVALUABLE->"Regel nicht prüfbar: ";};
      if(definition.schemaVersion()==1)outcomeLabel=outcome==Outcome.PASS?"Interne Regel erfüllt: ":outcome==Outcome.FAIL?"Interne Regel verletzt: ":"Interne Regel nicht prüfbar: ";
@@ -139,16 +143,32 @@ public class InternalPackService {
       document.getOriginalFilename(),rule.left()+" = "+Objects.toString(left,"nicht erfasst")+" · "+rule.operator()+" · SHA-256 "+stored.checksum+(definition.schemaVersion()>=2?" · Ergebnis "+outcome+" · Prüfdaten "+facts:"")+peerEvidence(rule,document,documents)).withRule(metadata));
     }
    }
+   if(!notApplied.isEmpty()||!notAppliedByCondition.isEmpty()){
+    int count=notApplied.values().stream().mapToInt(Integer::intValue).sum()+notAppliedByCondition.size();
+    var evidence=new StringBuilder();
+    if(!notApplied.isEmpty())evidence.append("Dokumenttyp nicht vorgelegt: ").append(String.join(", ",notApplied.entrySet().stream().map(e->e.getKey()+" ("+e.getValue()+")").toList()));
+    if(!notAppliedByCondition.isEmpty()){if(evidence.length()>0)evidence.append("; ");evidence.append("Bedingung nicht erfüllt: ").append(String.join(", ",notAppliedByCondition));}
+    String summaryCode="PACK."+definition.packId()+".NOT_APPLIED";
+    var summaryRule=new RuleDefinition(summaryCode,definition.version(),definition.name()+" · nicht angewendete Regeln",
+     "Internes Pack "+definition.packId()+" v"+definition.version(),"Zusammenfassung der Regeln, die für diese Akte nicht angewendet wurden.","Keine Prüfaussage zu diesen Regeln.",null);
+    findings.add(new CheckResult(CheckResult.Severity.OK,summaryCode,count+" von "+definition.rules().size()+" Regeln nicht angewendet (Dokumenttyp nicht vorgelegt oder Bedingung nicht erfüllt).",
+     summaryRule.basis(),null,evidence.toString()).withRule(summaryRule));
+   }
   }
-  return List.copyOf(findings);
+  return new PackEvaluation(List.copyOf(findings),Set.copyOf(automaticRuleIds));
  }
  @Transactional(readOnly=true)
  public Set<Field> missingDocumentFields(LetterOfCredit lc,LcDocument doc){
+  return missingDocumentFields(lc,doc,Set.of());
+ }
+ @Transactional(readOnly=true)
+ public Set<Field> missingDocumentFields(LetterOfCredit lc,LcDocument doc,Set<String> selectedPackIds){
   de.ostms.lc.tenant.domain.TenantContext.require(lc.getTenantId());
   de.ostms.lc.tenant.domain.TenantContext.require(doc.getTenantId());
   var fields=EnumSet.noneOf(Field.class);
   for(var selection:selections.findAll()){
    if(selection.activeVersionId==null)continue;
+   if(!selectedPackIds.isEmpty()&&!selectedPackIds.contains(selection.id))continue;
    var stored=versions.findById(selection.activeVersionId).orElseThrow();
    if(!stored.testsPassed)throw new IllegalStateException("Aktives Pack ist nicht erfolgreich getestet.");
    for(var rule:read(stored).rules()){
