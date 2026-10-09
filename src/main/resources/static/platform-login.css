@@ -1,0 +1,11 @@
+body.platform-login-page{min-height:100vh;min-height:100dvh;margin:0;display:grid;place-items:center;padding:24px;background:#0f172a;background-image:radial-gradient(circle at 20% 15%,#1e293b,#0f172a 60%);color:#0f172a}
+.platform-login-card{width:100%;max-width:430px;padding:34px;background:#fff;border-radius:18px;box-shadow:0 24px 80px rgba(0,0,0,.45);border-top:5px solid #6d5dfc}
+.platform-login-brand{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.platform-login-brand b{display:block;font-size:20px}.platform-login-brand small{display:block;color:#52607a;margin-top:2px}
+.platform-login-note{margin:0 0 20px;color:#52607a;line-height:1.5;font-size:14px}
+.platform-login-card form{display:grid;gap:14px}
+.platform-login-card label{display:grid;gap:6px;font-weight:600}
+.platform-login-card input{padding:11px 12px;border:1px solid #c5d0e2;border-radius:10px;font:inherit}
+.platform-login-card button[type=submit]{background:#4338ca;color:#fff;padding:12px;margin-top:4px}
+.platform-login-card button[type=submit]:hover:not(:disabled){background:#3730a3}
+.platform-login-card a{color:#4338ca}
