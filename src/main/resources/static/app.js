@@ -52,8 +52,8 @@ function inboxAssignmentPreview(item){
         ['image/png','image/jpeg'].includes(item.contentType)?`<img data-preview-src="${url}" alt="Dokumentvorschau: ${label}">`:'<p>Für dieses Format bitte das Original separat öffnen.</p>';
     return `<details class="inbox-assignment-preview"><summary>Vorschau zur Zuordnung</summary><div>${content}<p>Falls die Vorschau blockiert wird: <a target="_blank" rel="noopener" href="${url}">Original separat öffnen</a></p></div></details>`;
 }
-function documentCopyLabel(value){return value==null?'Nicht gekennzeichnet':Number(value)===0?'Original':Number(value)<0?`Original ${-Number(value)}`:`Copy ${Number(value)}`;}
-function documentCopyOptions(value){return [['','Nicht gekennzeichnet'],['0','Original'],['-1','Original 1'],['-2','Original 2'],['-3','Original 3'],['1','Copy 1'],['2','Copy 2'],['3','Copy 3']].map(([key,label])=>`<option value="${key}"${String(value??'')===key?' selected':''}>${label}</option>`).join('');}
+function documentCopyLabel(value){return value==null?'Nicht gekennzeichnet':Number(value)===0?'Original':Number(value)<0?`Original ${-Number(value)}`:Number(value)===1?'Copy':`Copy ${Number(value)}`;}
+function documentCopyOptions(value){const options=[['','Nicht gekennzeichnet'],['0','Original'],['1','Copy']];if(value!=null&&value!==''&&![0,1].includes(Number(value)))options.push([String(value),documentCopyLabel(value)+' (bisher)']);return options.map(([key,label])=>`<option value="${key}"${String(value??'')===key?' selected':''}>${label}</option>`).join('');}
 function readDocumentCopy(value){return value===''||value==null?null:Number(value);}
 let inboxRefreshTimer=null;
 function inboxAutoText(key,fallback){const value=globalThis.LcI18n?.t('inbox.autoSplit.'+key);return value&&value!=='inbox.autoSplit.'+key?value:fallback;}
