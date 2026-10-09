@@ -57,3 +57,18 @@ until their transaction ends, so the chain has no forks or gaps.
   contains `Kettennr`, `Vorgaenger-Hash` and `Hash` for independent re-computation.
 * **Performance note:** each audit write takes a tenant-wide advisory lock until its transaction ends; audit events
   written inside business transactions therefore serialize with each other per tenant.
+
+## Step 4: read access, search, export, retention
+
+* **Read access is recorded:** `DOCUMENT_VIEWED` / `DOCUMENT_DOWNLOADED` (stored documents), `DOCUMENT_INBOX_VIEWED`,
+  `AUDIT_VIEWED`, `AUDIT_EXPORTED`, `AUDIT_CHAIN_VERIFIED`; dossier export and check report were already recorded.
+  Page thumbnails are not recorded individually.
+* **Search:** `GET /api/audit?from=&to=&user=&action=&entityId=&limit=` (period inclusive, user and action as
+  case-insensitive "contains" with literal wildcards, up to 2000 hits; without filters the 200 most recent events).
+  The audit dialog offers period, user and "Zeitraum laden".
+* **Export:** `GET /api/audit/export.csv` with the same filters, up to 50,000 rows including chain data.
+* **Retention:** the guideline is `lc.audit.retention-years` (environment `AUDIT_RETENTION_YEARS`, default 10,
+  range 1-100). `GET /api/audit/retention` and the audit dialog show the period, the oldest entry and how many
+  entries are older than the period. **Nothing is deleted automatically.** Deleting entries after the period is a
+  deliberate, documented operation (it needs a chain checkpoint so verification stays possible; not implemented).
+  Please confirm the period with your compliance function (BAIT/DORA do not name a single number for all log types).

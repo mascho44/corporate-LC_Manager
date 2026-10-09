@@ -67,3 +67,8 @@ app:
     username: ${ADMIN_USERNAME:admin}
     password: ${ADMIN_PASSWORD:}
     reset-password: ${ADMIN_RESET_PASSWORD:false}
+
+lc:
+  audit:
+    # Aufbewahrungsfrist des Audit-Protokolls in Jahren (Richtwert fuer die Revision; es wird nie automatisch geloescht).
+    retention-years: ${AUDIT_RETENTION_YEARS:10}

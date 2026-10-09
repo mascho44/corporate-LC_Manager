@@ -86,17 +86,19 @@ public class DocumentController {
     private String documentAuditState(DocumentView document){return "Datei="+document.originalFilename()+" | Typ="+document.documentType()+" | Kennzeichnung="+de.ostms.lc.document.domain.DocumentCopy.label(document.copyNumber())+" | Datum="+(document.documentDate()==null?"-":document.documentDate())+" | Betrag="+(document.currency()==null?"-":document.currency())+" "+(document.amount()==null?"-":document.amount());}
 
     @GetMapping("/documents/{id}/content")
-    public ResponseEntity<byte[]> download(@PathVariable UUID id) {
-        return content(id, false);
+    public ResponseEntity<byte[]> download(@PathVariable UUID id, Authentication authentication) {
+        return content(id, false, authentication);
     }
 
     @GetMapping("/documents/{id}/preview")
-    public ResponseEntity<byte[]> preview(@PathVariable UUID id) {
-        return content(id, true);
+    public ResponseEntity<byte[]> preview(@PathVariable UUID id, Authentication authentication) {
+        return content(id, true, authentication);
     }
 
-    private ResponseEntity<byte[]> content(UUID id, boolean inline) {
+    private ResponseEntity<byte[]> content(UUID id, boolean inline, Authentication authentication) {
         LcDocument document = service.one(id);
+        // Reading a document is recorded too (who looked at or took which file).
+        audit.record(authentication, inline ? "DOCUMENT_VIEWED" : "DOCUMENT_DOWNLOADED", "LC_DOCUMENT", id, document.getOriginalFilename() + " · " + document.getDocumentType());
         MediaType mediaType;
         try { mediaType = MediaType.parseMediaType(document.getContentType()); }
         catch (InvalidMediaTypeException exception) { mediaType = MediaType.APPLICATION_OCTET_STREAM; }
