@@ -228,19 +228,29 @@ public class SwiftImportService {
             boolean unusual=value.isBlank()||duplicate||misplaced;
             String notice=value.isBlank()?"Das Feld ist leer.":duplicate?"Dieses Kernfeld kommt mehrfach vor und muss geprüft werden.":misplaced?"Der Inhalt deutet eher auf „"+TARGET_LABELS.get(inferred)+"“ hin.":target==null&&inferred!=null?"Der Inhalt könnte zu „"+TARGET_LABELS.get(inferred)+"“ gehören.":null;
             if(target==null&&inferred!=null){target=inferred;unusual=true;}
+            if(code.equals("50")&&type.equals("MT700")) {
+                var reference=de.ostms.lc.swift.BeneficiaryReferenceResolver.resolveApplicant(parseFields(raw));
+                if(reference.source()!=null) {
+                    unusual=true;
+                    notice=reference.resolved()
+                            ? "Auftraggeberadresse in :"+reference.source()+": erkannt: "+reference.value()+" — bitte prüfen. Der Feldtext zeigt weiterhin den Originalverweis."
+                            : "Verweis auf :"+reference.source()+": nicht eindeutig auflösbar. In :"+reference.source()+": wurde kein eindeutig beschrifteter Auftraggeber-Block gefunden (z. B. „APPLICANT: …“). Bitte Adresse ergänzen.";
+                }
+            }
             if(code.equals("59")&&type.equals("MT700")) {
                 var reference=de.ostms.lc.swift.BeneficiaryReferenceResolver.resolve(parseFields(raw));
                 if(reference.source()!=null) {
                     unusual=true;
                     notice=reference.resolved()
                             ? "Begünstigtenadresse in :"+reference.source()+": erkannt: "+reference.value()+" — bitte prüfen. Der Feldtext zeigt weiterhin den Originalverweis."
-                            : "Verweis auf :"+reference.source()+": nicht eindeutig auflösbar. Bitte Begünstigtenadresse ergänzen.";
+                            : "Verweis auf :"+reference.source()+": nicht eindeutig auflösbar. In :"+reference.source()+": wurde kein eindeutig beschrifteter Begünstigten-Block gefunden (z. B. „BENEFICIARY: …“). Bitte Adresse ergänzen.";
                 }
             }
-            double confidenceScore=unusual||target==null?0.45:0.95;
+            boolean kept=type.equals("MT700")&&target==null&&!value.isBlank();
+            double confidenceScore=unusual||(target==null&&!kept)?0.45:0.95;
             String confidence=confidencePolicy.uncertain(confidenceScore)?"LOW":"HIGH";
-            String reason=target==null?"Für dieses SWIFT-Feld gibt es in diesem Profil noch kein festes Zielfeld.":unusual?"Inhaltsbasierter Prüfhinweis – manuelle Bestätigung erforderlich.":"Standardzuordnung für "+type+"-Feld :"+code+":";
-            result.add(new SwiftFieldView(code,label(type,code),value,target,target==null?"Noch nicht zugeordnet":TARGET_LABELS.get(target),confidence,reason,unusual,notice,confidenceScore,"FIELD_MAPPING_HEURISTIC_V1"));
+            String reason=kept?"Kein eigenes Feld in der Akte: wird als weitere Angabe angelegt und geht nicht verloren.":target==null?"Für dieses SWIFT-Feld gibt es in diesem Profil noch kein festes Zielfeld.":unusual?"Inhaltsbasierter Prüfhinweis – manuelle Bestätigung erforderlich.":"Standardzuordnung für "+type+"-Feld :"+code+":";
+            result.add(new SwiftFieldView(code,label(type,code),value,target,target==null?(kept?"Weitere Angabe (wird angelegt)":"Noch nicht zugeordnet"):TARGET_LABELS.get(target),confidence,reason,unusual,notice,confidenceScore,"FIELD_MAPPING_HEURISTIC_V1"));
         }
         return result;
     }
