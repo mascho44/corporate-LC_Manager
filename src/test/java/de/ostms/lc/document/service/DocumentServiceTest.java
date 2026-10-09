@@ -45,4 +45,17 @@ class DocumentServiceTest {
         assertThat(result).hasSize(3).extracting("documentType").containsExactly(DocumentType.COMMERCIAL_INVOICE,DocumentType.COMMERCIAL_INVOICE,DocumentType.ANNEX);verify(documents,times(3)).save(any());
     }
     private byte[] zip()throws Exception{try(ByteArrayOutputStream out=new ByteArrayOutputStream();ZipOutputStream zip=new ZipOutputStream(out)){zip.putNextEntry(new ZipEntry("Dokumente/invoice-17.txt"));zip.write("Invoice".getBytes(StandardCharsets.UTF_8));zip.closeEntry();zip.putNextEntry(new ZipEntry("Anlagen/notes.txt"));zip.write("Notes".getBytes(StandardCharsets.UTF_8));zip.closeEntry();zip.finish();return out.toByteArray();}}
+    @Test void receivedDocumentEndsTheWaitForTheCustomer()throws Exception{
+        UUID lcId=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setStatus(de.ostms.lc.lc.domain.LetterOfCreditStatus.WAITING_FOR_CUSTOMER);lc.setWaitingSince(java.time.LocalDate.now().minusDays(3));
+        LcDocumentRepository documents=mock(LcDocumentRepository.class);when(documents.save(any())).thenAnswer(call->call.getArgument(0));
+        LetterOfCreditRepository lcs=mock(LetterOfCreditRepository.class);when(lcs.findById(lcId)).thenReturn(Optional.of(lc));
+        var service=new DocumentService(documents,lcs,mock(DocumentExtractionService.class));
+        service.upload(lcId,new MockMultipartFile("file","a.pdf","application/pdf",new byte[]{1}),DocumentType.COMMERCIAL_INVOICE,null,null,null);
+        assertThat(lc.getStatus()).isEqualTo(de.ostms.lc.lc.domain.LetterOfCreditStatus.DOCUMENTS_PRESENTED);assertThat(lc.getWaitingSince()).isNull();
+        verify(lcs).save(lc);
+        // Other states are never touched by an incoming document.
+        lc.setStatus(de.ostms.lc.lc.domain.LetterOfCreditStatus.ACTIVE);reset(lcs);when(lcs.findById(lcId)).thenReturn(Optional.of(lc));
+        service.upload(lcId,new MockMultipartFile("file","b.pdf","application/pdf",new byte[]{1}),DocumentType.COMMERCIAL_INVOICE,null,null,null);
+        assertThat(lc.getStatus()).isEqualTo(de.ostms.lc.lc.domain.LetterOfCreditStatus.ACTIVE);verify(lcs,never()).save(any());
+    }
 }

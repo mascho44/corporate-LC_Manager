@@ -152,6 +152,7 @@ public class DocumentInboxService {
         var auth=org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
         document.setClassificationHistoryJson(ClassificationHistory.manual(item.getClassificationHistoryJson(),request.documentType(),auth==null?"unknown":auth.getName()));
         LcDocument saved = documents.save(document);
+        if (lc.releaseWaitingForCustomer()) lettersOfCredit.save(lc);
         checks.invalidateDecisions(request.lcId());
         item.setStatus("ATTACHED");
         item.setAttachedLcId(lc.getId());
