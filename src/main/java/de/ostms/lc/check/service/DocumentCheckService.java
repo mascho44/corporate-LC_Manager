@@ -183,7 +183,7 @@ public class DocumentCheckService {
         uploaded.stream().filter(d -> d.getExtractedDocumentNumber() != null)
                 .collect(java.util.stream.Collectors.groupingBy(d -> d.getExtractedDocumentNumber().toUpperCase(Locale.ROOT)))
                 .forEach((number, matches) -> {
-                    boolean designatedSet=matches.stream().map(d->d.getDocumentType()).distinct().count()==1&&matches.stream().allMatch(d->d.getCopyNumber()!=null)&&matches.stream().map(d->d.getCopyNumber()).distinct().count()==matches.size();
+                    boolean designatedSet=matches.stream().map(d->d.getDocumentType()).distinct().count()==1&&matches.stream().allMatch(d->d.getCopyNumber()!=null);
                     if (matches.size() > 1&&!designatedSet) results.add(new CheckResult(WARNING, "DUPLICATE_DOCUMENT_NUMBER", "Document number " + number + " occurs more than once without distinct Original/Copy designations."));
                 });
 

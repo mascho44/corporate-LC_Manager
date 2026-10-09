@@ -46,14 +46,12 @@ public final class DocumentCopyDetector {
     var matcher=MARK.matcher(stamp);if(!matcher.matches())continue;
     boolean original=matcher.group(2).toLowerCase(Locale.ROOT).matches(ORIGINAL);
     kinds.add(original?"ORIGINAL":"COPY");
-    Integer ordinal=matcher.group(3)!=null?Integer.valueOf(matcher.group(3)):matcher.group(1)!=null?Integer.valueOf(matcher.group(1)):null;
-    if(original)numbers.add(ordinal==null?0:-ordinal);
-    else if(ordinal!=null)numbers.add(ordinal);
+    numbers.add(original?0:1); // only Original or Copy; the application counts documents
    }
   }
-  if(kinds.size()>1||numbers.size()>1)return new Hint("CONFLICT",null,"Widersprüchliche Original-/Copy-Kennzeichnungen – bitte prüfen.");
+  if(kinds.size()>1)return new Hint("CONFLICT",null,"Widersprüchliche Original-/Copy-Kennzeichnungen – bitte prüfen.");
   if(kinds.isEmpty())return new Hint("UNKNOWN",null,"");
-  String kind=kinds.iterator().next();Integer number=numbers.isEmpty()?null:numbers.iterator().next();
-  return new Hint(kind,number,(kind.equals("ORIGINAL")?number==null||number==0?"Original":"Original "+(-number):number==null?"Copy (Nummer nicht erkannt)":"Copy "+number)+" als Text-/OCR-Kennzeichnung erkannt – bitte prüfen; kein Echtheitsnachweis.");
+  String kind=kinds.iterator().next();Integer number=numbers.iterator().next();
+  return new Hint(kind,number,(kind.equals("ORIGINAL")?"Original":"Copy")+" als Text-/OCR-Kennzeichnung erkannt – bitte prüfen; kein Echtheitsnachweis.");
  }
 }

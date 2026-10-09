@@ -19,8 +19,8 @@ class InboxRecognitionImprovementsTest {
  @Test void copyStampsWithDecorationFractionsAndOcrNoise(){
   assertThat(DocumentCopyDetector.detect("*** ORIGINAL ***").kind()).isEqualTo("ORIGINAL");
   assertThat(DocumentCopyDetector.detect("(COPY)").kind()).isEqualTo("COPY");
-  assertThat(DocumentCopyDetector.detect("1/3 ORIGINAL").copyNumber()).isEqualTo(-1);
-  assertThat(DocumentCopyDetector.detect("ORIGINAL 2 of 3").copyNumber()).isEqualTo(-2);
+  assertThat(DocumentCopyDetector.detect("1/3 ORIGINAL").copyNumber()).isEqualTo(0);
+  assertThat(DocumentCopyDetector.detect("ORIGINAL 2 of 3").copyNumber()).isEqualTo(0);
   assertThat(DocumentCopyDetector.detect("COPY - NON NEGOTIABLE").kind()).isEqualTo("COPY");
   assertThat(DocumentCopyDetector.detect("ORIGINAL NOT NEGOTIABLE").kind()).isEqualTo("ORIGINAL");
   assertThat(DocumentCopyDetector.detect("COMMERCIAL INVOICE - ORIGINAL").kind()).isEqualTo("ORIGINAL");
@@ -50,7 +50,7 @@ class InboxRecognitionImprovementsTest {
  @Test void stampSharingALineWithLogoTextIsFoundOnlyInThePageHead(){
   assertThat(DocumentCopyDetector.detect("munksjo ORIGINAL\nCommercial invoice").kind()).isEqualTo("ORIGINAL");
   assertThat(DocumentCopyDetector.detect("munksjo O R I G I N A L\nInvoice").kind()).isEqualTo("ORIGINAL");
-  assertThat(DocumentCopyDetector.detect("logo COPY 2\nInvoice").copyNumber()).isEqualTo(2);
+  assertThat(DocumentCopyDetector.detect("logo COPY 2\nInvoice").copyNumber()).isEqualTo(1);
   assertThat(DocumentCopyDetector.detect("Invoice\nPlease present original invoice\n").kind()).isEqualTo("UNKNOWN");
   assertThat(DocumentCopyDetector.detect("\n".repeat(0)+"a\n".repeat(20)+"munksjo ORIGINAL").kind()).isEqualTo("UNKNOWN");
  }
