@@ -125,7 +125,8 @@
             "CHARTER_PARTY_BILL_OF_LADING",
             "MULTIMODAL_TRANSPORT_DOCUMENT",
             "WEIGHT_LIST",
-            "POST_RECEIPT"
+            "POST_RECEIPT",
+            "DOCUMENT_SUBMISSION"
           ]
         },
         "left": {
@@ -649,7 +650,8 @@
                 "CHARTER_PARTY_BILL_OF_LADING",
                 "MULTIMODAL_TRANSPORT_DOCUMENT",
                 "WEIGHT_LIST",
-                "POST_RECEIPT"
+                "POST_RECEIPT",
+                "DOCUMENT_SUBMISSION"
               ]
             },
             "days": {
