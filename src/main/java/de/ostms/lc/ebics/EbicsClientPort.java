@@ -12,4 +12,6 @@ public interface EbicsClientPort {
     void sendIni(User user) throws Exception;
     void sendHia(User user) throws Exception;
     void fetchBankKeys(User user) throws Exception;
+    /** Downloads one trade-finance message type (BTD service TRC); null when the bank has nothing to deliver. */
+    byte[] downloadTradeMessage(User user, String messageName) throws Exception;
 }

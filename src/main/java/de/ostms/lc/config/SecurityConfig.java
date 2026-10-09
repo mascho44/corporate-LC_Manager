@@ -18,6 +18,7 @@ import de.ostms.lc.user.service.AppUserDetailsService; import jakarta.servlet.ht
    .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/lcs/*/dossier").hasAuthority("PERM_AUDIT_VIEW")
    .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/companies/choices").authenticated()
    .requestMatchers("/api/companies/**").hasAuthority("PERM_SETTINGS_MANAGE")
+   .requestMatchers("/api/ebics/messages","/api/ebics/messages/**").hasAuthority("PERM_SWIFT_IMPORT")
    .requestMatchers("/api/ebics/**").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers("/api/settings/approval-thresholds/**").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers("/api/settings/document-layouts","/api/settings/document-layouts/**").hasAuthority("PERM_SETTINGS_MANAGE")
