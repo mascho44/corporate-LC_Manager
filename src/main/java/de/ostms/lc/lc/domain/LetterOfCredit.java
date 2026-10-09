@@ -41,6 +41,8 @@ public class LetterOfCredit {
  private String applicant; private String beneficiary; private String issuingBank; private String advisingBank;
  @Column(precision=19,scale=2) private BigDecimal amount; private String currency; private LocalDate issueDate; private LocalDate expiryDate; private String expiryPlace; private LocalDate latestShipmentDate; private String assignedTo; private LocalDate followUpDate;
  @Enumerated(EnumType.STRING) private LetterOfCreditStatus status=LetterOfCreditStatus.RECEIVED;
+ @Column(name="waiting_since") private LocalDate waitingSince;
+ public LocalDate getWaitingSince(){return waitingSince;} public void setWaitingSince(LocalDate v){waitingSince=v;}
  @ElementCollection(fetch=FetchType.EAGER) @org.hibernate.annotations.Fetch(org.hibernate.annotations.FetchMode.SUBSELECT) @CollectionTable(name="lc_required_document",joinColumns=@JoinColumn(name="lc_id")) @Column(name="description",length=2000) private List<String> requiredDocuments=new ArrayList<>();
  @ElementCollection(fetch=FetchType.EAGER) @org.hibernate.annotations.Fetch(org.hibernate.annotations.FetchMode.SUBSELECT) @CollectionTable(name="lc_additional_field",joinColumns=@JoinColumn(name="lc_id")) @MapKeyColumn(name="field_name",length=255) @Column(name="field_value",length=4000) private Map<String,String> additionalFields=new LinkedHashMap<>();
  @Column(columnDefinition="text") private String rawMessage;

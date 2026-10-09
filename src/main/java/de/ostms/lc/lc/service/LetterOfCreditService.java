@@ -92,7 +92,13 @@ public class LetterOfCreditService {
         lc.setLatestShipmentDate(request.latestShipmentDate());
         lc.setAssignedTo(clean(request.assignedTo()));
         lc.setFollowUpDate(request.followUpDate());
+        var previousStatus = lc.getStatus();
         lc.setStatus(request.status());
+        if (request.status() == de.ostms.lc.lc.domain.LetterOfCreditStatus.WAITING_FOR_CUSTOMER) {
+            // Entering the waiting state stamps the date; without an explicit follow-up the LC returns after a week.
+            if (previousStatus != request.status() || lc.getWaitingSince() == null) lc.setWaitingSince(java.time.LocalDate.now());
+            if (previousStatus != request.status() && lc.getFollowUpDate() == null) lc.setFollowUpDate(java.time.LocalDate.now().plusDays(7));
+        } else lc.setWaitingSince(null);
         if (request.requiredDocuments() != null)
             lc.setRequiredDocuments(request.requiredDocuments().stream().map(this::clean).filter(java.util.Objects::nonNull).toList());
         if (request.additionalFields() != null) {
