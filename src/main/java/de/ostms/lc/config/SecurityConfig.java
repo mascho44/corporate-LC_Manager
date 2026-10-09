@@ -22,6 +22,7 @@ import de.ostms.lc.user.service.AppUserDetailsService; import jakarta.servlet.ht
    .requestMatchers("/api/settings/rule-packs","/api/settings/rule-packs/**","/rule-packs.html").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers("/api/settings/rule-source","/api/settings/rule-source/**").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/lcs/*/rule-source").hasAuthority("PERM_LC_EDIT")
+   .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/lcs/*/required-documents/reparse").hasAuthority("PERM_LC_EDIT")
    .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/document-templates/companies").authenticated()
    .requestMatchers("/api/document-templates/**","/api/company-profile/**").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers("/api/training/document-types/jobs/**").hasAuthority("PERM_TRAINING_MANAGE")

@@ -13,7 +13,17 @@ import de.ostms.lc.lc.domain.LetterOfCredit; import org.springframework.stereoty
  }
  private static final Pattern CONDITION_MARKER=Pattern.compile("^(?:[+*-]|\\(?\\d{1,2}[.)])\\s*");
  /** SWIFT wraps lines at 65 characters: a line without "+", "-", "*" or "1." continues the previous condition. Without any marker every line stays its own condition. */
- static List<String> splitConditions(String field){
+ public static Optional<String> requiredDocumentsField(String raw){
+  if(raw==null)return Optional.empty();
+  Matcher m=FIELD.matcher(raw.strip());
+  while(m.find())if("46A".equals(m.group(1)))return Optional.of(m.group(2).trim());
+  return Optional.empty();
+ }
+ /** The pre-fix behaviour: every physical line was its own condition. */
+ public static List<String> legacyConditions(String field){
+  return Arrays.stream(field.split("\\R")).map(String::trim).filter(x->!x.isBlank()).map(x->x.replaceFirst("^[+*-]\\s*","")).toList();
+ }
+ public static List<String> splitConditions(String field){
   List<String> lines=Arrays.stream(field.split("\\R")).map(String::trim).filter(x->!x.isBlank()).toList();
   boolean marked=lines.stream().anyMatch(x->CONDITION_MARKER.matcher(x).find());
   List<String> result=new ArrayList<>();
