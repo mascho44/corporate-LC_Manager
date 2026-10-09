@@ -47,4 +47,11 @@ class InboxRecognitionImprovementsTest {
   assertThat(proposal.parts().get(0).toPage()).isEqualTo(2);
   assertThat(InboxAutomaticSplitter.eligible(proposal)).isTrue();
  }
+ @Test void stampSharingALineWithLogoTextIsFoundOnlyInThePageHead(){
+  assertThat(DocumentCopyDetector.detect("munksjo ORIGINAL\nCommercial invoice").kind()).isEqualTo("ORIGINAL");
+  assertThat(DocumentCopyDetector.detect("munksjo O R I G I N A L\nInvoice").kind()).isEqualTo("ORIGINAL");
+  assertThat(DocumentCopyDetector.detect("logo COPY 2\nInvoice").copyNumber()).isEqualTo(2);
+  assertThat(DocumentCopyDetector.detect("Invoice\nPlease present original invoice\n").kind()).isEqualTo("UNKNOWN");
+  assertThat(DocumentCopyDetector.detect("\n".repeat(0)+"a\n".repeat(20)+"munksjo ORIGINAL").kind()).isEqualTo("UNKNOWN");
+ }
 }

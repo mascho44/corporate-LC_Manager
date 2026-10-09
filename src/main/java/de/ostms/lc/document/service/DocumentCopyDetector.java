@@ -12,23 +12,37 @@ public final class DocumentCopyDetector {
  private static final Pattern NEGOTIABLE=Pattern.compile("(?i)[\\t ]*+[-–/,]?[\\t ]*+(?:non|not)[\\t -]*+negotiable[\\t ]*+");
  private static final Pattern SEGMENT=Pattern.compile("[\\t ]+[-–—/|:][\\t ]+|[()\\[\\]|]");
  private static final Pattern EDGE=Pattern.compile("^[\\s*_=~\"'.:;|<>#+-]+|[\\s*_=~\"'.:;|<>#+-]+$");
+ private static final Pattern SPACED_RUN=Pattern.compile("(?<!\\S)(?:\\p{L} ){5,}\\p{L}(?!\\S)");
+ private static final Pattern WORD_KIND=Pattern.compile("(?i)^"+KIND+"$");
  private static final Pattern SPACED=Pattern.compile("^(?:\\p{L} ){3,}\\p{L}$");
  public record Hint(String kind,Integer copyNumber,String evidence){}
  private DocumentCopyDetector(){}
+ private static String ordinals(String stamp){return stamp.replaceFirst("(?i)^first[\\t ]++","1 ").replaceFirst("(?i)^second[\\t ]++","2 ").replaceFirst("(?i)^third[\\t ]++","3 ");}
  private static String clean(String value){return EDGE.matcher(value).replaceAll("").trim();}
  public static Hint detect(String text){
   if(text==null||text.isBlank())return new Hint("UNKNOWN",null,"");
   Set<String> kinds=new HashSet<>();Set<Integer> numbers=new HashSet<>();
   String bounded=text.substring(0,Math.min(text.length(),100_000));
-  for(String line:bounded.split("\\R")){
-   if(line.length()>100)continue;
+  int nonBlank=0;
+  for(String rawLine:bounded.split("\\R")){
+   if(rawLine.length()>100)continue;
+   String line=SPACED_RUN.matcher(rawLine).replaceAll(match->match.group().replace(" ",""));
+   if(!line.isBlank())nonBlank++;
    var candidates=new ArrayList<String>();candidates.add(line);
+   // A stamp beside a logo or letterhead shares its OCR line: in the page head, short lines may carry it as a single word.
+   if(nonBlank<=15&&!MARK.matcher(ordinals(clean(NEGOTIABLE.matcher(line.trim()).replaceAll(" ")))).matches()){
+    String[] words=line.trim().split("[\\s]+");
+    if(words.length>=2&&words.length<=4)for(int w=0;w<words.length;w++){
+     String word=clean(words[w]);
+     if(WORD_KIND.matcher(word).matches()&&word.equals(word.toUpperCase(Locale.ROOT)))candidates.add(w+1<words.length&&words[w+1].matches("[1-3]")?word+" "+words[w+1]:word);
+    }
+   }
    if(SEGMENT.matcher(line).find())candidates.addAll(Arrays.asList(SEGMENT.split(line)));
    for(String candidate:candidates){
     String stamp=clean(candidate);if(stamp.isEmpty()||stamp.length()>60)continue;
     stamp=clean(NEGOTIABLE.matcher(stamp).replaceAll(" "));
     if(SPACED.matcher(stamp).matches())stamp=stamp.replace(" ","");
-    stamp=stamp.replaceFirst("(?i)^first[\\t ]++","1 ").replaceFirst("(?i)^second[\\t ]++","2 ").replaceFirst("(?i)^third[\\t ]++","3 ");
+    stamp=ordinals(stamp);
     var matcher=MARK.matcher(stamp);if(!matcher.matches())continue;
     boolean original=matcher.group(2).toLowerCase(Locale.ROOT).matches(ORIGINAL);
     kinds.add(original?"ORIGINAL":"COPY");
