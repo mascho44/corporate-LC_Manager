@@ -16,6 +16,12 @@ class PdfDocumentSplitterTest {
         assertThat(proposal.pages().get(1).classification().status()).isEqualTo("REVIEW");
         assertThat(proposal.pages().get(1).classification().method()).isEqualTo("PAGE_SEQUENCE_V1");
     }
+    @Test void unnumberedPageAfterAnnouncedTotalAndBlankPageStayWithDocument() throws Exception {
+        var proposal=PdfDocumentSplitter.propose(pdf("COMMERCIAL INVOICE No. INV-10 Page 1 of 3","General terms of sale and delivery apply to every shipment","Totals Page 3 of 3","","PACKING LIST No. PK-20 Page 1 of 1"),null);
+        assertThat(proposal.parts()).containsExactly(new PdfDocumentSplitter.Part(1,4,DocumentType.COMMERCIAL_INVOICE),new PdfDocumentSplitter.Part(5,5,DocumentType.PACKING_LIST));
+        assertThat(proposal.pages().get(1).classification().method()).isEqualTo("PAGE_TOTAL_V1");
+        assertThat(proposal.pages().get(3).classification().method()).isEqualTo("BLANK_PAGE_V1");
+    }
     @Test void differentReferencesAndNumberingRestartSeparateSameTypeDocuments() throws Exception {
         var proposal=PdfDocumentSplitter.propose(pdf("COMMERCIAL INVOICE No. INV-10 Page 1 of 2","COMMERCIAL INVOICE No. INV-10 Page 2 of 2","COMMERCIAL INVOICE No. INV-11 Page 1 of 2","Details Page 2 of 2"),null);
         assertThat(proposal.parts()).containsExactly(new PdfDocumentSplitter.Part(1,2,DocumentType.COMMERCIAL_INVOICE),new PdfDocumentSplitter.Part(3,4,DocumentType.COMMERCIAL_INVOICE));
