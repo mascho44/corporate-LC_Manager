@@ -3,7 +3,7 @@ function descendants(n){return[n,...n.children.flatMap(descendants)];}
 function node(tag){return{tag,children:[],textContent:'',value:'',className:'',attributes:{},append(...items){this.children.push(...items);},insertBefore(item,ref){const i=ref?this.children.indexOf(ref):-1;if(i<0)this.children.push(item);else this.children.splice(i,0,item);},reportValidity(){return true;},replaceChildren(...items){this.children=items;},setAttribute(k,v){this.attributes[k]=v;}};}
 async function fixture(responses){
  const calls=[],writes=[];const section=node('section');
- const context=vm.createContext({document:{createElement:node},URLSearchParams,Date,confirmAction:async()=>true,json:async (url,options)=>{calls.push(url);if(options?.method==='PUT'){writes.push({url,body:JSON.parse(options.body)});return {};}return responses[url.split('?')[0]];}});
+ const context=vm.createContext({document:{createElement:node},URLSearchParams,Date,confirmAction:async()=>true,json:async (url,options)=>{calls.push(url);if(options?.method==='PUT'||options?.method==='POST'){writes.push({url,body:JSON.parse(options.body)});return {};}return responses[url.split('?')[0]];}});
  vm.runInContext(fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/platform-overview.js'),'utf8'),context);
  const refresh=await context.setupPlatformOverview(section);return {section,calls,writes,refresh};
 }
