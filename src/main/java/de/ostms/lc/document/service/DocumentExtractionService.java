@@ -23,6 +23,15 @@ public class DocumentExtractionService {
     @org.springframework.beans.factory.annotation.Value("${lc.ocr.document-timeout-seconds:900}")
     private long ocrDocumentTimeoutSeconds=900;
     private static final int MAX_TEXT_LENGTH = 100_000;
+    /** Recognition runs at 300 DPI with Sauvola thresholding (clearly better on scans); stored positions stay in the 200-DPI evidence raster. */
+    static final int OCR_DPI = 300, EVIDENCE_DPI = 200;
+    static List<OcrEvidence.Word> toEvidenceRaster(List<OcrEvidence.Word> words){
+        if(OCR_DPI==EVIDENCE_DPI)return words;
+        var scaled=new java.util.ArrayList<OcrEvidence.Word>(words.size());
+        for(var w:words)scaled.add(new OcrEvidence.Word(w.text(),w.confidence(),w.page(),scale(w.left()),scale(w.top()),Math.max(1,scale(w.width())),Math.max(1,scale(w.height()))));
+        return java.util.List.copyOf(scaled);
+    }
+    private static int scale(int value){return (int)Math.round(value*(double)EVIDENCE_DPI/OCR_DPI);}
     @org.springframework.beans.factory.annotation.Value("${lc.ocr.max-pages:100}")
     private int maxOcrPages=100;
     private static final class PageLimitException extends IOException{}
@@ -163,14 +172,14 @@ public class DocumentExtractionService {
                     int last=index;while(last+1<pageTexts.size()&&last-index<2&&pageTexts.get(last+1).isBlank())last++;
                     long remaining=documentBudget-java.util.concurrent.TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()-started);
                     if(remaining<=0)throw new BoundedProcess.TimeoutException("OCR");
-                    runOcrStep(new ProcessBuilder("pdftoppm","-png","-r","200","-f",String.valueOf(index+1),"-l",String.valueOf(last+1),input.toString(),directory.resolve("page").toString()).redirectErrorStream(true),Math.min(60,remaining));
+                    runOcrStep(new ProcessBuilder("pdftoppm","-png","-r",String.valueOf(OCR_DPI),"-f",String.valueOf(index+1),"-l",String.valueOf(last+1),input.toString(),directory.resolve("page").toString()).redirectErrorStream(true),Math.min(60,remaining));
                     try(var files=Files.list(directory)){files.filter(p->p.getFileName().toString().matches("page-[0-9]+\\.png")).forEach(p->images.put(Integer.parseInt(p.getFileName().toString().replaceAll("[^0-9]","")),p));}
                 }
                 Path image=images.remove(index+1);if(image==null)throw new IOException("PDF renderer produced no page");
                 Path output = directory.resolve("ocr-" + index);
                 ProcessBuilder ocr;
                 ocr = new ProcessBuilder("tesseract", image.toString(), output.toString(), "-l", "deu+eng",
-                    "-c", "tessedit_create_txt=1", "-c", "tessedit_create_tsv=1")
+                    "-c", "thresholding_method=2", "-c", "tessedit_create_txt=1", "-c", "tessedit_create_tsv=1")
                     .redirectOutput(ProcessBuilder.Redirect.DISCARD).redirectErrorStream(true);
                 ocr.environment().put("OMP_THREAD_LIMIT","1");
                 long elapsed=java.util.concurrent.TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()-started);
@@ -217,7 +226,7 @@ public class DocumentExtractionService {
                     }
                 }
                 if(result.length()<MAX_TEXT_LENGTH)result.append(recognized).append('\n');
-                words.addAll(pageWords);
+                words.addAll(toEvidenceRaster(pageWords));
                 Files.deleteIfExists(image);Files.deleteIfExists(textFile);Files.deleteIfExists(tsvFile);
                 pages.set(index,new OcrEvidence.PageResult(page,recognized.isBlank()?"NO_TEXT":"OCR_EXTRACTED",attempts,correctionDegrees,limit(recognized)));
                 } catch(BoundedProcess.TimeoutException failure){

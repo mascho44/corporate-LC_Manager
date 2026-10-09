@@ -31,7 +31,8 @@ class ScanGeometryTest {
   var result=new FakeOcr().extractFile(PdfDocumentSplitterTest.pdf(""),"synthetic.pdf","application/pdf");
   assertThat(result.status()).isEqualTo("OCR_EXTRACTED");assertThat(result.text()).contains("COMMERCIAL INVOICE");
   assertThat(result.ocrEvidence().pages().get(0).correctionDegrees()).isEqualTo(90);
-  assertThat(result.ocrEvidence().words()).allMatch(w->w.left()==20&&w.top()==30&&w.width()==40&&w.height()==30);
+  // Positions are mapped back to the original scan raster (300 DPI) and then stored in the 200-DPI evidence raster (x 2/3).
+  assertThat(result.ocrEvidence().words()).allMatch(w->w.left()==13&&w.top()==20&&w.width()==27&&w.height()==20);
   var split=PdfDocumentSplitter.split(PdfDocumentSplitterTest.pdf(""),new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(result.ocrEvidence()),List.of(new PdfDocumentSplitter.Part(1,1,de.ostms.lc.document.domain.DocumentType.COMMERCIAL_INVOICE)));
   assertThat(split.get(0).text()).contains("COMMERCIAL INVOICE\nInvoice No: SYN-42");
  }
