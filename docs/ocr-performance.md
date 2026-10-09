@@ -80,3 +80,5 @@ CI now installs real Tesseract (German, English, OSD), so the existing real OCR
 integration test no longer silently skips there. Local environments without
 Tesseract still skip that test; simulated pipeline tests remain deterministic.
 No general real-world accuracy or speed improvement percentage is claimed.
+
+Weitere OCR-Sprachen: Umgebungsvariable `OCR_LANGUAGES` (Standard `deu+eng`, z. B. `deu+eng+chi_sim` fuer chinesische Dokumente; chi_sim ist im Image enthalten). Mehr Sprachen verlangsamen die Erkennung.

@@ -23,6 +23,10 @@ public class DocumentExtractionService {
     @org.springframework.beans.factory.annotation.Value("${lc.ocr.document-timeout-seconds:900}")
     private long ocrDocumentTimeoutSeconds=900;
     private static final int MAX_TEXT_LENGTH = 100_000;
+    private static final java.util.regex.Pattern LANGUAGES=java.util.regex.Pattern.compile("[a-z]{3}(?:_[a-z]{3,4})?(?:\\+[a-z]{3}(?:_[a-z]{3,4})?){0,3}");
+    /** Tesseract languages; OCR_LANGUAGES (e.g. "deu+eng+chi_sim") needs the matching traineddata in the image. */
+    static String ocrLanguages(){return ocrLanguages(System.getenv("OCR_LANGUAGES"));}
+    static String ocrLanguages(String configured){return configured!=null&&LANGUAGES.matcher(configured.trim()).matches()?configured.trim():"deu+eng";}
     /** Recognition runs at 300 DPI with Sauvola thresholding (clearly better on scans); stored positions stay in the 200-DPI evidence raster. */
     static final int OCR_DPI = 300, EVIDENCE_DPI = 200;
     static List<OcrEvidence.Word> toEvidenceRaster(List<OcrEvidence.Word> words){
@@ -178,7 +182,7 @@ public class DocumentExtractionService {
                 Path image=images.remove(index+1);if(image==null)throw new IOException("PDF renderer produced no page");
                 Path output = directory.resolve("ocr-" + index);
                 ProcessBuilder ocr;
-                ocr = new ProcessBuilder("tesseract", image.toString(), output.toString(), "-l", "deu+eng",
+                ocr = new ProcessBuilder("tesseract", image.toString(), output.toString(), "-l", ocrLanguages(),
                     "-c", "thresholding_method=2", "-c", "tessedit_create_txt=1", "-c", "tessedit_create_tsv=1")
                     .redirectOutput(ProcessBuilder.Redirect.DISCARD).redirectErrorStream(true);
                 ocr.environment().put("OMP_THREAD_LIMIT","1");
@@ -209,7 +213,7 @@ public class DocumentExtractionService {
                         javax.imageio.ImageIO.write(prepared.image(),"png",corrected.toFile());
                         retryBudget=documentBudget-java.util.concurrent.TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()-started);
                         if(retryBudget<=0)throw new BoundedProcess.TimeoutException("OCR");
-                        var retry=new ProcessBuilder("tesseract",corrected.toString(),alternative.toString(),"-l","deu+eng","--psm","11","-c","tessedit_create_txt=1","-c","tessedit_create_tsv=1").redirectOutput(ProcessBuilder.Redirect.DISCARD).redirectErrorStream(true);
+                        var retry=new ProcessBuilder("tesseract",corrected.toString(),alternative.toString(),"-l",ocrLanguages(),"--psm","11","-c","tessedit_create_txt=1","-c","tessedit_create_tsv=1").redirectOutput(ProcessBuilder.Redirect.DISCARD).redirectErrorStream(true);
                         retry.environment().put("OMP_THREAD_LIMIT","1");
                         runOcrStep(retry,Math.min(pageTimeoutSeconds(),retryBudget));
                         Path altText=Path.of(alternative+".txt"),altTsv=Path.of(alternative+".tsv");
