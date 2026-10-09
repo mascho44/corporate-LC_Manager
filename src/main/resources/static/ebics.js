@@ -32,8 +32,8 @@ async function setupEbics(){
    const c=await json('/api/ebics/connection');
    info.replaceChildren(node('p','Status: '+(c.configured?(labels[c.status]||c.status):'nicht eingerichtet')+(c.lastError?' · '+c.lastError:'')));
    if(!c.encryptionConfigured)info.append(node('p','Hinweis: EBICS_ENCRYPTION_KEY ist auf dem Server nicht gesetzt – Schlüssel können noch nicht erzeugt werden.'));
-   ['url','hostId','partnerId','userId'].forEach(n=>{form.elements[n].value=c[n]||'';form.elements[n].disabled=c.configured&&c.status!=='NEW';});
-   save.disabled=c.configured&&c.status!=='NEW';
+   ['url','hostId','partnerId','userId'].forEach(n=>{form.elements[n].value=c[n]||'';form.elements[n].disabled=c.configured&&c.status!=='NEW'&&c.status!=='ERROR';});
+   save.disabled=c.configured&&c.status!=='NEW'&&c.status!=='ERROR';
    keys.disabled=!c.configured||!c.encryptionConfigured||c.status==='KEYS_SENT'||c.status==='ACTIVE';
    bank.disabled=c.status!=='KEYS_SENT';reset.disabled=!c.configured||c.status==='NEW';
    messagesBox.hidden=!(c.status==='ACTIVE'&&typeof can==='function'&&can('SWIFT_IMPORT'));

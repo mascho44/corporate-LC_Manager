@@ -32,7 +32,8 @@ public class EbicsConnectionService {
   var existing=connections.findCurrent();
   var c=existing.orElseGet(EbicsConnection::new);
   boolean changed=existing.isPresent()&&(!c.getUrl().equals(url)||!c.getHostId().equals(host)||!c.getPartnerId().equals(partner)||!c.getUserId().equals(user));
-  if(changed&&c.getStatus()!=EbicsStatus.NEW)throw new IllegalStateException("Die Verbindung ist bereits eingerichtet. Bitte zuerst zurücksetzen, dann ändern.");
+  if(changed&&c.getStatus()!=EbicsStatus.NEW&&c.getStatus()!=EbicsStatus.ERROR)throw new IllegalStateException("Die Verbindung ist bereits eingerichtet. Bitte zuerst zurücksetzen, dann ändern.");
+  if(changed&&c.getStatus()==EbicsStatus.ERROR){c.clearKeys();c.setStatus(EbicsStatus.NEW);c.setLastError(null);}
   c.setUrl(url);c.setHostId(host);c.setPartnerId(partner);c.setUserId(user);
   connections.save(c);
   audit.recordInTransaction(auth,existing.isPresent()?"EBICS_CONNECTION_UPDATED":"EBICS_CONNECTION_CREATED","EBICS_CONNECTION",c.getId(),"Host "+host+" · Partner "+partner+" · Teilnehmer "+user+" · "+url);
@@ -55,7 +56,7 @@ public class EbicsConnectionService {
    audit.recordInTransaction(auth,"EBICS_KEYS_SENT","EBICS_CONNECTION",c.getId(),"INI/HIA gesendet · Host "+c.getHostId()+" · Teilnehmer "+c.getUserId());
    return fingerprints(keys.user());
   }catch(IllegalStateException e){throw e;}
-  catch(Exception e){fail(c,"INI/HIA fehlgeschlagen: "+e.getMessage(),auth);throw new IllegalStateException("INI/HIA fehlgeschlagen. Details im Audit-Protokoll.");}
+  catch(Exception e){fail(c,"INI/HIA fehlgeschlagen: "+e.getMessage(),auth);throw new IllegalStateException(hint(e));}
  }
 
  /** HPB works only after the bank released the subscriber; afterwards the connection is ACTIVE. */
@@ -104,6 +105,14 @@ public class EbicsConnectionService {
   var bank=EbicsSerialisierung.bankLesen(cipher.decrypt(row,c.getBankBlob()));
   var partner=EbicsSerialisierung.partnerLesen(cipher.decrypt(row,c.getPartnerBlob()),bank);
   return EbicsSerialisierung.userLesen(cipher.decrypt(row,c.getUserBlob()),partner);
+ }
+ /** Short, actionable message for the user; the full detail stays in the audit log. */
+ static String hint(Exception e){
+  String m=String.valueOf(e.getMessage());
+  if(m.contains("HTTP code: 30"))return "INI/HIA fehlgeschlagen: Die Bank-URL leitet um – vermutlich stimmt der Pfad nicht (richtig z. B. …/ebicsweb). Bitte URL prüfen und korrigieren.";
+  if(m.contains("HTTP code: 404"))return "INI/HIA fehlgeschlagen: Unter dieser URL gibt es keinen EBICS-Endpunkt (404). Bitte URL prüfen.";
+  if(m.contains("HTTP code"))return "INI/HIA fehlgeschlagen: Die Bank hat mit einem HTTP-Fehler geantwortet ("+m.replaceAll("(?s).*HTTP code: ?","").trim()+"). Details im Audit-Protokoll.";
+  return "INI/HIA fehlgeschlagen (Verbindung oder Antwort der Bank). Details im Audit-Protokoll.";
  }
  private void fail(EbicsConnection c,String message,Authentication auth){
   c.setStatus(EbicsStatus.ERROR);c.setLastError(trim(message));connections.save(c);

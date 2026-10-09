@@ -17,7 +17,7 @@ class EbicsConnectionServiceTest {
  static class RecordingPort extends EbicsClientPortImpl {
   final java.util.List<String> calls=new java.util.ArrayList<>();boolean failHia;
   RecordingPort(){super(new EbicsClientFactory());}
-  @Override public void sendIni(org.kopi.ebics.client.User u){calls.add("INI");}
+  @Override public void sendIni(org.kopi.ebics.client.User u)throws Exception{calls.add("INI");}
   @Override public void sendHia(org.kopi.ebics.client.User u){calls.add("HIA");if(failHia)throw new IllegalStateException("bank unreachable");}
   @Override public void fetchBankKeys(org.kopi.ebics.client.User u){calls.add("HPB");}
  }
@@ -60,5 +60,16 @@ class EbicsConnectionServiceTest {
   var service=service();
   assertThatThrownBy(()->service.save(new EbicsConnectionService.Request("https://localhost/x","BAD ID","P","U"),null)).isInstanceOf(IllegalArgumentException.class);
   assertThatThrownBy(()->service.save(new EbicsConnectionService.Request("http://localhost/x","H","P","U"),null)).isInstanceOf(IllegalArgumentException.class);
+ }
+ @Test void failedSetupAllowsCorrectingTheDetailsAndShowsAUsefulMessage(){
+  port.failHia=false;
+  var failing=new RecordingPort(){@Override public void sendIni(org.kopi.ebics.client.User u)throws Exception{throw new Exception("Wrong returned HTTP code: 302");}};
+  var service=new EbicsConnectionService(connections,failing,new EbicsCipher("synthetic-test-key-0123456789abcdef0123"),new EbicsUrlPolicy("localhost"),audit);
+  service.save(new EbicsConnectionService.Request("https://localhost:8443/ebicswwb","EVILSBANK","P1","U1"),null);
+  assertThatThrownBy(()->service.initialise(null)).hasMessageContaining("leitet um").hasMessageContaining("ebicsweb");
+  assertThat(connections.findCurrent().orElseThrow().getStatus()).isEqualTo(EbicsStatus.ERROR);
+  var fixed=service.save(new EbicsConnectionService.Request("https://localhost:8443/ebicsweb","EVILSBANK","P1","U1"),null);
+  assertThat(fixed.status()).isEqualTo("NEW");assertThat(fixed.lastError()).isNull();
+  assertThat(connections.findCurrent().orElseThrow().getUserBlob()).isNull();
  }
 }
