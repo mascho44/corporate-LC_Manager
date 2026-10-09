@@ -25,3 +25,27 @@ body.platform-shell>.platform-header{position:static;display:flex;align-items:ce
 .platform-shell form button[type=submit]{background:#4338ca;color:#fff}
 .platform-shell form button[type=submit]:hover:not(:disabled){background:#3730a3}
 .platform-shell input[type=search]{max-width:360px}
+
+/* Formulare: gleichmaessiges Raster statt gestreckter Einzelfelder */
+.platform-shell .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px 18px;align-items:end;padding:0;margin:0 0 6px}
+.platform-shell .form-grid>h3{grid-column:1/-1;margin:0}
+.platform-shell label{display:grid;gap:6px;font-weight:600;color:#33415c;font-size:14px}
+.platform-shell input:not([type=checkbox]):not([type=radio]),.platform-shell select{width:100%;min-height:42px;padding:9px 12px;border:1px solid #c5d0e2;border-radius:10px;background:#fff;color:#14213d;font:inherit;font-weight:400;box-sizing:border-box}
+.platform-shell input:focus,.platform-shell select:focus{outline:2px solid #6d5dfc;outline-offset:1px;border-color:#6d5dfc}
+.platform-shell button{font:inherit;font-size:14px;font-weight:600;padding:10px 16px;border-radius:10px;cursor:pointer;min-height:42px}
+.platform-shell .form-grid button[type=submit]{justify-self:start;background:#4338ca;color:#fff;border:0}
+.platform-shell button.danger{background:#fff;color:#b42318;border:1px solid #f0b4ae}
+.platform-shell button.danger:hover:not(:disabled){background:#fdecea;border-color:#b42318}
+.platform-shell button:disabled{opacity:.45;cursor:not-allowed}
+.platform-shell .panel>p,.platform-shell section>p{max-width:80ch;color:#52607a;line-height:1.55}
+
+/* Zeilen (Mandanten, Konten, Einladungen, Mitgliedschaften): Name links, Status als Badge, Aktionen rechts */
+.platform-shell .membership-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:14px 16px}
+.platform-shell .membership-row>b:first-child{flex:1 1 260px;font-size:16px;color:#14213d}
+.platform-shell .membership-row>b+span{padding:3px 12px;border-radius:99px;background:#e8f6ee;color:#146c43;font-size:13px;font-weight:700}
+.platform-shell .membership-row label{display:flex;align-items:center;gap:8px;font-size:14px;margin:0}
+.platform-shell .membership-row label select{width:auto;min-width:150px;min-height:38px}
+.platform-shell .membership-row button{min-height:38px;padding:7px 14px}
+.platform-shell .membership-row>small.error,.platform-shell .membership-row>small[role=alert]{flex:1 1 100%;color:#b42318}
+.platform-shell .membership-row details{flex:1 1 100%;margin-top:4px}
+.platform-shell .membership-row details summary{cursor:pointer;color:#b42318;font-weight:600}
