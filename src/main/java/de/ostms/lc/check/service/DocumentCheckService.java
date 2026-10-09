@@ -19,6 +19,7 @@ import static de.ostms.lc.check.api.CheckResult.Severity.*;
 @Service
 public class DocumentCheckService {
     @Autowired(required=false) private de.ostms.lc.rulepack.InternalPackService internalPacks;
+    @Autowired(required=false) private de.ostms.lc.document.service.SignatureEvidenceService signatures;
     @Autowired(required=false) private de.ostms.lc.rulepack.RuleSourceService ruleSource;
     private final LetterOfCreditRepository lcs;
     private final LcDocumentRepository documents;private final DocumentCheckDecisionRepository decisions;private final LcRequirementMappingRepository mappings;private final AmendmentRepository amendments;
@@ -337,7 +338,24 @@ public class DocumentCheckService {
     private void checkFormalRequirement(String requirement,de.ostms.lc.document.domain.LcDocument document,List<CheckResult> results){
         String lower=requirement.toLowerCase(Locale.ROOT);String text=normalize(document.getExtractedText()==null?"":document.getExtractedText());
         if(lower.matches("(?s).*(signed|signature|duly signed|unterzeichnet|unterschrift).*")&&readable(document)){
+            var sig=signatures==null?null:signatures.evidence(document);
+            if(sig!=null&&sig.available()){
+                if(sig.anyInk()){var page=sig.firstWithInk().orElseThrow();
+                    results.add(finding(OK,"SIGNATURE_REQUIREMENT_EVIDENCED","Handschriftähnliche Tinte neben einer Unterschriftsbeschriftung erkannt (Seite "+page.page()+"). Bitte visuell bestätigen; kein Echtheitsnachweis.",requirement,document.getOriginalFilename(),"Bildanalyse: Tinte neben der Beschriftung auf Seite "+page.page()));
+                    return;}
+                if(sig.anyCaption()){var page=sig.firstWithEmptyCaption().orElseThrow();
+                    results.add(finding(WARNING,"SIGNATURE_REQUIREMENT_MISSING_SUSPECTED","Unterschriftsfeld erkannt, aber ohne erkennbare Unterschrift (Seite "+page.page()+"). Bitte visuell prüfen.",requirement,document.getOriginalFilename(),"Bildanalyse: keine Tinte neben der Beschriftung auf Seite "+page.page()));
+                    return;}
+                if(sig.freeInk()>0){
+                    results.add(finding(WARNING,"SIGNATURE_REQUIREMENT_REVIEW","Unterschriftsähnliche Tinte ohne Beschriftung erkannt. Bitte visuell prüfen, ob unterschrieben wurde.",requirement,document.getOriginalFilename(),"Bildanalyse: "+sig.freeInk()+" Tintenbereich(e) im unteren Seitenteil"));
+                    return;}
+            }
             boolean found=text.matches("(?s).*(signed|signature|signatory|authorized signature|unterzeichnet|unterschrift).*" );
+            boolean analysed=sig!=null&&sig.available();
+            if(analysed&&found){
+                results.add(finding(WARNING,"SIGNATURE_REQUIREMENT_REVIEW","Nur ein gedruckter Unterschriftenhinweis im Text, keine Unterschrift im Bild erkannt. Bitte visuell prüfen.",requirement,document.getOriginalFilename(),textEvidence(document.getExtractedText(),Set.of("signed","signature","signatory","unterzeichnet","unterschrift"))));
+                return;
+            }
             results.add(finding(found?OK:WARNING,"SIGNATURE_REQUIREMENT_"+(found?"EVIDENCED":"REVIEW"),found?"Ein Unterschriftenvermerk wurde im Dokument erkannt.":"Geforderte Unterschrift konnte nicht automatisch belegt werden und muss visuell geprüft werden.",requirement,document.getOriginalFilename(),found?textEvidence(document.getExtractedText(),Set.of("signed","signature","signatory","unterzeichnet","unterschrift")):"Kein eindeutiger Unterschriftenvermerk im ausgelesenen Text"));
         }
     }
