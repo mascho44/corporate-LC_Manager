@@ -5,8 +5,8 @@ import java.util.regex.Pattern;
 
 /** Resolves only explicit, uniquely labelled address blocks; never treats all conditions as an address. */
 public final class BeneficiaryReferenceResolver {
-    private static final Pattern REFERENCE = Pattern.compile("(?i)\\b(?:SEE|REFER(?:\\s+TO)?|SIEHE|VIDE)\\s+(?:(?:FIELD|FLD|TAG|FELD)\\s*:?\\s*)?(\\d{2}[A-Z]?)\\b");
-    private static final Pattern HEADER = Pattern.compile("(?i)^\\s*(?:[+*-]|\\d+[.)])?\\s*(?:(?:FULL\\s+)?(?:ADDRESS|NAME(?:\\s+AND\\s+ADDRESS)?)\\s+OF\\s+(?:THE\\s+)?BENEFICIARY|BENEFICIARY(?:'S)?(?:\\s+FULL)?(?:\\s+(?:NAME(?:\\s*(?:AND|&|/)\\s*ADDRESS)?|ADDRESS|DETAILS))?|BEGÜNSTIGTER|BEGÜNSTIGTENADRESSE)\\s*[:\\-]\\s*(.*)$");
+    private static final Pattern REFERENCE = Pattern.compile("(?i)\\b(?:SEE|REFER(?:\\s{1,5}+TO)?|SIEHE|VIDE)\\s{1,5}+(?:(?:FIELD|FLD|TAG|FELD)\\s{0,5}+:?\\s{0,5}+)?(\\d{2}[A-Z]?)\\b");
+    private static final Pattern HEADER = Pattern.compile("(?i)^\\s{0,5}+(?:[+*-]|\\d+[.)])?\\s{0,5}+(?:(?:FULL\\s{1,5}+)?(?:ADDRESS|NAME(?:\\s{1,5}+AND\\s{1,5}+ADDRESS)?)\\s{1,5}+OF\\s{1,5}+(?:THE\\s{1,5}+)?BENEFICIARY|BENEFICIARY(?:'S)?(?:\\s{1,5}+FULL)?(?:\\s{1,5}+(?:NAME(?:\\s{0,5}+(?:AND|&|/)\\s{0,5}+ADDRESS)?|ADDRESS|DETAILS))?|BEGÜNSTIGTER|BEGÜNSTIGTENADRESSE)\\s{0,5}+[:\\-]\\s{0,5}+(.*)$");
 
     private BeneficiaryReferenceResolver() {}
 
