@@ -19,7 +19,7 @@ public final class DocumentDateDetector {
  private static final Pattern PLACE_DATE=Pattern.compile("(?im)^[\\t ]*[A-Za-zÄäÖöÜüß][A-Za-zÄäÖöÜüß .'-]{1,40},[\\t ]*(?:den[\\t ]+|the[\\t ]+|on[\\t ]+)?("+TOKEN+")[\\t ]*$");
  /** OCR often spaces separators: "25 . 08 . 2026" becomes "25.08.2026". */
  static String tidy(String text){
-  return text.replaceAll("(?<=[0-9])[\\t ]*([./-])[\\t ]*(?=[0-9])","$1");
+  return text.replaceAll("(?<=[0-9])[\\t ]{0,3}+([./-])[\\t ]{0,3}+(?=[0-9])","$1");
  }
  /** Explicit issue-date labels outrank a bare "Date:" which outranks "City, date" lines; the first tier with a hit decides. */
  public static Result detect(String source){
