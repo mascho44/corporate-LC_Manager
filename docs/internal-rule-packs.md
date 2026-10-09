@@ -22,6 +22,26 @@ Fehlende oder ungültige Werte ergeben eine Warnung „nicht prüfbar“, niemal
 
 Grenzen: 512 KiB pro JSON-Datei, 25 Regeln und 150 Testfälle pro Pack. Unbekannte Eigenschaften, doppelte JSON-Schlüssel und unzulässige Feld-/Operatorkombinationen werden zurückgewiesen.
 
+## Regelquelle und Pack-Auswahl
+
+Die Dokumentenprüfung kennt zwei Quellen: die **eingebauten** Prüfungen und die **importierten** Packs. Welche gilt, ist einstellbar:
+
+| Regelquelle | Wirkung |
+| --- | --- |
+| Beides (Standard) | eingebaute Prüfungen und aktive Packs, wie bisher |
+| Nur eingebaute Prüfungen | aktive Packs werden nicht ausgewertet |
+| Nur importierte Packs | eingebaute **Vergleichsprüfungen** entfallen, wenn eine **automatische** Regel eines ausgewerteten Packs dasselbe prüft (`RuleSourceService.COVERED`) |
+
+Technische Prüfungen laufen in jedem Fall: Extraktion/OCR, Pflichtdokumente, LC-Referenz, nicht erfasstes Dokumentdatum, Duplikate und Ablauf der LC. Eine manuelle Pack-Regel ersetzt nie eine automatische eingebaute Prüfung.
+
+- **Mandant:** auf der Seite Rule Packs, Recht `SETTINGS_MANAGE` (`GET`/`PUT /api/settings/rule-source`).
+- **Je Akte:** Schaltfläche „Regelquelle“ in der Prüfansicht, Recht `LC_EDIT` zum Ändern (`GET`/`PUT /api/lcs/{id}/rule-source`). Die Akte kann die Regelquelle des Mandanten überschreiben und eine Auswahl der aktiven Packs treffen (zum Beispiel nur das Modul „See“). Keine Auswahl bedeutet alle aktiven Packs. Auch die Erfassung fehlender Prüfdaten berücksichtigt die Auswahl.
+- Änderungen werden im Audit-Protokoll festgehalten (`RULE_SOURCE_TENANT_UPDATED`, `RULE_SOURCE_LC_UPDATED`).
+
+### Nicht angewendete Regeln
+
+Ein Pack kann Regeln für Dokumenttypen enthalten, die in der Akte nicht vorliegen, oder Regeln mit einer Anwendungsbedingung, die nicht zutrifft. Sie erzeugen **keine Warnung** mehr. Je Pack erscheint eine Zusammenfassung `PACK.<packId>.NOT_APPLIED` mit Schwere „erfüllt“, in der die Zahl der nicht angewendeten Regeln und ihre Gründe stehen (Dokumenttyp nicht vorgelegt, Bedingung nicht erfüllt). Dass ein Pflichtdokument fehlt, meldet weiterhin die Prüfung `MISSING_DOCUMENT`. Fehlende oder ungültige Werte bei vorhandenem Dokument bleiben eine Warnung „nicht prüfbar“.
+
 ## Nachvollziehbarkeit
 
 Befunde enthalten Pack- und Regelversion sowie den Prüfsummenbezug. Prüfentscheidungen beziehen sich auf die konkreten Eingaben und die Regelversion. Ein Wechsel der Pack-Version übernimmt deshalb keine frühere Bestätigung stillschweigend.
