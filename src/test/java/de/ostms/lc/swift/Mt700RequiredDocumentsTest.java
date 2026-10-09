@@ -14,4 +14,9 @@ class Mt700RequiredDocumentsTest {
  @Test void doublePlusMarkersAreRemovedAndJoinWrappedLines(){
   assertThat(Mt700Parser.splitConditions("++SIGNED COMMERCIAL INVOICE IN 1 ORIGINAL INDICATING CONTRACT\nNO.: 1 AND L/C NO.\n++FULL SET OF ORIGINAL B/L\nTO ORDER")).containsExactly("SIGNED COMMERCIAL INVOICE IN 1 ORIGINAL INDICATING CONTRACT NO.: 1 AND L/C NO.","FULL SET OF ORIGINAL B/L TO ORDER");
  }
+ @Test void unmappableFieldsAreKeptAsAdditionalFields(){
+  var lc=new Mt700Parser().parse(":20:REF\n:40A:IRREVOCABLE\n:41D:ANY BANK\nBY NEGOTIATION\n:42C:180 DAYS AFTER INVOICE DATE\n:45A:GOODS\n:49:WITHOUT\n:71D:ALL CHARGES OUTSIDE ISSUING BANK FOR BENEFICIARY\n:78:SEND DOCS BY COURIER\n:32B:EUR1,\n");
+  assertThat(lc.getAdditionalFields()).containsEntry("40A - Form des Dokumentenakkreditivs","IRREVOCABLE").containsEntry("41D - Verfügbar bei / durch (Freitext)","ANY BANK\nBY NEGOTIATION").containsKey("71D - Gebühren").containsKey("78 - Anweisungen an die zahlende/akzeptierende Bank").containsKey("49 - Bestätigungsanweisung");
+  assertThat(lc.getAdditionalFields().keySet()).noneMatch(k->k.startsWith("45A")||k.startsWith("20")||k.startsWith("32B"));
+ }
 }
