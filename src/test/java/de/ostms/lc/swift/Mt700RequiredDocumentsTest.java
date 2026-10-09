@@ -11,4 +11,7 @@ class Mt700RequiredDocumentsTest {
   assertThat(Mt700Parser.splitConditions("COMMERCIAL INVOICE\nPACKING LIST")).containsExactly("COMMERCIAL INVOICE","PACKING LIST");
   assertThat(Mt700Parser.splitConditions("INTRO TEXT\n+INVOICE")).containsExactly("INTRO TEXT","INVOICE");
  }
+ @Test void doublePlusMarkersAreRemovedAndJoinWrappedLines(){
+  assertThat(Mt700Parser.splitConditions("++SIGNED COMMERCIAL INVOICE IN 1 ORIGINAL INDICATING CONTRACT\nNO.: 1 AND L/C NO.\n++FULL SET OF ORIGINAL B/L\nTO ORDER")).containsExactly("SIGNED COMMERCIAL INVOICE IN 1 ORIGINAL INDICATING CONTRACT NO.: 1 AND L/C NO.","FULL SET OF ORIGINAL B/L TO ORDER");
+ }
 }
