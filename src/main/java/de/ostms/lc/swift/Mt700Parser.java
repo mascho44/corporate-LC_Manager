@@ -11,7 +11,7 @@ import de.ostms.lc.lc.domain.LetterOfCredit; import org.springframework.stereoty
   lc.setApplicant(f.get("50")); lc.setBeneficiary(BeneficiaryReferenceResolver.resolve(f).value());
   if(f.containsKey("46A")) lc.setRequiredDocuments(splitConditions(f.get("46A"))); return lc;
  }
- private static final Pattern CONDITION_MARKER=Pattern.compile("^(?:[+*-]|\\(?\\d{1,2}[.)])\\s*");
+ private static final Pattern CONDITION_MARKER=Pattern.compile("^(?:[+*-]+|\\(?\\d{1,2}[.)])\\s*");
  /** SWIFT wraps lines at 65 characters: a line without "+", "-", "*" or "1." continues the previous condition. Without any marker every line stays its own condition. */
  public static Optional<String> requiredDocumentsField(String raw){
   if(raw==null)return Optional.empty();

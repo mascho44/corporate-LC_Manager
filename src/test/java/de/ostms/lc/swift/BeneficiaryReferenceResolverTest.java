@@ -29,4 +29,13 @@ class BeneficiaryReferenceResolverTest {
         assertThat(result.value()).isEqualTo("ACME\nBERLIN");
         assertThat(result.source()).isEqualTo("47A");
     }
+    @Test void acceptsShortReferencesAndMoreAddressLabels() {
+        for(String reference:new String[]{"KESSLER GMBH\nADD SEE 47A","KESSLER GMBH\nSEE FLD 47A","KESSLER GMBH\nPLEASE REFER TO 47A"}){
+            var result=BeneficiaryReferenceResolver.resolve(Map.of("59",reference,"47A","+BENEFICIARY'S FULL ADDRESS: KESSLER GMBH\nMUSTERWEG 1\n70173 STUTTGART\n+ALL DOCUMENTS IN ENGLISH"));
+            assertThat(result.resolved()).as(reference).isTrue();
+            assertThat(result.value()).isEqualTo("KESSLER GMBH\nMUSTERWEG 1\n70173 STUTTGART");
+        }
+        assertThat(BeneficiaryReferenceResolver.resolve(Map.of("59","X\nSEE 47A","47A","FULL ADDRESS OF THE BENEFICIARY - KESSLER GMBH\nMUSTERWEG 1")).value()).isEqualTo("KESSLER GMBH\nMUSTERWEG 1");
+        assertThat(BeneficiaryReferenceResolver.resolve(Map.of("59","X\nSEE 47A","47A","DOCUMENTS TO BE PRESENTED THROUGH BENEFICIARY'S BANKER WITHIN 21 DAYS")).resolved()).isFalse();
+    }
 }

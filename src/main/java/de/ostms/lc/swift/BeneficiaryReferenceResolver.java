@@ -5,8 +5,8 @@ import java.util.regex.Pattern;
 
 /** Resolves only explicit, uniquely labelled address blocks; never treats all conditions as an address. */
 public final class BeneficiaryReferenceResolver {
-    private static final Pattern REFERENCE = Pattern.compile("(?i)\\b(?:SEE|REFER TO|SIEHE)\\s+(?:FIELD|FELD)\\s*:?\\s*(\\d{2}[A-Z]?)\\b");
-    private static final Pattern HEADER = Pattern.compile("(?i)^\\s*(?:[+*-]|\\d+[.)])?\\s*(?:BENEFICIARY(?:'S)?(?:\\s+(?:NAME AND ADDRESS|ADDRESS|DETAILS))?|BEGÜNSTIGTER|BEGÜNSTIGTENADRESSE)\\s*:\\s*(.*)$");
+    private static final Pattern REFERENCE = Pattern.compile("(?i)\\b(?:SEE|REFER(?:\\s+TO)?|SIEHE|VIDE)\\s+(?:(?:FIELD|FLD|TAG|FELD)\\s*:?\\s*)?(\\d{2}[A-Z]?)\\b");
+    private static final Pattern HEADER = Pattern.compile("(?i)^\\s*(?:[+*-]|\\d+[.)])?\\s*(?:(?:FULL\\s+)?(?:ADDRESS|NAME(?:\\s+AND\\s+ADDRESS)?)\\s+OF\\s+(?:THE\\s+)?BENEFICIARY|BENEFICIARY(?:'S)?(?:\\s+FULL)?(?:\\s+(?:NAME(?:\\s*(?:AND|&|/)\\s*ADDRESS)?|ADDRESS|DETAILS))?|BEGÜNSTIGTER|BEGÜNSTIGTENADRESSE)\\s*[:\\-]\\s*(.*)$");
 
     private BeneficiaryReferenceResolver() {}
 
