@@ -16,3 +16,4 @@ input:not([type=checkbox]):not([type=radio]):not([type=file]):focus,select:focus
 dialog{border:0;border-radius:16px;box-shadow:0 24px 80px #0a142859}
 dialog::backdrop{background:#0f172a8f}
 .empty{color:#7a869e}
+.form-grid>h3.wide{grid-column:1/-1;margin:8px 0 0}

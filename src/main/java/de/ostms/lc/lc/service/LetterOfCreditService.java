@@ -114,6 +114,19 @@ public class LetterOfCreditService {
         } else lc.setWaitingSince(null);
         if (request.requiredDocuments() != null)
             lc.setRequiredDocuments(request.requiredDocuments().stream().map(this::clean).filter(java.util.Objects::nonNull).toList());
+        // Absent (null) keeps the stored value; an empty string clears it.
+        if (request.sequenceOfTotal() != null) lc.setSequenceOfTotal(request.sequenceOfTotal());
+        if (request.formOfCredit() != null) lc.setFormOfCredit(request.formOfCredit());
+        if (request.availableWith() != null) lc.setAvailableWith(request.availableWith());
+        if (request.draweeBank() != null) lc.setDraweeBank(request.draweeBank());
+        if (request.draftsAt() != null) lc.setDraftsAt(request.draftsAt());
+        if (request.mixedPaymentDetails() != null) lc.setMixedPaymentDetails(request.mixedPaymentDetails());
+        if (request.deferredPaymentDetails() != null) lc.setDeferredPaymentDetails(request.deferredPaymentDetails());
+        if (request.confirmationInstructions() != null) lc.setConfirmationInstructions(request.confirmationInstructions());
+        if (request.reimbursingBank() != null) lc.setReimbursingBank(request.reimbursingBank());
+        if (request.confirmationParty() != null) lc.setConfirmationParty(request.confirmationParty());
+        if (request.charges() != null) lc.setCharges(request.charges());
+        if (request.bankInstructions() != null) lc.setBankInstructions(request.bankInstructions());
         if (request.additionalFields() != null) {
             LinkedHashMap<String,String> additional = new LinkedHashMap<>();
             request.additionalFields().forEach((key,value) -> {

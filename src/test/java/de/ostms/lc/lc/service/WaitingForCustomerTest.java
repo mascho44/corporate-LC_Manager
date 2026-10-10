@@ -13,7 +13,7 @@ import static org.mockito.Mockito.*;
 
 class WaitingForCustomerTest {
  private LetterOfCreditUpdateRequest request(LetterOfCreditStatus status,LocalDate followUp){
-  return new LetterOfCreditUpdateRequest(null,null,"REF",null,null,null,null,null,null,null,null,null,null,null,null,null,followUp,status,null,null);
+  return new LetterOfCreditUpdateRequest(null,null,"REF",null,null,null,null,null,null,null,null,null,null,null,null,null,followUp,status,null,null,null,null,null,null,null,null,null,null,null,null,null,null);
  }
  @Test void enteringWaitingStampsDateAndDefaultsFollowUpLeavingTheStateClearsIt(){
   var repo=mock(LetterOfCreditRepository.class);var lc=new LetterOfCredit();lc.setStatus(LetterOfCreditStatus.ACTIVE);
@@ -26,5 +26,14 @@ class WaitingForCustomerTest {
   assertThat(lc.getWaitingSince()).isEqualTo(stamp);assertThat(lc.getFollowUpDate()).isEqualTo(LocalDate.now().plusDays(3));
   service.update(id,request(LetterOfCreditStatus.ACTIVE,null));
   assertThat(lc.getWaitingSince()).isNull();
+ }
+ @Test void swiftTermsCanBeEditedKeptWhenAbsentAndClearedWhenEmpty(){
+  var repo=mock(LetterOfCreditRepository.class);var lc=new LetterOfCredit();lc.setStatus(LetterOfCreditStatus.ACTIVE);lc.setCharges("OLD");lc.setFormOfCredit("IRREVOCABLE");
+  when(repo.findById(any())).thenReturn(Optional.of(lc));when(repo.existsByReferenceAndIdNot(any(),any())).thenReturn(false);
+  var service=new LetterOfCreditService(repo,null,null);var id=UUID.randomUUID();
+  service.update(id,new LetterOfCreditUpdateRequest(null,null,"REF",null,null,null,null,null,null,null,null,null,null,null,null,null,null,LetterOfCreditStatus.ACTIVE,null,null,null,null,null,null,null,null,null,null,null,null,"NEW CHARGES",null));
+  assertThat(lc.getCharges()).isEqualTo("NEW CHARGES");assertThat(lc.getFormOfCredit()).isEqualTo("IRREVOCABLE");
+  service.update(id,new LetterOfCreditUpdateRequest(null,null,"REF",null,null,null,null,null,null,null,null,null,null,null,null,null,null,LetterOfCreditStatus.ACTIVE,null,null,null,"",null,null,null,null,null,null,null,null,null,null));
+  assertThat(lc.getFormOfCredit()).isNull();assertThat(lc.getCharges()).isEqualTo("NEW CHARGES");
  }
 }
