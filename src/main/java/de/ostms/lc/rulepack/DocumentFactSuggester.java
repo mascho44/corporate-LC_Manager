@@ -16,6 +16,10 @@ public class DocumentFactSuggester {
  private static final Pattern ON_BOARD=Pattern.compile("(?i)\\bon\\s+board\\b");
  private static final Pattern ORIGINALS=Pattern.compile("(?i)(?:number\\s+of\\s+(?:original\\s+)?(?:bills?\\s+of\\s+lading|b/?l|originals?)|no\\.?\\s+of\\s+originals?)\\s{0,3}[:\\-]?\\s{0,3}(?:(one|two|three|four|[1-4])\\b)");
  private static final Pattern ORIGINALS_WORD=Pattern.compile("(?i)\\b(one|two|three|four)\\s{0,2}(?:\\(\\s?[1-4]\\s?\\)\\s{0,2})?(?:\\(?original|originals\\b)");
+ private static final Pattern FREIGHT=Pattern.compile("(?i)\\bfreight\\s+(prepaid|paid|collect|payable\\s+at\\s+destination)\\b");
+ private static final Pattern INCOTERM=Pattern.compile("\\b(EXW|FCA|FAS|FOB|CFR|CIF|CPT|CIP|DAP|DPU|DDP)\\b");
+ private static final Pattern INSURED=Pattern.compile("(?i)(?:sum\\s+insured|insured\\s+amount|amount\\s+insured)\\b[^\\d\\n]{0,15}?([A-Z]{3})\\s{0,2}([\\d.,]+\\d)");
+ private static final Pattern RISKS=Pattern.compile("(?i)(INSTITUTE\\s+CARGO\\s+CLAUSES?\\s*\\(?\\s*[ABC]\\s*\\)?|\\bICC\\s*\\(?\\s*[ABC]\\s*\\)?|ALL\\s+RISKS|INSTITUTE\\s+WAR\\s+CLAUSES|INSTITUTE\\s+STRIKES\\s+CLAUSES)");
  private final SignatureEvidenceService signatures;
  public DocumentFactSuggester(SignatureEvidenceService s){signatures=s;}
 
@@ -57,6 +61,29 @@ public class DocumentFactSuggester {
     if(w[1]!=null&&out.stream().noneMatch(x->x.field()==Field.DOCUMENT_WEIGHT_UNIT))add(out,current,Field.DOCUMENT_WEIGHT_UNIT,w[1],"Gewichtseinheit im Text erkannt");
    });
   }
+  if(transport){
+   labelled(text,"(?:ocean\\s+)?vessel(?:\\s+(?:and|/)\\s+voyage(?:\\s+no\\.?)?)?").ifPresent(v->add(out,current,Field.DOCUMENT_VESSEL,v,"Schiff im Text erkannt"));
+   labelled(text,"place\\s+of\\s+receipt").ifPresent(v->add(out,current,Field.DOCUMENT_PLACE_OF_RECEIPT,v,"Übernahmeort im Text erkannt"));
+   labelled(text,"(?:place\\s+of\\s+(?:delivery|final\\s+destination)|final\\s+destination)").ifPresent(v->add(out,current,Field.DOCUMENT_PLACE_OF_FINAL_DESTINATION,v,"Zielort im Text erkannt"));
+   if(doc.getDocumentType()==DocumentType.AIR_WAYBILL){
+    labelled(text,"airport\\s+of\\s+departure").ifPresent(v->add(out,current,Field.DOCUMENT_DEPARTURE_AIRPORT,v,"Abflughafen im Text erkannt"));
+    labelled(text,"airport\\s+of\\s+destination").ifPresent(v->add(out,current,Field.DOCUMENT_DESTINATION_AIRPORT,v,"Zielflughafen im Text erkannt"));
+   }
+   var freight=FREIGHT.matcher(text);var terms=new LinkedHashSet<String>();
+   while(freight.find())terms.add(freight.group(1).toLowerCase(Locale.ROOT).startsWith("pre")||freight.group(1).toLowerCase(Locale.ROOT).equals("paid")?"PREPAID":"COLLECT");
+   if(terms.size()==1){String t=terms.iterator().next();add(out,current,Field.DOCUMENT_FREIGHT_TERMS,t,"Frachtvermerk im Text erkannt");add(out,current,Field.DOCUMENT_FREIGHT_PREPAID,String.valueOf(t.equals("PREPAID")),"Frachtvermerk im Text erkannt");}
+  }
+  var incoterms=new LinkedHashSet<String>();var inc=INCOTERM.matcher(text.toUpperCase(Locale.ROOT));while(inc.find())incoterms.add(inc.group(1));
+  if(incoterms.size()==1&&doc.getDocumentType()!=DocumentType.BILL_OF_LADING){add(out,current,Field.DOCUMENT_INCOTERM,incoterms.iterator().next(),"Handelsklausel im Text erkannt");add(out,current,Field.DOCUMENT_INCOTERM_SOURCE,"Dokumenttext","Handelsklausel im Text erkannt");}
+  labelled(text,"(?:country\\s+of\\s+origin|origin)").flatMap(CountryResolver::resolve).ifPresent(v->add(out,current,Field.DOCUMENT_ORIGIN_COUNTRY,v,"Ursprungsland im Text erkannt"));
+  if(doc.getDocumentType()==DocumentType.INSURANCE_CERTIFICATE){
+   var amount=INSURED.matcher(text);var amounts=new LinkedHashSet<String>();String currency=null;
+   while(amount.find()){String n=normalizeNumber(amount.group(2));if(n!=null){amounts.add(n);currency=amount.group(1).toUpperCase(Locale.ROOT);}}
+   if(amounts.size()==1){add(out,current,Field.DOCUMENT_INSURED_AMOUNT,amounts.iterator().next(),"Versicherungssumme im Text erkannt");add(out,current,Field.DOCUMENT_INSURANCE_CURRENCY,currency,"Versicherungswährung im Text erkannt");}
+   var risks=new LinkedHashSet<String>();var r=RISKS.matcher(text);while(r.find())risks.add(r.group(1).replaceAll("\\s+"," ").trim().toUpperCase(Locale.ROOT));
+   if(!risks.isEmpty())add(out,current,Field.DOCUMENT_INSURANCE_RISKS,String.join("; ",risks),"Versicherungsrisiken im Text erkannt");
+  }
+  DocumentIndicators.detect(doc.getDocumentType(),text).forEach(h->add(out,current,h.field(),"true",h.source()));
   var parties=DocumentPartyFacts.detect(text);
   if(parties.applicantCountry()!=null)add(out,current,Field.DOCUMENT_APPLICANT_ADDRESS_COUNTRY,parties.applicantCountry(),"Land der Auftraggeber-Adresse im Text erkannt: "+parties.applicantSource());
   if(parties.beneficiaryCountry()!=null)add(out,current,Field.DOCUMENT_BENEFICIARY_ADDRESS_COUNTRY,parties.beneficiaryCountry(),"Land der Begünstigten-Adresse im Text erkannt: "+parties.beneficiarySource());

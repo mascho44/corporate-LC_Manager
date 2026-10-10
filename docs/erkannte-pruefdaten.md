@@ -20,3 +20,17 @@ LCM schlägt Prüfdaten aus dem erkannten Text (OCR) vor. **Nichts wird ohne Bes
 ## Grenzen
 Bei zweispaltigen Layouts (Käufer und Verkäufer nebeneinander) kann die OCR die Spalten mischen; dann fehlt der Vorschlag oder er ist falsch. Deshalb nur als Vorschlag mit Quelle.
 Die Länder werden als Text verglichen: Wer Länder von Hand einträgt, sollte denselben (englischen) Namen verwenden.
+
+## Erweiterung: Akkreditivfakten aus MT700 und Dokument-Vermerke
+
+**Akkreditiv (`Mt700Facts`)** – aus den strukturierten Feldern der SWIFT-Nachricht, jeweils mit Fundstelle als Quelle:
+`:40E:` Regelstandard, `:39A:`/`:39B:` Toleranz, `:42A:` Bezogener, `:42C:` Tratten-Laufzeit und -Basis (auch „at sight“),
+`:43P:`/`:43T:` Teilverladung/Umladung, `:44A:`/`:44B:`/`:44E:`/`:44F:` Orte und Häfen (Flughäfen nur, wenn ausschließlich ein Air Waybill gefordert ist),
+`:45A:` Warenbeschreibung und eindeutiger Incoterm, `:46A:`/`:47A:` Versicherungsprozent, Risiken, Frachtbedingung, On-Board-Vermerk, `:48:` Vorlagefrist.
+Mehrdeutige Angaben (z. B. mehrere Incoterms, ungleiche Toleranzen) werden nicht oder nur mit Hinweis vorgeschlagen.
+
+**Dokumente (`DocumentFactSuggester`)** – Schiff, Übernahme-/Zielort, Flughäfen (Air Waybill), Frachtvermerk (prepaid/collect), Incoterm (nicht auf Konnossementen),
+Ursprungsland (nur wenn als Land erkannt) sowie beim Versicherungszertifikat Versicherungssumme, Währung und Risiken.
+
+**Vermerke (`DocumentIndicators`)** – die `*_INDICATED`/`*_PRESENT`-Fakten (Umladung, Charter Party, On Deck, To Order, Container, Agent, Rabatt, Prämie bezahlt, Franchise, Indossament u. a.)
+werden nur bei **gefundenem** Textmuster als „true“ vorgeschlagen; ein fehlender Text beweist nichts und erzeugt keinen Vorschlag. Alle Vorschläge werden erst nach Bestätigung gespeichert.
