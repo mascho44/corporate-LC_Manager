@@ -40,3 +40,8 @@
 .split-dissolve-confirm{grid-column:1/-1;background:#fff4d6;border:2px solid #9a6700;padding:16px;border-radius:10px;color:#172b4d}
 .inbox-pdf-nav{display:flex;align-items:center;gap:12px;margin-top:12px}
 .inbox-assignment-preview .inbox-pdf-pages img{width:100%;max-height:75vh;object-fit:contain;background:#fff;border:1px solid #dce5f2;border-radius:8px}
+.split-thumbnail img:not([src]){background:linear-gradient(100deg,#eef1f6 30%,#f8fafc 50%,#eef1f6 70%);background-size:200% 100%;animation:thumb-shimmer 1.2s linear infinite;border:0;color:transparent}
+@keyframes thumb-shimmer{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.split-thumbnail img:not([src]){animation:none}}
+.thumb-loupe{position:fixed;z-index:2000;border:2px solid #1f4ed8;border-radius:12px;background-color:#fff;background-repeat:no-repeat;box-shadow:0 10px 30px rgba(15,23,42,.35);pointer-events:none}
+.thumb-loupe[hidden]{display:none}

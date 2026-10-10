@@ -28,11 +28,26 @@ public class PdfPagePreviewService {
  public int pageCount(byte[] content)throws Exception{
   try(var slot=PdfProcessingSafety.acquire();var pdf=Loader.loadPDF(content)){PdfProcessingSafety.validate(pdf);return pdf.getNumberOfPages();}
  }
+ /** Thumbnails are shown up to ~360 px wide; 720 px keeps them sharp on high-resolution screens. */
+ static final int THUMBNAIL_PX=720,ENLARGED_PX=1400;
+ private final PreviewCache cache=new PreviewCache(64L*1024*1024);
+ static String cacheKey(byte[] content,int page,int max){
+  try{return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(content))+":"+page+":"+max;}
+  catch(java.security.NoSuchAlgorithmException impossible){throw new IllegalStateException(impossible);}
+ }
  public byte[] render(byte[] content,int page,boolean enlarged)throws Exception{
+  String key=cacheKey(content,page,enlarged?ENLARGED_PX:THUMBNAIL_PX);
+  byte[] hit=cache.get(key);
+  if(hit!=null)return hit;
+  byte[] rendered=renderUncached(content,page,enlarged);
+  cache.put(key,rendered);
+  return rendered;
+ }
+ private byte[] renderUncached(byte[] content,int page,boolean enlarged)throws Exception{
   try(var slot=PdfProcessingSafety.acquire();var pdf=Loader.loadPDF(content)){
    PdfProcessingSafety.validate(pdf);
    if(page<1||page>pdf.getNumberOfPages())throw new IllegalArgumentException("PDF-Seite nicht vorhanden.");
-   int max=enlarged?1400:560;
+   int max=enlarged?ENLARGED_PX:THUMBNAIL_PX;
    // Poppler also decodes JPEG2000 scans without an optional Java image reader.
    var directory=Files.createTempDirectory("lc-page-preview-");
    var source=directory.resolve("source.pdf");
