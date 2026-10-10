@@ -19,7 +19,7 @@ async function openFindingEvidence(button){
         const pdfPages=dialog.querySelector('[data-pdf-pages]');
         const cropKind=/SIGNATURE/.test(finding.code)?'signature':/ORIGINAL|COPY|STAMP/.test(finding.code)?'stamp':/DATE/.test(finding.code)?'date':null;
         if(cropKind&&view.documentId&&view.contentType==='application/pdf'&&pdfPages)showFindingCrop(dialog,pdfPages,lcId,view.documentId,cropKind);
-        if(view.documentId&&view.contentType==='application/pdf'&&pdfPages)await renderFindingPdf(dialog,pdfPages,view.documentId,page||1);
+        if(view.documentId&&view.contentType==='application/pdf'&&pdfPages)await renderFindingPdf(dialog,pdfPages,view.documentId,page||1,location.status==='MATCH'||location.status==='AMBIGUOUS'?location.pages:[]);
     }catch(error){dialog.innerHTML=`<p class="error">${esc(error.message)}</p><button type="button">Schließen</button>`;dialog.querySelector('button').onclick=()=>dialog.close();}
 }
 async function showFindingCrop(dialog,container,lcId,documentId,kind){
@@ -34,11 +34,39 @@ async function showFindingCrop(dialog,container,lcId,documentId,kind){
         figure.append(image,caption);container.before(figure);
     }catch(ignored){}
 }
-async function renderFindingPdf(dialog,container,documentId,initialPage){
-    container.innerHTML='<div class="evidence-page-toolbar"><button type="button" data-prev disabled aria-label="Vorherige Seite">←</button><span data-page></span><button type="button" data-next disabled aria-label="Nächste Seite">→</button><button type="button" data-zoom>Vergrößern</button><button type="button" data-retry>Neu laden</button></div><p data-status role="status"></p><div class="evidence-document-viewport"><img alt="PDF-Seite" hidden></div>';
+async function renderFindingPdf(dialog,container,documentId,initialPage,markedPages=[]){
+    container.innerHTML='<div class="evidence-page-toolbar"><button type="button" data-prev disabled aria-label="Vorherige Seite">←</button><span data-page></span><button type="button" data-next disabled aria-label="Nächste Seite">→</button><button type="button" data-zoom>Vergrößern</button><button type="button" data-retry>Neu laden</button></div><p data-status role="status"></p><div class="evidence-viewer"><nav class="evidence-pages" aria-label="Seiten" hidden></nav><div class="evidence-document-viewport"><img alt="PDF-Seite" hidden></div></div>';
     const image=container.querySelector('img'),status=container.querySelector('[data-status]'),previous=container.querySelector('[data-prev]'),next=container.querySelector('[data-next]'),retry=container.querySelector('[data-retry]'),pageLabel=container.querySelector('[data-page]');
     const abort=new AbortController();let imageUrl=null,selectedPage=initialPage,pageCount=null,version=0,loading=false;
-    const oldClose=dialog.onclose;dialog.onclose=()=>{abort.abort();if(imageUrl)URL.revokeObjectURL(imageUrl);oldClose?.();};
+    const sidebar=container.querySelector('.evidence-pages');let sidebarBuilt=false;
+    const keyHandler=event=>{
+        if(!dialog.open||event.altKey||event.ctrlKey||event.metaKey||/^(INPUT|TEXTAREA|SELECT)$/.test(event.target?.tagName||''))return;
+        const step={ArrowLeft:-1,PageUp:-1,ArrowRight:1,PageDown:1}[event.key];
+        const target=step?selectedPage+step:event.key==='Home'?1:event.key==='End'&&pageCount?pageCount:null;
+        if(target==null||loading||target<1||(pageCount&&target>pageCount)||target===selectedPage)return;
+        event.preventDefault();return loadPage(target);
+    };
+    dialog.addEventListener?.('keydown',keyHandler);
+    const oldClose=dialog.onclose;dialog.onclose=()=>{abort.abort();dialog.removeEventListener?.('keydown',keyHandler);if(imageUrl)URL.revokeObjectURL(imageUrl);oldClose?.();};
+    const marked=new Set(markedPages);
+    function buildSidebar(){
+        if(!sidebar||sidebarBuilt||!pageCount||pageCount<2||typeof document==='undefined')return;
+        sidebarBuilt=true;sidebar.hidden=false;
+        const lazy=typeof IntersectionObserver==='function'?new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){lazy.unobserve(entry.target);entry.target.src=entry.target.dataset.src;}}),{root:sidebar,rootMargin:'200px'}):null;
+        for(let n=1;n<=Math.min(pageCount,100);n++){
+            const button=document.createElement('button');button.type='button';button.className='evidence-page-thumb';button.dataset.page=n;
+            button.setAttribute('aria-label',`Seite ${n}${marked.has(n)?' – hier liegt der Befund':''}`);
+            if(marked.has(n)){button.classList.add('has-finding');button.title='Hier liegt der Befund';}
+            const img=document.createElement('img');img.alt='';img.decoding='async';img.dataset.src=`/api/documents/${encodeURIComponent(documentId)}/pages/${n}/preview?size=thumb`;
+            const label=document.createElement('span');label.textContent=String(n);
+            button.append(img,label);button.onclick=()=>(!loading&&n!==selectedPage)?loadPage(n):undefined;sidebar.append(button);
+            if(lazy)lazy.observe(img);else img.src=img.dataset.src;
+        }
+    }
+    function markSelected(){
+        if(!sidebar||!sidebarBuilt)return;
+        sidebar.querySelectorAll('.evidence-page-thumb').forEach(button=>{const on=Number(button.dataset.page)===selectedPage;button.classList.toggle('selected',on);button.setAttribute('aria-current',on?'page':'false');if(on)button.scrollIntoView?.({block:'nearest'});});
+    }
     const controls=()=>{previous.disabled=loading||selectedPage<=1;next.disabled=loading||pageCount==null||selectedPage>=pageCount;retry.disabled=loading;pageLabel.textContent=`Seite ${selectedPage}${pageCount?' / '+pageCount:''}`;};
     async function loadPage(number){
         const request=++version;selectedPage=number;loading=true;controls();image.hidden=true;status.textContent=`Seite ${number} wird geladen …`;
@@ -52,7 +80,7 @@ async function renderFindingPdf(dialog,container,documentId,initialPage){
             image.onerror=()=>{if(request===version&&dialog.open)status.textContent='Seitenbild konnte nicht angezeigt werden. Bitte neu laden oder das Original separat öffnen.';};
             image.alt=`PDF-Seite ${number}`;image.src=imageUrl;
         }catch(error){if(request===version&&!abort.signal.aborted)status.textContent=error.message;}
-        finally{if(request===version){loading=false;controls();}}
+        finally{if(request===version){loading=false;controls();buildSidebar();markSelected();}}
     }
     previous.onclick=()=>loadPage(selectedPage-1);next.onclick=()=>loadPage(selectedPage+1);retry.onclick=()=>loadPage(selectedPage);
     container.querySelector('[data-zoom]').onclick=event=>{const zoomed=image.classList.toggle('zoomed');event.target.textContent=zoomed?'Einpassen':'Vergrößern';};

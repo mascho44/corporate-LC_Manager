@@ -26,6 +26,7 @@ public class DocumentService {
     private final LcDocumentRepository documents;
     private final LetterOfCreditRepository lcs;
     private final DocumentExtractionService extraction;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private PdfPagePreviewService previews;
 
     public DocumentService(LcDocumentRepository documents, LetterOfCreditRepository lcs,
             DocumentExtractionService extraction) {
@@ -63,6 +64,7 @@ public class DocumentService {
         if (document.getAmount() == null) document.setAmount(document.getExtractedAmount());
         if (document.getCurrency() == null) document.setCurrency(document.getExtractedCurrency());
         var savedDocument = documents.save(document);
+        if(previews!=null)previews.prewarm(document.getContent(),document.getContentType());
         if (lc.releaseWaitingForCustomer()) lcs.save(lc);
         return DocumentView.from(savedDocument);
     }
