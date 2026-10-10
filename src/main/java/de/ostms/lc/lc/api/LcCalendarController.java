@@ -18,4 +18,10 @@ public class LcCalendarController {
         audit.record(authentication,"CALENDAR_EXPORTED","CALENDAR",null,"Umfang: "+scope);
         return ResponseEntity.ok().contentType(MediaType.parseMediaType("text/calendar;charset=UTF-8")).header(HttpHeaders.CONTENT_DISPOSITION,"attachment; filename=LC-Fristen.ics").contentLength(content.length).body(content);
     }
+    @GetMapping("/api/calendar/events")
+    public java.util.List<LcCalendarService.CalendarEvent> events(@RequestParam(defaultValue="all") String scope,@RequestParam java.time.LocalDate from,@RequestParam java.time.LocalDate to,Authentication authentication){
+        if(!scope.equals("all")&&!scope.equals("mine")&&!scope.equals("unassigned"))throw new IllegalArgumentException("Unbekannter Kalenderumfang.");
+        if(to.isBefore(from)||java.time.temporal.ChronoUnit.DAYS.between(from,to)>400)throw new IllegalArgumentException("Ungültiger Zeitraum.");
+        return calendar.events(scope,authentication.getName(),from,to);
+    }
 }

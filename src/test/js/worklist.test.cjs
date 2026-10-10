@@ -20,5 +20,5 @@ test('start page loads the worklist and its styles, and the cockpit page include
  const html=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/index.html'),'utf8');
  assert.match(html,/worklist\.js/);assert.match(html,/worklist\.css/);
  const app=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/app.js'),'utf8');
- assert.match(app,/cockpit:\['cockpitSection','todaySection'/);assert.match(app,/pageSections=\['platformSection','tenantSection','ebicsSection','groupInboxSection','profileSection','menuOverviewSection','cockpitSection','todaySection'/);
+ assert.match(app,/cockpit:\['cockpitSection','todaySection'/);assert.match(app,/pageSections=\['platformSection','tenantSection','ebicsSection','groupInboxSection','deadlineCalendarSection','profileSection','menuOverviewSection','cockpitSection','todaySection'/);
 });
