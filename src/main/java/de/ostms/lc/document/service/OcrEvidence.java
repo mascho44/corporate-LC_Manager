@@ -55,6 +55,9 @@ public record OcrEvidence(String engineVersion,String method,int dpi,double thre
  }
  /** Assesses all values of one message in document order: each search starts behind the previous field, so repeated values are no longer ambiguous and lines the normaliser dropped no longer break the match. */
  public List<Assessment> assessAll(List<String> values,double threshold){
+  if("PDF_TEXT_POSITIONS".equals(method)){// digital text layer: nothing was recognised, so there is no OCR quality to measure or to doubt
+   return values.stream().map(v->new Assessment(null,null,"NOT_APPLICABLE",method,engineVersion,threshold,v,List.<Word>of())).toList();
+  }
   var out=new ArrayList<Assessment>(values.size());int cursor=0;
   for(String value:values){
    var found=locate(value,threshold,cursor);
