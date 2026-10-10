@@ -23,7 +23,7 @@ import de.ostms.lc.user.service.AppUserDetailsService; import jakarta.servlet.ht
    .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/teams/mine","/api/tasks/inbox").authenticated()
    .requestMatchers("/api/teams","/api/teams/**").hasAuthority("PERM_USER_MANAGE")
    .requestMatchers("/api/automation-rules").hasAuthority("PERM_USER_MANAGE")
-   .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/lcs/*/workflows","/api/workflows/*/cancel").hasAuthority("PERM_LC_EDIT")
+   .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/lcs/*/workflows","/api/workflows/*/cancel","/api/lcs/*/amendments/*/accept","/api/lcs/*/amendments/*/reject").hasAuthority("PERM_LC_EDIT")
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/tasks/*/claim","/api/tasks/*/release","/api/tasks/*/complete").hasAuthority("PERM_LC_EDIT")
    .requestMatchers("/api/ebics/**").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/scan-profile").hasAuthority("PERM_SETTINGS_MANAGE")

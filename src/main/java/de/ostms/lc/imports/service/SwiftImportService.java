@@ -161,8 +161,9 @@ public class SwiftImportService {
             if (type.equals("MT760")) return previewMt760(raw, fields, errors, warnings);
             if (type.equals("MT707")) {
                 var p=mt707.parse(raw); Amendment a=p.amendment();
-                Optional<LetterOfCredit> lc=lcs.findByReference(p.lcReference());
-                if(lc.isEmpty()) errors.add("Kein Original-Akkreditiv mit dieser Referenz gefunden.");
+                Optional<LetterOfCredit> lc=amendmentService.findTarget(p);
+                if(lc.isEmpty()) errors.add("Kein Original-Akkreditiv mit dieser Referenz gefunden (geprüft: "+String.join(", ",p.references())+").");
+                else warnings.add("Die Änderung wird als „offen“ gespeichert und wirkt erst, wenn sie angenommen wird.");
                 if(a.getAmendmentNumber()==null||a.getAmendmentNumber().isBlank()) errors.add("Pflichtfeld :26E: (Amendment-Nummer) fehlt.");
                 boolean duplicate=lc.isPresent()&&a.getAmendmentNumber()!=null&&amendments.existsByLetterOfCreditIdAndAmendmentNumber(lc.get().getId(),a.getAmendmentNumber());
                 if(duplicate) errors.add("Dieses Amendment wurde bereits importiert.");

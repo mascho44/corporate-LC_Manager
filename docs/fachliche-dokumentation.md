@@ -216,3 +216,15 @@ zugeordnet, deren Referenz in `:21:` (sonst `:20:`) steht. Ohne Treffer bleibt d
 einer Akte zugeordnet werden. Die Mitteilungen erscheinen in der Akte unter „Bankmitteilungen“. Identische Nachrichten werden nicht doppelt importiert.
 
 Beide Typen laufen über den bestehenden SWIFT-Import (Vorschau, dann Import) und, falls die Bank sie liefert, über den EBICS-Abruf.
+
+## Änderungen (MT707): Zustimmung und Zuordnung
+- **Zuordnung:** Die Akte wird über die Referenz in `:21:`, `:23:` oder `:20:` gefunden (in dieser Reihenfolge; die Bank schreibt die Akkreditivnummer je nach Haus in eines der Felder).
+  Passen die Referenzen zu **mehreren** Akten, wird nichts importiert; ohne Treffer nennt die Meldung die geprüften Referenzen.
+- **Status:** Eine importierte Änderung ist zunächst **offen** und ändert die Akte **nicht**. Erst **„Änderung annehmen“** (Recht `LC_EDIT`) übernimmt sie in die gültige Fassung
+  (mit Vorher-/Nachher-Zustand, Audit `AMENDMENT_ACCEPTED`, Prüfentscheidungen der Akte werden zurückgesetzt). **„Ablehnen“** lässt die Akte unverändert (`AMENDMENT_REJECTED`).
+  Bisher importierte Änderungen gelten als angenommen.
+- **Reihenfolge:** Eine Änderung kann erst angenommen werden, wenn alle Änderungen mit kleinerer Nummer entschieden sind.
+- **Prüfung:** Offene Änderungen erzeugen den Hinweis „Änderung Nr. … liegt vor, ist aber noch nicht angenommen“; geprüft wird gegen die geltende Fassung.
+- **Übernommene Felder:** Ablauf (31E), spätester Versand (44C), Betrag (32B/33B), Dokumente (46B), Waren (45B), Zusatzbedingungen (47B); zusätzlich **Begünstigter (59)** und alle weiteren Felder
+  (z. B. Toleranz 39A, Häfen 44E/44F, Teilverladung 43P) als geänderte Werte in den weiteren Angaben der Akte.
+- Nicht unterstützt: Änderungen an Garantien (MT767) und von Hand erfasste Änderungen.

@@ -44,11 +44,20 @@ class DocumentCheckServiceTest {
 
     @Test void identifiesEffectiveLcVersionIncludingAmendments(){
         UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-VERSION");lc.setCurrency("EUR");lc.setAmount(new BigDecimal("1250"));lc.setExpiryDate(LocalDate.of(2026,12,31));lc.setRequiredDocuments(List.of());
-        Amendment amendment=new Amendment();amendment.setAmendmentNumber("2");amendment.setAmendmentDate(LocalDate.of(2026,9,28));
+        Amendment amendment=new Amendment();amendment.setStatus("ACCEPTED");amendment.setAmendmentNumber("2");amendment.setAmendmentDate(LocalDate.of(2026,9,28));
         var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);var decisions=mock(DocumentCheckDecisionRepository.class);var mappings=mock(de.ostms.lc.check.repository.LcRequirementMappingRepository.class);var amendments=mock(AmendmentRepository.class);
         when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of());when(decisions.findByLcId(id)).thenReturn(List.of());when(amendments.findByLetterOfCreditIdOrderByImportedAtDesc(null)).thenReturn(List.of(amendment));
         var result=new DocumentCheckService(lcs,docs,decisions,mappings,amendments).check(id);
         assertThat(result.results()).filteredOn(item->item.code().equals("LC_EFFECTIVE_VERSION")).singleElement().satisfies(item->{assertThat(item.message()).contains("MT707");assertThat(item.lcCondition()).contains("2","2026-09-28");assertThat(item.documentEvidence()).contains("EUR 1250","2026-12-31");});
+    }
+    @Test void pendingAmendmentsAreReportedAndDoNotChangeTheEffectiveVersion(){
+        UUID id=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();lc.setReference("LC-PENDING");lc.setCurrency("EUR");lc.setAmount(new BigDecimal("1000"));lc.setRequiredDocuments(List.of());
+        Amendment open=new Amendment();open.setAmendmentNumber("3");Amendment done=new Amendment();done.setStatus("ACCEPTED");done.setAmendmentNumber("2");Amendment rejected=new Amendment();rejected.setStatus("REJECTED");rejected.setAmendmentNumber("1");
+        var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);var decisions=mock(DocumentCheckDecisionRepository.class);var mappings=mock(de.ostms.lc.check.repository.LcRequirementMappingRepository.class);var amendments=mock(AmendmentRepository.class);
+        when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of());when(decisions.findByLcId(id)).thenReturn(List.of());when(amendments.findByLetterOfCreditIdOrderByImportedAtDesc(null)).thenReturn(List.of(open,done,rejected));
+        var result=new DocumentCheckService(lcs,docs,decisions,mappings,amendments).check(id);
+        assertThat(result.results()).filteredOn(item->item.code().equals("LC_EFFECTIVE_VERSION")).singleElement().satisfies(item->assertThat(item.message()).contains("1 übernommener MT707-Änderung"));
+        assertThat(result.results()).filteredOn(item->item.code().equals("LC_AMENDMENT_PENDING")).singleElement().satisfies(item->{assertThat(item.severity()).isEqualTo(de.ostms.lc.check.api.CheckResult.Severity.WARNING);assertThat(item.message()).contains("Nr. 3").contains("noch nicht angenommen");});
     }
     @Test void invalidatesDecisionsWithoutPrimitiveDeleteResult() {
         UUID id=UUID.randomUUID();var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);var decisions=mock(DocumentCheckDecisionRepository.class);when(decisions.findByLcId(id)).thenReturn(List.of(new DocumentCheckDecision(),new DocumentCheckDecision()));

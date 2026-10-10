@@ -83,11 +83,8 @@ public class EbicsMessageService {
   m.handle("IMPORTED",auth==null?"unbekannt":auth.getName(),"Importiert");messages.save(m);
   if(autoTasks!=null)autoTasks.closeFor(de.ostms.lc.lc.service.AutoTaskService.EBICS_MESSAGE,m.getId(),actor(auth));
   audit.recordInTransaction(auth,"EBICS_MESSAGE_IMPORTED","EBICS_MESSAGE",m.getId(),m.getMessageType()+" · "+reference(m.getContent()));
-  if(result instanceof Amendment amendment){
-   var lc=amendment.getLetterOfCredit();long reset=checks.invalidateDecisions(lc.getId());
-   audit.recordInTransaction(auth,"MT707_IMPORTED","LETTER_OF_CREDIT",lc.getId(),"Amendment "+amendment.getAmendmentNumber()+" (EBICS)");
-   if(reset>0)audit.recordInTransaction(auth,"DOCUMENT_CHECK_DECISIONS_RESET","LETTER_OF_CREDIT",lc.getId(),reset+" Entscheidungen wegen MT707-Amendment zurückgesetzt");
-  }
+  if(result instanceof Amendment amendment)
+   audit.recordInTransaction(auth,"MT707_RECEIVED","LETTER_OF_CREDIT",amendment.getLetterOfCredit().getId(),"Amendment "+amendment.getAmendmentNumber()+" (offen, EBICS)");
   return result;
  }
 
