@@ -102,3 +102,6 @@ body .dossier-nav>button{flex:0 0 auto;align-self:center;min-height:44px;height:
 .findings-compact .check{cursor:pointer}.findings-compact .check:not(.expanded) .finding-evidence,.findings-compact .check:not(.expanded) details,.findings-compact .check:not(.expanded) .review-actions,.findings-compact .check:not(.expanded) .check-source,.findings-compact .check:not(.expanded) .evidence-note{display:none}
 .findings-compact .check:not(.expanded) p:has(> strong:first-child){display:none}
 .finding-filters{margin:10px 0}.finding-filters .finding-chips{margin:6px 0;align-items:center}.finding-chip-title{margin-right:4px;font-size:13px;color:#475467}.finding-more{border-style:dashed}
+.amendment-status{margin:0 0 8px}.amendment-status b{padding:3px 10px;border-radius:99px;font-size:13px;background:#eef2f6;color:#344054}
+.amendment-status.pending b{background:#ffefc7;color:#8a5a00}.amendment-status.accepted b{background:#dcf5e5;color:#067647}.amendment-status.rejected b{background:#fde0dd;color:#b42318}
+.amendment-status small{margin-left:6px;color:#667085}.amendment-pending{margin-top:8px}.amendment-planned{margin:4px 0 8px 18px;padding:0}.amendment-actions{display:flex;gap:8px;flex-wrap:wrap}

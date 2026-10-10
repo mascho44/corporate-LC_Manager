@@ -240,11 +240,17 @@ public class DocumentCheckService {
     }
 
     private void addEffectiveVersionContext(LetterOfCredit lc,List<CheckResult> results){
-        if(amendments==null)return;var history=amendments.findByLetterOfCreditIdOrderByImportedAtDesc(lc.getId());
+        if(amendments==null)return;var all=amendments.findByLetterOfCreditIdOrderByImportedAtDesc(lc.getId());
+        var history=all.stream().filter(de.ostms.lc.lc.domain.Amendment::isAccepted).toList();
+        var pending=all.stream().filter(de.ostms.lc.lc.domain.Amendment::isPending).toList();
         String version=history.isEmpty()?"Ursprüngliche MT700-Fassung":"MT700 einschließlich "+history.size()+" übernommener MT707-Änderung"+(history.size()==1?"":"en");
         String latest=history.isEmpty()?"Keine Änderung übernommen":"Letzte Änderung: "+display(history.get(0).getAmendmentNumber())+(history.get(0).getAmendmentDate()==null?"":" vom "+history.get(0).getAmendmentDate());
         String effective="Betrag: "+display(lc.getCurrency())+" "+(lc.getAmount()==null?"-":lc.getAmount())+" · Ablauf: "+(lc.getExpiryDate()==null?"-":lc.getExpiryDate())+" · Versand: "+(lc.getLatestShipmentDate()==null?"-":lc.getLatestShipmentDate());
         results.add(finding(OK,"LC_EFFECTIVE_VERSION","Prüfgrundlage: "+version,latest,null,effective));
+        if(!pending.isEmpty()){
+            String numbers=String.join(", ",pending.stream().map(a->display(a.getAmendmentNumber())).toList());
+            results.add(finding(WARNING,"LC_AMENDMENT_PENDING","Änderung Nr. "+numbers+" liegt vor, ist aber noch nicht angenommen. Die Prüfung erfolgt gegen die geltende Fassung.","Eine MT707-Änderung wirkt erst, wenn sie angenommen wurde.",null,"Offene Änderungen: "+numbers));
+        }
     }
     private String display(String value){return value==null||value.isBlank()?"-":value.trim();}
 
