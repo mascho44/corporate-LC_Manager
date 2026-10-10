@@ -53,6 +53,42 @@ public record OcrEvidence(String engineVersion,String method,int dpi,double thre
   double mean=match.stream().mapToDouble(Word::confidence).average().orElseThrow();
   return new Assessment(min,mean,min<threshold?"REVIEW":"MEASURED",method,engineVersion,threshold,value,List.copyOf(match));
  }
+ /** Assesses all values of one message in document order: each search starts behind the previous field, so repeated values are no longer ambiguous and lines the normaliser dropped no longer break the match. */
+ public List<Assessment> assessAll(List<String> values,double threshold){
+  var out=new ArrayList<Assessment>(values.size());int cursor=0;
+  for(String value:values){
+   var found=locate(value,threshold,cursor);
+   if(found==null){out.add(assess(value,threshold));continue;}
+   out.add(found.assessment());cursor=found.end();
+  }
+  return out;
+ }
+ private record Located(Assessment assessment,int end){}
+ private static String token(String value){return value==null?"":value.toLowerCase(Locale.ROOT).replaceAll("[^\\p{L}\\p{N}]","");}
+ private Located locate(String value,double threshold,int from){
+  List<String> needle=new ArrayList<>();
+  for(String part:Objects.toString(value,"").split("\\s+")){String t=token(part);if(!t.isEmpty())needle.add(t);}
+  if(needle.isEmpty())return null;
+  int bestStart=-1,bestEnd=-1,bestMatched=0;List<Integer> bestIdx=null;
+  for(int start=from;start<words.size();start++){
+   if(!token(valueToken(words.get(start).text())).equals(needle.get(0))&&!token(words.get(start).text()).equals(needle.get(0)))continue;
+   List<Integer> idx=new ArrayList<>();int k=0,gap=0,j=start;
+   for(;j<words.size()&&k<needle.size();j++){
+    String raw=compact(words.get(j).text());
+    if(j>start&&raw.matches("^:\\d{2}[A-Z]?:.*"))break;
+    String t=token(valueToken(words.get(j).text()));if(t.isEmpty()){continue;}
+    if(t.equals(needle.get(k))||token(words.get(j).text()).equals(needle.get(k))){idx.add(j);k++;gap=0;}
+    else if(++gap>3)break;
+   }
+   if(k>bestMatched){bestMatched=k;bestStart=start;bestEnd=j;bestIdx=idx;}
+   if(k==needle.size())break;
+  }
+  if(bestIdx==null||bestMatched<Math.max(1,(int)Math.ceil(needle.size()*0.85))||(bestMatched<2&&needle.get(0).length()<4))return null;
+  var match=bestIdx.stream().map(words::get).toList();
+  if(match.stream().anyMatch(w->w.confidence()==null))return new Located(unavailable(value,threshold),bestEnd);
+  double min=match.stream().mapToDouble(Word::confidence).min().orElseThrow(),mean=match.stream().mapToDouble(Word::confidence).average().orElseThrow();
+  return new Located(new Assessment(min,mean,min<threshold?"REVIEW":"MEASURED",method,engineVersion,threshold,value,List.copyOf(match)),bestEnd);
+ }
  private Assessment unavailable(String value,double threshold){return new Assessment(null,null,"UNAVAILABLE",method,engineVersion,threshold,value,List.of());}
  private static String compact(String value){return value==null?"":value.replaceAll("\\s+","");}
  private static String valueToken(String value){return compact(value).replaceFirst("^:\\d{2}[A-Z]?:","");}
