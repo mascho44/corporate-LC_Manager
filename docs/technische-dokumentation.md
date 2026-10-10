@@ -98,8 +98,9 @@ Lernverfahren benötigt keinen externen KI-Dienst. Die Daten stehen zentral
 zur Verfügung; dies ist keine Mandantentrennung.
 
 `DocumentExtractionService` erkennt Textebene oder OCR-Bedarf. Scan-PDFs
-werden mit 200 DPI, maximal 20 Seiten und Tesseract `deu+eng` verarbeitet.
-OCR-Nachweise enthalten Seiten- und Pixelkoordinaten. Trainings-Feldscores
+werden mit 300 DPI (Sauvola-Schwelle), standardmäßig höchstens 100 Seiten und Tesseract
+`deu+eng` verarbeitet (Sprachen über `OCR_LANGUAGES` einstellbar). OCR-Nachweise enthalten
+Seiten- und Pixelkoordinaten, gespeichert in einem 200-DPI-Raster. Trainings-Feldscores
 sind nicht dasselbe Datenformat wie Dokument-Wortnachweise und werden nicht
 ungeprüft ineinander kopiert. Siehe [OCR-Konfidenz](ocr-confidence.md).
 
