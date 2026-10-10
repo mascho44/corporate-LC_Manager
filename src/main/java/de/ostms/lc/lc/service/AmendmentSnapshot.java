@@ -24,6 +24,18 @@ final class AmendmentSnapshot {
         state.put("expiryDate", text(lc.getExpiryDate()));
         state.put("expiryPlace", lc.getExpiryPlace());
         state.put("latestShipmentDate", text(lc.getLatestShipmentDate()));
+        state.put("sequenceOfTotal", lc.getSequenceOfTotal());
+        state.put("formOfCredit", lc.getFormOfCredit());
+        state.put("availableWith", lc.getAvailableWith());
+        state.put("draweeBank", lc.getDraweeBank());
+        state.put("draftsAt", lc.getDraftsAt());
+        state.put("mixedPaymentDetails", lc.getMixedPaymentDetails());
+        state.put("deferredPaymentDetails", lc.getDeferredPaymentDetails());
+        state.put("confirmationInstructions", lc.getConfirmationInstructions());
+        state.put("reimbursingBank", lc.getReimbursingBank());
+        state.put("confirmationParty", lc.getConfirmationParty());
+        state.put("charges", lc.getCharges());
+        state.put("bankInstructions", lc.getBankInstructions());
         state.put("requiredDocuments", lc.getRequiredDocuments());
         state.put("additionalFields", lc.getAdditionalFields());
         state.put("conditions", lc.getConditions());

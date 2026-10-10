@@ -12,15 +12,19 @@ import de.ostms.lc.lc.domain.LetterOfCredit; import org.springframework.stereoty
   if(f.containsKey("44C"))lc.setLatestShipmentDate(leadingDate("44C",f.get("44C")).date());
   lc.setApplicant(BeneficiaryReferenceResolver.resolveApplicant(f).value()); lc.setBeneficiary(BeneficiaryReferenceResolver.resolve(f).value());
   if(f.containsKey("46A")) lc.setRequiredDocuments(splitConditions(f.get("46A")));
+  lc.setSequenceOfTotal(f.get("27"));lc.setFormOfCredit(f.get("40A"));lc.setAvailableWith(first(f,"41A","41D"));lc.setDraweeBank(f.get("42A"));lc.setDraftsAt(f.get("42C"));
+  lc.setMixedPaymentDetails(f.get("42M"));lc.setDeferredPaymentDetails(f.get("42P"));lc.setConfirmationInstructions(f.get("49"));lc.setReimbursingBank(first(f,"53A","53D"));
+  lc.setConfirmationParty(first(f,"58A","58D"));lc.setCharges(f.get("71D"));lc.setBankInstructions(f.get("78"));
   if(advised){lc.getAdditionalFields().put("MT710 - Nachrichtenart","Von einer Zweitbank avisiertes Akkreditiv (MT710)");lc.getAdditionalFields().put("20 - Referenz der avisierenden Bank",f.get("20").trim());}
   unmappedFields(f).forEach((tag,value)->{if(!(advised&&tag.equals("21")))lc.getAdditionalFields().put(tag+" - "+label(tag),value);}); return lc;
  }
  private static final Pattern CONDITION_MARKER=Pattern.compile("^(?:[+*-]+|\\(?\\d{1,2}[.)])\\s*");
  /** SWIFT wraps lines at 65 characters: a line without "+", "-", "*" or "1." continues the previous condition. Without any marker every line stays its own condition. */
  /** Fields with their own LC column or read through {@code SwiftConditionAdapter}; everything else is kept as an additional field. */
- private static final Set<String> MAPPED=Set.of("20","31C","31D","32B","44C","46A","50","59","45A","47A","39A","48","43P","43T","44A","44E","44F","44B","40E");
+ private static final Set<String> MAPPED=Set.of("20","31C","31D","32B","44C","46A","50","59","45A","47A","39A","48","43P","43T","44A","44E","44F","44B","40E","27","40A","41A","41D","42A","42C","42M","42P","49","53A","53D","58A","58D","71D","78");
  private static final Map<String,String> LABELS=Map.ofEntries(Map.entry("27","Sequenz / Gesamtzahl"),Map.entry("40A","Form des Dokumentenakkreditivs"),Map.entry("41A","Verfügbar bei / durch"),Map.entry("41D","Verfügbar bei / durch (Freitext)"),Map.entry("42A","Bezogene Bank"),Map.entry("42C","Trattenlaufzeit"),Map.entry("42D","Bezogener (Freitext)"),Map.entry("42M","Mixed Payment"),Map.entry("42P","Hinausgeschobene Zahlung"),Map.entry("49","Bestätigungsanweisung"),Map.entry("51A","Eröffnende Bank"),Map.entry("52A","Eröffnende Bank"),Map.entry("52D","Eröffnende Bank"),Map.entry("53A","Erstattende Bank"),Map.entry("57A","Avisierende Bank"),Map.entry("57D","Avisierende Bank"),Map.entry("58A","Bestätigende Bank"),Map.entry("71B","Gebühren"),Map.entry("71D","Gebühren"),Map.entry("72Z","Informationen Sender an Empfänger"),Map.entry("78","Anweisungen an die zahlende/akzeptierende Bank"),Map.entry("23","Referenz vorabinformiert"),Map.entry("33B","Weiterer Betrag"),Map.entry("39B","Höchstbetrag"),Map.entry("39C","Zusätzliche Beträge"),Map.entry("44D","Versandzeitraum"),Map.entry("31A","Frühester Termin"),Map.entry("43S","Zusätzliche Versandinformationen"));
  /** MT710 (advice of a documentary credit from a third bank) carries the credit number in :21: and the issuing bank in :52a:; the sender's own reference is :20:. */
+ private static String first(Map<String,String> f,String... tags){for(String t:tags)if(f.get(t)!=null&&!f.get(t).isBlank())return f.get(t);return null;}
  public static boolean isAdvised(Map<String,String> fields){
   String number=fields.get("21");
   return number!=null&&!number.isBlank()&&(fields.containsKey("52A")||fields.containsKey("52D"))&&!fields.containsKey("26E");
