@@ -11,7 +11,7 @@ const labels={reference:'Aktenreferenz',ownBankReference:'Referenz eigene Bank',
 }
 function renderInboxSuggestions(item){
     const candidates=item.assignmentCandidates||[];if(!candidates.length)return '';
-    const reasons={REFERENCE_EXACT:'Erkannte LC-Referenz stimmt überein',REFERENCE_NORMALIZED:'Erkannte Referenz hat eine abweichende Schreibweise – bitte prüfen',REFERENCE_IN_TEXT:'Referenz im Dokumenttext gefunden',REFERENCE_FORMATTED_IN_TEXT:'Referenz im Text mit abweichenden Trennzeichen – bitte prüfen'};
+    const reasons={REFERENCE_EXACT:'Erkannte LC-Referenz stimmt überein',REFERENCE_NORMALIZED:'Erkannte Referenz hat eine abweichende Schreibweise – bitte prüfen',REFERENCE_IN_TEXT:'Referenz im Dokumenttext gefunden',REFERENCE_FORMATTED_IN_TEXT:'Referenz im Text mit abweichenden Trennzeichen – bitte prüfen',SIBLING_SOURCE:'Ein anderer Teil derselben Quelldatei gehört zu dieser Akte – bitte prüfen'};
     return `<div class="inbox-suggestions"><b>${candidates.length===1?'Vorgeschlagene LC-Akte':'Mehrere mögliche LC-Akten – bitte fachlich prüfen'}</b>${candidates.map(candidate=>`<div class="inbox-suggestion"><div><strong>${esc(candidate.reference)}</strong> <span class="badge">${esc(statusLabel(candidate.status))}</span><small>${esc(reasons[candidate.reason]||candidate.reason)}</small><small class="inbox-suggestion-evidence">Fundstelle: ${esc(candidate.evidence)}</small></div><button type="button" class="secondary" data-inbox-candidate="${candidate.lcId}" data-inbox-item="${item.id}">Vorschlag auswählen</button></div>`).join('')}<small>Die Auswahl speichert noch keine Zuordnung. Dokumenttyp prüfen und anschließend bestätigen.</small></div>`;
 }
 function renderClassificationHint(classification,id){

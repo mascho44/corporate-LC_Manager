@@ -31,6 +31,26 @@ final class LcAssignmentMatcher {
         }
         return matches.stream().sorted(Comparator.comparingInt(Match::rank).reversed().thenComparing(match->match.candidate().reference())).map(Match::candidate).toList();
     }
+    /**
+     * Parts split from one file belong together: when exactly one dossier is suggested for some parts of a source file,
+     * the other parts of that file without any suggestion get the same one (marked as derived from the siblings).
+     */
+    static Map<UUID,List<LcAssignmentCandidate>> withSiblingSuggestions(List<DocumentInboxItem> items,Map<UUID,List<LcAssignmentCandidate>> own){
+        var result=new HashMap<UUID,List<LcAssignmentCandidate>>(own);
+        var bySource=new LinkedHashMap<UUID,List<DocumentInboxItem>>();
+        for(var item:items)if(item.getSourceInboxId()!=null)bySource.computeIfAbsent(item.getSourceInboxId(),k->new ArrayList<>()).add(item);
+        for(var group:bySource.values()){
+            if(group.size()<2)continue;
+            var lcs=new LinkedHashMap<UUID,LcAssignmentCandidate>();DocumentInboxItem donor=null;
+            for(var item:group)for(var c:own.getOrDefault(item.getId(),List.of())){lcs.putIfAbsent(c.lcId(),c);if(donor==null)donor=item;}
+            if(lcs.size()!=1)continue;
+            var known=lcs.values().iterator().next();
+            String from="Teil derselben Quelldatei wie „"+donor.getOriginalFilename()+"“";
+            for(var item:group)if(own.getOrDefault(item.getId(),List.of()).isEmpty())
+                result.put(item.getId(),List.of(new LcAssignmentCandidate(known.lcId(),known.reference(),known.status(),"SIBLING_SOURCE",from)));
+        }
+        return result;
+    }
     private static String normalized(String value){return value.toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]","");}
     private static Pattern referencePattern(String reference){return Pattern.compile("(?<![\\p{L}\\p{N}/_.-])"+reference+"(?![\\p{L}\\p{N}/_-]|\\.[\\p{L}\\p{N}])",Pattern.CASE_INSENSITIVE|Pattern.UNICODE_CASE);}
     private static String context(String text,int start,int end){return text.substring(Math.max(0,start-60),Math.min(text.length(),end+60)).replaceAll("\\s+"," ").trim();}

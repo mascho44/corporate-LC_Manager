@@ -97,3 +97,7 @@ body .dossier-nav>button{flex:0 0 auto;align-self:center;min-height:44px;height:
 .wf-step{padding:3px 0;color:#667085}.wf-step.done{color:#067647}.wf-step.active{color:#1f4ed8;font-weight:700}.wf-step.cancelled{color:#b42318;text-decoration:line-through}
 .wf-step small{margin-left:6px;padding:1px 6px;border-radius:99px;background:#eef2f6;color:#344054}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.finding-chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}.finding-chip{padding:5px 11px;border:1px solid #c9d3e3;border-radius:99px;background:#fff;color:#172b4d;font-size:13px;cursor:pointer}
+.finding-chip[aria-pressed="true"]{background:#1f4ed8;border-color:#1f4ed8;color:#fff}.finding-tools{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 10px}
+.findings-compact .check{cursor:pointer}.findings-compact .check:not(.expanded) .finding-evidence,.findings-compact .check:not(.expanded) details,.findings-compact .check:not(.expanded) .review-actions,.findings-compact .check:not(.expanded) .check-source,.findings-compact .check:not(.expanded) .evidence-note{display:none}
+.findings-compact .check:not(.expanded) p:has(> strong:first-child){display:none}
