@@ -20,3 +20,5 @@
 .evidence-page-thumb.has-finding::after{content:"!";position:absolute;top:2px;right:2px;min-width:16px;height:16px;border-radius:99px;background:#d92d20;color:#fff;font-size:11px;font-weight:800;line-height:16px;text-align:center}
 @media(max-width:850px){.evidence-viewer{flex-direction:column}.evidence-pages{flex:none;height:auto;flex-direction:row;overflow-x:auto}}
 @media (prefers-reduced-motion:reduce){.evidence-page-thumb img:not([src]){animation:none}}
+.evidence-page-thumb.has-other:not(.has-finding)::after{content:"•";position:absolute;top:2px;right:2px;min-width:16px;height:16px;border-radius:99px;color:#fff;font-size:14px;line-height:15px;text-align:center}
+.evidence-page-thumb.other-warn:not(.has-finding)::after{background:#b54708}.evidence-page-thumb.other-bad:not(.has-finding)::after{background:#d92d20}

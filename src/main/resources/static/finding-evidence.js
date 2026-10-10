@@ -53,6 +53,7 @@ async function renderFindingPdf(dialog,container,documentId,initialPage,markedPa
         if(!sidebar||sidebarBuilt||!pageCount||pageCount<2||typeof document==='undefined')return;
         sidebarBuilt=true;sidebar.hidden=false;
         const lazy=typeof IntersectionObserver==='function'?new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){lazy.unobserve(entry.target);entry.target.src=entry.target.dataset.src;}}),{root:sidebar,rootMargin:'200px'}):null;
+        const mark=(n,count,severity)=>{const b=sidebar.querySelector(`.evidence-page-thumb[data-page="${n}"]`);if(!b||marked.has(n))return;b.classList.add('has-other',severity==='DISCREPANCY'?'other-bad':'other-warn');b.title=`${count} offene${count===1?'r':''} Befund${count===1?'':'e'} auf dieser Seite`;b.setAttribute('aria-label',`Seite ${n} – ${b.title}`);};
         for(let n=1;n<=Math.min(pageCount,100);n++){
             const button=document.createElement('button');button.type='button';button.className='evidence-page-thumb';button.dataset.page=n;
             button.setAttribute('aria-label',`Seite ${n}${marked.has(n)?' – hier liegt der Befund':''}`);
@@ -62,6 +63,8 @@ async function renderFindingPdf(dialog,container,documentId,initialPage,markedPa
             button.append(img,label);button.onclick=()=>(!loading&&n!==selectedPage)?loadPage(n):undefined;sidebar.append(button);
             if(lazy)lazy.observe(img);else img.src=img.dataset.src;
         }
+        const lcId=typeof activeLc!=='undefined'?activeLc?.id:null;
+        if(lcId)fetch(`/api/lcs/${encodeURIComponent(lcId)}/documents/${encodeURIComponent(documentId)}/finding-pages`,{signal:abort.signal}).then(r=>r.ok?r.json():[]).then(list=>{if(dialog.open&&Array.isArray(list))list.forEach(m=>mark(m.page,m.count,m.severity));}).catch(()=>{});
     }
     function markSelected(){
         if(!sidebar||!sidebarBuilt)return;
