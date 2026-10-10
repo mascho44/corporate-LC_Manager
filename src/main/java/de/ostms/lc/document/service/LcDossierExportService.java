@@ -62,6 +62,19 @@ public class LcDossierExportService {
         line(text,"Betrag",value(lc.getCurrency())+" "+value(lc.getAmount()));line(text,"Ausstellungsdatum",lc.getIssueDate());line(text,"Ablaufdatum",lc.getExpiryDate());line(text,"Ablaufort",lc.getExpiryPlace());line(text,"Spaetester Versand",lc.getLatestShipmentDate());
         line(text,"Dokumente und Anlagen",documents);line(text,"Amendments",amendments);text.append("\nERFORDERLICHE DOKUMENTE\n");
         if(lc.getRequiredDocuments().isEmpty())text.append("- keine erfasst\n");else lc.getRequiredDocuments().forEach(item->text.append("- ").append(item).append('\n'));
+        text.append("\nKONDITIONEN AUS DER SWIFT-NACHRICHT\n");
+        line(text,"Sequenz (27)",lc.getSequenceOfTotal());
+        line(text,"Form des Akkreditivs (40A)",lc.getFormOfCredit());
+        line(text,"Verfügbar bei / durch (41A/41D)",lc.getAvailableWith());
+        line(text,"Bezogene Bank (42A)",lc.getDraweeBank());
+        line(text,"Trattenlaufzeit (42C)",lc.getDraftsAt());
+        line(text,"Mixed-Payment-Details (42M)",lc.getMixedPaymentDetails());
+        line(text,"Hinausgeschobene Zahlung (42P)",lc.getDeferredPaymentDetails());
+        line(text,"Bestätigungsanweisung (49)",lc.getConfirmationInstructions());
+        line(text,"Erstattungsbank (53A/53D)",lc.getReimbursingBank());
+        line(text,"Bank mit Bestätigungswunsch (58A/58D)",lc.getConfirmationParty());
+        line(text,"Gebühren (71D)",lc.getCharges());
+        line(text,"Anweisungen an die Bank (78)",lc.getBankInstructions());
         if(!lc.getAdditionalFields().isEmpty()){text.append("\nWEITERE ANGABEN\n");lc.getAdditionalFields().forEach((key,val)->line(text,key,val));}
         return text.toString();
     }

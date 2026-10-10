@@ -1,0 +1,26 @@
+-- Eigene Spalten fuer MT700-Felder, die bisher nur als Zusatzangabe gespeichert wurden.
+alter table letter_of_credit add column sequence_of_total varchar(4000);
+alter table letter_of_credit add column form_of_credit varchar(4000);
+alter table letter_of_credit add column available_with varchar(4000);
+alter table letter_of_credit add column drawee_bank varchar(4000);
+alter table letter_of_credit add column drafts_at varchar(4000);
+alter table letter_of_credit add column mixed_payment_details varchar(4000);
+alter table letter_of_credit add column deferred_payment_details varchar(4000);
+alter table letter_of_credit add column confirmation_instructions varchar(4000);
+alter table letter_of_credit add column reimbursing_bank varchar(4000);
+alter table letter_of_credit add column confirmation_party varchar(4000);
+alter table letter_of_credit add column charges varchar(4000);
+alter table letter_of_credit add column bank_instructions varchar(4000);
+update letter_of_credit lc set sequence_of_total=(select a.field_value from lc_additional_field a where a.lc_id=lc.id and (a.field_name like '27 - %') order by a.field_name limit 1);
+update letter_of_credit lc set form_of_credit=(select a.field_value from lc_additional_field a where a.lc_id=lc.id and (a.field_name like '40A - %') order by a.field_name limit 1);
+update letter_of_credit lc set available_with=(select a.field_value from lc_additional_field a where a.lc_id=lc.id and (a.field_name like '41A - %' or a.field_name like '41D - %') order by a.field_name limit 1);
+update letter_of_credit lc set drawee_bank=(select a.field_value from lc_additional_field a where a.lc_id=lc.id and (a.field_name like '42A - %') order by a.field_name limit 1);
+update letter_of_credit lc set drafts_at=(select a.field_value from lc_additional_field a where a.lc_id=lc.id and (a.field_name like '42C - %') order by a.field_name limit 1);
+update letter_of_credit lc set mixed_payment_details=(select a.field_value from lc_additional_field a where a.lc_id=lc.id and (a.field_name like '42M - %') order by a.field_name limit 1);
+update letter_of_credit lc set deferred_payment_details=(select a.field_value from lc_additional_field a where a.lc_id=lc.id and (a.field_name like '42P - %') order by a.field_name limit 1);
+update letter_of_credit lc set confirmation_instructions=(select a.field_value from lc_additional_field a where a.lc_id=lc.id and (a.field_name like '49 - %') order by a.field_name limit 1);
+update letter_of_credit lc set reimbursing_bank=(select a.field_value from lc_additional_field a where a.lc_id=lc.id and (a.field_name like '53A - %' or a.field_name like '53D - %') order by a.field_name limit 1);
+update letter_of_credit lc set confirmation_party=(select a.field_value from lc_additional_field a where a.lc_id=lc.id and (a.field_name like '58A - %' or a.field_name like '58D - %') order by a.field_name limit 1);
+update letter_of_credit lc set charges=(select a.field_value from lc_additional_field a where a.lc_id=lc.id and (a.field_name like '71D - %') order by a.field_name limit 1);
+update letter_of_credit lc set bank_instructions=(select a.field_value from lc_additional_field a where a.lc_id=lc.id and (a.field_name like '78 - %') order by a.field_name limit 1);
+delete from lc_additional_field where field_name like '27 - %' or field_name like '40A - %' or field_name like '41A - %' or field_name like '41D - %' or field_name like '42A - %' or field_name like '42C - %' or field_name like '42M - %' or field_name like '42P - %' or field_name like '49 - %' or field_name like '53A - %' or field_name like '53D - %' or field_name like '58A - %' or field_name like '58D - %' or field_name like '71D - %' or field_name like '78 - %';
