@@ -35,6 +35,28 @@ public class FindingEvidenceController {
         try{return org.springframework.http.ResponseEntity.ok().cacheControl(org.springframework.http.CacheControl.noStore()).header("X-Content-Type-Options","nosniff").body(crops.crop(doc,kind));}
         catch(NoSuchElementException none){throw new ResponseStatusException(HttpStatus.NOT_FOUND,"Kein Ausschnitt verfügbar.");}
     }
+    public record PageMark(int page,int count,String severity){}
+    /** Pages of a document that carry at least one open finding (warning or discrepancy), with the worst severity per page. */
+    @GetMapping("/api/lcs/{lcId}/documents/{id}/finding-pages") @Transactional(readOnly=true)
+    public List<PageMark> findingPages(@PathVariable UUID lcId,@PathVariable UUID id){
+        var doc=documents.findById(id).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND));
+        if(!doc.getLetterOfCredit().getId().equals(lcId))throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        return pageMarks(doc,checks.check(lcId).results());
+    }
+    static List<PageMark> pageMarks(de.ostms.lc.document.domain.LcDocument doc,List<CheckResult> results){
+        var count=new TreeMap<Integer,Integer>();var worst=new HashMap<Integer,String>();int examined=0;
+        for(var r:results){
+            if(r.severity()==CheckResult.Severity.OK||!Objects.equals(r.documentName(),doc.getOriginalFilename())||r.documentEvidence()==null)continue;
+            if(++examined>50)break;
+            var location=EvidenceLocator.locate(doc,r.documentEvidence());
+            if(!location.status().equals("MATCH")&&!location.status().equals("AMBIGUOUS"))continue;
+            for(int page:location.pages()){
+                count.merge(page,1,Integer::sum);
+                if(!"DISCREPANCY".equals(worst.get(page)))worst.put(page,r.severity().name());
+            }
+        }
+        return count.entrySet().stream().map(e->new PageMark(e.getKey(),e.getValue(),worst.get(e.getKey()))).toList();
+    }
     public View evidence(UUID lcId,String code,String documentName){return evidence(lcId,code,documentName,null);}
     public View evidence(UUID lcId,String code,String documentName,String fingerprint){return evidence(lcId,code,documentName,fingerprint,"REVIEW");}
 }
