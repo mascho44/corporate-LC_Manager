@@ -17,9 +17,9 @@ public class TrainingDataService {
     public TrainingDataService(ObjectMapper mapper){this.mapper=mapper;}
     public List<de.ostms.lc.document.service.OcrEvidence.Assessment> initializeOcrConfidence(TrainingSession session,de.ostms.lc.imports.api.SwiftImportPreview preview,de.ostms.lc.document.service.DocumentExtractionService.TextExtraction extraction){
         var evidence=extraction.ocrEvidence();
-        List<de.ostms.lc.document.service.OcrEvidence.Assessment> scores=preview.rawFields().stream().map(field->evidence==null
-            ?new de.ostms.lc.document.service.OcrEvidence.Assessment(null,null,"OCR_EXTRACTED".equals(extraction.status())?"UNAVAILABLE":"NOT_APPLICABLE",null,null,0.8,field.value(),List.of())
-            :evidence.assess(field.value(),evidence.threshold())).toList();
+        List<de.ostms.lc.document.service.OcrEvidence.Assessment> scores=evidence==null
+            ?preview.rawFields().stream().map(field->new de.ostms.lc.document.service.OcrEvidence.Assessment(null,null,"OCR_EXTRACTED".equals(extraction.status())?"UNAVAILABLE":"NOT_APPLICABLE",null,null,0.8,field.value(),List.<de.ostms.lc.document.service.OcrEvidence.Word>of())).toList()
+            :evidence.assessAll(preview.rawFields().stream().map(field->field.value()).toList(),evidence.threshold());
         try{
             session.setOcrConfidenceJson(mapper.writeValueAsString(scores));
             var fields=mapper.valueToTree(preview.rawFields());
