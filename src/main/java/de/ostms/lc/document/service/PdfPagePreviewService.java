@@ -30,7 +30,14 @@ public class PdfPagePreviewService {
  }
  /** Thumbnails are shown up to ~360 px wide; 720 px keeps them sharp on high-resolution screens. */
  static final int THUMBNAIL_PX=720,ENLARGED_PX=1400;
+ private final java.util.concurrent.ThreadPoolExecutor prewarmer=new java.util.concurrent.ThreadPoolExecutor(1,1,0L,java.util.concurrent.TimeUnit.SECONDS,new java.util.concurrent.ArrayBlockingQueue<>(16),r->{var t=new Thread(r,"preview-prewarm");t.setDaemon(true);return t;},new java.util.concurrent.ThreadPoolExecutor.DiscardPolicy());
+ /** Renders page 1 (thumbnail and enlarged) in the background so the first look is instant; best effort, bounded, errors ignored. */
+ public void prewarm(byte[] content,String contentType){
+  if(content==null||!"application/pdf".equalsIgnoreCase(contentType))return;
+  prewarmer.execute(()->{try{render(content,1,false);render(content,1,true);}catch(Exception|OutOfMemoryError ignored){}});
+ }
  private final PreviewCache cache=new PreviewCache(64L*1024*1024);
+ int cachedPages(){return cache.count();}
  static String cacheKey(byte[] content,int page,int max){
   try{return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(content))+":"+page+":"+max;}
   catch(java.security.NoSuchAlgorithmException impossible){throw new IllegalStateException(impossible);}

@@ -37,6 +37,7 @@ public class DocumentInboxService {
         var result=automaticSplitter.persist(item,automaticSplitter.prepare(document),requestedBy);var targets=lettersOfCredit.findAssignmentTargets();return result.stream().map(part->view(part,targets)).toList();
     }
 
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private PdfPagePreviewService previews;
     public DocumentInboxService(DocumentInboxRepository inbox, LetterOfCreditRepository lettersOfCredit,
                                 LcDocumentRepository documents, DocumentExtractionService extraction,
                                 de.ostms.lc.check.service.DocumentCheckService checks) {
@@ -51,7 +52,9 @@ public class DocumentInboxService {
     public List<DocumentInboxItemView> receive(List<MultipartFile> files, String username) throws IOException {
         var uploads=InboxUploadReader.read(files);
         var targets=lettersOfCredit.findAssignmentTargets();
-        return uploads.stream().map(file -> receiveOne(file, username, targets)).toList();
+        var views=uploads.stream().map(file -> receiveOne(file, username, targets)).toList();
+        if(previews!=null)uploads.forEach(file->previews.prewarm(file.content(),contentType(file.filename())));
+        return views;
     }
 
     @Transactional(readOnly = true)

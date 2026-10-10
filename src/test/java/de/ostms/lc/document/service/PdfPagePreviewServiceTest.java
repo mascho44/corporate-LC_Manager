@@ -10,6 +10,15 @@ class PdfPagePreviewServiceTest {
   assertThat(service.render(pdf.clone(),1,false)).isSameAs(first);
   assertThat(service.render(pdf,1,true)).isNotSameAs(first);
  }
+ @Test void prewarmFillsTheCacheInTheBackgroundAndIgnoresOtherTypes()throws Exception{
+  var service=new PdfPagePreviewService();byte[] pdf=PdfDocumentSplitterTest.pdf("Synthetic first page","Synthetic second page");
+  service.prewarm(pdf,"image/png");service.prewarm(null,"application/pdf");
+  assertThat(service.cachedPages()).isZero();
+  service.prewarm(pdf,"application/pdf");
+  long deadline=System.currentTimeMillis()+30000;
+  while(service.cachedPages()<2&&System.currentTimeMillis()<deadline)Thread.sleep(50);
+  assertThat(service.cachedPages()).isEqualTo(2);
+ }
  @Test void producesSmallAndEnlargedPngPagesWithoutOcr()throws Exception{
   var service=new PdfPagePreviewService();byte[] pdf=PdfDocumentSplitterTest.pdf("Synthetic first page","Synthetic second page");
   var small=ImageIO.read(new ByteArrayInputStream(service.render(pdf,2,false)));
