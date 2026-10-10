@@ -33,6 +33,19 @@ public class LetterOfCreditService {
         return repo.save(lc);
     }
 
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private de.ostms.lc.swift.Mt760Parser mt760Parser = new de.ostms.lc.swift.Mt760Parser();
+
+    /** MT760 becomes a dossier of kind GUARANTEE (no documentary requirements). */
+    @Transactional
+    public LetterOfCredit importMt760(String raw) {
+        LetterOfCredit guarantee = mt760Parser.parse(raw);
+        if (repo.existsByReference(guarantee.getReference())) {
+            throw new IllegalArgumentException("Eine Akte mit dieser Referenz existiert bereits: " + guarantee.getReference());
+        }
+        return repo.save(guarantee);
+    }
+
     public List<LetterOfCredit> all() {
         return repo.findAll();
     }

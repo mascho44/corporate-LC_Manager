@@ -66,6 +66,7 @@ app:
   ebics:
     encryption-key: ${EBICS_ENCRYPTION_KEY:}
     allowed-hosts: ${EBICS_ALLOWED_HOSTS:}
+    message-types: ${EBICS_MESSAGE_TYPES:MT700,MT707,MT710,MT760}
   initial-admin:
     username: ${ADMIN_USERNAME:admin}
     password: ${ADMIN_PASSWORD:}

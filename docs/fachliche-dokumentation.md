@@ -204,3 +204,15 @@ Der SWIFT-Import erkennt MT710 (Block `{2:…710`, Text „MT 710“ oder das Fe
 Die Akkreditivnummer ist `:21:` und wird als Referenz der Akte verwendet; `:20:` (Referenz der avisierenden Bank) und
 die Nachrichtenart werden als weitere Angaben gespeichert, die ausstellende Bank (`:52a:`) ebenfalls. Alle übrigen Felder
 werden wie bei MT700 gelesen. Eine bereits vorhandene Referenz wird als Duplikat abgelehnt.
+
+## MT760 (Garantien) und MT199/MT799 (Freitextmitteilungen)
+**MT760** wird als Akte der Art *Garantie* angelegt (Kennzeichnung „Garantie“ in Liste und Detail). Referenz `:20:`, Betrag `:32B:`,
+Ablauf `:31E:` (oder `:31D:`) mit Ort, Ausstellungsdatum `:30:`, Auftraggeber `:50:`, Begünstigter `:59:`, ausstellende Bank `:52a:`.
+Die Garantiebedingungen (`:77C:`/`:77U:`) und alle übrigen Felder (Form, Regeln, Zustellung, Grundgeschäft …) stehen als weitere Angaben
+in der Akte. Garantien haben keine Dokumentenanforderungen; der Ablauf läuft in der Fristenüberwachung mit.
+
+**MT199 / MT799** (Freitext: `:20:` Referenz, optional `:21:` Bezugsreferenz, `:79:` Text) werden als Bankmitteilung gespeichert und der Akte
+zugeordnet, deren Referenz in `:21:` (sonst `:20:`) steht. Ohne Treffer bleibt die Mitteilung unter *Importe → Mitteilungen ohne Akte* und kann dort
+einer Akte zugeordnet werden. Die Mitteilungen erscheinen in der Akte unter „Bankmitteilungen“. Identische Nachrichten werden nicht doppelt importiert.
+
+Beide Typen laufen über den bestehenden SWIFT-Import (Vorschau, dann Import) und, falls die Bank sie liefert, über den EBICS-Abruf.
