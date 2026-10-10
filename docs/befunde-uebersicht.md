@@ -2,8 +2,8 @@
 
 Ab 6 Befunden zeigt *Dokumente prüfen* über der Liste:
 
-- **Regel-Chips** mit der Zahl **offener** Befunde (Hinweise und Abweichungen ohne manuelle Entscheidung), größte zuerst. Ein Klick filtert die Liste auf die Regel
-  (zusammen mit Befunde-Filter und Suche), ein zweiter Klick hebt den Filter auf. Der Tooltip nennt den Regelcode und die Aufteilung in Hinweise/Abweichungen.
+- **Filter-Chips** (Art, Dokument, Regel) mit der Zahl **offener** Befunde (Hinweise und Abweichungen ohne manuelle Entscheidung), größte zuerst. Es gibt drei Zeilen: **Art** (Regel verletzt, Manuelle Prüfung nötig, Nicht prüfbar/Angaben fehlen), **Dokument** und **Regel** (die zehn größten, der Rest über „weitere … anzeigen“; der Name stammt aus der Regelmeldung).
+  Ein Klick filtert die Liste; die Chips lassen sich kombinieren (z. B. Art + Dokument) und gelten zusammen mit Befunde-Filter und Suche. „Auswahl aufheben“ setzt zurück. Der Tooltip nennt den Regelcode und die Aufteilung in Hinweise/Abweichungen.
 - **Kompakte Liste** (Standard): je Befund eine Zeile; ein Klick auf die Zeile klappt Bedingung, Beleg, Regelgrundlage und Aktionen auf. „Ausführliche Liste“ zeigt wieder alles.
 - **Sammelbestätigung:** Ist eine Regel gewählt und hat sie mindestens zwei offene **Hinweise**, erscheint „Alle n offenen Hinweise dieser Regel als erfüllt bestätigen“
   (Recht `DOCUMENT_REVIEW`). Eine Begründung ist Pflicht und gilt für alle; sie wird wie bei Einzelentscheidungen **je Befund** protokolliert.
