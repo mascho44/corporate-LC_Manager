@@ -33,6 +33,7 @@ class EbicsMessageServiceTest {
   if(tenants.findById(Tenant.DEFAULT_ID).isEmpty())tenants.saveAndFlush(new Tenant());
   var port=new Port();
   connection=new EbicsConnectionService(connections,port,new EbicsCipher("synthetic-test-key-0123456789abcdef0123"),new EbicsUrlPolicy("localhost"),audit);
+  org.springframework.test.util.ReflectionTestUtils.setField(connection,"messages",messages);
   service=new EbicsMessageService(connections,messages,port,connection,swift,audit,checks);
   bank.clear();
  }
@@ -97,5 +98,36 @@ class EbicsMessageServiceTest {
  @Test void referencePrefersCreditNumberForMt710(){
   assertThat(EbicsMessageService.reference(MT710)).isEqualTo("LC200");
   assertThat(EbicsMessageService.reference(MT700)).isEqualTo("LC100");
+ }
+ @Test void autoFetchRunsOnlyWhenActiveSwitchedOnAndDueAndRecordsTheOutcome(){
+  activate();bank.put("MT700",text(MT700));
+  var job=new EbicsAutoFetchJob(null,connections,service);
+  job.runForCurrentTenant();
+  assertThat(service.list()).isEmpty();
+  assertThat(connections.findCurrent().orElseThrow().getLastFetchAt()).isNull();
+  connection.setAutoFetch(new EbicsConnectionService.AutoFetchRequest(true,15),null);
+  job.runForCurrentTenant();
+  assertThat(service.list()).hasSize(1);
+  var c=connections.findCurrent().orElseThrow();
+  assertThat(c.getLastFetchAt()).isNotNull();assertThat(c.getLastFetchResult()).startsWith("1 neu");
+  assertThat(connection.view().newMessages()).isEqualTo(1);
+  bank.put("MT710",text(MT710));
+  job.runForCurrentTenant();
+  assertThat(service.list()).as("not due again within the interval").hasSize(1);
+  Mockito.verify(audit,Mockito.atLeastOnce()).record(Mockito.eq(EbicsAutoFetchJob.ACTOR),Mockito.eq("EBICS_MESSAGE_FETCHED"),Mockito.anyString(),Mockito.any(),Mockito.anyString(),Mockito.eq(true),Mockito.isNull());
+ }
+ @Test void autoFetchSettingsAreValidatedAndNeedAnActiveConnection(){
+  connection.save(new EbicsConnectionService.Request("https://localhost:8443/ebicsweb","EVILSBANK","P1","U1"),null);
+  assertThatThrownBy(()->connection.setAutoFetch(new EbicsConnectionService.AutoFetchRequest(true,15),null)).isInstanceOf(IllegalStateException.class);
+  assertThatThrownBy(()->connection.setAutoFetch(new EbicsConnectionService.AutoFetchRequest(false,1),null)).isInstanceOf(IllegalArgumentException.class);
+  assertThatThrownBy(()->connection.setAutoFetch(new EbicsConnectionService.AutoFetchRequest(false,2000),null)).isInstanceOf(IllegalArgumentException.class);
+  assertThat(connection.setAutoFetch(new EbicsConnectionService.AutoFetchRequest(false,60),null).fetchIntervalMinutes()).isEqualTo(60);
+ }
+ @Test void dueLogicFollowsTheInterval(){
+  var c=new EbicsConnection();
+  assertThat(c.fetchDue(java.time.LocalDateTime.now())).isFalse();
+  c.setAutoFetch(true,15);assertThat(c.fetchDue(java.time.LocalDateTime.now())).isTrue();
+  c.recordFetch("x");assertThat(c.fetchDue(java.time.LocalDateTime.now())).isFalse();
+  assertThat(c.fetchDue(java.time.LocalDateTime.now().plusMinutes(16))).isTrue();
  }
 }

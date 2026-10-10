@@ -28,7 +28,8 @@ public class EbicsMessageService {
  public EbicsMessageService(EbicsConnectionRepository c,EbicsMessageRepository m,EbicsClientPort p,EbicsConnectionService cs,SwiftImportService s,AuditService a,DocumentCheckService ch){connections=c;messages=m;client=p;connectionService=cs;swift=s;audit=a;checks=ch;}
 
  /** Not transactional on purpose: the bank calls must not hold a database transaction; every message is saved on its own. */
- public FetchResult fetch(Authentication auth){
+ public FetchResult fetch(Authentication auth){return fetchAs(auth==null?"unbekannt":auth.getName());}
+ public FetchResult fetchAs(String actor){
   var c=connections.findCurrent().orElseThrow(()->new IllegalStateException("Es ist noch keine EBICS-Verbindung angelegt."));
   if(c.getStatus()!=EbicsStatus.ACTIVE)throw new IllegalStateException("Die EBICS-Verbindung ist noch nicht aktiv (Status "+c.getStatus()+").");
   org.kopi.ebics.client.User user;
@@ -44,14 +45,17 @@ public class EbicsMessageService {
     if(messages.findBySha(sha).isPresent()){known++;continue;}
     var saved=messages.save(new EbicsMessage(type,sha,text));
     fetched++;
-    audit.record(auth,"EBICS_MESSAGE_FETCHED","EBICS_MESSAGE",saved.getId(),type+" · "+reference(text));
+    audit.record(actor,"EBICS_MESSAGE_FETCHED","EBICS_MESSAGE",saved.getId(),type+" · "+reference(text),true,null);
    }catch(Exception e){
     String m=e.getMessage()==null?"unbekannter Fehler":e.getMessage().replaceAll("[\\r\\n]+"," ");
     errors.add(type+": "+(m.length()>200?m.substring(0,200):m));
-    audit.record(auth,"EBICS_FETCH_FAILED","EBICS_MESSAGE",null,type+" · "+(m.length()>300?m.substring(0,300):m));
+    audit.record(actor,"EBICS_FETCH_FAILED","EBICS_MESSAGE",null,type+" · "+(m.length()>300?m.substring(0,300):m),false,null);
    }
   }
-  return new FetchResult(fetched,known,List.copyOf(errors));
+  var result=new FetchResult(fetched,known,List.copyOf(errors));
+  c.recordFetch(fetched+" neu, "+known+" bekannt"+(errors.isEmpty()?"":" · Fehler: "+String.join("; ",errors)));
+  connections.save(c);
+  return result;
  }
 
  @Transactional(readOnly=true) public List<View> list(){return messages.newestFirst().stream().map(EbicsMessageService::view).toList();}
