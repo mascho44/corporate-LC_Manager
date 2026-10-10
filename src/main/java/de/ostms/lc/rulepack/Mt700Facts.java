@@ -44,6 +44,11 @@ public final class Mt700Facts {
    var found=new LinkedHashSet<String>();var m=INCOTERM.matcher(goods.toUpperCase(Locale.ROOT));while(m.find())found.add(m.group(1));
    if(found.size()==1){out.add(new Fact(Field.LC_INCOTERM,found.iterator().next(),"Feld :45A:"));out.add(new Fact(Field.LC_INCOTERM_SOURCE,"Feld 45A","Feld :45A:"));}
   }
+  if(goods!=null){
+   var q=Pattern.compile("(?i)\\b(\\d[\\d.,]*)\\s{0,2}(PCS|PIECES|SETS|UNITS|KGS?|MT|TONS?|CARTONS|CTNS)\\b").matcher(goods);var nums=new LinkedHashSet<String>();var units=new LinkedHashSet<String>();
+   while(q.find()){String n=DocumentFactSuggester.normalizeNumber(q.group(1));if(n!=null){nums.add(n);units.add(q.group(2).toUpperCase(Locale.ROOT));}}
+   if(nums.size()==1&&units.size()==1){out.add(new Fact(Field.LC_QUANTITY,nums.iterator().next(),"Feld :45A: (Menge)"));out.add(new Fact(Field.LC_QUANTITY_UNIT,units.iterator().next(),"Feld :45A: (Menge)"));}
+  }
   String docs=String.join("\n",Objects.toString(tags.get("46A"),""),Objects.toString(tags.get("47A"),""));
   if(!docs.isBlank()){
    String upper=docs.toUpperCase(Locale.ROOT);
@@ -54,6 +59,16 @@ public final class Mt700Facts {
    if(upper.contains("FREIGHT PREPAID")||upper.contains("FREIGHT PAID")){out.add(new Fact(Field.LC_FREIGHT_PREPAID_REQUIRED,"true","Feld :46A:"));out.add(new Fact(Field.LC_FREIGHT_TERMS,"PREPAID","Feld :46A:"));}
    else if(upper.contains("FREIGHT COLLECT")||upper.contains("FREIGHT PAYABLE AT DESTINATION")){out.add(new Fact(Field.LC_FREIGHT_PREPAID_REQUIRED,"false","Feld :46A:"));out.add(new Fact(Field.LC_FREIGHT_TERMS,"COLLECT","Feld :46A:"));}
    if(Pattern.compile("\\bSHIPPED\\s+ON\\s+BOARD\\b|\\bON\\s+BOARD\\s+NOTATION\\b").matcher(upper).find())out.add(new Fact(Field.LC_ON_BOARD_NOTATION_REQUIRED,"true","Feld :46A:"));
+   if(upper.contains("INSURANCE POLICY")&&!upper.contains("INSURANCE CERTIFICATE"))out.add(new Fact(Field.LC_INSURANCE_TYPE,"POLICY","Feld :46A: (Versicherung)"));
+   else if(upper.contains("INSURANCE CERTIFICATE")&&!upper.contains("INSURANCE POLICY"))out.add(new Fact(Field.LC_INSURANCE_TYPE,"CERTIFICATE","Feld :46A: (Versicherung)"));
+   if(upper.contains("PREMIUM PAID"))out.add(new Fact(Field.LC_PREMIUM_PAID_REQUIRED,"true","Feld :46A:"));
+   if(Pattern.compile("\\bENDORSED\\b").matcher(upper).find())out.add(new Fact(Field.LC_ENDORSEMENT_REQUIRED,"true","Feld :46A:"));
+   if(Pattern.compile("PRE-?SHIPMENT\\s+INSPECTION").matcher(upper).find())out.add(new Fact(Field.LC_PRESHIPMENT_INSPECTION_REQUIRED,"true","Feld :46A:"));
+   if(upper.contains("IRRESPECTIVE OF PERCENTAGE"))out.add(new Fact(Field.LC_IRRESPECTIVE_OF_PERCENTAGE_REQUIRED,"true","Feld :46A:"));
+   if(Pattern.compile("NOTIFY\\s+(?:PARTY\\s*:?\\s*)?APPLICANT").matcher(upper).find())out.add(new Fact(Field.LC_NOTIFY_PARTY,"APPLICANT","Feld :46A:"));
+   if(Pattern.compile("CONSIGNED\\s+TO\\s+(?:THE\\s+)?ORDER").matcher(upper).find())out.add(new Fact(Field.LC_CONSIGNEE,"TO ORDER","Feld :46A:"));
+   var form=Pattern.compile("\\b(FORM\\s+A|EUR\\.?\\s*1|FORM\\s+E)\\b").matcher(upper);var forms=new LinkedHashSet<String>();while(form.find())forms.add(form.group(1).replaceAll("\\s+"," ").replace("EUR. 1","EUR.1").replace("EUR 1","EUR.1"));
+   if(forms.size()==1)out.add(new Fact(Field.LC_REQUIRED_FORM_TYPE,forms.iterator().next(),"Feld :46A:"));
    boolean air=upper.contains("AIR WAYBILL")||upper.contains("AIRWAY BILL"),sea=upper.contains("BILL OF LADING")||upper.contains("B/L")||upper.contains("SEA WAYBILL");
    if(air&&!sea){
     var a=tags.get("44E");var b=tags.get("44F");

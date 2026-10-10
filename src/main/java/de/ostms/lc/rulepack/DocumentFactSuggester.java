@@ -83,6 +83,7 @@ public class DocumentFactSuggester {
    var risks=new LinkedHashSet<String>();var r=RISKS.matcher(text);while(r.find())risks.add(r.group(1).replaceAll("\\s+"," ").trim().toUpperCase(Locale.ROOT));
    if(!risks.isEmpty())add(out,current,Field.DOCUMENT_INSURANCE_RISKS,String.join("; ",risks),"Versicherungsrisiken im Text erkannt");
   }
+  DocumentTextFacts.detect(doc.getDocumentType(),text).forEach(f->add(out,current,f.field(),f.value(),f.source()));
   DocumentIndicators.detect(doc.getDocumentType(),text).forEach(h->add(out,current,h.field(),"true",h.source()));
   var parties=DocumentPartyFacts.detect(text);
   if(parties.applicantCountry()!=null)add(out,current,Field.DOCUMENT_APPLICANT_ADDRESS_COUNTRY,parties.applicantCountry(),"Land der Auftraggeber-Adresse im Text erkannt: "+parties.applicantSource());
