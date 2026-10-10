@@ -7,6 +7,7 @@
   add('overdue', 'Überfällige Fristen', m.overdue, 'Fristen prüfen', 'bad');
   add('ebics', 'Neue EBICS-Nachrichten', m.ebics, 'Ansehen und importieren', 'info');
   add('inbox', 'Posteingang offen', m.inbox, 'Dokumente zuordnen', 'info');
+  add('team', 'Gruppeninbox', m.team, 'Übernehmen', 'info');
   add('waiting', 'Warten auf Kunde', m.waiting, 'Nachfassen', 'warn');
   add('upcoming', 'Fristen in 7 Tagen', m.upcoming, 'Vorbereiten', 'warn');
   add('unassigned', 'Ohne Bearbeiter', m.unassigned, 'Zuweisen', 'warn');
@@ -29,6 +30,7 @@
    unassigned: num('#queueUnassigned'),
    waiting: lcs.filter(lc => lc.status === 'WAITING_FOR_CUSTOMER').length,
    inbox: permitted('DOCUMENT_UPLOAD') ? await safe(async () => (await json('/api/inbox')).length) : null,
+   team: document.querySelector('#appNavGroupInbox') ? await safe(async () => (await json('/api/tasks/inbox')).filter(i => !i.assignedTo).length) : null,
    ebics: permitted('SETTINGS_MANAGE') ? await safe(async () => { const c = await json('/api/ebics/connection'); return c && c.status === 'ACTIVE' ? Number(c.newMessages) || 0 : null; }) : null
   };
  }
@@ -36,6 +38,7 @@
   const click = id => document.querySelector(id)?.click();
   if (key === 'inbox') click('#appNavInbox');
   else if (key === 'ebics') click('#appNavEbics');
+  else if (key === 'team') click('#appNavGroupInbox');
   else {
    const filter = document.querySelector('#workQueueFilter');
    if (filter) { filter.value = key === 'unassigned' ? 'unassigned' : 'all'; filter.dispatchEvent(new Event('change')); }

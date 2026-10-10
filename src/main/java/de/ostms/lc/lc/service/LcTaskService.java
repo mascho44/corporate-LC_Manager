@@ -20,4 +20,4 @@ import de.ostms.lc.lc.api.LcTaskRequest;import de.ostms.lc.lc.domain.LcTask;impo
   task.setTeamId(team.getId());
   if(task.getAssignedTo()!=null)task.setClaimedAt(LocalDateTime.now());
  }
- private LcTask one(UUID lcId,UUID id){return repo.findById(id).filter(task->task.getLetterOfCreditId().equals(lcId)).orElseThrow(()->new NoSuchElementException("Aufgabe nicht gefunden"));}private String clean(String value){return value==null||value.isBlank()?null:value.trim();}}
+ private LcTask one(UUID lcId,UUID id){return repo.findById(id).filter(task->lcId.equals(task.getLetterOfCreditId())).orElseThrow(()->new NoSuchElementException("Aufgabe nicht gefunden"));}private String clean(String value){return value==null||value.isBlank()?null:value.trim();}}

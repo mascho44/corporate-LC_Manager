@@ -31,6 +31,8 @@ public class EbicsMessageService {
  public record View(UUID id,String messageType,String reference,String status,String note,java.time.LocalDateTime receivedAt,boolean importable){}
  public record FetchResult(int fetched,int alreadyKnown,List<String> errors){}
  private static final Pattern REFERENCE=Pattern.compile("(?m)^:(20|21):(.*)$");
+ @org.springframework.beans.factory.annotation.Autowired(required=false) private de.ostms.lc.lc.service.AutoTaskService autoTasks;
+ private static String actor(Authentication a){return a==null?null:a.getName();}
  private final EbicsConnectionRepository connections;private final EbicsMessageRepository messages;private final EbicsClientPort client;
  private final EbicsConnectionService connectionService;private final SwiftImportService swift;private final AuditService audit;private final DocumentCheckService checks;
  public EbicsMessageService(EbicsConnectionRepository c,EbicsMessageRepository m,EbicsClientPort p,EbicsConnectionService cs,SwiftImportService s,AuditService a,DocumentCheckService ch){connections=c;messages=m;client=p;connectionService=cs;swift=s;audit=a;checks=ch;}
@@ -53,6 +55,7 @@ public class EbicsMessageService {
     if(messages.findBySha(sha).isPresent()){known++;continue;}
     var saved=messages.save(new EbicsMessage(type,sha,text));
     fetched++;
+    if(autoTasks!=null)try{autoTasks.onEbicsMessage(saved.getId(),type,reference(text));}catch(RuntimeException ignored){}
     audit.record(actor,"EBICS_MESSAGE_FETCHED","EBICS_MESSAGE",saved.getId(),type+" · "+reference(text),true,null);
    }catch(Exception e){
     String m=e.getMessage()==null?"unbekannter Fehler":e.getMessage().replaceAll("[\\r\\n]+"," ");
@@ -78,6 +81,7 @@ public class EbicsMessageService {
   if(!m.getStatus().equals("NEW"))throw new IllegalStateException("Diese Nachricht wurde bereits bearbeitet.");
   Object result=swift.execute(new SwiftImportRequest("ebics-"+m.getMessageType()+"-"+m.getId()+".swift",m.getContent()));
   m.handle("IMPORTED",auth==null?"unbekannt":auth.getName(),"Importiert");messages.save(m);
+  if(autoTasks!=null)autoTasks.closeFor(de.ostms.lc.lc.service.AutoTaskService.EBICS_MESSAGE,m.getId(),actor(auth));
   audit.recordInTransaction(auth,"EBICS_MESSAGE_IMPORTED","EBICS_MESSAGE",m.getId(),m.getMessageType()+" · "+reference(m.getContent()));
   if(result instanceof Amendment amendment){
    var lc=amendment.getLetterOfCredit();long reset=checks.invalidateDecisions(lc.getId());
@@ -91,6 +95,7 @@ public class EbicsMessageService {
   var m=one(id);
   if(!m.getStatus().equals("NEW"))throw new IllegalStateException("Diese Nachricht wurde bereits bearbeitet.");
   m.handle("DISCARDED",auth==null?"unbekannt":auth.getName(),"Verworfen");messages.save(m);
+  if(autoTasks!=null)autoTasks.closeFor(de.ostms.lc.lc.service.AutoTaskService.EBICS_MESSAGE,m.getId(),actor(auth));
   audit.recordInTransaction(auth,"EBICS_MESSAGE_DISCARDED","EBICS_MESSAGE",m.getId(),m.getMessageType()+" · "+reference(m.getContent()));
   return view(m);
  }

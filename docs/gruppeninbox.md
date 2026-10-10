@@ -31,5 +31,17 @@ entsteht der nächste. Gestartet wird in der Gruppeninbox unter *Workflow starte
 - Je Akte und Vorlage läuft höchstens ein Workflow gleichzeitig. **Abbrechen** entfernt den offenen Schritt; erledigte Schritte bleiben als Verlauf.
 - Workflow-Schritte lassen sich nicht wieder öffnen oder einzeln löschen. Audit: `WORKFLOW_STARTED`, `WORKFLOW_CANCELLED`.
 
-## Geplant
-Automatische Aufträge aus EBICS-Nachrichten, Posteingang und Fristen.
+## Automatische Aufträge
+Unter *Gruppeninbox → Automatische Aufträge* (Recht `USER_MANAGE`) lässt sich je Mandant und Auslöser einschalten, dass Aufträge für ein Team entstehen (Standard: aus):
+
+| Auslöser | Auftrag | schließt sich, wenn … |
+|---|---|---|
+| Neue EBICS-Nachricht | „Nachricht prüfen und importieren: MT… Referenz“ (fällig +1 Tag) | die Nachricht importiert oder verworfen wurde |
+| Neues Dokument im Posteingang | „Dokument zuordnen: Dateiname“ (fällig +1 Tag) | das Dokument zugeordnet, aufgeteilt oder gelöscht wurde |
+| Frist oder Wiedervorlage | „Frist: Referenz – Ablauf/Wiedervorlage am …“ (fällig am Fristtag) | ein Teammitglied ihn erledigt |
+
+- Fristaufträge entstehen, wenn die Frist innerhalb des **Vorlaufs** (0–60 Tage, Standard 3) liegt; ein stündlicher Lauf prüft alle aktiven Akten (nicht abgeschlossen, nicht abgelaufen).
+  Je Akte und Fristdatum entsteht höchstens ein Auftrag, auch wenn er schon erledigt wurde.
+- Aufträge zu Nachricht oder Posteingang gehören keiner Akte an (*Öffnen* springt zur EBICS-Seite bzw. zum Posteingang) und erscheinen nicht im Arbeitsvorrat der Akten, sondern nur in der Gruppeninbox.
+- Fehler beim Anlegen eines Auftrags stoppen weder den EBICS-Abruf noch den Upload.
+- Die Startseite zeigt die Zahl der noch nicht übernommenen Aufträge als Kachel „Gruppeninbox“.

@@ -38,6 +38,12 @@ public class DocumentInboxService {
     }
 
     @org.springframework.beans.factory.annotation.Autowired(required=false) private PdfPagePreviewService previews;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private de.ostms.lc.lc.service.AutoTaskService autoTasks;
+    private void closeTasks(UUID itemId){
+        if(autoTasks==null)return;
+        var auth=org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        autoTasks.closeFor(de.ostms.lc.lc.service.AutoTaskService.INBOX_ITEM,itemId,auth==null?null:auth.getName());
+    }
     public DocumentInboxService(DocumentInboxRepository inbox, LetterOfCreditRepository lettersOfCredit,
                                 LcDocumentRepository documents, DocumentExtractionService extraction,
                                 de.ostms.lc.check.service.DocumentCheckService checks) {
@@ -54,6 +60,7 @@ public class DocumentInboxService {
         var targets=lettersOfCredit.findAssignmentTargets();
         var views=uploads.stream().map(file -> receiveOne(file, username, targets)).toList();
         if(previews!=null)uploads.forEach(file->previews.prewarm(file.content(),contentType(file.filename())));
+        if(autoTasks!=null)views.forEach(view->{try{autoTasks.onInboxItem(view.id(),view.originalFilename());}catch(RuntimeException ignored){}});
         return views;
     }
 
@@ -102,7 +109,7 @@ public class DocumentInboxService {
             result.add(view(inbox.save(item),targets));
         }
         if(splitTraining!=null)splitTraining.confirm(original.getContent(),original.getOcrEvidenceJson(),parts,username);
-        original.setStatus("SPLIT");inbox.save(original);return List.copyOf(result);
+        original.setStatus("SPLIT");inbox.save(original);closeTasks(original.getId());return List.copyOf(result);
     }
 
     private void requirePdf(DocumentInboxItem item) {
@@ -157,7 +164,7 @@ public class DocumentInboxService {
         LcDocument saved = documents.save(document);
         if (lc.releaseWaitingForCustomer()) lettersOfCredit.save(lc);
         checks.invalidateDecisions(request.lcId());
-        item.setStatus("ATTACHED");
+        item.setStatus("ATTACHED");closeTasks(item.getId());
         item.setAttachedLcId(lc.getId());
         item.setAttachedDocumentId(saved.getId());
         item.setContent(null);
@@ -168,6 +175,7 @@ public class DocumentInboxService {
     @Transactional
     public DocumentInboxItem delete(UUID id) {
         DocumentInboxItem item = lockedOpenItem(id);
+        closeTasks(item.getId());
         inbox.delete(item);
         return item;
     }

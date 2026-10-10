@@ -7,7 +7,7 @@ import java.util.UUID;
 @Entity @Table(name="lc_task")
 public class LcTask extends de.ostms.lc.tenant.domain.TenantOwnedEntity {
     @Id @GeneratedValue(strategy=GenerationType.UUID) private UUID id;
-    @Column(name="letter_of_credit_id",nullable=false) private UUID letterOfCreditId;
+    @Column(name="letter_of_credit_id") private UUID letterOfCreditId;
     @Column(nullable=false,length=500) private String title;
     @Column(length=100) private String assignedTo;
     private LocalDate dueDate;
@@ -15,6 +15,13 @@ public class LcTask extends de.ostms.lc.tenant.domain.TenantOwnedEntity {
     @Column(nullable=false,length=100) private String createdBy;
     @Column(nullable=false) private LocalDateTime createdAt=LocalDateTime.now();
     private LocalDateTime completedAt;
+    @Column(name="subject_type",length=20) private String subjectType;
+    @Column(name="subject_id") private UUID subjectId;
+    @Column(nullable=false,length=20) private String source="MANUAL";
+    @Column(name="auto_key",length=120) private String autoKey;
+    public String getSubjectType(){return subjectType;} public UUID getSubjectId(){return subjectId;} public String getSource(){return source;} public String getAutoKey(){return autoKey;}
+    public void setSubject(String type,UUID id){subjectType=type;subjectId=id;}
+    public void setSource(String v){source=v;} public void setAutoKey(String v){autoKey=v;}
     @Column(name="workflow_id") private UUID workflowId;
     @Column(name="step_no") private Integer stepNo;
     @Column(name="step_key",length=30) private String stepKey;
