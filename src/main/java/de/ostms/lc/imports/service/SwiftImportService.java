@@ -179,7 +179,9 @@ public class SwiftImportService {
             if(applicantReference.source()!=null) warnings.add(applicantReference.resolved()
                     ? "Auftraggeber aus Feld :"+applicantReference.source()+": übernommen. Bitte die Adresse fachlich prüfen; der Originaltext bleibt erhalten."
                     : "Verweis im Auftraggeberfeld auf :"+applicantReference.source()+": konnte nicht eindeutig aufgelöst werden. Bitte die Adresse in :50: ergänzen.");
-            if(!lc.getAdditionalFields().isEmpty()) warnings.add(lc.getAdditionalFields().size()+" nicht zuordenbare Felder werden als weitere Angaben angelegt: "+String.join(", ",lc.getAdditionalFields().keySet().stream().map(k->k.split(" - ",2)[0]).toList()));
+            // Standard MT700 fields without an own column are kept as additional details by design; only unknown tags deserve a warning.
+            var unknown=lc.getAdditionalFields().keySet().stream().map(k->k.split(" - ",2)[0]).filter(k->k.matches("\\d{2}[A-Z]?")&&!MT700_LABELS.containsKey(k)&&!COMMON_LABELS.containsKey(k)).toList();
+            if(!unknown.isEmpty()) warnings.add(unknown.size()+" unbekannte Felder (kein Standardname) werden als Zusatzangaben gespeichert: "+String.join(", ",unknown));
             if(lc.getExpiryDate()==null) errors.add("Pflichtfeld :31D: (Ablaufdatum) fehlt.");
             if(lc.getAmount()==null||lc.getCurrency()==null) errors.add("Pflichtfeld :32B: (Währung und Betrag) fehlt.");
             if(lc.getApplicant()==null) warnings.add("Feld :50: (Applicant) fehlt.");
@@ -301,8 +303,8 @@ public class SwiftImportService {
             boolean kept=(type.equals("MT700")||type.equals("MT710"))&&target==null&&!value.isBlank();
             double confidenceScore=unusual||(target==null&&!kept)?0.45:0.95;
             String confidence=confidencePolicy.uncertain(confidenceScore)?"LOW":"HIGH";
-            String reason=kept?"Kein eigenes Feld in der Akte: wird als weitere Angabe angelegt und geht nicht verloren.":target==null?"Für dieses SWIFT-Feld gibt es in diesem Profil noch kein festes Zielfeld.":unusual?"Inhaltsbasierter Prüfhinweis – manuelle Bestätigung erforderlich.":"Standardzuordnung für "+type+"-Feld :"+code+":";
-            result.add(new SwiftFieldView(code,label(type,code),value,target,target==null?(kept?"Weitere Angabe (wird angelegt)":"Noch nicht zugeordnet"):TARGET_LABELS.get(target),confidence,reason,unusual,notice,confidenceScore,"FIELD_MAPPING_HEURISTIC_V1"));
+            String reason=kept?"Standardfeld ohne eigene Spalte in der Akte: wird mit Feldnummer und Standardnamen als Zusatzangabe gespeichert und geht nicht verloren.":target==null?"Für dieses SWIFT-Feld gibt es in diesem Profil noch kein festes Zielfeld.":unusual?"Inhaltsbasierter Prüfhinweis – manuelle Bestätigung erforderlich.":"Standardzuordnung für "+type+"-Feld :"+code+":";
+            result.add(new SwiftFieldView(code,label(type,code),value,target,target==null?(kept?"Zusatzangabe in der Akte (Standardname bleibt erhalten)":"Noch nicht zugeordnet"):TARGET_LABELS.get(target),confidence,reason,unusual,notice,confidenceScore,"FIELD_MAPPING_HEURISTIC_V1"));
         }
         return result;
     }
