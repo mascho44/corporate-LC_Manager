@@ -15,6 +15,16 @@ public class LcTask extends de.ostms.lc.tenant.domain.TenantOwnedEntity {
     @Column(nullable=false,length=100) private String createdBy;
     @Column(nullable=false) private LocalDateTime createdAt=LocalDateTime.now();
     private LocalDateTime completedAt;
+    @Column(name="workflow_id") private UUID workflowId;
+    @Column(name="step_no") private Integer stepNo;
+    @Column(name="step_key",length=30) private String stepKey;
+    @Column(name="four_eyes",nullable=false) private boolean fourEyes;
+    @Column(name="completed_by",length=100) private String completedBy;
+    public UUID getWorkflowId(){return workflowId;} public void setWorkflowId(UUID v){workflowId=v;}
+    public Integer getStepNo(){return stepNo;} public void setStepNo(Integer v){stepNo=v;}
+    public String getStepKey(){return stepKey;} public void setStepKey(String v){stepKey=v;}
+    public boolean isFourEyes(){return fourEyes;} public void setFourEyes(boolean v){fourEyes=v;}
+    public String getCompletedBy(){return completedBy;} public void setCompletedBy(String v){completedBy=v;}
     @Column(name="team_id") private UUID teamId;
     @Column(name="claimed_at") private LocalDateTime claimedAt;
     public UUID getTeamId(){return teamId;} public void setTeamId(UUID v){teamId=v;}

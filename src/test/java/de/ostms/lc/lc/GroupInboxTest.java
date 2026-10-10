@@ -21,13 +21,13 @@ import static org.assertj.core.api.Assertions.*;
 @DataJpaTest(properties={"spring.flyway.enabled=false","spring.jpa.hibernate.ddl-auto=create-drop","spring.datasource.url=jdbc:h2:mem:groupinbox;MODE=PostgreSQL;DB_CLOSE_DELAY=-1","spring.datasource.driver-class-name=org.h2.Driver"},showSql=false)
 @AutoConfigureTestDatabase(replace=AutoConfigureTestDatabase.Replace.NONE)
 class GroupInboxTest {
- @Autowired TeamRepository teamRepo;@Autowired LcTaskRepository taskRepo;@Autowired LetterOfCreditRepository lcs;@Autowired de.ostms.lc.tenant.repository.TenantRepository tenants;
+ @Autowired WorkflowRepository workflowRepo;@Autowired TeamRepository teamRepo;@Autowired LcTaskRepository taskRepo;@Autowired LetterOfCreditRepository lcs;@Autowired de.ostms.lc.tenant.repository.TenantRepository tenants;
  final UserService users=Mockito.mock(UserService.class);
  TeamService teams;GroupInboxService inbox;LcTaskService taskService;LetterOfCredit lc;
  @BeforeEach void setUp(){
   if(tenants.findById(Tenant.DEFAULT_ID).isEmpty())tenants.saveAndFlush(new Tenant());
   Mockito.when(users.isAssignable(Mockito.anyString())).thenAnswer(i->!"ghost".equals(i.getArgument(0)));
-  teams=new TeamService(teamRepo,users);inbox=new GroupInboxService(taskRepo,teams,lcs);
+  teams=new TeamService(teamRepo,users);inbox=new GroupInboxService(taskRepo,teams,lcs,workflowRepo);
   var lcService=Mockito.mock(LetterOfCreditService.class);
   taskService=new LcTaskService(taskRepo,lcService);ReflectionTestUtils.setField(taskService,"teams",teams);
   lc=new LetterOfCredit();lc.setReference("LC-1");lc=lcs.saveAndFlush(lc);
