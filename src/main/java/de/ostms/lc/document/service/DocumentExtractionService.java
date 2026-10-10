@@ -29,13 +29,19 @@ public class DocumentExtractionService {
     static String ocrLanguages(String configured){return configured!=null&&LANGUAGES.matcher(configured.trim()).matches()?configured.trim():"deu+eng";}
     /** Recognition runs at 300 DPI with Sauvola thresholding (clearly better on scans); stored positions stay in the 200-DPI evidence raster. */
     static final int OCR_DPI = 300, EVIDENCE_DPI = 200;
-    static List<OcrEvidence.Word> toEvidenceRaster(List<OcrEvidence.Word> words){
-        if(OCR_DPI==EVIDENCE_DPI)return words;
+    static List<OcrEvidence.Word> toEvidenceRaster(List<OcrEvidence.Word> words){return toEvidenceRaster(words,OCR_DPI);}
+    /** Words are stored in the 200-DPI evidence raster, whatever resolution the profile recognised at. */
+    static List<OcrEvidence.Word> toEvidenceRaster(List<OcrEvidence.Word> words,int recognitionDpi){
+        if(recognitionDpi==EVIDENCE_DPI)return words;
         var scaled=new java.util.ArrayList<OcrEvidence.Word>(words.size());
-        for(var w:words)scaled.add(new OcrEvidence.Word(w.text(),w.confidence(),w.page(),scale(w.left()),scale(w.top()),Math.max(1,scale(w.width())),Math.max(1,scale(w.height()))));
+        for(var w:words)scaled.add(new OcrEvidence.Word(w.text(),w.confidence(),w.page(),scale(w.left(),recognitionDpi),scale(w.top(),recognitionDpi),Math.max(1,scale(w.width(),recognitionDpi)),Math.max(1,scale(w.height(),recognitionDpi))));
         return java.util.List.copyOf(scaled);
     }
-    private static int scale(int value){return (int)Math.round(value*(double)EVIDENCE_DPI/OCR_DPI);}
+    private static int scale(int value,int dpi){return (int)Math.round(value*(double)EVIDENCE_DPI/dpi);}
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private OcrEngine ocrEngine;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private ScanProfileService scanProfiles;
+    private OcrEngine engine(){if(ocrEngine==null)ocrEngine=new TesseractEngine();return ocrEngine;}
+    private ScanProfile profile(){try{return scanProfiles==null?ScanProfile.STANDARD:scanProfiles.current();}catch(RuntimeException unavailable){log.warn("Scan profile unavailable, using the standard profile: {}",unavailable.getClass().getSimpleName());return ScanProfile.STANDARD;}}
     @org.springframework.beans.factory.annotation.Value("${lc.ocr.max-pages:100}")
     private int maxOcrPages=100;
     private static final class PageLimitException extends IOException{}
@@ -168,7 +174,9 @@ public class DocumentExtractionService {
             var digital=readEvidence(document.getOcrEvidenceJson());if(digital!=null)words.addAll(digital.words());
             var pages=new java.util.ArrayList<OcrEvidence.PageResult>();
             for(int i=0;i<pageTexts.size();i++)pages.add(new OcrEvidence.PageResult(i+1,pageTexts.get(i).isBlank()?"QUEUED":"EXTRACTED",0));
-            String engineVersion=tesseractVersion(directory);
+            final ScanProfile profile=profile();
+            final String languages=ocrLanguages();
+            String engineVersion=engine().version(directory);
             for (int index = 0; index < pageTexts.size(); index++) {
                 if(!pageTexts.get(index).isBlank()){if(result.length()<MAX_TEXT_LENGTH)result.append(pageTexts.get(index)).append('\n');int number=index+1;var previous=digital==null?null:digital.pages().stream().filter(p->p.page()==number&&"OCR_EXTRACTED".equals(p.status())).findFirst().orElse(null);pages.set(index,previous==null?new OcrEvidence.PageResult(number,"EXTRACTED",0):previous);continue;}
                 try {
@@ -176,32 +184,23 @@ public class DocumentExtractionService {
                     int last=index;while(last+1<pageTexts.size()&&last-index<2&&pageTexts.get(last+1).isBlank())last++;
                     long remaining=documentBudget-java.util.concurrent.TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()-started);
                     if(remaining<=0)throw new BoundedProcess.TimeoutException("OCR");
-                    runOcrStep(new ProcessBuilder("pdftoppm","-png","-r",String.valueOf(OCR_DPI),"-f",String.valueOf(index+1),"-l",String.valueOf(last+1),input.toString(),directory.resolve("page").toString()).redirectErrorStream(true),Math.min(60,remaining));
+                    runOcrStep(new ProcessBuilder("pdftoppm","-png","-r",String.valueOf(profile.renderDpi()),"-f",String.valueOf(index+1),"-l",String.valueOf(last+1),input.toString(),directory.resolve("page").toString()).redirectErrorStream(true),Math.min(60,remaining));
                     try(var files=Files.list(directory)){files.filter(p->p.getFileName().toString().matches("page-[0-9]+\\.png")).forEach(p->images.put(Integer.parseInt(p.getFileName().toString().replaceAll("[^0-9]","")),p));}
                 }
                 Path image=images.remove(index+1);if(image==null)throw new IOException("PDF renderer produced no page");
                 Path output = directory.resolve("ocr-" + index);
-                ProcessBuilder ocr;
-                ocr = new ProcessBuilder("tesseract", image.toString(), output.toString(), "-l", ocrLanguages(),
-                    "-c", "thresholding_method=2", "-c", "tessedit_create_txt=1", "-c", "tessedit_create_tsv=1")
-                    .redirectOutput(ProcessBuilder.Redirect.DISCARD).redirectErrorStream(true);
-                ocr.environment().put("OMP_THREAD_LIMIT","1");
+                int page=index+1;
                 long elapsed=java.util.concurrent.TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()-started);
                 long remaining=documentBudget-elapsed;
                 if(remaining<=0)throw new BoundedProcess.TimeoutException("OCR");
                 long pageBudget=Math.min(pageTimeoutSeconds(),remaining);
-                try{runOcrStep(ocr,pageBudget);}catch(BoundedProcess.TimeoutException timeout){
+                OcrEngine.Recognition primary;
+                try{primary=engine().recognize(image,output,languages,profile.binarization(),page,this::runOcrStep,pageBudget);}catch(BoundedProcess.TimeoutException timeout){
                     log.warn("OCR timeout: page={}, pages={}, pageBudgetSeconds={}, documentBudgetSeconds={}, elapsedSeconds={}",index+1,pageTexts.size(),pageBudget,documentBudget,java.util.concurrent.TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()-started));
                     throw timeout;
                 }
-                Path textFile = Path.of(output + ".txt");
-                if(!Files.isRegularFile(textFile))throw new IOException("OCR produced no text file");
-                if(Files.exists(textFile)&&Files.size(textFile)>10*1024*1024)throw new IOException("OCR-Ausgabe zu groß");
-                String recognized=Files.readString(textFile,StandardCharsets.UTF_8);
-                Path tsvFile=Path.of(output+".tsv");
-                int page=index+1;
-                if(Files.exists(tsvFile)&&Files.size(tsvFile)>10*1024*1024)throw new IOException("OCR-Ausgabe zu groß");
-                var pageWords=Files.exists(tsvFile)?OcrEvidence.parseTsv(Files.readString(tsvFile,StandardCharsets.UTF_8),page):List.<OcrEvidence.Word>of();
+                String recognized=primary.text();
+                var pageWords=primary.words();
                 int attempts=1;double correctionDegrees=0;
                 long retryBudget=documentBudget-java.util.concurrent.TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()-started);
                 if(OcrQualityPolicy.needsRetry(pageWords)&&retryBudget>=10){
@@ -213,25 +212,17 @@ public class DocumentExtractionService {
                         javax.imageio.ImageIO.write(prepared.image(),"png",corrected.toFile());
                         retryBudget=documentBudget-java.util.concurrent.TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()-started);
                         if(retryBudget<=0)throw new BoundedProcess.TimeoutException("OCR");
-                        var retry=new ProcessBuilder("tesseract",corrected.toString(),alternative.toString(),"-l",ocrLanguages(),"--psm","11","-c","tessedit_create_txt=1","-c","tessedit_create_tsv=1").redirectOutput(ProcessBuilder.Redirect.DISCARD).redirectErrorStream(true);
-                        retry.environment().put("OMP_THREAD_LIMIT","1");
-                        runOcrStep(retry,Math.min(pageTimeoutSeconds(),retryBudget));
-                        Path altText=Path.of(alternative+".txt"),altTsv=Path.of(alternative+".tsv");
-                        if(Files.isRegularFile(altText)&&Files.isRegularFile(altTsv)&&Files.size(altText)<=10*1024*1024&&Files.size(altTsv)<=10*1024*1024){
-                            var candidate=OcrEvidence.parseTsv(Files.readString(altTsv,StandardCharsets.UTF_8),page);
-                            if(OcrQualityPolicy.better(candidate,pageWords)){pageWords=prepared.map(candidate);recognized=Files.readString(altText,StandardCharsets.UTF_8);correctionDegrees=prepared.degrees();}
-                        }
+                        var candidate=engine().recognizeAlternative(corrected,alternative,languages,page,this::runOcrStep,Math.min(pageTimeoutSeconds(),retryBudget));
+                        if(candidate!=null&&OcrQualityPolicy.better(candidate.words(),pageWords)){pageWords=prepared.map(candidate.words());recognized=candidate.text();correctionDegrees=prepared.degrees();}
                     }catch(IOException failure){log.info("Alternative OCR kept primary result: page={}, reason={}",page,failure.getClass().getSimpleName());}
                     finally{
                         if(prepared!=null)prepared.image().flush();
-                        for(String suffix:List.of(".txt",".tsv"))Files.deleteIfExists(Path.of(alternative+suffix));
                         Files.deleteIfExists(directory.resolve("corrected-"+index+".png"));
-                        Files.deleteIfExists(directory.resolve("orientation-"+index+".osd"));
                     }
                 }
                 if(result.length()<MAX_TEXT_LENGTH)result.append(recognized).append('\n');
-                words.addAll(toEvidenceRaster(pageWords));
-                Files.deleteIfExists(image);Files.deleteIfExists(textFile);Files.deleteIfExists(tsvFile);
+                words.addAll(toEvidenceRaster(pageWords,profile.renderDpi()));
+                Files.deleteIfExists(image);
                 pages.set(index,new OcrEvidence.PageResult(page,recognized.isBlank()?"NO_TEXT":"OCR_EXTRACTED",attempts,correctionDegrees,limit(recognized)));
                 } catch(BoundedProcess.TimeoutException failure){
                     pages.set(index,new OcrEvidence.PageResult(index+1,"OCR_TIMEOUT",1));
@@ -240,12 +231,12 @@ public class DocumentExtractionService {
                     pages.set(index,new OcrEvidence.PageResult(index+1,"FAILED",1));
                 }
                 document.setExtractedText(limit(result.toString()));
-                document.setOcrEvidenceJson(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(new OcrEvidence(engineVersion,"TESSERACT_WORD_MIN_V2",200,ocrThreshold,words,pages)));
+                document.setOcrEvidenceJson(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(new OcrEvidence(engineVersion,engine().method()+profile.methodSuffix(),ScanProfile.EVIDENCE_DPI,ocrThreshold,words,pages)));
                 checkpoint.accept(document);
             }
             log.info("OCR completed: pages={}, ocrPages={}, textPages={}, elapsedMillis={}",pageTexts.size(),requiredPages,pageTexts.size()-requiredPages,java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-started));
             if(!Double.isFinite(ocrThreshold)||ocrThreshold<0||ocrThreshold>1)throw new IllegalArgumentException("Ungültige OCR-Konfidenzschwelle");
-            document.setOcrEvidenceJson(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(new OcrEvidence(engineVersion,"TESSERACT_WORD_MIN_V2",200,ocrThreshold,List.copyOf(words),pages)));
+            document.setOcrEvidenceJson(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(new OcrEvidence(engineVersion,engine().method()+profile.methodSuffix(),ScanProfile.EVIDENCE_DPI,ocrThreshold,List.copyOf(words),pages)));
             return limit(result.toString());
         } finally {
             deleteDirectory(directory);
@@ -258,11 +249,7 @@ public class DocumentExtractionService {
         var source=ScanGeometry.read(image);
         ScanGeometry.Prepared upright=null;
         try{
-            int rotation=0;Path orientation=directory.resolve("orientation-"+index);
-            var process=new ProcessBuilder("tesseract",image.toString(),orientation.toString(),"-l","osd","--psm","0").redirectOutput(ProcessBuilder.Redirect.DISCARD).redirectErrorStream(true);
-            process.environment().put("OMP_THREAD_LIMIT","1");
-            try{runOcrStep(process,seconds);Path report=Path.of(orientation+".osd");if(Files.isRegularFile(report)&&Files.size(report)<=16_384)rotation=ScanGeometry.orientation(Files.readString(report,StandardCharsets.UTF_8));}
-            catch(IOException unavailable){log.debug("Scan orientation not available: reason={}",unavailable.getClass().getSimpleName());}
+            int rotation=engine().detectRotation(image,directory.resolve("orientation-"+index),this::runOcrStep,seconds);
             upright=ScanGeometry.rotate(source,rotation);
             double skew=ScanGeometry.deskewAngle(upright.image());
             if(skew==0)return upright;
@@ -276,10 +263,6 @@ public class DocumentExtractionService {
 
     long pageTimeoutSeconds(){return Math.max(1,Math.min(300,ocrPageTimeoutSeconds));}
     long documentTimeoutSeconds(){return Math.max(60,Math.min(1800,ocrDocumentTimeoutSeconds));}
-
-    private String tesseractVersion(Path directory){
-        try{Path file=directory.resolve("version.txt");BoundedProcess.run(new ProcessBuilder("tesseract","--version").redirectErrorStream(true).redirectOutput(file.toFile()),5);return Files.readAllLines(file).stream().findFirst().orElse("unknown");}catch(Exception e){return "unknown";}
-    }
 
     private boolean isPdf(LcDocument document) {
         String type = document.getContentType() == null ? "" : document.getContentType().toLowerCase(Locale.ROOT);
