@@ -12,7 +12,7 @@ import java.util.*;
 /** Group inbox: open tasks handed to the user's teams. A member claims a task (atomically) or hands it back. */
 @Service
 public class GroupInboxService {
- public record Item(UUID taskId,UUID lcId,String lcReference,String title,LocalDate dueDate,UUID teamId,String teamName,String assignedTo,LocalDateTime claimedAt,String createdBy,String workflow,boolean fourEyes){}
+ public record Item(UUID taskId,UUID lcId,String lcReference,String title,LocalDate dueDate,UUID teamId,String teamName,String assignedTo,LocalDateTime claimedAt,String createdBy,String workflow,boolean fourEyes,String source,String subjectType,UUID subjectId){}
  private final LcTaskRepository tasks;private final TeamService teams;private final LetterOfCreditRepository lcs;private final de.ostms.lc.lc.repository.WorkflowRepository workflows;
  public GroupInboxService(LcTaskRepository t,TeamService te,LetterOfCreditRepository l,de.ostms.lc.lc.repository.WorkflowRepository w){tasks=t;teams=te;lcs=l;workflows=w;}
 
@@ -23,8 +23,8 @@ public class GroupInboxService {
   var byId=new HashMap<UUID,Team>();mine.forEach(t->byId.put(t.getId(),t));
   var items=new ArrayList<Item>();
   for(LcTask task:tasks.openForTeams(byId.keySet())){
-   var lc=lcs.findById(task.getLetterOfCreditId()).orElse(null);
-   items.add(new Item(task.getId(),task.getLetterOfCreditId(),lc==null?null:lc.getReference(),task.getTitle(),task.getDueDate(),task.getTeamId(),byId.get(task.getTeamId()).getName(),task.getAssignedTo(),task.getClaimedAt(),task.getCreatedBy(),workflowLabel(task),task.isFourEyes()));
+   var lc=task.getLetterOfCreditId()==null?null:lcs.findById(task.getLetterOfCreditId()).orElse(null);
+   items.add(new Item(task.getId(),task.getLetterOfCreditId(),lc==null?null:lc.getReference(),task.getTitle(),task.getDueDate(),task.getTeamId(),byId.get(task.getTeamId()).getName(),task.getAssignedTo(),task.getClaimedAt(),task.getCreatedBy(),workflowLabel(task),task.isFourEyes(),task.getSource(),task.getSubjectType(),task.getSubjectId()));
   }
   items.sort(Comparator.comparing((Item i)->i.assignedTo()!=null).thenComparing(i->i.dueDate()==null?LocalDate.MAX:i.dueDate()));
   return items;
@@ -53,6 +53,18 @@ public class GroupInboxService {
    throw new IllegalStateException(current.getAssignedTo()==null?"Der Auftrag kann nicht übernommen werden.":"Der Auftrag wurde bereits von "+current.getAssignedTo()+" übernommen.");
   }
   return tasks.findById(taskId).orElseThrow();
+ }
+
+ /** Completes a team task that has no dossier (automatic tasks): by a team member, or by the person who took it. */
+ @Transactional public LcTask complete(UUID taskId,String username){
+  var task=tasks.findById(taskId).orElseThrow(()->new NoSuchElementException("Auftrag nicht gefunden."));
+  if(task.getWorkflowId()!=null)throw new IllegalStateException("Workflow-Schritte werden über den Workflow abgeschlossen.");
+  requireMember(task,username);
+  if(task.isCompleted())throw new IllegalStateException("Der Auftrag ist bereits erledigt.");
+  if(task.getAssignedTo()!=null&&!task.getAssignedTo().equalsIgnoreCase(username))throw new org.springframework.security.access.AccessDeniedException("Der Auftrag wurde von "+task.getAssignedTo()+" übernommen.");
+  task.setAssignedTo(username);if(task.getClaimedAt()==null)task.setClaimedAt(LocalDateTime.now());
+  task.setCompleted(true);task.setCompletedAt(LocalDateTime.now());task.setCompletedBy(username);
+  return tasks.save(task);
  }
 
  /** The claimer (or a team member managing users) puts the task back into the inbox. */

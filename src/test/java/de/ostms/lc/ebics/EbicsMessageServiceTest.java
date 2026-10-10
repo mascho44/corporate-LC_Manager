@@ -139,4 +139,23 @@ class EbicsMessageServiceTest {
   c.recordFetch("x");assertThat(c.fetchDue(java.time.LocalDateTime.now())).isFalse();
   assertThat(c.fetchDue(java.time.LocalDateTime.now().plusMinutes(16))).isTrue();
  }
+ @Test void messagesCreateAutomaticTasksAndHandlingThemClosesTheTasks(){
+  activate();bank.put("MT700",text(MT700));
+  var auto=Mockito.mock(de.ostms.lc.lc.service.AutoTaskService.class);
+  org.springframework.test.util.ReflectionTestUtils.setField(service,"autoTasks",auto);
+  service.fetch(null);
+  var id=service.list().get(0).id();
+  Mockito.verify(auto).onEbicsMessage(Mockito.eq(id),Mockito.eq("MT700"),Mockito.eq("LC100"));
+  service.fetch(null);
+  Mockito.verify(auto,Mockito.times(1)).onEbicsMessage(Mockito.any(),Mockito.anyString(),Mockito.anyString());
+  service.discard(id,null);
+  Mockito.verify(auto).closeFor(de.ostms.lc.lc.service.AutoTaskService.EBICS_MESSAGE,id,null);
+ }
+ @Test void aFailingAutomaticTaskDoesNotBreakTheFetch(){
+  activate();bank.put("MT700",text(MT700));
+  var auto=Mockito.mock(de.ostms.lc.lc.service.AutoTaskService.class);
+  Mockito.when(auto.onEbicsMessage(Mockito.any(),Mockito.anyString(),Mockito.anyString())).thenThrow(new IllegalStateException("boom"));
+  org.springframework.test.util.ReflectionTestUtils.setField(service,"autoTasks",auto);
+  assertThat(service.fetch(null).fetched()).isEqualTo(1);
+ }
 }

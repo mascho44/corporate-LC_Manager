@@ -45,12 +45,14 @@
  function row(item, kind) {
   const r = node('article', undefined, 'membership-row team-task-row');
   const title = node('b', item.title);
-  const meta = node('span', ` · ${item.lcReference || 'ohne Akte'} · ${item.teamName}${item.workflow ? ' · ' + item.workflow : ''}${item.fourEyes ? ' · Vier-Augen' : ''}${item.dueDate ? ' · fällig ' + fmt(item.dueDate) : ''}${kind === 'others' ? ' · bei ' + item.assignedTo : ''}`);
+  const subject = { EBICS_MESSAGE: 'EBICS-Nachricht', INBOX_ITEM: 'Posteingang' }[item.subjectType];
+  const meta = node('span', ` · ${item.lcReference || subject || 'ohne Akte'} · ${item.teamName}${item.workflow ? ' · ' + item.workflow : ''}${item.fourEyes ? ' · Vier-Augen' : ''}${item.dueDate ? ' · fällig ' + fmt(item.dueDate) : ''}${kind === 'others' ? ' · bei ' + item.assignedTo : ''}`);
   r.append(title, meta);
   const button = (label, handler, css) => { const b = node('button', label); b.type = 'button'; b.className = css || 'secondary'; b.onclick = handler; r.append(b); };
+  if (item.subjectType === 'EBICS_MESSAGE' || item.subjectType === 'INBOX_ITEM') button('Öffnen', () => document.querySelector(item.subjectType === 'EBICS_MESSAGE' ? '#appNavEbics' : '#appNavInbox')?.click());
   if (kind === 'open') button('Übernehmen', () => act(() => json(`/api/tasks/${item.taskId}/claim`, { method: 'POST' }), 'Auftrag übernommen.'), 'primary');
   if (kind === 'mine') {
-   button('Erledigt', () => act(() => json(`/api/lcs/${item.lcId}/tasks/${item.taskId}/complete?completed=true`, { method: 'PUT' }), 'Auftrag erledigt.'), 'primary');
+   button('Erledigt', () => act(() => item.lcId ? json(`/api/lcs/${item.lcId}/tasks/${item.taskId}/complete?completed=true`, { method: 'PUT' }) : json(`/api/tasks/${item.taskId}/complete`, { method: 'POST' }), 'Auftrag erledigt.'), 'primary');
    button('Zurückgeben', () => act(() => json(`/api/tasks/${item.taskId}/release`, { method: 'POST' }), 'Auftrag zurück in die Gruppeninbox gelegt.'));
   }
   return r;
@@ -94,6 +96,27 @@
   return form;
  }
 
+ async function automationPanel(teams) {
+  const rules = await json('/api/automation-rules').catch(() => []);
+  if (!rules.length) return null;
+  const names = { EBICS_MESSAGE: 'Neue EBICS-Nachricht', INBOX_ITEM: 'Neues Dokument im Posteingang', DEADLINE: 'Frist oder Wiedervorlage steht an' };
+  const box = node('div'); box.append(node('h3', 'Automatische Aufträge'), node('p', 'Aufträge entstehen automatisch für das gewählte Team und schließen sich, sobald die Nachricht bzw. das Dokument bearbeitet ist.'));
+  rules.forEach(rule => {
+   const form = document.createElement('form'); form.className = 'form-grid auto-rule';
+   const on = document.createElement('input'); on.type = 'checkbox'; on.checked = rule.enabled;
+   const onLabel = node('label', ' ' + names[rule.trigger]); onLabel.prepend(on);
+   const team = document.createElement('select'); teams.filter(t => t.active).forEach(t => { const o = node('option', t.name); o.value = t.id; team.append(o); }); if (rule.teamId) team.value = rule.teamId;
+   const teamLabel = node('label', 'Team'); teamLabel.append(team);
+   form.append(onLabel, teamLabel);
+   let days = null;
+   if (rule.trigger === 'DEADLINE') { days = document.createElement('input'); days.type = 'number'; days.min = 0; days.max = 60; days.value = rule.leadDays; const l = node('label', 'Vorlauf (Tage)'); l.append(days); form.append(l); }
+   const save = node('button', 'Speichern'); save.type = 'submit'; form.append(save);
+   form.onsubmit = event => { event.preventDefault(); return act(() => json('/api/automation-rules', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ trigger: rule.trigger, enabled: on.checked, teamId: team.value || null, leadDays: days ? Number(days.value) : null }) }), 'Regel gespeichert.'); };
+   box.append(form);
+  });
+  return box;
+ }
+
  async function teamAdmin() {
   const box = node('div'); box.append(node('h3', 'Teams verwalten'));
   const [teams, people] = await Promise.all([json('/api/teams'), json('/api/users/assignable').catch(() => [])]);
@@ -131,7 +154,7 @@
    const teams = can('USER_MANAGE') ? await json('/api/teams') : mine;
    if (teams.some(t => t.active) && typeof data !== 'undefined' && data.length) { section.append(node('h3', 'Neuer Teamauftrag'), newTaskForm(teams)); }
    if (can('LC_EDIT') && teams.some(t => t.active)) { const wf = await workflowForm(teams); if (wf) section.append(node('h3', 'Workflow starten'), wf); }
-   if (can('USER_MANAGE')) section.append(await teamAdmin());
+   if (can('USER_MANAGE')) { const rules = await automationPanel(teams); if (rules) section.append(rules); section.append(await teamAdmin()); }
    badge();
   } catch (error) { message.textContent = error.message; }
  }
