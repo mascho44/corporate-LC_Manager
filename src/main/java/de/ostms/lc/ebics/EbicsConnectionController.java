@@ -11,5 +11,6 @@ public class EbicsConnectionController {
  @PostMapping("/keys") public EbicsConnectionService.Fingerprints keys(Authentication auth){return service.initialise(auth);}
  @PostMapping("/bank-keys") public EbicsConnectionService.Fingerprints bankKeys(Authentication auth){return service.fetchBankKeys(auth);}
  @GetMapping("/fingerprints") public EbicsConnectionService.Fingerprints fingerprints(){return service.fingerprints();}
+ @PutMapping("/auto-fetch") public EbicsConnectionService.View autoFetch(@RequestBody EbicsConnectionService.AutoFetchRequest request,Authentication auth){return service.setAutoFetch(request,auth);}
  @PostMapping("/reset") public EbicsConnectionService.View reset(Authentication auth){return service.reset(auth);}
 }

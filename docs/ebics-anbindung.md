@@ -31,5 +31,10 @@ Bei aktiver Verbindung holt *Nachrichten abholen* MT700, MT707, MT710 und MT760 
 - Recht: `SWIFT_IMPORT` für Liste, Abruf, Vorschau, Import und Verwerfen. Alle Aktionen stehen im Audit-Protokoll.
 - Antworten der Bank werden als Text (UTF-8, höchstens 512 KB) geprüft; Fehler eines Nachrichtentyps stoppen die anderen nicht.
 
-## Geplant
-Teil 3: zeitgesteuerter Abruf.
+## Teil 3: automatischer Abruf
+Unter *Abgeholte Nachrichten* lässt sich *Automatisch abrufen* einschalten (Intervall 5 Minuten bis 24 Stunden, Standard aus).
+- Nur bei aktiver Verbindung. Ein Hintergrundjob prüft jede Minute je Mandant, ob der Abruf fällig ist, und holt dann genau wie der Button ab.
+- Der Abruf **legt nur ab**. Importiert wird weiterhin ausschließlich nach Bestätigung durch einen Nutzer.
+- Der Menüpunkt zeigt die Zahl neuer, noch nicht bearbeiteter Nachrichten (ohne MT760), z. B. „EBICS-Bankanbindung (2)“.
+- Letzter Abruf und Ergebnis stehen im Panel; Audit-Einträge laufen unter dem Benutzer `system:ebics-auto-fetch`.
+- Fehler stoppen den Job nicht; der nächste Versuch folgt nach dem eingestellten Intervall.

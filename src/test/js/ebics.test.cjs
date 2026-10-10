@@ -3,7 +3,7 @@ const source=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static
 function fixture(allowed,state){
  const calls=[],pages=[];
  function node(tag){const n={tag,children:[],textContent:'',value:'',dataset:{},elements:{},style:{},
-  append(...c){this.children.push(...c);},replaceChildren(...c){this.children=c;},setAttribute(){},classList:{add(){},remove(){}}};return n;}
+  append(...c){this.children.push(...c);},prepend(...c){this.children.unshift(...c);},replaceChildren(...c){this.children=c;},setAttribute(){},classList:{add(){},remove(){}}};return n;}
  const nav=node('nav'),main=node('main');
  const form={elements:{}};
  const created=[];
@@ -42,4 +42,18 @@ test('active connection offers fetching and lists messages with import only for 
  const rows=all.filter(n=>n.className==='membership-row');assert.equal(rows.length,2);
  const labels=r=>r.children.filter(c=>c.tag==='button').map(b=>b.textContent);
  assert.deepEqual(labels(rows[0]),['Ansehen','Importieren','Verwerfen']);assert.deepEqual(labels(rows[1]),[]);
+});
+test('automatic fetch settings are sent and the navigation shows the number of new messages',async()=>{
+ const state={configured:true,status:'ACTIVE',encryptionConfigured:true,autoFetch:false,fetchIntervalMinutes:15,newMessages:2,url:'u',hostId:'h',partnerId:'p',userId:'u'};
+ const f=fixture(true,state);f.context.can=()=>true;
+ await f.context.setupEbics();
+ await new Promise(r=>setImmediate(r));
+ assert.match(f.nav.children[0].textContent,/EBICS-Bankanbindung \(2\)/);
+ await f.nav.children[0].onclick();
+ const all=[];(function walk(n){all.push(n);(n.children||[]).forEach(walk);})(f.main);
+ const toggle=all.find(n=>n.tag==='input'&&n.type==='checkbox'),select=all.find(n=>n.tag==='select');
+ const save=all.find(n=>n.tag==='button'&&n.textContent==='Übernehmen');
+ toggle.checked=true;select.value='60';await save.onclick();
+ const put=f.calls.find(c=>c.url==='/api/ebics/connection/auto-fetch');
+ assert.deepEqual(JSON.parse(put.options.body),{enabled:true,intervalMinutes:60});
 });

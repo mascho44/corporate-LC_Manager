@@ -12,17 +12,20 @@ import java.util.regex.Pattern;
 /** Configures the tenant's EBICS bank connection and runs the key setup (INI/HIA, then HPB after the bank released the subscriber). */
 @Service
 public class EbicsConnectionService {
- public record View(boolean configured,String url,String hostId,String partnerId,String userId,String status,String lastError,boolean encryptionConfigured){}
+ public record View(boolean configured,String url,String hostId,String partnerId,String userId,String status,String lastError,boolean encryptionConfigured,boolean autoFetch,int fetchIntervalMinutes,java.time.LocalDateTime lastFetchAt,String lastFetchResult,long newMessages){}
+ public record AutoFetchRequest(boolean enabled,int intervalMinutes){}
  public record Fingerprints(String a005,String e002,String x002){}
  public record Request(String url,String hostId,String partnerId,String userId){}
  private static final Pattern ID=Pattern.compile("[A-Za-z0-9]{1,35}");
+ @org.springframework.beans.factory.annotation.Autowired(required=false) private EbicsMessageRepository messages;
  private final EbicsConnectionRepository connections;private final EbicsClientPort client;private final EbicsCipher cipher;
  private final EbicsUrlPolicy urls;private final AuditService audit;
  public EbicsConnectionService(EbicsConnectionRepository c,EbicsClientPort p,EbicsCipher ci,EbicsUrlPolicy u,AuditService a){connections=c;client=p;cipher=ci;urls=u;audit=a;}
 
  @Transactional(readOnly=true) public View view(){
-  return connections.findCurrent().map(c->new View(true,c.getUrl(),c.getHostId(),c.getPartnerId(),c.getUserId(),c.getStatus().name(),c.getLastError(),cipher.configured()))
-   .orElse(new View(false,null,null,null,null,"NEW",null,cipher.configured()));
+  long fresh=messages==null?0:messages.countNew();
+  return connections.findCurrent().map(c->new View(true,c.getUrl(),c.getHostId(),c.getPartnerId(),c.getUserId(),c.getStatus().name(),c.getLastError(),cipher.configured(),c.isAutoFetch(),c.getFetchIntervalMinutes(),c.getLastFetchAt(),c.getLastFetchResult(),fresh))
+   .orElse(new View(false,null,null,null,null,"NEW",null,cipher.configured(),false,15,null,null,fresh));
  }
 
  @Transactional public View save(Request r,Authentication auth){
@@ -37,6 +40,16 @@ public class EbicsConnectionService {
   c.setUrl(url);c.setHostId(host);c.setPartnerId(partner);c.setUserId(user);
   connections.save(c);
   audit.recordInTransaction(auth,existing.isPresent()?"EBICS_CONNECTION_UPDATED":"EBICS_CONNECTION_CREATED","EBICS_CONNECTION",c.getId(),"Host "+host+" · Partner "+partner+" · Teilnehmer "+user+" · "+url);
+  return view();
+ }
+
+ /** Switches the scheduled fetch on or off; only an ACTIVE connection can be fetched automatically. */
+ @Transactional public View setAutoFetch(AutoFetchRequest r,Authentication auth){
+  var c=current();
+  if(r==null||r.intervalMinutes()<5||r.intervalMinutes()>1440)throw new IllegalArgumentException("Das Intervall muss zwischen 5 Minuten und 24 Stunden liegen.");
+  if(r.enabled()&&c.getStatus()!=EbicsStatus.ACTIVE)throw new IllegalStateException("Der automatische Abruf ist erst bei aktiver Verbindung möglich.");
+  c.setAutoFetch(r.enabled(),r.intervalMinutes());connections.save(c);
+  audit.recordInTransaction(auth,r.enabled()?"EBICS_AUTO_FETCH_ENABLED":"EBICS_AUTO_FETCH_DISABLED","EBICS_CONNECTION",c.getId(),"Intervall "+r.intervalMinutes()+" Minuten");
   return view();
  }
 

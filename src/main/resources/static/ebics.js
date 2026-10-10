@@ -20,11 +20,18 @@ async function setupEbics(){
  const messagesBox=document.createElement('div');messagesBox.hidden=true;
  const fetchButton=node('button','Nachrichten abholen (MT700/707/710/760)');fetchButton.type='button';
  const list=document.createElement('div');list.className='ebics-messages';
- messagesBox.append(node('h3','Abgeholte Nachrichten'),node('p','Nichts wird automatisch angelegt: Nachrichten erst ansehen, dann importieren oder verwerfen. MT760 wird nur abgelegt.'),fetchButton,list);
+ const autoBox=document.createElement('div');autoBox.className='ebics-auto-fetch';
+ const autoLabel=node('label','Automatisch abrufen'),autoToggle=document.createElement('input');autoToggle.type='checkbox';autoToggle.name='autoFetch';autoLabel.prepend(autoToggle);
+ const intervalLabel=node('label','alle '),interval=document.createElement('select');interval.name='interval';[[5,'5 Minuten'],[15,'15 Minuten'],[30,'30 Minuten'],[60,'1 Stunde'],[240,'4 Stunden'],[1440,'24 Stunden']].forEach(([v,l])=>{const o=node('option',l);o.value=v;interval.append(o);});intervalLabel.append(interval);
+ const autoSave=node('button','Übernehmen');autoSave.type='button';autoSave.className='secondary';const autoInfo=node('small','');
+ autoBox.append(autoLabel,intervalLabel,autoSave,autoInfo);
+ messagesBox.append(node('h3','Abgeholte Nachrichten'),autoBox,node('p','Nichts wird automatisch angelegt: Nachrichten erst ansehen, dann importieren oder verwerfen. MT760 wird nur abgelegt.'),fetchButton,list);
  section.append(node('h2','EBICS-Bankanbindung'),node('p','Eigener Teilnehmer für den Abruf von Akkreditivnachrichten (MT700/707/710/760). Ablauf: Verbindung speichern, Schlüssel senden, Teilnehmer bankseitig freigeben lassen (INI-Brief mit den Fingerabdrücken), danach Bankschlüssel abholen.'),message,info,form,actions,prints,messagesBox);
  document.querySelector('main').append(section);
  const labels={NEW:'Neu – Schlüssel fehlen',KEYS_SENT:'Schlüssel gesendet – wartet auf Freigabe durch die Bank',ACTIVE:'Aktiv',ERROR:'Fehler'};
  let busy=false;
+ function badge(c){nav.textContent='EBICS-Bankanbindung'+(c&&c.newMessages>0?' ('+c.newMessages+')':'');}
+ async function refreshBadge(){try{badge(await json('/api/ebics/connection'));}catch(ignored){}}
  function showPrints(p){prints.hidden=false;prints.textContent='Fingerabdrücke (SHA-256)\nA006 Signatur:      '+p.a005+'\nE002 Verschlüsselung: '+p.e002+'\nX002 Authentifizierung: '+p.x002;}
  async function refresh(){
   message.textContent='';
@@ -36,6 +43,8 @@ async function setupEbics(){
    save.disabled=c.configured&&c.status!=='NEW'&&c.status!=='ERROR';
    keys.disabled=!c.configured||!c.encryptionConfigured||c.status==='KEYS_SENT'||c.status==='ACTIVE';
    bank.disabled=c.status!=='KEYS_SENT';reset.disabled=!c.configured||c.status==='NEW';
+   badge(c);autoToggle.checked=Boolean(c.autoFetch);interval.value=String(c.fetchIntervalMinutes||15);
+   autoInfo.textContent=c.lastFetchAt?'Zuletzt abgerufen: '+String(c.lastFetchAt).replace('T',' ').slice(0,16)+(c.lastFetchResult?' · '+c.lastFetchResult:''):'Noch kein Abruf.';
    messagesBox.hidden=!(c.status==='ACTIVE'&&typeof can==='function'&&can('SWIFT_IMPORT'));
    if(!messagesBox.hidden)await loadMessages();
    if(c.configured&&c.status!=='NEW'){try{showPrints(await json('/api/ebics/connection/fingerprints'));}catch(e){prints.hidden=true;}}else prints.hidden=true;
@@ -76,5 +85,7 @@ async function setupEbics(){
  keys.onclick=()=>run(()=>post('/keys'),'Schlüssel erzeugt und an die Bank gesendet. Bitte den Teilnehmer bankseitig freigeben lassen.');
  bank.onclick=()=>run(()=>post('/bank-keys'),'Bankschlüssel abgeholt – die Verbindung ist aktiv.');
  reset.onclick=async()=>{if(await confirmAction('Schlüssel verwerfen und die Einrichtung neu beginnen? Der Teilnehmer muss bankseitig ggf. zurückgesetzt werden.'))run(()=>post('/reset'),'Zurückgesetzt.');};
+ autoSave.onclick=()=>run(()=>json('/api/ebics/connection/auto-fetch',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({enabled:autoToggle.checked,intervalMinutes:Number(interval.value)})}),autoToggle.checked?'Automatischer Abruf eingeschaltet.':'Automatischer Abruf ausgeschaltet.');
  nav.onclick=()=>{appNavigate('ebics',nav);return refresh();};
+ refreshBadge();
 }

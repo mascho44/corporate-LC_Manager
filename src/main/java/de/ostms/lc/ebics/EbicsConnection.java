@@ -18,6 +18,16 @@ public class EbicsConnection extends TenantOwnedEntity {
  @Column(name="last_error",length=500) private String lastError;
  @Column(name="created_at",nullable=false,updatable=false) private LocalDateTime createdAt=LocalDateTime.now();
  @Column(name="updated_at",nullable=false) private LocalDateTime updatedAt=LocalDateTime.now();
+ @Column(name="auto_fetch",nullable=false) private boolean autoFetch=false;
+ @Column(name="fetch_interval_minutes",nullable=false) private int fetchIntervalMinutes=15;
+ @Column(name="last_fetch_at") private LocalDateTime lastFetchAt;
+ @Column(name="last_fetch_result",length=500) private String lastFetchResult;
+ public boolean isAutoFetch(){return autoFetch;} public int getFetchIntervalMinutes(){return fetchIntervalMinutes;}
+ public LocalDateTime getLastFetchAt(){return lastFetchAt;} public String getLastFetchResult(){return lastFetchResult;}
+ public void setAutoFetch(boolean enabled,int minutes){autoFetch=enabled;fetchIntervalMinutes=minutes;}
+ public void recordFetch(String result){lastFetchAt=LocalDateTime.now();lastFetchResult=result==null?null:(result.length()>480?result.substring(0,480):result);}
+ /** True when automatic fetching is on and the interval since the last run has elapsed. */
+ public boolean fetchDue(LocalDateTime now){return autoFetch&&(lastFetchAt==null||!lastFetchAt.plusMinutes(fetchIntervalMinutes).isAfter(now));}
  @PreUpdate private void touch(){updatedAt=LocalDateTime.now();}
  public UUID getId(){return id;}
  public String getUrl(){return url;} public void setUrl(String v){url=v;}
