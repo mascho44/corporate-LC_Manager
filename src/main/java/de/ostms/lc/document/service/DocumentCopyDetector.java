@@ -15,6 +15,8 @@ public final class DocumentCopyDetector {
  private static final Pattern SPACED_RUN=Pattern.compile("(?<!\\S)(?:\\p{L} ){5,}\\p{L}(?!\\S)");
  private static final Pattern WORD_KIND=Pattern.compile("(?i)^"+KIND+"$");
  private static final Pattern SPACED=Pattern.compile("^(?:\\p{L} ){3,}\\p{L}$");
+ /** True for a single word that names a copy kind (ORIGINAL, COPY, KOPIE, ...); used to locate a stamp on a page. */
+ public static boolean isKindWord(String word){return word!=null&&WORD_KIND.matcher(clean(word)).matches();}
  public record Hint(String kind,Integer copyNumber,String evidence){}
  private DocumentCopyDetector(){}
  private static String ordinals(String stamp){return stamp.replaceFirst("(?i)^first[\\t ]++","1 ").replaceFirst("(?i)^second[\\t ]++","2 ").replaceFirst("(?i)^third[\\t ]++","3 ");}
