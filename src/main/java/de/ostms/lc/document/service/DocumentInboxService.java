@@ -68,7 +68,10 @@ public class DocumentInboxService {
     public List<DocumentInboxItemView> openItems() {
         var items=inbox.findTop100ByStatusOrderByReceivedAtDesc("OPEN");
         var targets=lettersOfCredit.findAssignmentTargets();
-        return items.stream().map(item->view(item,targets)).toList();
+        var own=new java.util.HashMap<UUID,List<de.ostms.lc.document.api.LcAssignmentCandidate>>();
+        items.forEach(item->own.put(item.getId(),LcAssignmentMatcher.suggest(item,targets)));
+        var candidates=LcAssignmentMatcher.withSiblingSuggestions(items,own);
+        return items.stream().map(item->DocumentInboxItemView.from(item,candidates.get(item.getId()))).toList();
     }
 
     @Transactional(readOnly = true)

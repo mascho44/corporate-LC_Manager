@@ -28,16 +28,16 @@ final class DocumentPresentationCheck {
  }
  static List<CheckResult> evaluate(String requirement,List<LcDocument> docs){
   if(docs.isEmpty())return List.of();var counts=count(docs);var results=new ArrayList<CheckResult>();
-  String evidence="Captured designations: "+counts.originals()+" originals, "+counts.copies()+" copies, "+counts.unspecified()+" unspecified. Each document counts once. Physical originals and authenticity require human review.";
+  String evidence="Erfasste Kennzeichnungen: "+counts.originals()+" "+(counts.originals()==1?"Original":"Originale")+", "+counts.copies()+" "+(counts.copies()==1?"Kopie":"Kopien")+", "+counts.unspecified()+" ohne Kennzeichnung. Jedes Dokument zählt einmal. Physische Originale und Echtheit müssen von einer Person geprüft werden.";
   String name=docs.get(0).getOriginalFilename();boolean uncertain=counts.unspecified()>0||counts.duplicateNumbers()||counts.multipleDocuments();
   var original=required(requirement,true);var copy=required(requirement,false);
   for(boolean originals:new boolean[]{true,false}){
    var expected=originals?original:copy;if(expected.isEmpty())continue;
    int actual=originals?counts.originals():counts.copies();var severity=uncertain?CheckResult.Severity.WARNING:actual<expected.getAsInt()?CheckResult.Severity.DISCREPANCY:CheckResult.Severity.OK;
-   String reason=counts.multipleDocuments()?"Different or missing document numbers: verify that these belong to one document set.":counts.duplicateNumbers()?"Duplicate Original/Copy numbers require review.":counts.unspecified()>0?"Unspecified designations require review.":"Captured designations only; no authenticity claim.";
-   results.add(new CheckResult(severity,originals?"DOCUMENT_ORIGINAL_COUNT":"DOCUMENT_COPY_COUNT",(originals?"Originals":"Copies")+": "+actual+" captured / "+expected.getAsInt()+" required. "+reason,requirement,name,evidence));
+   String reason=counts.multipleDocuments()?"Unterschiedliche oder fehlende Dokumentnummern: bitte prüfen, ob die Dokumente zu einem Satz gehören.":counts.duplicateNumbers()?"Doppelte Original-/Kopie-Nummern müssen geprüft werden.":counts.unspecified()>0?"Dokumente ohne Original-/Kopie-Kennzeichnung müssen geprüft werden.":"Nur erfasste Kennzeichnungen, keine Aussage zur Echtheit.";
+   results.add(new CheckResult(severity,originals?"DOCUMENT_ORIGINAL_COUNT":"DOCUMENT_COPY_COUNT",(originals?"Originale":"Kopien")+": "+actual+" erfasst / "+expected.getAsInt()+" gefordert. "+reason,requirement,name,evidence));
   }
-  if(results.isEmpty())results.add(new CheckResult(CheckResult.Severity.WARNING,"DOCUMENT_COPIES_MANUAL_REVIEW","The required Original/Copy quantity is not unambiguous. Review manually.",requirement,name,evidence));
+  if(results.isEmpty())results.add(new CheckResult(CheckResult.Severity.WARNING,"DOCUMENT_COPIES_MANUAL_REVIEW","Die geforderte Anzahl Originale/Kopien ist nicht eindeutig (z. B. „in duplicate“). Bitte manuell prüfen.",requirement,name,evidence));
   return List.copyOf(results);
  }
  private DocumentPresentationCheck(){}
