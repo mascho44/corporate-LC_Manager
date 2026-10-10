@@ -41,14 +41,25 @@ public class DocumentFactSuggester {
    labelled(text,"port\\s+of\\s+discharge").ifPresent(v->add(out,current,Field.DOCUMENT_DISCHARGE_PORT,v,"Entladehafen im Text erkannt"));
    labelled(text,"carrier").ifPresent(v->add(out,current,Field.DOCUMENT_CARRIER,v,"Frachtführer im Text erkannt"));
   }
-  weight(text,"(?:total\\s+)?gross\\s+weight|gross\\s+wt\\.?|brutto(?:gewicht)?").ifPresent(w->{
-   add(out,current,Field.DOCUMENT_GROSS_WEIGHT,w[0],"Bruttogewicht im Text erkannt");
-   if(w[1]!=null)add(out,current,Field.DOCUMENT_WEIGHT_UNIT,w[1],"Gewichtseinheit im Text erkannt");
-  });
-  weight(text,"(?:total\\s+)?net\\s+weight|net\\s+wt\\.?|netto(?:gewicht)?").ifPresent(w->{
-   add(out,current,Field.DOCUMENT_NET_WEIGHT,w[0],"Nettogewicht im Text erkannt");
-   if(w[1]!=null&&out.stream().noneMatch(x->x.field()==Field.DOCUMENT_WEIGHT_UNIT))add(out,current,Field.DOCUMENT_WEIGHT_UNIT,w[1],"Gewichtseinheit im Text erkannt");
-  });
+  if(doc.getDocumentType()==DocumentType.PACKING_LIST){
+   var pl=PackingListFacts.detect(text);
+   if(pl.packageCount()!=null)add(out,current,Field.DOCUMENT_PACKAGE_COUNT,String.valueOf(pl.packageCount()),"Packstückzahl im Text erkannt ("+pl.packageUnit()+")");
+   if(pl.grossWeight()!=null)add(out,current,Field.DOCUMENT_GROSS_WEIGHT,pl.grossWeight(),"Bruttogewicht im Text erkannt");
+   if(pl.netWeight()!=null)add(out,current,Field.DOCUMENT_NET_WEIGHT,pl.netWeight(),"Nettogewicht im Text erkannt");
+   if(pl.weightUnit()!=null)add(out,current,Field.DOCUMENT_WEIGHT_UNIT,pl.weightUnit(),"Gewichtseinheit im Text erkannt");
+  }else{
+   weight(text,"(?:total\\s+)?gross\\s+weight|gross\\s+wt\\.?|brutto(?:gewicht)?").ifPresent(w->{
+    add(out,current,Field.DOCUMENT_GROSS_WEIGHT,w[0],"Bruttogewicht im Text erkannt");
+    if(w[1]!=null)add(out,current,Field.DOCUMENT_WEIGHT_UNIT,w[1],"Gewichtseinheit im Text erkannt");
+   });
+   weight(text,"(?:total\\s+)?net\\s+weight|net\\s+wt\\.?|netto(?:gewicht)?").ifPresent(w->{
+    add(out,current,Field.DOCUMENT_NET_WEIGHT,w[0],"Nettogewicht im Text erkannt");
+    if(w[1]!=null&&out.stream().noneMatch(x->x.field()==Field.DOCUMENT_WEIGHT_UNIT))add(out,current,Field.DOCUMENT_WEIGHT_UNIT,w[1],"Gewichtseinheit im Text erkannt");
+   });
+  }
+  var parties=DocumentPartyFacts.detect(text);
+  if(parties.applicantCountry()!=null)add(out,current,Field.DOCUMENT_APPLICANT_ADDRESS_COUNTRY,parties.applicantCountry(),"Land der Auftraggeber-Adresse im Text erkannt: "+parties.applicantSource());
+  if(parties.beneficiaryCountry()!=null)add(out,current,Field.DOCUMENT_BENEFICIARY_ADDRESS_COUNTRY,parties.beneficiaryCountry(),"Land der Begünstigten-Adresse im Text erkannt: "+parties.beneficiarySource());
   return out;
  }
  /** Value after a printed label on the same line, or on the next non-empty line; null unless exactly one distinct plausible value exists. */

@@ -113,6 +113,7 @@ public class DocumentExtractionService {
             String text=limit(normalize(recognized));document.setExtractedText(text);
             if(document.getDocumentDate()==null)document.setDocumentDate(DocumentDateDetector.detect(text).date());
             match(DOCUMENT_NUMBER, text, 1).ifPresent(document::setExtractedDocumentNumber);
+            if(match(DOCUMENT_NUMBER, text, 1).isEmpty())InsuranceNumberDetector.detect(text).ifPresent(document::setExtractedDocumentNumber);
             document.setExtractedReference(DocumentReferenceDetector.detect(text));
             var amountMatcher = AMOUNT.matcher(text);
             if (amountMatcher.find()) {

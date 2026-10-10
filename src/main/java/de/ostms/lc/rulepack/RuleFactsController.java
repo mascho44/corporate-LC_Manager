@@ -64,6 +64,45 @@ public class RuleFactsController {
  public List<DocumentFactSuggester.Suggestion> suggestions(@PathVariable UUID lcId,@PathVariable UUID id){
   return suggester==null?List.of():suggester.suggest(documentInLc(lcId,id));
  }
+ @org.springframework.beans.factory.annotation.Autowired(required=false) private LcFactSuggester lcSuggester;
+ public record DocumentSuggestions(UUID documentId,String filename,List<DocumentFactSuggester.Suggestion> suggestions){}
+ public record SuggestionOverview(List<DocumentFactSuggester.Suggestion> lc,List<DocumentSuggestions> documents,int total){}
+ public record Applied(int lcFields,int documentFields,int documents){}
+ /** Everything that could be proposed for this dossier: LC-level facts from the parties and document facts from the recognised text. */
+ @GetMapping("/rule-facts/suggestions") @Transactional(readOnly=true)
+ public SuggestionOverview allSuggestions(@PathVariable UUID lcId){
+  var lc=lcs.findById(lcId).orElseThrow();
+  var lcSuggestions=lcSuggester==null?List.<DocumentFactSuggester.Suggestion>of():lcSuggester.suggest(lc);
+  var perDocument=new ArrayList<DocumentSuggestions>();int total=lcSuggestions.size();
+  if(suggester!=null)for(var doc:documents.findByLetterOfCreditIdOrderByUploadedAtDesc(lcId)){
+   var found=suggester.suggest(doc);if(found.isEmpty())continue;
+   perDocument.add(new DocumentSuggestions(doc.getId(),doc.getOriginalFilename(),found));total+=found.size();
+  }
+  return new SuggestionOverview(lcSuggestions,List.copyOf(perDocument),total);
+ }
+ /** Stores the proposals for fields that are still empty; values that were entered or changed by a person are never touched. */
+ @PostMapping("/rule-facts/suggestions/apply") @Transactional
+ public Applied applySuggestions(@PathVariable UUID lcId,Authentication auth){
+  var overview=allSuggestions(lcId);int lcFields=0,docFields=0,docs=0;
+  boolean mayEditLc=auth!=null&&auth.getAuthorities().stream().anyMatch(a->a.getAuthority().equals("PERM_LC_EDIT"));
+  var lc=lcs.findById(lcId).orElseThrow();
+  if(mayEditLc){
+   var merged=new EnumMap<Field,String>(Field.class);merged.putAll(RuleFacts.read(lc.getRuleFactsJson()));int before=merged.size();
+   for(var s:overview.lc())if(blank(merged.get(s.field())))merged.put(s.field(),s.value());
+   lcFields=merged.size()-before;
+   if(lcFields>0)updateLc(lcId,merged,auth);
+  }
+  for(var entry:overview.documents()){
+   var doc=documentInLc(lcId,entry.documentId());
+   var merged=new EnumMap<Field,String>(Field.class);merged.putAll(RuleFacts.read(doc.getRuleFactsJson()));int before=merged.size();
+   for(var s:entry.suggestions())if(blank(merged.get(s.field())))merged.put(s.field(),s.value());
+   int added=merged.size()-before;
+   if(added>0){updateDocument(lcId,doc.getId(),merged,auth);docFields+=added;docs++;}
+  }
+  audit.recordInTransaction(auth,"RULE_FACTS_SUGGESTIONS_APPLIED","LETTER_OF_CREDIT",lcId,lcFields+" LC-Angaben, "+docFields+" Dokumentangaben in "+docs+" Dokumenten übernommen");
+  return new Applied(lcFields,docFields,docs);
+ }
+ private static boolean blank(String v){return v==null||v.isBlank();}
  @PutMapping("/documents/{id}/rule-facts") @Transactional
  public Map<Field,String> saveDocument(@PathVariable UUID lcId,@PathVariable UUID id,jakarta.servlet.http.HttpServletRequest request,Authentication auth)throws java.io.IOException{
   return updateDocument(lcId,id,RuleFacts.decodeRequest(request.getInputStream().readNBytes(RuleFacts.MAX_BYTES+1)),auth);

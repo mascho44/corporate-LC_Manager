@@ -44,4 +44,16 @@ class DocumentFactSuggesterTest {
   var f=suggester.suggest(doc);
   assertEquals("2.5",f.stream().filter(x->x.field()==PackDefinition.Field.DOCUMENT_GROSS_WEIGHT).findFirst().orElseThrow().value());
  }
+ @Test void packingListGetsPackageCountWeightsAndPartyCountries(){
+  var doc=new LcDocument();doc.setDocumentType(DocumentType.PACKING_LIST);
+  doc.setExtractedText("PACKING LIST\nSeller: SUPPLIER LTD\nRoad 1\nShanghai\nChina\n\nBuyer: BUYER AG\nStr. 2\nZürich\nSwitzerland\n\nTotal packages: 12\nGross weight: 300 kg\nNet weight: 280 kg\n");
+  var fields=suggester.suggest(doc).stream().collect(java.util.stream.Collectors.toMap(DocumentFactSuggester.Suggestion::field,DocumentFactSuggester.Suggestion::value));
+  assertEquals("12",fields.get(PackDefinition.Field.DOCUMENT_PACKAGE_COUNT));assertEquals("300",fields.get(PackDefinition.Field.DOCUMENT_GROSS_WEIGHT));assertEquals("280",fields.get(PackDefinition.Field.DOCUMENT_NET_WEIGHT));
+  assertEquals("KG",fields.get(PackDefinition.Field.DOCUMENT_WEIGHT_UNIT));assertEquals("China",fields.get(PackDefinition.Field.DOCUMENT_BENEFICIARY_ADDRESS_COUNTRY));assertEquals("Switzerland",fields.get(PackDefinition.Field.DOCUMENT_APPLICANT_ADDRESS_COUNTRY));
+ }
+ @Test void packageCountIsOnlyProposedForPackingLists(){
+  var doc=new LcDocument();doc.setDocumentType(DocumentType.COMMERCIAL_INVOICE);doc.setExtractedText("Total packages: 12\nGross weight: 300 kg");
+  var fields=suggester.suggest(doc).stream().map(DocumentFactSuggester.Suggestion::field).toList();
+  assertFalse(fields.contains(PackDefinition.Field.DOCUMENT_PACKAGE_COUNT));assertTrue(fields.contains(PackDefinition.Field.DOCUMENT_GROSS_WEIGHT));
+ }
 }
