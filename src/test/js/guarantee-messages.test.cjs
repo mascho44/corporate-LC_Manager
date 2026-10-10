@@ -8,7 +8,7 @@ test('only dossiers of kind GUARANTEE get the badge',()=>{
 test('message text is escaped before it reaches the page',()=>{
  const m=load();
  const html=m.messageHtml({messageType:'MT799',reference:'<b>R</b>',relatedReference:'LC"1',importedAt:'2026-10-10T09:30:00',narrative:'<script>alert(1)</script> & more'});
- assert.doesNotMatch(html,/<script>/);assert.doesNotMatch(html,/<b>R<\/b>/);
+ assert.equal(html.includes('<script'),false);assert.equal(html.includes('<b>R'),false);
  assert.match(html,/&lt;script&gt;/);assert.match(html,/LC&quot;1/);assert.match(html,/2026-10-10 09:30/);
 });
 test('the panel is empty without messages and counts them otherwise',()=>{
