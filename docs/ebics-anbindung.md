@@ -27,7 +27,8 @@ Bei aktiver Verbindung holt *Nachrichten abholen* MT700, MT707, MT710 und MT760 
 - Jede Nachricht wird einmal je Mandant abgelegt (SHA-256 des Inhalts); erneutes Abholen derselben Nachricht zählt als „bereits bekannt“.
 - **Nichts wird automatisch angelegt.** Pro Nachricht: *Ansehen* (Vorschau des SWIFT-Imports mit Fehlern und Hinweisen),
   *Importieren* (wie der manuelle SWIFT-Import; MT707 setzt Prüfentscheidungen zurück) oder *Verwerfen*.
-- MT760 wird nur abgelegt, ein Import ist nicht vorgesehen.
+- Alle Typen sind importierbar: MT700/MT710 und MT760 als Akte (MT760 als Garantie), MT707 als Änderung, MT199/MT799 als Bankmitteilung.
+- Welche Typen abgeholt werden, steuert `EBICS_MESSAGE_TYPES` (Standard `MT700,MT707,MT710,MT760`; zusätzlich `MT199`, `MT799`). Der Testsimulator liefert MT199/MT799 derzeit nicht; die Typen erst eintragen, wenn die Bank sie bereitstellt.
 - Recht: `SWIFT_IMPORT` für Liste, Abruf, Vorschau, Import und Verwerfen. Alle Aktionen stehen im Audit-Protokoll.
 - Antworten der Bank werden als Text (UTF-8, höchstens 512 KB) geprüft; Fehler eines Nachrichtentyps stoppen die anderen nicht.
 

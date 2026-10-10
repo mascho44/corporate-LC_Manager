@@ -19,7 +19,15 @@ import java.util.regex.Pattern;
 /** Fetches MT7xx messages from the bank, keeps them once per content and lets a user import or discard them. Nothing is imported automatically. */
 @Service
 public class EbicsMessageService {
+ /** Message types the bank can deliver; which of them are fetched is configured in app.ebics.message-types. */
  public static final List<String> TYPES=List.of("MT700","MT707","MT710","MT760");
+ public static final List<String> SUPPORTED=List.of("MT199","MT700","MT707","MT710","MT760","MT799");
+ @org.springframework.beans.factory.annotation.Value("${app.ebics.message-types:MT700,MT707,MT710,MT760}") private String configuredTypes="MT700,MT707,MT710,MT760";
+ List<String> fetchTypes(){
+  var types=new ArrayList<String>();
+  for(String t:configuredTypes.split(","))if(SUPPORTED.contains(t.trim().toUpperCase(Locale.ROOT))&&!types.contains(t.trim().toUpperCase(Locale.ROOT)))types.add(t.trim().toUpperCase(Locale.ROOT));
+  return types.isEmpty()?TYPES:types;
+ }
  public record View(UUID id,String messageType,String reference,String status,String note,java.time.LocalDateTime receivedAt,boolean importable){}
  public record FetchResult(int fetched,int alreadyKnown,List<String> errors){}
  private static final Pattern REFERENCE=Pattern.compile("(?m)^:(20|21):(.*)$");
@@ -35,7 +43,7 @@ public class EbicsMessageService {
   org.kopi.ebics.client.User user;
   try{user=connectionService.loadUser(c);}catch(Exception e){throw new IllegalStateException("Die EBICS-Schlüssel konnten nicht geladen werden.");}
   int fetched=0,known=0;var errors=new ArrayList<String>();
-  for(String type:TYPES){
+  for(String type:fetchTypes()){
    try{
     byte[] data=client.downloadTradeMessage(user,type);
     if(data==null||data.length==0)continue;
@@ -62,14 +70,12 @@ public class EbicsMessageService {
 
  @Transactional(readOnly=true) public SwiftImportPreview preview(UUID id){
   var m=one(id);
-  if(m.getMessageType().equals("MT760"))throw new IllegalArgumentException("MT760 wird nur abgelegt und nicht importiert.");
   return swift.preview(new SwiftImportRequest("ebics-"+m.getMessageType()+"-"+m.getId()+".swift",m.getContent()));
  }
 
  @Transactional public Object importMessage(UUID id,Authentication auth){
   var m=one(id);
   if(!m.getStatus().equals("NEW"))throw new IllegalStateException("Diese Nachricht wurde bereits bearbeitet.");
-  if(m.getMessageType().equals("MT760"))throw new IllegalArgumentException("MT760 wird nur abgelegt und nicht importiert.");
   Object result=swift.execute(new SwiftImportRequest("ebics-"+m.getMessageType()+"-"+m.getId()+".swift",m.getContent()));
   m.handle("IMPORTED",auth==null?"unbekannt":auth.getName(),"Importiert");messages.save(m);
   audit.recordInTransaction(auth,"EBICS_MESSAGE_IMPORTED","EBICS_MESSAGE",m.getId(),m.getMessageType()+" · "+reference(m.getContent()));
@@ -90,7 +96,7 @@ public class EbicsMessageService {
  }
 
  private EbicsMessage one(UUID id){return messages.findById(id).orElseThrow(()->new NoSuchElementException("Nachricht nicht gefunden."));}
- static View view(EbicsMessage m){return new View(m.getId(),m.getMessageType(),reference(m.getContent()),m.getStatus(),m.getNote(),m.getReceivedAt(),!m.getMessageType().equals("MT760")&&m.getStatus().equals("NEW"));}
+ static View view(EbicsMessage m){return new View(m.getId(),m.getMessageType(),reference(m.getContent()),m.getStatus(),m.getNote(),m.getReceivedAt(),m.getStatus().equals("NEW"));}
  /** :21: (credit number) for MT710, otherwise :20:. */
  static String reference(String text){
   String r20=null,r21=null;var m=REFERENCE.matcher(text);

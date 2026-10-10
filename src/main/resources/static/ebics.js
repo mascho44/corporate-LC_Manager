@@ -18,14 +18,14 @@ async function setupEbics(){
  [keys,bank,reset].forEach(b=>{b.type='button';b.className='secondary';actions.append(b);});
  const prints=document.createElement('pre');prints.setAttribute('aria-label','Fingerabdrücke');prints.hidden=true;
  const messagesBox=document.createElement('div');messagesBox.hidden=true;
- const fetchButton=node('button','Nachrichten abholen (MT700/707/710/760)');fetchButton.type='button';
+ const fetchButton=node('button','Nachrichten abholen');fetchButton.type='button';
  const list=document.createElement('div');list.className='ebics-messages';
  const autoBox=document.createElement('div');autoBox.className='ebics-auto-fetch';
  const autoLabel=node('label','Automatisch abrufen'),autoToggle=document.createElement('input');autoToggle.type='checkbox';autoToggle.name='autoFetch';autoLabel.prepend(autoToggle);
  const intervalLabel=node('label','alle '),interval=document.createElement('select');interval.name='interval';[[5,'5 Minuten'],[15,'15 Minuten'],[30,'30 Minuten'],[60,'1 Stunde'],[240,'4 Stunden'],[1440,'24 Stunden']].forEach(([v,l])=>{const o=node('option',l);o.value=v;interval.append(o);});intervalLabel.append(interval);
  const autoSave=node('button','Übernehmen');autoSave.type='button';autoSave.className='secondary';const autoInfo=node('small','');
  autoBox.append(autoLabel,intervalLabel,autoSave,autoInfo);
- messagesBox.append(node('h3','Abgeholte Nachrichten'),autoBox,node('p','Nichts wird automatisch angelegt: Nachrichten erst ansehen, dann importieren oder verwerfen. MT760 wird nur abgelegt.'),fetchButton,list);
+ messagesBox.append(node('h3','Abgeholte Nachrichten'),autoBox,node('p','Nichts wird automatisch angelegt: Nachrichten erst ansehen, dann importieren oder verwerfen.'),fetchButton,list);
  section.append(node('h2','EBICS-Bankanbindung'),node('p','Eigener Teilnehmer für den Abruf von Akkreditivnachrichten (MT700/707/710/760). Ablauf: Verbindung speichern, Schlüssel senden, Teilnehmer bankseitig freigeben lassen (INI-Brief mit den Fingerabdrücken), danach Bankschlüssel abholen.'),message,info,form,actions,prints,messagesBox);
  document.querySelector('main').append(section);
  const labels={NEW:'Neu – Schlüssel fehlen',KEYS_SENT:'Schlüssel gesendet – wartet auf Freigabe durch die Bank',ACTIVE:'Aktiv',ERROR:'Fehler'};
@@ -66,7 +66,7 @@ async function setupEbics(){
       catch(error){message.textContent=error.message;}};
      imp.onclick=async()=>{if(await confirmAction('Nachricht '+m.messageType+' '+(m.reference||'')+' jetzt importieren?'))run(()=>json('/api/ebics/messages/'+m.id+'/import',{method:'POST'}),'Importiert.');};
      drop.onclick=async()=>{if(await confirmAction('Nachricht verwerfen? Sie wird nicht importiert.'))run(()=>json('/api/ebics/messages/'+m.id+'/discard',{method:'POST'}),'Verworfen.');};
-    }else if(m.messageType==='MT760'&&m.status==='NEW')row.append(node('span',' · nur abgelegt'));
+    }
     list.append(row);
    });
   }catch(error){list.replaceChildren(node('p',error.message));}

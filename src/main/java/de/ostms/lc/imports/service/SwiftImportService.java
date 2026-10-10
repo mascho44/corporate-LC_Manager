@@ -106,7 +106,7 @@ public class SwiftImportService {
             Map.entry("59", "beneficiary"), Map.entry("77C", "guaranteeDetails"),
             Map.entry("77U", "undertakingTerms"));
     private static final Map<String,String> TARGET_LABELS = Map.ofEntries(
-            Map.entry("reference", "LC-Referenz"), Map.entry("guaranteeReference", "Garantiereferenz"), Map.entry("sequence", "Sequenz"),
+            Map.entry("reference", "LC-Referenz"), Map.entry("guaranteeReference", "Garantiereferenz"), Map.entry("narrative", "Mitteilungstext"), Map.entry("sequence", "Sequenz"),
             Map.entry("relatedReference", "Zugehörige Referenz"), Map.entry("amendmentNumber", "Amendment-Nummer"),
             Map.entry("amendmentDate", "Amendment-Datum"), Map.entry("issueDate", "Ausstellungsdatum"),
             Map.entry("expiryDateAndPlace", "Ablaufdatum und -ort"), Map.entry("newExpiryDateAndPlace", "Neues Ablaufdatum und -ort"),
@@ -122,6 +122,11 @@ public class SwiftImportService {
             Map.entry("presentationInstructions", "Vorlageanweisungen"), Map.entry("underlyingTransaction", "Grundgeschäft"),
             Map.entry("guaranteeDetails", "Garantiedetails"), Map.entry("undertakingTerms", "Garantiebedingungen"));
 
+    @org.springframework.beans.factory.annotation.Autowired private de.ostms.lc.swift.Mt760Parser mt760=new de.ostms.lc.swift.Mt760Parser();
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private de.ostms.lc.lc.service.SwiftMessageService freeMessages;
+    private static final Map<String,String> MT79X_TARGETS = Map.ofEntries(Map.entry("20","reference"),Map.entry("21","relatedReference"),Map.entry("79","narrative"));
+    private static final Map<String,String> MT79X_LABELS = Map.ofEntries(Map.entry("20","Referenz (Transaction Reference Number)"),Map.entry("21","Bezugsreferenz (Related Reference)"),Map.entry("79","Mitteilungstext (Narrative)"));
+    private static boolean freeFormat(String type){return type.equals("MT199")||type.equals("MT799");}
     private final Mt700Parser mt700;
     private final Mt707Parser mt707;
     private final LetterOfCreditRepository lcs;
@@ -152,6 +157,7 @@ public class SwiftImportService {
         List<SwiftFieldView> fields=fields(raw,type);
         List<String> errors=new ArrayList<>(), warnings=new ArrayList<>();
         try {
+            if (freeFormat(type)) return previewFreeFormat(type, raw, fields, errors, warnings);
             if (type.equals("MT760")) return previewMt760(raw, fields, errors, warnings);
             if (type.equals("MT707")) {
                 var p=mt707.parse(raw); Amendment a=p.amendment();
@@ -194,7 +200,28 @@ public class SwiftImportService {
         if(blank(values.get("77C"))&&blank(values.get("77U"))) errors.add("Pflichtfeld :77C: oder :77U: (Garantiebedingungen) fehlt.");
         if(blank(values.get("32B"))) warnings.add("Feld :32B: (Währung und Betrag) fehlt.");
         if(blank(values.get("59"))) warnings.add("Feld :59: (Begünstigter) fehlt.");
-        return new SwiftImportPreview("MT760",values.get("20"),values.get("50"),values.get("59"),null,null,null,null,null,null,List.of(),false,errors.isEmpty(),errors,warnings,fields);
+        LetterOfCredit g=null;
+        if(errors.isEmpty()) {
+            try { g=mt760.parse(raw); } catch(RuntimeException ex) { errors.add(readable(ex)); }
+        }
+        boolean duplicate=g!=null&&lcs.existsByReference(g.getReference());
+        if(duplicate) errors.add("Eine Akte mit dieser Referenz existiert bereits.");
+        if(g!=null&&g.getExpiryDate()==null) warnings.add("Kein Ablaufdatum (:31E:) angegeben – die Garantie läuft ohne Frist in der Fristenüberwachung.");
+        return new SwiftImportPreview("MT760",values.get("20"),values.get("50"),values.get("59"),g==null?null:g.getAmount(),g==null?null:g.getCurrency(),g==null?null:g.getIssueDate(),g==null?null:g.getExpiryDate(),g==null?null:g.getExpiryPlace(),null,List.of(),duplicate,errors.isEmpty(),errors,warnings,fields);
+    }
+
+    private SwiftImportPreview previewFreeFormat(String type,String raw,List<SwiftFieldView> fields,List<String> errors,List<String> warnings) {
+        de.ostms.lc.swift.FreeFormatMessage.Parsed p=null;
+        try { p=de.ostms.lc.swift.FreeFormatMessage.parse(type,raw); } catch(RuntimeException ex) { errors.add(readable(ex)); }
+        boolean duplicate=false;
+        if(p!=null&&freeMessages!=null) {
+            duplicate=freeMessages.isDuplicate(type,p.reference(),raw);
+            if(duplicate) errors.add("Diese Mitteilung wurde bereits importiert.");
+            var target=freeMessages.findTarget(p);
+            warnings.add(target.isPresent()?"Wird der Akte „"+target.get().getReference()+"“ zugeordnet.":"Keine Akte mit dieser Referenz gefunden – die Mitteilung wird ohne Zuordnung abgelegt und kann später zugeordnet werden.");
+            if(p.relatedReference()!=null) warnings.add("Bezugsreferenz: "+p.relatedReference());
+        }
+        return new SwiftImportPreview(type,p==null?null:p.reference(),null,null,null,null,null,null,null,null,List.of(),duplicate,errors.isEmpty(),errors,warnings,fields);
     }
 
     public Object execute(SwiftImportRequest request) {
@@ -210,17 +237,30 @@ public class SwiftImportService {
     private Object executeAdapted(SwiftImportRequest adapted) {
         SwiftImportPreview p=previewCorrected(adapted);
         if(!p.valid()) { String msg=String.join(" ",p.errors()); history.record(adapted.filename(),p.messageType(),p.reference(),"REJECTED",msg); throw new IllegalArgumentException(msg); }
-        if(p.messageType().equals("MT760")) throw new IllegalArgumentException("MT760 wird im Trainingsmodul bestätigt und noch nicht als Akkreditiv importiert.");
         try {
-            Object result=p.messageType().equals("MT707")?amendmentService.importMt707(adapted.rawMessage()):lcService.importMt700(adapted.rawMessage());
+            Object result=switch(p.messageType()){
+                case "MT707"->amendmentService.importMt707(adapted.rawMessage());
+                case "MT760"->lcService.importMt760(adapted.rawMessage());
+                case "MT199","MT799"->importFreeFormat(p.messageType(),adapted.rawMessage());
+                default->lcService.importMt700(adapted.rawMessage());
+            };
             history.record(adapted.filename(),p.messageType(),p.reference(),"SUCCESS","Import erfolgreich"); return result;
         } catch(RuntimeException ex) {
             history.record(adapted.filename(),p.messageType(),p.reference(),"REJECTED",readable(ex)); throw ex;
         }
     }
 
+    private Object importFreeFormat(String type,String raw) {
+        if(freeMessages==null) throw new IllegalStateException("Der Import von Freitextmitteilungen ist nicht verfügbar.");
+        var auth=org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        return freeMessages.importMessage(type,raw,"IMPORT",auth==null?null:auth.getName());
+    }
+
     public String detect(String raw) {
         String upper=raw==null?"":raw.toUpperCase(Locale.ROOT);
+        if(upper.matches("(?s).*\\{2:[IO]199.*")||upper.matches("(?s).*\\bMT\\s*199\\b.*")) return "MT199";
+        if(upper.matches("(?s).*\\{2:[IO]799.*")||upper.matches("(?s).*\\bMT\\s*799\\b.*")) return "MT799";
+        if(upper.matches("(?ms).*^:79:.*")&&!upper.matches("(?ms).*^:(32B|31D|31E|40C|77C|77U|26E|45A|46A):.*")) return "MT799";
         if(upper.matches("(?s).*\\{2:[IO]760.*")||upper.matches("(?s).*\\bMT\\s*760\\b.*")||upper.matches("(?ms).*^:(40C|77C|77U|22D|23H|45L):.*")) return "MT760";
         if(upper.matches("(?s).*\\{2:[IO]707.*")||upper.matches("(?s).*\\bMT\\s*707\\b.*")||upper.matches("(?ms).*^:(26E|31E|45B|46B|47B):.*")) return "MT707";
         if(upper.matches("(?s).*\\{2:[IO]710.*")||upper.matches("(?s).*\\bMT\\s*710\\b.*")||(upper.matches("(?ms).*^:21:.*")&&upper.matches("(?ms).*^:52[AD]:.*")))return "MT710";
@@ -267,8 +307,8 @@ public class SwiftImportService {
     }
 
     private Map<String,String> parseFields(String raw){Map<String,String> values=new LinkedHashMap<>();var m=FIELD.matcher(raw.strip());while(m.find())values.put(m.group(1),m.group(2).trim());return values;}
-    private Map<String,String> targets(String type){return type.equals("MT710")?MT710_TARGETS:type.equals("MT760")?MT760_TARGETS:type.equals("MT707")?MT707_TARGETS:MT700_TARGETS;}
-    private String label(String type,String code){String special=type.equals("MT710")&&MT710_LABELS.containsKey(code)?MT710_LABELS.get(code):type.equals("MT760")?MT760_LABELS.get(code):type.equals("MT707")?MT707_LABELS.get(code):MT700_LABELS.get(code);return special!=null?special:COMMON_LABELS.getOrDefault(code,"Weiteres SWIFT-Feld");}
+    private Map<String,String> targets(String type){return freeFormat(type)?MT79X_TARGETS:type.equals("MT710")?MT710_TARGETS:type.equals("MT760")?MT760_TARGETS:type.equals("MT707")?MT707_TARGETS:MT700_TARGETS;}
+    private String label(String type,String code){String special=freeFormat(type)&&MT79X_LABELS.containsKey(code)?MT79X_LABELS.get(code):type.equals("MT710")&&MT710_LABELS.containsKey(code)?MT710_LABELS.get(code):type.equals("MT760")?MT760_LABELS.get(code):type.equals("MT707")?MT707_LABELS.get(code):MT700_LABELS.get(code);return special!=null?special:COMMON_LABELS.getOrDefault(code,"Weiteres SWIFT-Feld");}
     private void require(Map<String,String> values,String code,String name,List<String> errors){if(blank(values.get(code)))errors.add("Pflichtfeld :"+code+": ("+name+") fehlt.");}
     private boolean blank(String value){return value==null||value.isBlank();}
     private String inferTarget(String value){String text=value==null?"":value.toLowerCase(Locale.ROOT);if(text.matches("(?s).*\\b(applicant|auftraggeber|antragsteller)\\b.*"))return "applicant";if(text.matches("(?s).*\\b(beneficiary|begünstigte[rrn]?)\\b.*"))return "beneficiary";if(text.matches("(?s).*\\b(expiry|expiration|ablaufdatum|valid until)\\b.*"))return "expiryDateAndPlace";if(text.matches("(?s).*\\b(latest shipment|späteste[rn]? versand)\\b.*"))return "latestShipmentDate";if(text.matches("(?s).*\\b(documents required|required documents|vorzulegende dokumente)\\b.*"))return "requiredDocuments";if(text.matches("(?s).*\\b(amount|betrag|total)\\b.*\\b(eur|usd|gbp|chf|jpy)\\b.*"))return "amountAndCurrency";return null;}

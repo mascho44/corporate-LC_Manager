@@ -11,7 +11,7 @@ public interface EbicsMessageRepository extends TenantScopedRepository<EbicsMess
  Optional<EbicsMessage> findById(@Param("id") UUID id);
  @Query("select e from EbicsMessage e where e.sha256=:sha and "+OWNED)
  Optional<EbicsMessage> findBySha(@Param("sha") String sha);
- @Query("select count(e) from EbicsMessage e where e.status='NEW' and e.messageType<>'MT760' and "+OWNED)
+ @Query("select count(e) from EbicsMessage e where e.status='NEW' and "+OWNED)
  long countNew();
  @Query("select e from EbicsMessage e where "+OWNED+" order by e.receivedAt desc")
  List<EbicsMessage> newestFirst();

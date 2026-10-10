@@ -60,12 +60,21 @@ class EbicsMessageServiceTest {
   assertThat(list).extracting(EbicsMessageService.View::reference).containsExactlyInAnyOrder("LC100","LC200");
   assertThat(list).allMatch(EbicsMessageService.View::importable);
  }
- @Test void mt760IsStoredButNotImportable(){
+ @Test void everyDeliveredTypeCanBeImported(){
   activate();bank.put("MT760",text(":20:G1\n:27:1/1\n:40C:URDG\n:77C:TERMS\n"));
   service.fetch(null);
   var view=service.list().get(0);
-  assertThat(view.messageType()).isEqualTo("MT760");assertThat(view.importable()).isFalse();
-  assertThatThrownBy(()->service.importMessage(view.id(),null)).isInstanceOf(IllegalArgumentException.class);
+  assertThat(view.messageType()).isEqualTo("MT760");assertThat(view.importable()).isTrue();
+  Mockito.when(swift.execute(any())).thenReturn(new Object());
+  service.importMessage(view.id(),null);
+  assertThat(service.list().get(0).status()).isEqualTo("IMPORTED");
+ }
+ @Test void fetchedTypesAreConfigurableAndLimitedToSupportedOnes(){
+  assertThat(service.fetchTypes()).containsExactly("MT700","MT707","MT710","MT760");
+  org.springframework.test.util.ReflectionTestUtils.setField(service,"configuredTypes"," mt799, MT199 ,MT999,MT799");
+  assertThat(service.fetchTypes()).containsExactly("MT799","MT199");
+  org.springframework.test.util.ReflectionTestUtils.setField(service,"configuredTypes","nonsense");
+  assertThat(service.fetchTypes()).containsExactly("MT700","MT707","MT710","MT760");
  }
  @Test void badAnswersAreReportedPerTypeWithoutStoppingTheOthers(){
   activate();bank.put("MT700",new byte[]{'!'});bank.put("MT707",text("no swift here"));bank.put("MT710",text(MT710));
