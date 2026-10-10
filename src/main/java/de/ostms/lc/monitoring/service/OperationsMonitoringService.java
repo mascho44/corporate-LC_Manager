@@ -24,6 +24,8 @@ public class OperationsMonitoringService {
     private final DocumentDraftRepository drafts;
     private final SwiftImportRecordRepository imports;
     private final OutboxMessageRepository outbox;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private de.ostms.lc.ebics.EbicsConnectionRepository ebics;
 
     public OperationsMonitoringService(LetterOfCreditRepository lettersOfCredit, DocumentCheckService checks,
                                        LcDeadlineService deadlines, DocumentDraftRepository drafts,
@@ -54,9 +56,23 @@ public class OperationsMonitoringService {
                 metric(discrepancies, "Offene automatische Dokumentenabweichungen über aktive Akten."),
                 metric(upcomingDeadlines, "Fällige Termine innerhalb der nächsten 30 Tage."),
                 metric(approvalQueue, "Dokumententwürfe zur Prüfung oder Freigabe."),
-                unavailable("EBICS-Anbindung ist noch nicht implementiert."),
+                ebicsMetric(),
                 metric(imports.countByStatus("REJECTED"), "Abgewiesene SWIFT-Importe in der Importhistorie."),
                 metric(outbox.countByStatus("DEAD_LETTER"), "Dauerhaft fehlgeschlagene Outbox-Nachrichten."));
+    }
+
+    /** Problems of the tenant's EBICS connection: a failed key setup and a failed last (automatic or manual) fetch each count once. */
+    OperationsMonitoringSummary.Metric ebicsMetric() {
+        var connection = ebics == null ? java.util.Optional.<de.ostms.lc.ebics.EbicsConnection>empty() : ebics.findCurrent();
+        if (connection.isEmpty()) return unavailable("Keine EBICS-Verbindung eingerichtet.");
+        var c = connection.get();
+        long problems = 0;
+        var notes = new java.util.ArrayList<String>();
+        if (c.getStatus() == de.ostms.lc.ebics.EbicsStatus.ERROR) { problems++; notes.add("Schlüsseleinrichtung fehlgeschlagen"); }
+        if (c.getLastFetchResult() != null && c.getLastFetchResult().contains("Fehler")) { problems++; notes.add("letzter Abruf mit Fehler"); }
+        String status = switch (c.getStatus()) { case ACTIVE -> "aktiv"; case KEYS_SENT -> "wartet auf Freigabe der Bank"; case NEW -> "Einrichtung offen"; case ERROR -> "Fehler"; };
+        String last = c.getLastFetchAt() == null ? "noch kein Abruf" : "letzter Abruf " + c.getLastFetchAt().toString().replace('T', ' ').substring(0, 16);
+        return metric(problems, "EBICS-Verbindung " + status + ", " + last + (notes.isEmpty() ? "." : ": " + String.join("; ", notes) + "."));
     }
 
     private boolean active(LetterOfCredit lc) { return lc.getStatus() != LetterOfCreditStatus.CLOSED && lc.getStatus() != LetterOfCreditStatus.EXPIRED; }
