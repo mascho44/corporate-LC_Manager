@@ -62,8 +62,9 @@ class SwiftImportServiceProfileTest {
         var preview=service.preview(new SwiftImportRequest("lc.swift",raw));
         assertThat(preview.applicant()).isEqualTo("ACME GMBH\nMUSTERWEG 1\n70173 STUTTGART");
         assertThat(preview.warnings()).anyMatch(w->w.contains("Auftraggeber aus Feld :47A:"));
-        assertThat(preview.rawFields()).anySatisfy(f->{assertThat(f.code()).isEqualTo("40A");assertThat(f.targetLabel()).contains("wird angelegt");assertThat(f.reason()).contains("geht nicht verloren");assertThat(f.unusual()).isFalse();});
+        assertThat(preview.rawFields()).anySatisfy(f->{assertThat(f.code()).isEqualTo("40A");assertThat(f.targetLabel()).contains("Zusatzangabe");assertThat(f.reason()).contains("geht nicht verloren");assertThat(f.unusual()).isFalse();});
         assertThat(preview.rawFields()).anySatisfy(f->{assertThat(f.code()).isEqualTo("50");assertThat(f.notice()).contains("Auftraggeberadresse");});
+        assertThat(preview.warnings()).noneMatch(w->w.contains("Zusatzangaben")||w.contains("weitere Angaben"));
         var unresolved=service.preview(new SwiftImportRequest("lc.swift",":20:REF\n:31D:271231BERLIN\n:32B:EUR100,\n:50:ACME\nSEE 47A\n:47A:ALL DOCUMENTS IN ENGLISH"));
         assertThat(unresolved.rawFields()).anySatisfy(f->{assertThat(f.code()).isEqualTo("50");assertThat(f.notice()).contains("kein eindeutig beschrifteter");});
     }
