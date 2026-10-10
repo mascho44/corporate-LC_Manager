@@ -26,6 +26,7 @@ import de.ostms.lc.user.service.AppUserDetailsService; import jakarta.servlet.ht
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/lcs/*/workflows","/api/workflows/*/cancel").hasAuthority("PERM_LC_EDIT")
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/tasks/*/claim","/api/tasks/*/release","/api/tasks/*/complete").hasAuthority("PERM_LC_EDIT")
    .requestMatchers("/api/ebics/**").hasAuthority("PERM_SETTINGS_MANAGE")
+   .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/scan-profile").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers("/api/settings/approval-thresholds/**").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers("/api/settings/document-layouts","/api/settings/document-layouts/**").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers("/api/settings/rule-packs","/api/settings/rule-packs/**","/rule-packs.html").hasAuthority("PERM_SETTINGS_MANAGE")
