@@ -41,12 +41,13 @@
     button.onclick=()=>{filtered=!filtered;fields.forEach(d=>{const label=form.elements[d.field].closest('label');label.hidden=filtered&&!missing.has(d.field);});form.querySelectorAll('.rule-facts-section').forEach(group=>{group.hidden=filtered&&![...group.querySelectorAll('label')].some(label=>!label.hidden);});button.textContent=filtered?'Alle Prüfdaten anzeigen':'Nur fehlende Angaben anzeigen';};
     box.append(note,button);form.querySelector('.dialoghead').after(box);
    }
-   if(documentId&&!requirements&&allowed){
+   if(!requirements&&allowed){
     try{
-     const suggestions=await json(url+'/suggestions');
+     const raw=documentId?await json(url+'/suggestions'):(await json(base+'/rule-facts/suggestions')).lc;
+     const suggestions=Array.isArray(raw)?raw:[];
      if(current===sequence&&suggestions.length){
       const box=document.createElement('div');box.className='rule-facts-suggestions';
-      const head=document.createElement('p');head.textContent='Vorschläge aus dem Dokument (bitte prüfen, nichts wird automatisch gespeichert):';box.append(head);
+      const head=document.createElement('p');head.textContent=(documentId?'Vorschläge aus dem Dokument':'Vorschläge aus den Parteiangaben der LC')+' (bitte prüfen, nichts wird automatisch gespeichert):';box.append(head);
       const byField=Object.fromEntries(fields.map(d=>[d.field,d]));
       suggestions.forEach(s=>{
        const d=byField[s.field];if(!d||!form.elements[s.field])return;
@@ -75,5 +76,24 @@
    dialog.showModal();
   }catch(error){alert('Prüfdaten konnten nicht geladen werden: '+error.message);}
  }
- document.addEventListener('click',event=>{const button=event.target.closest('[data-rule-facts]');if(button)openFacts(button.dataset.ruleFacts,button.dataset.ruleFactsType||null);});
+ async function applyAllSuggestions(){
+  const lcId=activeLc?.id;if(!lcId)return;
+  try{
+   const [overview,definitions]=await Promise.all([json('/api/lcs/'+lcId+'/rule-facts/suggestions'),json('/api/lcs/'+lcId+'/rule-facts/definitions')]);
+   const label={};[...definitions.document,...definitions.lc].forEach(d=>{label[d.field]=d.label;});
+   const fresh=list=>list.filter(x=>!x.current);
+   const lcNew=fresh(overview.lc),docs=overview.documents.map(d=>({name:d.filename,items:fresh(d.suggestions)})).filter(d=>d.items.length);
+   const total=lcNew.length+docs.reduce((n,d)=>n+d.items.length,0);
+   if(!total){alert('Es gibt keine neuen Vorschläge. Bereits erfasste Angaben werden nie überschrieben.');return;}
+   const lines=[];if(lcNew.length)lines.push('LC: '+lcNew.map(x=>(label[x.field]||x.field)+' = '+x.value).join('; '));
+   docs.slice(0,8).forEach(d=>lines.push(d.name+': '+d.items.map(x=>(label[x.field]||x.field)+' = '+x.value).join('; ')));
+   if(docs.length>8)lines.push('… und '+(docs.length-8)+' weitere Dokumente');
+   const ok=await confirmAction(total+' erkannte Angaben übernehmen? Nur leere Felder werden gefüllt, eingetragene Werte bleiben unverändert. Bisherige Prüfentscheidungen dieser Akte werden zurückgesetzt.\n\n'+lines.join('\n'));
+   if(!ok)return;
+   const result=await json('/api/lcs/'+lcId+'/rule-facts/suggestions/apply',{method:'POST'});
+   alert(result.lcFields+' LC-Angaben und '+result.documentFields+' Dokumentangaben in '+result.documents+' Dokumenten übernommen.');
+   if(activeLc?.id===lcId){await show(lcId);if(typeof activateDossierSection==='function')activateDossierSection('checks');}
+  }catch(error){alert('Vorschläge konnten nicht übernommen werden: '+error.message);}
+ }
+ document.addEventListener('click',event=>{const apply=event.target.closest('[data-apply-suggestions]');if(apply&&apply.hasAttribute?.('data-apply-suggestions')){applyAllSuggestions();return;}const button=event.target.closest('[data-rule-facts]');if(button)openFacts(button.dataset.ruleFacts,button.dataset.ruleFactsType||null);});
 })();
