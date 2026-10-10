@@ -36,4 +36,21 @@ class FindingCropServiceTest {
   var field=service.region(doc,"date").orElseThrow();
   assertEquals(3,field.page());assertEquals(300,field.left());assertEquals(400,field.top());
  }
+ @Test void stampIsLocatedWithItsNumber()throws Exception{
+  var doc=new LcDocument();
+  var ocr=new OcrEvidence("t","m",200,0.0,List.of(
+   new OcrEvidence.Word("Copy",.9,1,900,700,80,24),
+   new OcrEvidence.Word("ORIGINAL",.95,2,300,120,200,40),
+   new OcrEvidence.Word("2",.9,2,520,122,20,38),
+   new OcrEvidence.Word("Invoice",.9,2,100,400,90,24)),List.of());
+  doc.setOcrEvidenceJson(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(ocr));
+  var field=service.region(doc,"stamp").orElseThrow();
+  assertEquals(2,field.page());assertEquals(300,field.left());assertEquals(120,field.top());assertEquals(240,field.width());
+ }
+ @Test void stampWithoutKindWordHasNoRegion()throws Exception{
+  var doc=new LcDocument();
+  var ocr=new OcrEvidence("t","m",200,0.0,List.of(new OcrEvidence.Word("Invoice",.9,1,10,10,50,20)),List.of());
+  doc.setOcrEvidenceJson(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(ocr));
+  assertTrue(service.region(doc,"stamp").isEmpty());
+ }
 }
