@@ -1,8 +1,11 @@
 # OCR confidence
 
-Scanned, image-only PDFs are rendered at 200 DPI (at most 20 pages) and processed
-with Tesseract `deu+eng`, using both `txt` and `tsv` outputs. Digital PDFs keep
-their text layer and have no measured OCR confidence.
+Scanned, image-only PDFs are rendered at 300 DPI for recognition (Sauvola thresholding,
+`thresholding_method=2`; at most 100 pages by default, see `lc.ocr.max-pages`) and processed
+with Tesseract (`deu+eng` by default, configurable with `OCR_LANGUAGES`), using both `txt`
+(page text) and `tsv` (words with confidence and position) outputs. The stored word boxes
+are mapped to a 200-DPI evidence raster so that older evidence and the crops of findings
+stay comparable. Digital PDFs keep their text layer and have no measured OCR confidence.
 
 The source format is documented at:
 https://tesseract-ocr.github.io/tessdoc/Command-Line-Usage.html
