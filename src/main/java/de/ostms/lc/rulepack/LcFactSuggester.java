@@ -4,13 +4,14 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 import static de.ostms.lc.rulepack.PackDefinition.Field;
 
-/** Proposes LC-level facts from the structured party fields (:50:, :59:) of the SWIFT message. Proposals are stored only after confirmation. */
+/** Proposes LC-level facts from the structured fields of the SWIFT message (parties :50:/:59:, terms via {@link Mt700Facts}). Proposals are stored only after confirmation. */
 @Service
 public class LcFactSuggester {
  public List<DocumentFactSuggester.Suggestion> suggest(LetterOfCredit lc){
   var current=RuleFacts.read(lc.getRuleFactsJson());var out=new ArrayList<DocumentFactSuggester.Suggestion>();
   party(out,current,lc.getApplicant(),Field.LC_APPLICANT_ADDRESS,Field.LC_APPLICANT_ADDRESS_COUNTRY,"Auftraggeber (:50:)");
   party(out,current,lc.getBeneficiary(),null,Field.LC_BENEFICIARY_ADDRESS_COUNTRY,"Begünstigter (:59:)");
+  Mt700Facts.detect(lc).forEach(f->add(out,current,f.field(),f.value(),f.source()));
   return out;
  }
  private static void party(List<DocumentFactSuggester.Suggestion> out,Map<Field,String> current,String text,Field addressField,Field countryField,String source){

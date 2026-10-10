@@ -56,4 +56,20 @@ class DocumentFactSuggesterTest {
   var fields=suggester.suggest(doc).stream().map(DocumentFactSuggester.Suggestion::field).toList();
   assertFalse(fields.contains(PackDefinition.Field.DOCUMENT_PACKAGE_COUNT));assertTrue(fields.contains(PackDefinition.Field.DOCUMENT_GROSS_WEIGHT));
  }
+ @Test void vesselFreightIncotermAndInsuranceAreExtracted(){
+  var doc=new LcDocument();doc.setDocumentType(DocumentType.BILL_OF_LADING);
+  doc.setExtractedText("BILL OF LADING\nOcean Vessel: MSC Aurora\nPlace of Receipt: Shanghai\nFREIGHT PREPAID\nDelivered CIF Hamburg\nCountry of Origin: China\nTranshipment allowed\n");
+  var f=suggester.suggest(doc).stream().collect(java.util.stream.Collectors.toMap(DocumentFactSuggester.Suggestion::field,DocumentFactSuggester.Suggestion::value));
+  assertEquals("MSC Aurora",f.get(PackDefinition.Field.DOCUMENT_VESSEL));assertEquals("Shanghai",f.get(PackDefinition.Field.DOCUMENT_PLACE_OF_RECEIPT));
+  assertEquals("PREPAID",f.get(PackDefinition.Field.DOCUMENT_FREIGHT_TERMS));assertEquals("true",f.get(PackDefinition.Field.DOCUMENT_FREIGHT_PREPAID));
+  assertNull(f.get(PackDefinition.Field.DOCUMENT_INCOTERM));assertEquals("true",f.get(PackDefinition.Field.DOCUMENT_TRANSSHIPMENT_INDICATED));
+  var inv=new LcDocument();inv.setDocumentType(DocumentType.COMMERCIAL_INVOICE);inv.setExtractedText("INVOICE\nTerms: CIF Hamburg\nCountry of Origin: China\n");
+  var h=suggester.suggest(inv).stream().collect(java.util.stream.Collectors.toMap(DocumentFactSuggester.Suggestion::field,DocumentFactSuggester.Suggestion::value));
+  assertEquals("CIF",h.get(PackDefinition.Field.DOCUMENT_INCOTERM));
+  var ins=new LcDocument();ins.setDocumentType(DocumentType.INSURANCE_CERTIFICATE);
+  ins.setExtractedText("INSURANCE CERTIFICATE\nSum insured: USD 110,000.00\nInstitute Cargo Clauses (A)\nPremium paid\n");
+  var g=suggester.suggest(ins).stream().collect(java.util.stream.Collectors.toMap(DocumentFactSuggester.Suggestion::field,DocumentFactSuggester.Suggestion::value));
+  assertEquals("110000.00",g.get(PackDefinition.Field.DOCUMENT_INSURED_AMOUNT));assertEquals("USD",g.get(PackDefinition.Field.DOCUMENT_INSURANCE_CURRENCY));
+  assertEquals("INSTITUTE CARGO CLAUSES (A)",g.get(PackDefinition.Field.DOCUMENT_INSURANCE_RISKS));assertEquals("true",g.get(PackDefinition.Field.DOCUMENT_PREMIUM_PAID_INDICATED));
+ }
 }
