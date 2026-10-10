@@ -72,3 +72,20 @@ until their transaction ends, so the chain has no forks or gaps.
   entries are older than the period. **Nothing is deleted automatically.** Deleting entries after the period is a
   deliberate, documented operation (it needs a chain checkpoint so verification stays possible; not implemented).
   Please confirm the period with your compliance function (BAIT/DORA do not name a single number for all log types).
+
+## Step 5: external anchor of the chain head
+The database verifies that no entry was changed or removed, but whoever controls the database could rewrite the whole chain. `scripts/audit-anchor.sh`
+stores the head (sequence number and hash) of every tenant chain **outside** the database, so a rewrite or rollback becomes visible.
+
+* Each run asks `verify_audit_chain` for all tenants and appends one line per tenant to `$HOME/audit-anchors/anchors.log` (mode 600):
+  `time|tenant|OK/BAD|checked|head sequence|head hash|unchained|SHA-256 of the previous line`. The last field chains the file itself.
+* Alarm (exit code 1, message on stderr, line marked `BAD`): the chain is broken, the head sequence went **back**, the hash at an already anchored sequence
+  **changed**, or the anchor file was edited or shortened in the middle (checked before every run; `scripts/audit-anchor.sh --check-log` checks the file only).
+  Technical errors (database unreachable) exit with 2 and leave the file unchanged.
+* With `RESTIC_REPOSITORY` and `RESTIC_PASSWORD_FILE` set (same setup as the off-site backup) the file is also saved encrypted to the external repository,
+  which protects against truncation at the end and against loss of the server.
+* Run hourly via cron on the server, for example:
+  `0 * * * * cd /home/administrator/corporate-lc-manager && ./scripts/audit-anchor.sh >> $HOME/audit-anchors/cron.log 2>&1`
+  and watch the exit code (the server monitoring mail can be pointed at `cron.log` or at the exit status).
+* Limits: the anchor proves the chain was not rewritten **between** two anchors; entries made and rewritten within one interval are not covered, and
+  a person with access to both the database and the anchor store defeats it. Keep the external copy under separate access rights.
