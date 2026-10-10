@@ -27,4 +27,8 @@ class OcrEvidenceSequenceTest {
   var e=evidence(":20:",.99,"ABC123",.99);
   assertThat(e.assessAll(List.of("COMPLETELY DIFFERENT TEXT"),0.8).get(0).status()).isEqualTo("UNAVAILABLE");
  }
+ @Test void digitalTextLayerIsNotApplicableInsteadOfUnavailable(){
+  var e=new OcrEvidence("PDFBOX","PDF_TEXT_POSITIONS",200,0.8,List.of(new OcrEvidence.Word("ABC",null,1,0,0,10,10)));
+  assertThat(e.assessAll(List.of("ABC","XYZ"),0.8)).extracting(OcrEvidence.Assessment::status).containsOnly("NOT_APPLICABLE");
+ }
 }
