@@ -91,3 +91,4 @@ body .dossier-nav>button{flex:0 0 auto;align-self:center;min-height:44px;height:
 .swift-messages{margin:14px 0;padding:12px 14px;border:1px solid #dbe2ec;border-radius:10px;background:#fff}.swift-messages h3{margin:0 0 8px;font-size:15px}
 .swift-message summary{cursor:pointer;padding:4px 0}.swift-message pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:6px 0 10px;padding:10px;background:#f5f7fa;border-radius:8px;font:inherit}
 .swift-loose{margin:16px 22px}.swift-loose-row{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:start;margin-bottom:8px}
+.team-task-row{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;padding:8px 0;border-bottom:1px solid #eef1f4}.team-task-row>span{flex:1 1 220px;color:#475467}
