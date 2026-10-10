@@ -45,7 +45,7 @@
  function row(item, kind) {
   const r = node('article', undefined, 'membership-row team-task-row');
   const title = node('b', item.title);
-  const meta = node('span', ` · ${item.lcReference || 'ohne Akte'} · ${item.teamName}${item.dueDate ? ' · fällig ' + fmt(item.dueDate) : ''}${kind === 'others' ? ' · bei ' + item.assignedTo : ''}`);
+  const meta = node('span', ` · ${item.lcReference || 'ohne Akte'} · ${item.teamName}${item.workflow ? ' · ' + item.workflow : ''}${item.fourEyes ? ' · Vier-Augen' : ''}${item.dueDate ? ' · fällig ' + fmt(item.dueDate) : ''}${kind === 'others' ? ' · bei ' + item.assignedTo : ''}`);
   r.append(title, meta);
   const button = (label, handler, css) => { const b = node('button', label); b.type = 'button'; b.className = css || 'secondary'; b.onclick = handler; r.append(b); };
   if (kind === 'open') button('Übernehmen', () => act(() => json(`/api/tasks/${item.taskId}/claim`, { method: 'POST' }), 'Auftrag übernommen.'), 'primary');
@@ -74,6 +74,23 @@
   const submit = node('button', 'Auftrag an Team anlegen'); submit.type = 'submit';
   form.append(labeled('Akte', lc), labeled('Team', team), labeled('Auftrag', title), labeled('Fällig am', due), submit);
   form.onsubmit = event => { event.preventDefault(); return act(() => json(`/api/lcs/${lc.value}/tasks`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: title.value.trim(), dueDate: due.value || null, teamId: team.value }) }), 'Auftrag angelegt.'); };
+  return form;
+ }
+
+ async function workflowForm(teams) {
+  const templates = await json('/api/workflow-templates').catch(() => []);
+  if (!templates.length || typeof data === 'undefined' || !data.length) return null;
+  const form = document.createElement('form'); form.className = 'form-grid';
+  const select = (name, options, optional) => { const s = document.createElement('select'); s.name = name; if (optional) { const o = node('option', '– wie Team –'); o.value = ''; s.append(o); } options.forEach(([v, t]) => { const o = node('option', t); o.value = v; s.append(o); }); return s; };
+  const lc = select('lc', data.filter(x => !['CLOSED', 'EXPIRED'].includes(x.status)).map(x => [x.id, x.reference]));
+  const template = select('template', templates.map(t => [t.id, t.title]));
+  const team = select('team', teams.filter(t => t.active).map(t => [t.id, t.name]));
+  const approval = select('approval', teams.filter(t => t.active).map(t => [t.id, t.name]), true);
+  const hint = node('small', ''); const describe = () => { const t = templates.find(x => x.id === template.value); hint.textContent = t ? `${t.description} Schritte: ${t.steps.map(s => s.title).join(' → ')}` : ''; }; template.onchange = describe; describe();
+  const labeled = (text, input) => { const l = node('label', text); l.append(input); return l; };
+  const submit = node('button', 'Workflow starten'); submit.type = 'submit';
+  form.append(labeled('Akte', lc), labeled('Vorlage', template), labeled('Team', team), labeled('Freigabeteam (Vier-Augen-Schritt)', approval), hint, submit);
+  form.onsubmit = event => { event.preventDefault(); return act(() => json(`/api/lcs/${lc.value}/workflows`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ template: template.value, teamId: team.value, approvalTeamId: approval.value || null }) }), 'Workflow gestartet. Der erste Schritt liegt in der Gruppeninbox.'); };
   return form;
  }
 
@@ -113,6 +130,7 @@
    } else section.append(node('p', 'Sie gehören keinem Team an.'));
    const teams = can('USER_MANAGE') ? await json('/api/teams') : mine;
    if (teams.some(t => t.active) && typeof data !== 'undefined' && data.length) { section.append(node('h3', 'Neuer Teamauftrag'), newTaskForm(teams)); }
+   if (can('LC_EDIT') && teams.some(t => t.active)) { const wf = await workflowForm(teams); if (wf) section.append(node('h3', 'Workflow starten'), wf); }
    if (can('USER_MANAGE')) section.append(await teamAdmin());
    badge();
   } catch (error) { message.textContent = error.message; }

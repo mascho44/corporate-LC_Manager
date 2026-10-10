@@ -12,9 +12,9 @@ import java.util.*;
 /** Group inbox: open tasks handed to the user's teams. A member claims a task (atomically) or hands it back. */
 @Service
 public class GroupInboxService {
- public record Item(UUID taskId,UUID lcId,String lcReference,String title,LocalDate dueDate,UUID teamId,String teamName,String assignedTo,LocalDateTime claimedAt,String createdBy){}
- private final LcTaskRepository tasks;private final TeamService teams;private final LetterOfCreditRepository lcs;
- public GroupInboxService(LcTaskRepository t,TeamService te,LetterOfCreditRepository l){tasks=t;teams=te;lcs=l;}
+ public record Item(UUID taskId,UUID lcId,String lcReference,String title,LocalDate dueDate,UUID teamId,String teamName,String assignedTo,LocalDateTime claimedAt,String createdBy,String workflow,boolean fourEyes){}
+ private final LcTaskRepository tasks;private final TeamService teams;private final LetterOfCreditRepository lcs;private final de.ostms.lc.lc.repository.WorkflowRepository workflows;
+ public GroupInboxService(LcTaskRepository t,TeamService te,LetterOfCreditRepository l,de.ostms.lc.lc.repository.WorkflowRepository w){tasks=t;teams=te;lcs=l;workflows=w;}
 
  /** Open tasks of all teams the user belongs to: unclaimed ones first, then what colleagues are working on. */
  @Transactional(readOnly=true) public List<Item> inbox(String username){
@@ -24,16 +24,30 @@ public class GroupInboxService {
   var items=new ArrayList<Item>();
   for(LcTask task:tasks.openForTeams(byId.keySet())){
    var lc=lcs.findById(task.getLetterOfCreditId()).orElse(null);
-   items.add(new Item(task.getId(),task.getLetterOfCreditId(),lc==null?null:lc.getReference(),task.getTitle(),task.getDueDate(),task.getTeamId(),byId.get(task.getTeamId()).getName(),task.getAssignedTo(),task.getClaimedAt(),task.getCreatedBy()));
+   items.add(new Item(task.getId(),task.getLetterOfCreditId(),lc==null?null:lc.getReference(),task.getTitle(),task.getDueDate(),task.getTeamId(),byId.get(task.getTeamId()).getName(),task.getAssignedTo(),task.getClaimedAt(),task.getCreatedBy(),workflowLabel(task),task.isFourEyes()));
   }
   items.sort(Comparator.comparing((Item i)->i.assignedTo()!=null).thenComparing(i->i.dueDate()==null?LocalDate.MAX:i.dueDate()));
   return items;
  }
 
+ private String workflowLabel(LcTask task){
+  if(task.getWorkflowId()==null)return null;
+  var workflow=workflows.findById(task.getWorkflowId()).orElse(null);if(workflow==null)return null;
+  var template=WorkflowTemplates.get(workflow.getTemplate());
+  return template.title()+" · Schritt "+task.getStepNo()+"/"+template.steps().size();
+ }
+ /** Four eyes: whoever completed the step before may not take the approval step. */
+ private void requireOtherPerson(LcTask task,String username){
+  if(!task.isFourEyes()||task.getWorkflowId()==null||task.getStepNo()==null)return;
+  tasks.forWorkflow(task.getWorkflowId()).stream().filter(t->t.getStepNo()!=null&&t.getStepNo()==task.getStepNo()-1).findFirst()
+   .filter(t->t.getCompletedBy()!=null&&t.getCompletedBy().equalsIgnoreCase(username))
+   .ifPresent(t->{throw new org.springframework.security.access.AccessDeniedException("Vier-Augen-Prinzip: Diesen Schritt muss eine andere Person als "+t.getCompletedBy()+" übernehmen.");});
+ }
  @Transactional public LcTask claim(UUID taskId,String username){
   var task=tasks.findById(taskId).orElseThrow(()->new NoSuchElementException("Auftrag nicht gefunden."));
   var team=requireMember(task,username);
   if(task.isCompleted())throw new IllegalStateException("Der Auftrag ist bereits erledigt.");
+  requireOtherPerson(task,username);
   if(tasks.claim(taskId,username,LocalDateTime.now())==0){
    var current=tasks.findById(taskId).orElseThrow();
    throw new IllegalStateException(current.getAssignedTo()==null?"Der Auftrag kann nicht übernommen werden.":"Der Auftrag wurde bereits von "+current.getAssignedTo()+" übernommen.");

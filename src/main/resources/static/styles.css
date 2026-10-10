@@ -92,3 +92,8 @@ body .dossier-nav>button{flex:0 0 auto;align-self:center;min-height:44px;height:
 .swift-message summary{cursor:pointer;padding:4px 0}.swift-message pre{white-space:pre-wrap;overflow-wrap:anywhere;margin:6px 0 10px;padding:10px;background:#f5f7fa;border-radius:8px;font:inherit}
 .swift-loose{margin:16px 22px}.swift-loose-row{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:start;margin-bottom:8px}
 .team-task-row{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;padding:8px 0;border-bottom:1px solid #eef1f4}.team-task-row>span{flex:1 1 220px;color:#475467}
+.workflows{margin:14px 0;padding:12px 14px;border:1px solid #dbe2ec;border-radius:10px;background:#fff}.workflows h3{margin:0 0 8px;font-size:15px}
+.wf{margin-bottom:12px}.wf header{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.wf-steps{list-style:none;margin:6px 0 0;padding:0}
+.wf-step{padding:3px 0;color:#667085}.wf-step.done{color:#067647}.wf-step.active{color:#1f4ed8;font-weight:700}.wf-step.cancelled{color:#b42318;text-decoration:line-through}
+.wf-step small{margin-left:6px;padding:1px 6px;border-radius:99px;background:#eef2f6;color:#344054}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}

@@ -22,6 +22,7 @@ import de.ostms.lc.user.service.AppUserDetailsService; import jakarta.servlet.ht
    .requestMatchers("/api/swift-messages/**").hasAuthority("PERM_SWIFT_IMPORT")
    .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/teams/mine","/api/tasks/inbox").authenticated()
    .requestMatchers("/api/teams","/api/teams/**").hasAuthority("PERM_USER_MANAGE")
+   .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/lcs/*/workflows","/api/workflows/*/cancel").hasAuthority("PERM_LC_EDIT")
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/tasks/*/claim","/api/tasks/*/release").hasAuthority("PERM_LC_EDIT")
    .requestMatchers("/api/ebics/**").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers("/api/settings/approval-thresholds/**").hasAuthority("PERM_SETTINGS_MANAGE")
