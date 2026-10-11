@@ -28,6 +28,7 @@ import java.util.*;
   administration.acquire();var membership=one(userId);var user=membership.getUser();
   var role=roles.findById(roleId).orElseThrow(()->new NoSuchElementException("Role not found."));
   TenantContext.require(role.getTenantId());
+  PlatformSeparationPolicy.require(user,role);
   if(membership.isActive()&&user.isActive()&&!suspended(userId)&&user.getRole()==UserRole.ADMIN&&role.getBaseRole()!=UserRole.ADMIN&&users.countByRoleAndActiveTrue(UserRole.ADMIN)<=1)
    throw new IllegalArgumentException("The last active administrator cannot be demoted.");
   if(user.getUsername().equalsIgnoreCase(currentUsername)&&!role.getPermissions().contains(UserPermission.USER_MANAGE))

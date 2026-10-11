@@ -41,6 +41,7 @@ public class TenantMembershipProvisioningService {
   // Exact identity lookup only; this service never exposes a global user directory.
   var user=users.findByUsernameIgnoreCase(username.trim()).orElseThrow(()->new IllegalArgumentException("An eligible existing identity is required."));
   if(!user.isActive()||tenantId.equals(user.getTenantId()))throw new IllegalArgumentException("An eligible existing identity is required.");
+  PlatformSeparationPolicy.require(user,role);
   if(memberships.forUser(user.getId()).isPresent())throw new IllegalArgumentException("This identity already has a tenant membership.");
   store.create(tenantId,user.getId(),role.getId());
   var result=new TenantMembershipService.Membership(tenantId,user.getId(),user.getUsername(),role.getId(),role.getName(),Set.copyOf(role.getPermissions()),true,false,true);

@@ -39,6 +39,7 @@ public class TenantSharedIdentityRoleService {
   TenantContext.require(membership.getTenantId());TenantContext.require(membership.getRole().getTenantId());
   if(tenantId.equals(membership.getUser().getTenantId()))throw new AccessDeniedException("Home identity administration remains separate.");
   var role=roles.findById(roleId).orElseThrow(()->new NoSuchElementException("Role not found."));TenantContext.require(role.getTenantId());
+  PlatformSeparationPolicy.require(membership.getUser(),role);
   var before=access.forUser(userId).orElseThrow(()->new NoSuchElementException("Membership not found."));TenantContext.require(before.tenantId());
   if(before.active()&&membership.getRole().getBaseRole()==UserRole.ADMIN&&role.getBaseRole()!=UserRole.ADMIN&&memberships.countAccessibleAdministrators()<=1)
    throw new IllegalArgumentException("The last active administrator cannot be demoted.");
