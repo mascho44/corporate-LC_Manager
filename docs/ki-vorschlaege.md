@@ -26,3 +26,20 @@ Bei externen Diensten verlassen Dokumenttexte das Haus. Vorab: Auftragsverarbeit
 
 ## Schnittstellen
 `GET /api/ai/status`, `PUT /api/ai/settings` (Recht `PERM_SETTINGS_MANAGE`), `POST /api/lcs/{lcId}/documents/{id}/rule-facts/ai-suggestions` und `POST /api/lcs/{lcId}/ai-hints` (Recht `PERM_DOCUMENT_UPLOAD`).
+
+## Beispiel für die `.env` (Mistral, EU-Dienst)
+```
+LC_AI_ENABLED=true
+LC_AI_PROVIDER=openai-compatible
+LC_AI_BASE_URL=https://api.mistral.ai/v1
+LC_AI_MODEL=mistral-large-latest
+LC_AI_API_KEY_FILE=/run/secrets/lc_ai_key
+```
+Die Schlüsseldatei enthält nur den Schlüssel, gehört dem Betriebsbenutzer und hat Rechte 600; sie wird im Container read-only eingebunden. Nach dem Neustart erscheint unter „Mandant → KI-Vorschläge“ der Dienst mit Modellname; erst dort schaltet ein Mandanten-Admin die Funktion ein.
+
+Lokal mit Ollama (kleine Modelle, nur zum Ausprobieren): `LC_AI_PROVIDER=ollama`, `LC_AI_BASE_URL=http://host.docker.internal:11434`, `LC_AI_MODEL=<Modell>`. Mit 3B-Modellen sind die Ergebnisse auf verrauschten Scans deutlich schlechter als mit größeren Modellen.
+
+## Test vor dem Produktiveinsatz
+1. Zuerst mit synthetischen oder geschwärzten Dokumenten.
+2. Je Dokumenttyp zehn Dokumente: Wie viele Vorschläge stimmen, wie viele sind falsch zugeordnet, wie viele fehlen?
+3. Erst bei guter Trefferquote und freigegebenem Datenschutz mit echten Dokumenten.
