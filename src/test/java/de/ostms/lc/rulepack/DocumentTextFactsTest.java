@@ -10,7 +10,7 @@ class DocumentTextFactsTest {
  private Map<Field,String> doc(DocumentType t,String text){var m=new EnumMap<Field,String>(Field.class);DocumentTextFacts.detect(t,text).forEach(f->m.put(f.field(),f.value()));return m;}
  @Test void invoiceQuantityPriceNumberAndShipmentDate(){
   var f=doc(DocumentType.COMMERCIAL_INVOICE,"COMMERCIAL INVOICE\nInvoice No: INV-2026/001\nQuantity: 1,000 PCS\nUnit price: USD 12.50\nDate of shipment: 12.03.2026\n");
-  assertThat(f).containsEntry(Field.DOCUMENT_NUMBER,"INV-2026/001").containsEntry(Field.DOCUMENT_QUANTITY,"1000").containsEntry(Field.DOCUMENT_QUANTITY_UNIT,"PCS").containsEntry(Field.DOCUMENT_UNIT_PRICE_AMOUNT,"12.50").containsEntry(Field.DOCUMENT_SHIPMENT_DATE,"2026-03-12").doesNotContainKey(Field.DOCUMENT_INVOICE_REFERENCE);
+  assertThat(f).containsEntry(Field.DOCUMENT_QUANTITY,"1000").containsEntry(Field.DOCUMENT_QUANTITY_UNIT,"PCS").containsEntry(Field.DOCUMENT_UNIT_PRICE_AMOUNT,"12.50").containsEntry(Field.DOCUMENT_SHIPMENT_DATE,"2026-03-12").doesNotContainKey(Field.DOCUMENT_INVOICE_REFERENCE);
  }
  @Test void ambiguousValuesAreNotProposed(){
   assertThat(doc(DocumentType.COMMERCIAL_INVOICE,"Quantity: 10 PCS\nQuantity: 20 PCS")).doesNotContainKeys(Field.DOCUMENT_QUANTITY,Field.DOCUMENT_QUANTITY_UNIT);

@@ -68,7 +68,7 @@ Zusammenfassung: abgeleitet 13, aus Akte 12, erkannt 101, manuell 8, offen 55 (i
 | `DOCUMENT_NET_WEIGHT` | erkannt | Dokumenttext/OCR (DocumentFactSuggester, DocumentTextFacts, Packliste, Parteien) |
 | `DOCUMENT_NOTIFY_ADDRESS_COUNTRY` | offen | noch keine Erkennung |
 | `DOCUMENT_NOTIFY_PARTY` | erkannt | Dokumenttext/OCR (DocumentFactSuggester, DocumentTextFacts, Packliste, Parteien) |
-| `DOCUMENT_NUMBER` | erkannt | Dokumenttext/OCR (DocumentFactSuggester, DocumentTextFacts, Packliste, Parteien) |
+| `DOCUMENT_NUMBER` | abgeleitet | Wird beim Auslesen des Dokuments automatisch bestimmt, kein pflegbares Prüffeld |
 | `DOCUMENT_ON_BOARD_DATE` | erkannt | Dokumenttext/OCR (DocumentFactSuggester, DocumentTextFacts, Packliste, Parteien) |
 | `DOCUMENT_ON_BOARD_NOTATION_PRESENT` | erkannt | Dokumenttext/OCR (DocumentFactSuggester, DocumentTextFacts, Packliste, Parteien) |
 | `DOCUMENT_ON_DECK_INDICATED` | erkannt | Textsuche Dokument (DocumentIndicators) |
