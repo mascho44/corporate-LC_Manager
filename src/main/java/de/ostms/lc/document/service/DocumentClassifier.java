@@ -47,6 +47,14 @@ public final class DocumentClassifier {
    var labelled=Pattern.compile("(?im)^[\\t ]*+("+pattern+")[\\t ]*+(?:no\\.?|number|nr\\.?)\\b").matcher(headingText);
    if(labelled.find())found.put(type,labelled.group().trim());
   });
+  // "Packing list / weight list" is one combined document; a submission letter names the documents it encloses.
+  if(Pattern.compile("(?im)^"+decor+"(?:detailed )?packing list[\\t ]*+[/&+-][\\t ]*+weight list"+decor+"(?:(?:original|copy|kopie|duplicate)"+decor+")?$").matcher(headingText).find())return new Classification(DocumentType.PACKING_LIST,.9,"SUGGESTED","DOCUMENT_HEADINGS_V3",List.of("Packing list / weight list"));
+  // Bilingual / form-style certificates of origin (EUR.1 and similar): the title is printed as "Certificate of origin - Certificat d'origine".
+  if(found.isEmpty()&&Pattern.compile("(?i)certificate of origin[\\t ]*+[-–—][\\t ]*+certificat d.origine|warenverkehrsbescheinigung|consignor[\\t ]*+[-–—][\\t ]*+exp[eé]diteur").matcher(headingText).find())return new Classification(DocumentType.CERTIFICATE_OF_ORIGIN,.9,"SUGGESTED","DOCUMENT_HEADINGS_V3",List.of("Ursprungs-/Warenverkehrsbescheinigung (Formular)"));
+  if(found.containsKey(DocumentType.DOCUMENT_SUBMISSION)&&found.size()>1){
+   var submission=Pattern.compile("(?im)^"+decor+"(?:dokumenteneinreichung|einreichung der dokumente|dokumentenvorlage|document submission|submission of documents|presentation of documents|document presentation|presentation letter)"+decor+"$").matcher(headingText);
+   if(submission.find()&&submission.start()<800)return new Classification(DocumentType.DOCUMENT_SUBMISSION,.9,"SUGGESTED","DOCUMENT_HEADINGS_V3",List.of(found.get(DocumentType.DOCUMENT_SUBMISSION)));
+  }
   if(found.size()>1&&pure.size()==1){var only=pure.iterator().next();return new Classification(only,.9,"SUGGESTED","DOCUMENT_HEADINGS_V2",List.of(found.get(only)));}
   if(found.size()>1)return new Classification(null,0,"AMBIGUOUS","DOCUMENT_HEADINGS_V1",List.copyOf(found.values()));
   if(found.size()==1){var entry=found.entrySet().iterator().next();return new Classification(entry.getKey(),.9,"SUGGESTED","DOCUMENT_HEADINGS_V1",List.of(entry.getValue()));}
