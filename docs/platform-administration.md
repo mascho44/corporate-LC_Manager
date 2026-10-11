@@ -64,6 +64,16 @@ wird der Zugang des Plattformkontos zum Mandanten ausgesetzt
 (`PUT /api/platform/memberships/{tenantId}/{userId}/access`). Der letzte aktive
 Administrator eines Mandanten bleibt dabei geschützt.
 
+Zum Umstellen gibt es ein Hilfsskript, das nur die Plattform-API benutzt (Anmeldung mit
+Passwort und Code im Terminal, nichts wird gespeichert): `node scripts/platform-separate-admin.cjs
+--new-admin <Benutzer> --tenants "<Mandant>,<Mandant>"` zeigt den Plan, mit `--apply` führt es ihn nach
+Bestätigung aus (erst Administratorrolle für das Mandantenkonto, dann Zugang des Plattformkontos aussetzen).
+Mit `--release-home` verliert das Plattformkonto zusätzlich alle Rechte im Heimat-Mandanten (Bootstrap):
+`PUT /api/platform/users/{id}/release-home-access` setzt die Heimat-Mitgliedschaft auf die System-Rolle
+Betrachter ohne Berechtigungen. Die Mitgliedschaft bleibt bewusst aktiv, weil die Anmeldung eine aktive
+Mitgliedschaft braucht; sie gibt aber keinen Zugriff auf Mandantendaten. Nur für Plattformadministratoren;
+wiederholbar; im Audit als `PLATFORM_HOME_ACCESS_RELEASED` protokolliert.
+
 ## Invitations
 
 Choose a tenant and one of that tenant's roles on the platform page; permissions
