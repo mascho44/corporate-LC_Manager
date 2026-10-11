@@ -104,4 +104,27 @@ public class PlatformMembershipService {
    return after;
   }
  }
+
+ /**
+  * Takes the business rights away from the home membership of a platform administrator: the identity keeps its bootstrap membership
+  * (a login needs an active membership) but with the system viewer role, which has no permissions. Idempotent; only for platform administrators.
+  */
+ @Transactional
+ public TenantMembershipService.Membership releaseHomeAccess(UUID userId,Authentication authentication){
+  platform.verifyLiveAccess(authentication);
+  try(var scope=TenantContext.open(Tenant.DEFAULT_ID)){
+   lock.acquire();
+   var user=users.findForPasswordReset(userId).filter(u->Tenant.DEFAULT_ID.equals(u.getTenantId())).orElseThrow(()->new NoSuchElementException("Account not found."));
+   if(!user.isPlatformAdministrator())throw new IllegalArgumentException("Only platform administrators can be released from their home tenant this way.");
+   var role=roles.findByBaseRoleAndSystemRoleTrue(UserRole.VIEWER).orElseThrow(()->new IllegalStateException("Bootstrap viewer role is missing."));
+   if(!Tenant.DEFAULT_ID.equals(role.getTenantId())||!role.getPermissions().isEmpty())throw new IllegalStateException("Bootstrap viewer role must have no permissions.");
+   var before=access.forUser(userId).orElseThrow(()->new NoSuchElementException("Membership not found."));
+   if(before.roleId().equals(role.getId()))return before;
+   user.setAssignedRole(role);
+   users.flush(); // the PostgreSQL membership sync trigger writes the home membership
+   var after=new TenantMembershipService.Membership(Tenant.DEFAULT_ID,userId,user.getUsername(),role.getId(),role.getName(),Set.copyOf(role.getPermissions()),before.active(),before.suspended(),before.identityActive());
+   audit.recordChangeInTransaction(authentication,"PLATFORM_HOME_ACCESS_RELEASED","MEMBERSHIP",userId,"Business rights of a platform administrator's home membership removed",AdministrationAuditSnapshot.membership(before),AdministrationAuditSnapshot.membership(after));
+   return after;
+  }
+ }
 }
