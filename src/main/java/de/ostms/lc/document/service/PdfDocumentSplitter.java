@@ -39,9 +39,15 @@ public final class PdfDocumentSplitter {
     public static Proposal propose(byte[] content,String evidenceJson) throws Exception {
         try(var slot=PdfProcessingSafety.acquire();var pdf=Loader.loadPDF(content)) {
             PdfProcessingSafety.validate(pdf);
-            var texts=pageTexts(pdf,DocumentExtractionService.readEvidence(evidenceJson));
+            return proposeFromTexts(pageTexts(pdf,DocumentExtractionService.readEvidence(evidenceJson)));
+        }
+    }
+
+    /** The boundary logic on already extracted page texts (also used for tests on OCR output). */
+    static Proposal proposeFromTexts(List<String> texts) {
+        {
             List<Page> pages=new ArrayList<>();List<Part> parts=new ArrayList<>();
-            DocumentType current=null;int start=1;int[] previousNumber=null;String reference=null;
+            DocumentType current=null;boolean headedPart=false,attachedInPart=false;int start=1;int[] previousNumber=null;String reference=null;
             DocumentCopyDetector.Hint previousCopy=DocumentCopyDetector.detect(null);
             for(int i=0;i<texts.size();i++) {
                 var classification=DocumentClassifier.classify(null,texts.get(i));
@@ -56,18 +62,28 @@ public final class PdfDocumentSplitter {
                 // A blank page (scanner back side) or an unnumbered page after "Page 1 of 3" belongs to the running document.
                 boolean blankPage=texts.get(i).replaceAll("[^\\p{L}\\p{N}]","").length()<5;
                 boolean impliedByTotal=!blankPage&&number==null&&previousNumber!=null&&previousNumber[1]>previousNumber[0];
-                boolean continuation=i>0&&current!=null&&(numberedContinuation||referenceContinuation||blankPage||impliedByTotal)&&!differentReference&&!differentCopy&&!restart;
-                if(detected==null&&"UNKNOWN".equals(classification.status())&&continuation){
+                // Back sides, enclosures and stamp pages of the running document: same letterhead, same identifiers or boilerplate terms, and no heading of their own.
+                String previousText=i>0?texts.get(i-1):"";
+                boolean unheaded=detected==null&&("UNKNOWN".equals(classification.status())||"AMBIGUOUS".equals(classification.status()));
+                String attachmentCue=unheaded&&i>0&&current!=null&&!blankPage?attachmentCue(texts.get(i),previousText):null;
+                boolean continuation=i>0&&current!=null&&(numberedContinuation||referenceContinuation||blankPage||impliedByTotal||attachmentCue!=null)&&!differentReference&&(!differentCopy||attachmentCue!=null)&&!restart;
+                if(unheaded&&continuation){
                     detected=current;
-                    classification=new DocumentClassifier.Classification(current,.8,"REVIEW",numberedContinuation?"PAGE_SEQUENCE_V1":referenceContinuation?"DOCUMENT_REFERENCE_V1":blankPage?"BLANK_PAGE_V1":"PAGE_TOTAL_V1",List.of(numberedContinuation?"Fortsetzungsseite "+number[0]+" / "+number[1]+"; bitte prüfen":referenceContinuation?"Gleiche Dokumentnummer wie vorherige Seite; bitte prüfen":blankPage?"Leere Seite, der vorherigen zugeordnet; bitte prüfen":"Vorherige Seite kündigt weitere Seiten an; bitte prüfen"));
+                    classification=new DocumentClassifier.Classification(current,.8,"REVIEW",numberedContinuation?"PAGE_SEQUENCE_V1":referenceContinuation?"DOCUMENT_REFERENCE_V1":blankPage?"BLANK_PAGE_V1":attachmentCue!=null?attachmentCue:"PAGE_TOTAL_V1",List.of(numberedContinuation?"Fortsetzungsseite "+number[0]+" / "+number[1]+"; bitte prüfen":referenceContinuation?"Gleiche Dokumentnummer wie vorherige Seite; bitte prüfen":blankPage?"Leere Seite, der vorherigen zugeordnet; bitte prüfen":"Vorherige Seite kündigt weitere Seiten an; bitte prüfen"));
                 }
                 pages.add(new Page(i+1,classification,texts.get(i).isBlank()?"UNAVAILABLE":"PAGE_TEXT",DocumentCopyDetector.detect(texts.get(i))));
                 // Unknown pages are isolated instead of silently treated as continuations.
-                if(i>0&&(detected==null||current==null||detected!=current||restart||differentReference||differentCopy)) {
+                // A page with its own heading after a headed front page that already has back sides or enclosures attached is a new document (e.g. the next original of a bill of lading); two bare headed pages stay together as before.
+                boolean headed=detected!=null&&classification.score()>=.9;
+                boolean secondFront=i>0&&headed&&headedPart&&attachedInPart&&!numberedContinuation&&!referenceContinuation;
+                if(i>0&&(detected==null||current==null||detected!=current||restart||differentReference||(differentCopy&&attachmentCue==null)||secondFront)) {
                     parts.add(new Part(start,i,current==null?DocumentType.OTHER:current));start=i+1;
                     reference=null;
+                    headedPart=false;attachedInPart=false;
                 }
                 current=detected;
+                if(headed)headedPart=true;
+                if(continuation&&attachmentCue!=null)attachedInPart=true;
                 if(!copy.kind().equals("UNKNOWN"))previousCopy=copy;
                 else if(start==i+1)previousCopy=copy;
                 if(!blankPage)previousNumber=number!=null||!(impliedByTotal&&continuation)?number:new int[]{previousNumber[0]+1,previousNumber[1]};if(nextReference!=null)reference=nextReference;
@@ -76,6 +92,31 @@ public final class PdfDocumentSplitter {
             var suggestedParts=parts.stream().map(part->new Part(part.fromPage(),part.toPage(),part.documentType(),DocumentCopyDetector.detect(String.join("\n",texts.subList(part.fromPage()-1,part.toPage()))).copyNumber())).toList();
             return new Proposal(texts.size(),List.copyOf(pages),suggestedParts);
         }
+    }
+
+    private static final java.util.regex.Pattern BOILERPLATE=java.util.regex.Pattern.compile("(?i)procedure\\s+in\\s+the\\s+event\\s+of\\s+(?:loss|damage)|in\\s+witness\\s+whereof|general\\s+conditions\\s+of|terms\\s+and\\s+conditions|allgemeine\\s+geschäftsbedingungen|limitation\\s+of\\s+liability|paramount\\s+clause|himalaya\\s+clause");
+    private static final java.util.regex.Pattern IDENTIFIER=java.util.regex.Pattern.compile("\\b(?=[A-Z0-9-]*\\d)[A-Z0-9][A-Z0-9-]{6,}\\b");
+    private static String letters(String s){return java.text.Normalizer.normalize(s==null?"":s,java.text.Normalizer.Form.NFD).replaceAll("\\p{M}","").toLowerCase(Locale.ROOT).replaceAll("[^a-z]","");}
+    /** The first words of the first real line (about 14 letters), enough to recognise the same letterhead despite OCR noise further right. */
+    private static String letterhead(String text){
+        for(String line:text.split("\\R")){
+            if(letters(line).length()<6)continue;
+            var head=new StringBuilder();
+            for(String word:line.trim().split("\\s+")){head.append(letters(word));if(head.length()>=14)break;}
+            return head.length()>=6?head.toString():"";
+        }
+        return "";
+    }
+    /** Why an unheaded page belongs to the previous one, or null. Evidence only; the page stays visible for review. */
+    static String attachmentCue(String text,String previous){
+        var header=java.util.regex.Pattern.compile("(?m)^[\\t ]*(\\S{6,})[\\t ]*[-–][\\t ]*(?:Seite|Page)[\\t ]+\\d+\\b").matcher(text);
+        if(header.find()&&previous.contains(header.group(1)))return "PAGE_HEADER_REFERENCE_V1";
+        if(BOILERPLATE.matcher(text).find())return "BOILERPLATE_PAGE_V1";
+        String head=letterhead(text);
+        if(!head.isEmpty()&&letters(previous).contains(head))return "LETTERHEAD_CONTINUITY_V1";
+        var own=new HashSet<String>();var matcher=IDENTIFIER.matcher(text.toUpperCase(Locale.ROOT));while(matcher.find())own.add(matcher.group());
+        var shared=0;var prev=previous.toUpperCase(Locale.ROOT);for(String id:own)if(prev.contains(id))shared++;
+        return shared>=2?"SHARED_IDENTIFIERS_V1":null;
     }
 
     /** {page,total}; total is 0 when the page states only "Page 2". */
@@ -91,7 +132,7 @@ public final class PdfDocumentSplitter {
         return result;
     }
     private static String documentReference(String text){
-        var matcher=java.util.regex.Pattern.compile("(?im)^\\s*(?:commercial\\s+invoice|invoice|packing\\s+list|handelsrechnung|packliste|bill\\s+of\\s+lading|b/?l|air\\s+waybill|awb|certificate\\s+of\\s+origin)\\s+(?:no\\.?|number|nr\\.?)\\s*[:#]?\\s*([a-z0-9][a-z0-9/-]{1,79})\\b").matcher(text);
+        var matcher=java.util.regex.Pattern.compile("(?im)^\\s*(?:commercial\\s+invoice|invoice|packing\\s+list|handelsrechnung|packliste|bill\\s+of\\s+lading|b/?l|air\\s+waybill|awb|certificate\\s+of\\s+origin)[\\t ]+(?:no\\b\\.?|number\\b|nr\\b\\.?)[\\t ]*[:#]?[\\t ]*([a-z0-9][a-z0-9/-]{1,79})\\b").matcher(text);
         return matcher.find()?matcher.group(1).toUpperCase(Locale.ROOT):null;
     }
 
