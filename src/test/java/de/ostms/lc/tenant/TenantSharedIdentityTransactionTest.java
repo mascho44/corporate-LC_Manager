@@ -65,7 +65,9 @@ class TenantSharedIdentityTransactionTest {
  UUID tenantId,userId,roleId,replacementId,homeRoleId;
  JdbcTemplate jdbc;
  final UsernamePasswordAuthenticationToken authentication=UsernamePasswordAuthenticationToken.authenticated("synthetic-shared-admin",null,List.of());
- @BeforeEach void setup(){
+ @AfterEach void restoreSeparation(){PlatformSeparationPolicy.enabled(true);}
+ @BeforeEach void setup(){PlatformSeparationPolicy.enabled(false); // these tests exercise the legacy creator-becomes-administrator mode
+  
   AuditService target=AopTestUtils.getUltimateTargetObject(audit);reset(target);jdbc=new JdbcTemplate(source);
   jdbc.update("delete from platform_invitation");jdbc.update("delete from tenant_membership_suspension");jdbc.update("delete from tenant_membership");jdbc.update("delete from app_user");jdbc.update("delete from app_role_permission");jdbc.update("delete from app_role");jdbc.update("delete from tenant");
   tenants.saveAndFlush(new Tenant());tenantId=UUID.randomUUID();var tenant=new Tenant();ReflectionTestUtils.setField(tenant,"id",tenantId);ReflectionTestUtils.setField(tenant,"code","synthetic-shared");tenants.saveAndFlush(tenant);
@@ -157,6 +159,11 @@ class TenantSharedIdentityTransactionTest {
   assertThat(jdbc.queryForObject("select role_id from tenant_membership where tenant_id=? and user_id=?",UUID.class,otherId,userId)).isEqualTo(otherRole);
   assertThat(jdbc.queryForObject("select count(*) from tenant_membership_suspension where tenant_id=? and user_id=?",Long.class,otherId,userId)).isZero();
   assertThat(users.findById(userId).orElseThrow().isActive()).isTrue();
+ }
+ @Test void inSeparatedModeANewTenantNeedsItsFirstTenantAdministratorAndNothingIsCreatedWithoutOne(){
+  PlatformSeparationPolicy.enabled(true);
+  assertThatThrownBy(()->workspaceService.createForPlatform("synthetic-noadmin","No administrator","en",true,false,authentication)).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Mandantenadmin");
+  assertThat(jdbc.queryForObject("select count(*) from tenant where code='synthetic-noadmin'",Long.class)).isZero();
  }
  @Test void tenantCreationAssignsInitialAdministratorAndRestoresScope(){
   var created=workspaceService.createForPlatform("synthetic-created","Synthetic created workspace","en",true,false,authentication);

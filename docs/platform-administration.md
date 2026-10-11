@@ -74,6 +74,21 @@ Betrachter ohne Berechtigungen. Die Mitgliedschaft bleibt bewusst aktiv, weil di
 Mitgliedschaft braucht; sie gibt aber keinen Zugriff auf Mandantendaten. Nur für Plattformadministratoren;
 wiederholbar; im Audit als `PLATFORM_HOME_ACCESS_RELEASED` protokolliert.
 
+## Plattformadministrator ohne Mandant
+
+Ein Plattformadministrator gehört keinem Mandanten. Mit aktiver Zwei-Faktor-Anmeldung kann er sich
+auch ohne jede Mandanten-Mitgliedschaft anmelden (`AppUserDetailsService.loadPlatformOnly`): Die Sitzung
+trägt nur die Berechtigung `PLATFORM_ONLY`, gehört zum Identitäts-Heimatmandanten und erreicht nur
+Plattform-Ressourcen (`CredentialSessionFilter`); Geschäfts-Endpunkte lehnen sie ab. Der Rückfall gilt nur
+ohne Mandantencode, nur nachdem die Mitgliedschaftsprüfungen gescheitert sind, und nie bei einem
+ausdrücklich gewählten Mandanten.
+
+Ein neuer Mandant wird mit seinem ersten Mandantenadmin angelegt (`POST /api/platform/tenants` mit
+`administrator`: Benutzername, Name, E-Mail). Die Einladung läuft in derselben Transaktion; der anlegende
+Plattformadministrator erhält **keine** Mitgliedschaft. Ohne Angabe eines ersten Administrators wird kein
+Mandant angelegt. (Der alte Modus „Ersteller wird Administrator“ gilt nur noch im synthetischen Abnahmelauf mit
+`LC_SEPARATE_PLATFORM_ADMIN=false`.)
+
 ## Invitations
 
 Choose a tenant and one of that tenant's roles on the platform page; permissions

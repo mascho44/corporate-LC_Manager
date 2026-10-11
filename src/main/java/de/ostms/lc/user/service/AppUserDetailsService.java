@@ -14,6 +14,16 @@ import java.util.stream.Stream;
  /** Legacy/framework login always uses DEFAULT, regardless of the caller's thread scope. */
  @Override public UserDetails loadUserByUsername(String username){return loadForTenant(username,Tenant.DEFAULT_ID);}
  /** Explicit credential-stage scope, never inferred from a thread or an arbitrary header. */
+public static final String PLATFORM_ONLY="PLATFORM_ONLY";
+ /** A platform administrator with two-factor authentication may sign in without any tenant membership. The session carries no tenant authority and only reaches platform resources (CredentialSessionFilter). */
+ public UserDetails loadPlatformOnly(String username){
+  try(var scope=TenantContext.open(Tenant.DEFAULT_ID)){
+   var u=repo.findByUsernameIgnoreCase(username).orElseThrow(()->new UsernameNotFoundException("User not found"));
+   if(!u.isActive()||u.isInvitationPending()||!Tenant.DEFAULT_ID.equals(u.getTenantId())||!u.isPlatformAdministrator()||!u.isTotpEnabled()||!repo.hasLivePlatformAccess(u.getId()))
+    throw new org.springframework.security.authentication.DisabledException("Platform access is not enabled.");
+   return User.withUsername(u.getUsername()).password(u.getPasswordHash()).authorities(new SimpleGrantedAuthority(PLATFORM_ONLY)).build();
+  }
+ }
  public UserDetails loadForTenant(String username,UUID tenantId){
   if(tenantId==null)throw new org.springframework.security.authentication.DisabledException("Tenant access is not enabled.");
   try(var scope=TenantContext.open(tenantId)){

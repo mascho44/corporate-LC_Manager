@@ -38,24 +38,35 @@ public class TenantWorkspaceService {
  @Transactional public Workspace create(String code,String name,String language,boolean bank,boolean corporate,Authentication auth){
   throw new AccessDeniedException("Tenant creation is available only in platform administration.");
  }
- @Transactional public Workspace createForPlatform(String code,String name,String language,boolean bank,boolean corporate,Authentication auth){
+ /** The person who administers a new tenant; invited by email, never the platform administrator who creates the tenant. */
+ public record AdminInvite(String username,String displayName,String email){}
+ @org.springframework.beans.factory.annotation.Autowired(required=false) @org.springframework.context.annotation.Lazy private de.ostms.lc.user.service.PlatformInvitationService invitations;
+ @Transactional public Workspace createForPlatform(String code,String name,String language,boolean bank,boolean corporate,Authentication auth){return createForPlatform(code,name,language,bank,corporate,null,auth);}
+ @Transactional public Workspace createForPlatform(String code,String name,String language,boolean bank,boolean corporate,AdminInvite admin,Authentication auth){
   if(!Tenant.DEFAULT_ID.equals(TenantContext.currentId()))throw new AccessDeniedException("Tenant creation is restricted to the identity administration tenant.");
   var checked=identity(auth);if(!checked.isPlatformAdministrator()||!checked.isTotpEnabled()||checked.isInvitationPending())throw new AccessDeniedException("Platform access required.");
   lock.acquire();var user=identity(auth);
   if(!users.hasLivePlatformAccess(user.getId()))throw new AccessDeniedException("Platform access unavailable.");
   if(!user.isPlatformAdministrator()||!user.isTotpEnabled()||user.isInvitationPending())throw new AccessDeniedException("A platform administrator with two-factor authentication is required.");
+  boolean separated=PlatformSeparationPolicy.separated();
+  boolean adminGiven=admin!=null&&admin.username()!=null&&!admin.username().isBlank()&&admin.displayName()!=null&&!admin.displayName().isBlank()&&admin.email()!=null&&!admin.email().isBlank();
+  if(separated&&!adminGiven)throw new IllegalArgumentException("Bitte den ersten Mandantenadmin angeben (Benutzername, Name, E-Mail). Der Plattformadministrator verwaltet keinen Mandanten selbst.");
+  if(adminGiven&&invitations==null)throw new IllegalStateException("Einladungen sind nicht verfügbar.");
   if(!bank&&!corporate)throw new IllegalArgumentException("Select at least one profile.");
   code=code==null?"":code.trim().toLowerCase(Locale.ROOT);name=name==null?"":name.trim();
   if(!code.matches("[a-z][a-z0-9-]{1,49}")||name.isEmpty()||name.length()>255||name.chars().anyMatch(Character::isISOControl)||language==null||!List.of("en","de").contains(language))throw new IllegalArgumentException("Provide a tenant code, name and supported language.");
   if(tenants.existsByCodeIgnoreCase(code))throw new IllegalArgumentException("Tenant code already exists.");
   var tenant=tenants.saveAndFlush(new Tenant(code,name,language,bank,corporate));
+  java.util.UUID adminRoleId=null;
   try(var scope=TenantContext.open(tenant.getId())){
    var role=createStandardRole("Administrator",UserRole.ADMIN);
    createStandardRole("Editor",UserRole.EDITOR);
    createStandardRole("Viewer",UserRole.VIEWER);
-   store.create(tenant.getId(),user.getId(),role.getId());
-   audit.recordInTransaction(auth,"TENANT_CREATED","TENANT",tenant.getId(),"Tenant created with initial administrator membership");
+   adminRoleId=role.getId();
+   if(!separated)store.create(tenant.getId(),user.getId(),role.getId()); // legacy single-identity mode (synthetic acceptance run only)
+   audit.recordInTransaction(auth,"TENANT_CREATED","TENANT",tenant.getId(),separated?"Tenant created; first tenant administrator invited, no platform membership":"Tenant created with initial administrator membership");
   }
+  if(adminGiven)invitations.invite(admin.username(),admin.displayName(),admin.email(),tenant.getId(),adminRoleId,auth);
   return new Workspace(tenant.getId(),tenant.getCode(),tenant.getName());
  }
  private AppRole createStandardRole(String name,UserRole base){

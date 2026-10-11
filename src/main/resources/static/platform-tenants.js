@@ -7,6 +7,8 @@ async function setupPlatformTenants(section){
  const makeSelect=(label,options)=>{const wrapper=node('label',label),select=document.createElement('select');options.forEach(([value,text])=>{const o=node('option',text);o.value=value;select.append(o);});wrapper.append(select);return [wrapper,select];};
  const profileOptions=[['bank',t('tenant.profileBank','Bank')],['corporate',t('tenant.profileCorporate','Corporate')],['combined',t('tenant.profileCombined','Bank & Corporate')]];
  const [languageLabel,language]=makeSelect(t('tenant.language','Default language'),[['en','English'],['de','Deutsch']]);const [profileLabel,profile]=makeSelect(t('tenant.profile','Tenant profile'),profileOptions);
+ const adminFields={};form.append(node('h4',t('tenant.firstAdmin','First tenant administrator (is invited by email)')));
+ for(const [key,label,type] of [['username','Username','text'],['displayName','Full name','text'],['email','Email','email']]){const wrapper=node('label',t('tenant.admin.'+key,label)),input=document.createElement('input');input.type=type;input.required=true;input.maxLength=key==='username'?100:255;wrapper.append(input);form.append(wrapper);adminFields[key]=input;}
  const create=node('button',t('tenant.create','Create tenant'));create.type='submit';form.append(languageLabel,profileLabel,create);
  const status=node('p','');status.setAttribute('role','status');const list=document.createElement('div');const reload=node('button',t('tenant.retry','Reload tenant information'));reload.type='button';reload.className='secondary';
  section.append(form,status,reload,list);let generation=0,creating=false;
@@ -31,6 +33,6 @@ async function setupPlatformTenants(section){
    row.append(label,save,toggle,archive,inventory,deletion,error,panel);list.append(row);
   });status.textContent=t('platformTenants.notice','Profiles limit modules in addition to role permissions. Switch workspace before suspending it. The default tenant cannot be suspended.');
  }catch(failure){if(version===generation)status.textContent=failure.message;}finally{if(version===generation)list.setAttribute('aria-busy','false');}}
- form.onsubmit=async event=>{event.preventDefault();if(creating||!form.reportValidity())return;creating=true;create.disabled=true;try{await json('/api/platform/tenants',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:fields.code.value,name:fields.name.value,defaultLanguage:language.value,...flags(profile.value)})});form.reset();await refresh();}catch(failure){status.textContent=failure.message;}finally{creating=false;create.disabled=false;}};
+ form.onsubmit=async event=>{event.preventDefault();if(creating||!form.reportValidity())return;creating=true;create.disabled=true;try{await json('/api/platform/tenants',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:fields.code.value,name:fields.name.value,defaultLanguage:language.value,...flags(profile.value),administrator:{username:adminFields.username.value.trim(),displayName:adminFields.displayName.value.trim(),email:adminFields.email.value.trim()}})});form.reset();await refresh();}catch(failure){status.textContent=failure.message;}finally{creating=false;create.disabled=false;}};
  reload.onclick=refresh;return refresh;
 }
