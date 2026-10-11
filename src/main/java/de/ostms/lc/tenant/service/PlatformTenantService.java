@@ -34,7 +34,8 @@ import java.util.*;
  private void require(Authentication auth){if(!platform.enabled(auth))throw new AccessDeniedException("Platform administration with two-factor authentication is required.");platform.verifyLiveAccess(auth);}
  private View view(Tenant t){return new View(t.getId(),t.getCode(),t.getName(),t.getDefaultLanguage(),t.isActive(),t.isBankEnabled(),t.isCorporateEnabled(),t.isArchived(),t.getArchivedAt());}
  @Transactional(readOnly=true) public List<View> list(Authentication auth){require(auth);return tenants.findAll().stream().filter(t->!t.isDeleted()).sorted(Comparator.comparing(Tenant::getName)).map(this::view).toList();}
- @Transactional public TenantWorkspaceService.Workspace create(String code,String name,String language,boolean bank,boolean corporate,Authentication auth){require(auth);try(var home=TenantContext.open(Tenant.DEFAULT_ID)){return workspaces.createForPlatform(code,name,language,bank,corporate,auth);}}
+ @Transactional public TenantWorkspaceService.Workspace create(String code,String name,String language,boolean bank,boolean corporate,Authentication auth){return create(code,name,language,bank,corporate,null,auth);}
+ @Transactional public TenantWorkspaceService.Workspace create(String code,String name,String language,boolean bank,boolean corporate,TenantWorkspaceService.AdminInvite admin,Authentication auth){require(auth);try(var home=TenantContext.open(Tenant.DEFAULT_ID)){return workspaces.createForPlatform(code,name,language,bank,corporate,admin,auth);}}
  @Transactional public View update(UUID id,boolean active,boolean bank,boolean corporate,Authentication auth){
   UUID selected=TenantContext.currentId();require(auth);
   if(!bank&&!corporate)throw new IllegalArgumentException("Select at least one profile.");

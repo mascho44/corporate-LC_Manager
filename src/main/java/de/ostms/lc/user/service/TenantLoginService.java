@@ -21,7 +21,13 @@ import java.util.UUID;
    var identity=identities.findByUsernameIgnoreCase(username).orElseThrow(()->denied);
    tenant=memberships.findWorkspaceMemberships(identity.getId()).stream().map(m->m.getTenantId()).filter(id->tenants.findById(id).map(de.ostms.lc.tenant.domain.Tenant::isActive).orElse(false)).sorted().findFirst().orElseThrow(()->denied);
    user=details.loadForTenant(username,tenant);
-  }}catch(AuthenticationException denied){encoder.matches(password==null?"":password,dummyHash);throw new BadCredentialsException("Login failed.");}
+  }}catch(AuthenticationException denied){
+   // No active membership anywhere: only a platform administrator with two-factor authentication may continue, and only without a tenant workspace.
+   UserDetails platformOnly=null;
+   if(code==null||code.isBlank()){try{platformOnly=details.loadPlatformOnly(username);}catch(AuthenticationException notPlatform){platformOnly=null;}}
+   if(platformOnly==null){encoder.matches(password==null?"":password,dummyHash);throw new BadCredentialsException("Login failed.");}
+   tenant=de.ostms.lc.tenant.domain.Tenant.DEFAULT_ID;user=platformOnly;
+  }
   if(!encoder.matches(password==null?"":password,user.getPassword())||!user.isEnabled()||!user.isAccountNonLocked()||!user.isAccountNonExpired()||!user.isCredentialsNonExpired())throw new BadCredentialsException("Login failed.");
   return new Verified(tenant,user);
  }
