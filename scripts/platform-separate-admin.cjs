@@ -6,7 +6,7 @@
  *   node scripts/platform-separate-admin.cjs --new-admin markus --tenants "SISW Demo,Firma" --apply     (executes after a confirmation)
  *
  * Options: --url https://lc.ostms.de  --platform-user admin  --release-home
- * --release-home additionally removes all rights of the platform account in its home tenant (bootstrap tenant): it stays registered there as a viewer without permissions, because a login needs an active membership.
+ * --release-home additionally suspends the platform account's home membership (bootstrap tenant) and reduces it to the no-permission viewer role; the account then signs in as a platform-only identity (two-factor authentication required).
  * You enter the password and the two-factor code in the terminal; nothing is stored or printed. Every change is audited by the server like a change made in the platform UI.
  * Steps per tenant: (1) the new administrator gets the administrator role (role change or assignment), (2) only then the platform account's access to that tenant is suspended.
  */
@@ -38,7 +38,7 @@ function plan(memberships, choices, { platformUser, newAdmin, tenants }) {
  return { actions, problems };
 }
 function describe(a) {
- return { assign: `${a.tenant}: ${a.username} als „${a.role}“ zuweisen`, role: `${a.tenant}: Rolle von ${a.username} auf „${a.role}“ ändern`, restore: `${a.tenant}: Zugang von ${a.username} wiederherstellen`, releaseHome: `Heimat-Mandant: ${a.username} verliert alle Rechte (bleibt für die Anmeldung als Betrachter ohne Rechte eingetragen)`, suspend: `${a.tenant}: Zugang von ${a.username} aussetzen` }[a.type];
+ return { assign: `${a.tenant}: ${a.username} als „${a.role}“ zuweisen`, role: `${a.tenant}: Rolle von ${a.username} auf „${a.role}“ ändern`, restore: `${a.tenant}: Zugang von ${a.username} wiederherstellen`, releaseHome: `Heimat-Mandant: ${a.username} verliert die Heimat-Mitgliedschaft (ausgesetzt; Anmeldung bleibt nur für die Plattformverwaltung möglich)`, suspend: `${a.tenant}: Zugang von ${a.username} aussetzen` }[a.type];
 }
 module.exports = { plan, describe };
 if (require.main !== module) return;
