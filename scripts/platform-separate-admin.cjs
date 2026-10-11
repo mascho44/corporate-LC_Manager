@@ -5,7 +5,8 @@
  *   node scripts/platform-separate-admin.cjs --new-admin markus --tenants "SISW Demo,Firma"            (shows the plan, changes nothing)
  *   node scripts/platform-separate-admin.cjs --new-admin markus --tenants "SISW Demo,Firma" --apply     (executes after a confirmation)
  *
- * Options: --url https://lc.ostms.de  --platform-user admin
+ * Options: --url https://lc.ostms.de  --platform-user admin  --release-home
+ * --release-home additionally removes all rights of the platform account in its home tenant (bootstrap tenant): it stays registered there as a viewer without permissions, because a login needs an active membership.
  * You enter the password and the two-factor code in the terminal; nothing is stored or printed. Every change is audited by the server like a change made in the platform UI.
  * Steps per tenant: (1) the new administrator gets the administrator role (role change or assignment), (2) only then the platform account's access to that tenant is suspended.
  */
@@ -37,13 +38,13 @@ function plan(memberships, choices, { platformUser, newAdmin, tenants }) {
  return { actions, problems };
 }
 function describe(a) {
- return { assign: `${a.tenant}: ${a.username} als „${a.role}“ zuweisen`, role: `${a.tenant}: Rolle von ${a.username} auf „${a.role}“ ändern`, restore: `${a.tenant}: Zugang von ${a.username} wiederherstellen`, suspend: `${a.tenant}: Zugang von ${a.username} aussetzen` }[a.type];
+ return { assign: `${a.tenant}: ${a.username} als „${a.role}“ zuweisen`, role: `${a.tenant}: Rolle von ${a.username} auf „${a.role}“ ändern`, restore: `${a.tenant}: Zugang von ${a.username} wiederherstellen`, releaseHome: `Heimat-Mandant: ${a.username} verliert alle Rechte (bleibt für die Anmeldung als Betrachter ohne Rechte eingetragen)`, suspend: `${a.tenant}: Zugang von ${a.username} aussetzen` }[a.type];
 }
 module.exports = { plan, describe };
 if (require.main !== module) return;
 
 function args() {
- const out = { url: 'https://lc.ostms.de', platformUser: 'admin', newAdmin: null, tenants: [], apply: false };
+ const out = { url: 'https://lc.ostms.de', platformUser: 'admin', newAdmin: null, tenants: [], apply: false, releaseHome: false };
  const a = process.argv.slice(2);
  for (let i = 0; i < a.length; i++) {
   if (a[i] === '--url') out.url = a[++i];
@@ -51,6 +52,7 @@ function args() {
   else if (a[i] === '--new-admin') out.newAdmin = a[++i];
   else if (a[i] === '--tenants') out.tenants = String(a[++i]).split(',').map(s => s.trim()).filter(Boolean);
   else if (a[i] === '--apply') out.apply = true;
+  else if (a[i] === '--release-home') out.releaseHome = true;
   else { console.error('Unbekannte Option: ' + a[i]); process.exit(2); }
  }
  if (!out.newAdmin || !out.tenants.length) { console.error('Benötigt: --new-admin <Benutzer> --tenants "<Mandant>,<Mandant>"'); process.exit(2); }
@@ -89,6 +91,11 @@ async function call(path, method = 'GET', body) {
  const access = await call('/api/platform/access'); if (access.enabled !== true) throw new Error('Kein Plattformzugang.');
  const [memberships, choices] = await Promise.all([call('/api/platform/memberships'), call('/api/platform/invitations/choices')]);
  const { actions, problems } = plan(memberships, choices, o);
+ if (o.releaseHome) {
+  const me = (await call('/api/platform/users')).find(a => String(a.username).toLowerCase() === o.platformUser.toLowerCase());
+  if (!me || !me.platformAdministrator) problems.push(`${o.platformUser} ist kein Plattformadministrator; --release-home ist nur dafür gedacht.`);
+  else actions.push({ type: 'releaseHome', userId: me.id, username: o.platformUser }); // last: the tenants above must have their own administrators first
+ }
  problems.forEach(p => console.log('! ' + p));
  if (!actions.length) { console.log('Nichts zu tun.'); await call('/api/platform/logout', 'POST').catch(() => {}); return; }
  console.log('\nGeplante Änderungen:'); actions.forEach((a, i) => console.log(` ${i + 1}. ${describe(a)}`));
@@ -98,6 +105,7 @@ async function call(path, method = 'GET', body) {
  for (const a of actions) {
   if (a.type === 'assign') await call('/api/platform/memberships', 'POST', { tenantId: a.tenantId, username: a.username, roleId: a.roleId });
   else if (a.type === 'role') await call(`/api/platform/memberships/${a.tenantId}/${a.userId}/role`, 'PUT', { roleId: a.roleId });
+  else if (a.type === 'releaseHome') await call(`/api/platform/users/${a.userId}/release-home-access`, 'PUT', {});
   else await call(`/api/platform/memberships/${a.tenantId}/${a.userId}/access`, 'PUT', { suspended: a.type === 'suspend' });
   console.log('✓ ' + describe(a));
  }
