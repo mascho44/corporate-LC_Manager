@@ -25,7 +25,6 @@ public final class DocumentTextFacts {
    unit(text).ifPresent(u->out.add(new Fact(Field.DOCUMENT_QUANTITY_UNIT,u,"Mengeneinheit im Text erkannt")));
   }
   single(text,UNIT_PRICE,1).ifPresent(p->{String n=DocumentFactSuggester.normalizeNumber(p);if(n!=null)out.add(new Fact(Field.DOCUMENT_UNIT_PRICE_AMOUNT,n,"Einzelpreis im Text erkannt"));});
-  single(text,NUMBER,1).ifPresent(v->out.add(new Fact(Field.DOCUMENT_NUMBER,v,"Dokumentnummer im Text erkannt")));
   if(type!=DocumentType.COMMERCIAL_INVOICE)single(text,INVOICE_REF,1).ifPresent(v->out.add(new Fact(Field.DOCUMENT_INVOICE_REFERENCE,v,"Rechnungsreferenz im Text erkannt")));
   labelledDate(text,"(?:date\\s+of\\s+shipment|shipment\\s+date|shipped\\s+on)").ifPresent(d->out.add(new Fact(Field.DOCUMENT_SHIPMENT_DATE,d,"Versanddatum im Text erkannt")));
   if(type==DocumentType.BILL_OF_LADING||type==DocumentType.SEA_WAYBILL||type==DocumentType.MULTIMODAL_TRANSPORT_DOCUMENT||type==DocumentType.CHARTER_PARTY_BILL_OF_LADING||type==DocumentType.AIR_WAYBILL){
