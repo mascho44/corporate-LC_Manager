@@ -9,6 +9,18 @@ import java.util.*;
 @RestController @RequestMapping("/api/platform") public class PlatformAdministrationController {
  public record Access(@NotNull Boolean active){}
  public record Grant(@NotNull Boolean granted){}
+ public record PasswordChange(@jakarta.validation.constraints.NotBlank @jakarta.validation.constraints.Size(max=200) String currentPassword,@jakarta.validation.constraints.NotBlank @jakarta.validation.constraints.Size(max=200) String newPassword){}
+ @org.springframework.beans.factory.annotation.Autowired(required=false) private de.ostms.lc.user.service.IdentityCredentialService credentials;
+ /** Own-password change for platform accounts, which belong to no tenant and therefore cannot use the workspace endpoint. The credential stamp changes, so the session ends. */
+ @PostMapping("/password") @ResponseStatus(org.springframework.http.HttpStatus.NO_CONTENT)
+ public void changePassword(@Valid @RequestBody PasswordChange body,Authentication auth){
+  service.verifyLiveAccess(auth);
+  if(credentials==null)throw new IllegalStateException("Credential service unavailable.");
+  try(var scope=de.ostms.lc.tenant.domain.TenantContext.open(de.ostms.lc.tenant.domain.Tenant.DEFAULT_ID)){
+   credentials.changeOwnPassword(auth.getName(),body.currentPassword(),body.newPassword());
+   audit.record(auth,"PASSWORD_CHANGED","USER",auth.getName(),"Passwort geändert (Plattformverwaltung)");
+  }
+ }
  private final PlatformAdministrationService service;
  @org.springframework.beans.factory.annotation.Autowired private de.ostms.lc.audit.service.AuditService audit;
  public PlatformAdministrationController(PlatformAdministrationService service){this.service=service;}

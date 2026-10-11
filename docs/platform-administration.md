@@ -93,6 +93,10 @@ Plattformadministrator erhält **keine** Mitgliedschaft. Ohne Angabe eines erste
 Mandant angelegt. (Der alte Modus „Ersteller wird Administrator“ gilt nur noch im synthetischen Abnahmelauf mit
 `LC_SEPARATE_PLATFORM_ADMIN=false`.)
 
+Das eigene Passwort ändert ein Plattformkonto in der Plattformverwaltung (Bereich „Eigenes Passwort ändern“,
+`POST /api/platform/password`): aktuelles Passwort, neues Passwort mit der üblichen Stärkeregel, Audit-Eintrag
+`PASSWORD_CHANGED`. Die Änderung beendet die Sitzung; danach ist eine neue Anmeldung nötig.
+
 ## Invitations
 
 Choose a tenant and one of that tenant's roles on the platform page; permissions
