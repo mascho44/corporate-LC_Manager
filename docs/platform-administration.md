@@ -51,6 +51,19 @@ in the intended tenant through the existing membership workflow. Global account
 activation never lifts the bootstrap suspension. Creation and audit are atomic.
 The normal UI uses invitations instead of administrator-selected passwords.
 
+## Trennung von Plattform- und Mandantenadministration
+
+Eine Identität mit Plattformrecht erhält in keinem Mandanten Administrator- oder
+Verwaltungsrechte (Basisrolle Administrator, `USER_MANAGE` oder `SETTINGS_MANAGE`).
+Die Sperre gilt an allen Stellen, an denen eine Rolle vergeben wird: Plattform-API
+(Zuweisung und Rollenwechsel), mandanteneigene Zuweisung bestehender Identitäten,
+Rollenwechsel geteilter Identitäten und Rollenwechsel im eigenen Mandanten.
+Bestehende Zuordnungen werden nicht automatisch geändert; sie werden bewusst
+umgestellt: Zuerst erhält ein eigenes Mandantenkonto die Administratorrolle, danach
+wird der Zugang des Plattformkontos zum Mandanten ausgesetzt
+(`PUT /api/platform/memberships/{tenantId}/{userId}/access`). Der letzte aktive
+Administrator eines Mandanten bleibt dabei geschützt.
+
 ## Invitations
 
 Choose a tenant and one of that tenant's roles on the platform page; permissions

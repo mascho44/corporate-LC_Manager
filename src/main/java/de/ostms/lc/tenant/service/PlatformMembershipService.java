@@ -52,6 +52,7 @@ public class PlatformMembershipService {
    var role=roles.findById(roleId).orElseThrow(()->new NoSuchElementException("Role not found."));TenantContext.require(role.getTenantId());
    var user=users.findByUsernameIgnoreCase(username.trim()).orElseThrow(()->new IllegalArgumentException("An eligible existing identity is required."));
    if(!user.isActive()||user.isInvitationPending()||tenantId.equals(user.getTenantId()))throw new IllegalArgumentException("An eligible existing identity is required.");
+   PlatformSeparationPolicy.require(user,role);
    if(access.forUser(user.getId()).isPresent())throw new IllegalArgumentException("This identity already has a tenant membership.");
    store.create(tenantId,user.getId(),role.getId());
    var result=new TenantMembershipService.Membership(tenantId,user.getId(),user.getUsername(),role.getId(),role.getName(),Set.copyOf(role.getPermissions()),true,false,true);
@@ -69,6 +70,7 @@ public class PlatformMembershipService {
    TenantContext.require(membership.getTenantId());TenantContext.require(membership.getRole().getTenantId());
    if(tenantId.equals(membership.getUser().getTenantId()))throw new AccessDeniedException("Home identities are administered in their own tenant.");
    var role=roles.findById(roleId).orElseThrow(()->new NoSuchElementException("Role not found."));TenantContext.require(role.getTenantId());
+   PlatformSeparationPolicy.require(membership.getUser(),role);
    var before=access.forUser(userId).orElseThrow(()->new NoSuchElementException("Membership not found."));
    if(before.roleId().equals(roleId))return before;
    if(before.active()&&membership.getRole().getBaseRole()==UserRole.ADMIN&&role.getBaseRole()!=UserRole.ADMIN&&memberships.countAccessibleAdministrators()<=1)
