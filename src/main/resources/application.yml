@@ -73,6 +73,12 @@ app:
     reset-password: ${ADMIN_RESET_PASSWORD:false}
 
 lc:
+  ai:
+    # Optionale KI-Vorschlaege mit einem lokalen Ollama-Server. Aus, solange nicht ausdruecklich aktiviert; Dokumenttext geht nur an base-url.
+    enabled: ${LC_AI_ENABLED:false}
+    base-url: ${LC_AI_BASE_URL:http://localhost:11434}
+    model: ${LC_AI_MODEL:qwen2.5:3b}
+    timeout-seconds: ${LC_AI_TIMEOUT_SECONDS:240}
   audit:
     # Aufbewahrungsfrist des Audit-Protokolls in Jahren (Richtwert fuer die Revision; es wird nie automatisch geloescht).
     retention-years: ${AUDIT_RETENTION_YEARS:10}
