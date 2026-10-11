@@ -121,7 +121,7 @@ public class DocumentFactSuggester {
   if(raw==null)return null;
   return switch(raw.toLowerCase(Locale.ROOT)){case "kg","kgs","kilo","kilos"->"KG";case "mt","t","ton","tons","tonne","tonnes"->"T";case "lb","lbs"->"LB";default->null;};
  }
- static String normalizeNumber(String raw){
+ public static String normalizeNumber(String raw){
   String n=raw.trim();
   int dot=n.lastIndexOf('.'),comma=n.lastIndexOf(',');
   if(dot>=0&&comma>=0)n=dot>comma?n.replace(",",""):n.replace(".","").replace(',','.');

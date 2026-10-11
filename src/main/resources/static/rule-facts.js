@@ -61,6 +61,27 @@
      }
     }catch(ignored){}
    }
+   if(!requirements&&allowed&&documentId){
+    try{
+     const ai=await json('/api/ai/status');
+     if(ai.enabled&&current===sequence){
+      const box=document.createElement('div');box.className='rule-facts-suggestions';
+      const ask=document.createElement('button'),note=document.createElement('small');ask.type='button';ask.className='secondary';ask.textContent='KI-Vorschläge holen (lokales Modell)';
+      ask.onclick=async()=>{
+       ask.disabled=true;ask.textContent='KI liest das Dokument … (kann eine Minute dauern)';
+       try{
+        const found=await json(url+'/ai-suggestions',{method:'POST'});const byField=Object.fromEntries(fields.map(d=>[d.field,d]));let shownCount=0;
+        found.forEach(s=>{const d=byField[s.field];if(!d||!form.elements[s.field])return;shownCount++;
+         const b=document.createElement('button');b.type='button';b.className='secondary';b.textContent='KI: '+d.label+': '+s.value+' übernehmen';b.title=s.source;
+         b.onclick=()=>{form.elements[s.field].value=s.value;b.disabled=true;};box.append(b);});
+        note.textContent=shownCount?'KI-Vorschläge mit geprüftem Zitat – bitte fachlich prüfen, nichts wird automatisch gespeichert.':'Die KI hat keine belegbaren Vorschläge gefunden.';
+        ask.remove();box.append(note);
+       }catch(error){ask.disabled=false;ask.textContent='KI-Vorschläge holen (lokales Modell)';note.textContent='KI nicht erreichbar: '+error.message;if(!note.isConnected)box.append(note);}
+      };
+      box.append(ask);form.querySelector('.dialoghead').after(box);
+     }
+    }catch(ignored){}
+   }
    if(!allowed)form.querySelectorAll('input,textarea,select').forEach(input=>input.disabled=true);
    dialog.querySelectorAll('[data-close]').forEach(button=>button.onclick=()=>{++sequence;dialog.close();});
    const context=dialog.querySelector('[data-context]');if(context)context.onclick=()=>openFacts(null,documentType);
