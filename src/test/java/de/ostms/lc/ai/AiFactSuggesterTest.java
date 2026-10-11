@@ -6,29 +6,48 @@ import static de.ostms.lc.rulepack.PackDefinition.Field;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class AiFactSuggesterTest {
- private static final String TEXT="BILL OF LADING\nVessel / Voyage: MSC AURORA V.2605E\nConsignee: TO ORDER OF DEUTSCHE BANK AG\nSigned by Captain J. Meyer, Master\n";
- private LcDocument doc(){var d=new LcDocument();d.setDocumentType(DocumentType.BILL_OF_LADING);d.setExtractedText(TEXT);return d;}
- private static LlmClient answering(String json){return new LlmClient(){public String model(){return "test-model";}public String generateJson(String p){return json;}};}
+ private static final String TEXT="BILL OF LADING\nB/L No: HLC123456\nVessel / Voyage: MSC AURORA V.2605E\nConsignee: TO ORDER OF EXAMPLE BANK\nGross weight: 12,345.60 KGS\nNumber of original Bills of Lading: THREE (3)\nSHIPPED ON BOARD 12.03.2026\nSigned by Captain J. Meyer, Master\n";
+ private LcDocument doc(DocumentType t){var d=new LcDocument();d.setDocumentType(t);d.setExtractedText(TEXT);return d;}
+ private static LlmClient answering(String json){return new LlmClient(){public String provider(){return "test";}public String model(){return "m";}public String generateJson(String p){return json;}};}
+ private static Map<Field,String> asMap(List<de.ostms.lc.rulepack.DocumentFactSuggester.Suggestion> l){var m=new EnumMap<Field,String>(Field.class);l.forEach(s->m.put(s.field(),s.value()));return m;}
 
- @Test void disabledWithoutClient()throws Exception{
-  var s=new AiFactSuggester(null,null);assertThat(s.enabled()).isFalse();assertThat(s.suggest(doc())).isEmpty();
+ @Test void withoutAClientNothingHappens()throws Exception{
+  var s=new AiFactSuggester(null,null);assertThat(s.available()).isFalse();assertThat(s.suggest(doc(DocumentType.BILL_OF_LADING))).isEmpty();
  }
- @Test void verifiedQuotesBecomeProposalsAndInventedOnesAreDropped()throws Exception{
-  String answer="{\"vessel\":{\"value\":\"MSC AURORA\",\"quote\":\"Vessel / Voyage: MSC AURORA V.2605E\"},"
-   +"\"consignee\":{\"value\":\"ACME TRADING\",\"quote\":\"Consignee: ACME TRADING\"},"            // quote not in the document
-   +"\"signer_name\":{\"value\":\"Captain J. Meyer\",\"quote\":\"Signed by Master\"},"            // quote does not contain the value
-   +"\"signer_role\":{\"value\":\"Master\",\"quote\":\"Captain J. Meyer, Master\"},"
+ @Test void textNumbersDatesAndCountsAreVerifiedAgainstTheirQuotes()throws Exception{
+  String answer="{\"document_number\":{\"value\":\"HLC123456\",\"quote\":\"B/L No: HLC123456\"},"
+   +"\"vessel\":{\"value\":\"MSC AURORA\",\"quote\":\"Vessel / Voyage: MSC AURORA V.2605E\"},"
+   +"\"gross_weight\":{\"value\":12345.6,\"quote\":\"Gross weight: 12,345.60 KGS\"},"          // number written differently than in the text
+   +"\"on_board_date\":{\"value\":\"2026-03-12\",\"quote\":\"SHIPPED ON BOARD 12.03.2026\"},"  // ISO value, German date in the quote
+   +"\"original_count\":{\"value\":3,\"quote\":\"original Bills of Lading: THREE (3)\"},"
+   +"\"consignee\":{\"value\":\"ACME TRADING\",\"quote\":\"Consignee: ACME TRADING\"},"        // quote not in the document
+   +"\"signer_name\":{\"value\":\"Captain J. Meyer\",\"quote\":\"Signed by Master\"},"       // quote does not contain the value
    +"\"carrier\":{\"value\":null,\"quote\":null}}";
-  var out=new AiFactSuggester(answering(answer),null).suggest(doc());
-  assertThat(out).extracting(x->x.field()).containsExactlyInAnyOrder(Field.DOCUMENT_VESSEL,Field.DOCUMENT_SIGNER_ROLE);
-  assertThat(out.get(0).source()).contains("KI-Vorschlag").contains("test-model").contains("bitte prüfen");
+  var f=asMap(new AiFactSuggester(answering(answer),null).suggest(doc(DocumentType.BILL_OF_LADING)));
+  assertThat(f).containsEntry(Field.DOCUMENT_VESSEL,"MSC AURORA").containsEntry(Field.DOCUMENT_GROSS_WEIGHT,"12345.6")
+   .containsEntry(Field.DOCUMENT_ON_BOARD_DATE,"2026-03-12").containsEntry(Field.DOCUMENT_ORIGINAL_COUNT,"3");
+  assertThat(f).doesNotContainKeys(Field.DOCUMENT_CONSIGNEE,Field.DOCUMENT_SIGNER_NAME,Field.DOCUMENT_CARRIER);
  }
- @Test void lineBreaksAndPunctuationDoNotBreakTheQuoteCheck(){
-  var out=AiFactSuggester.verify("{\"consignee\":{\"value\":\"TO ORDER OF DEUTSCHE BANK AG\",\"quote\":\"Consignee:\\nTO ORDER OF DEUTSCHE BANK AG\"}}",List.of("consignee"),"x Consignee: TO ORDER OF DEUTSCHE BANK AG y","m",Map.of());
-  assertThat(out).hasSize(1);
+ @Test void aWrongNumberOrDateIsRejectedEvenWithARealQuote()throws Exception{
+  String answer="{\"gross_weight\":{\"value\":99999,\"quote\":\"Gross weight: 12,345.60 KGS\"},\"on_board_date\":{\"value\":\"2026-04-12\",\"quote\":\"SHIPPED ON BOARD 12.03.2026\"}}";
+  assertThat(new AiFactSuggester(answering(answer),null).suggest(doc(DocumentType.BILL_OF_LADING))).isEmpty();
  }
- @Test void invalidAnswerAndAlreadyKnownValuesYieldNothing(){
-  assertThat(AiFactSuggester.verify("not json",List.of("vessel"),TEXT,"m",Map.of())).isEmpty();
-  assertThat(AiFactSuggester.verify("{\"vessel\":{\"value\":\"MSC AURORA\",\"quote\":\"Vessel / Voyage: MSC AURORA V.2605E\"}}",List.of("vessel"),TEXT,"m",Map.of(Field.DOCUMENT_VESSEL,"MSC AURORA"))).isEmpty();
+ @Test void onlyFieldsThatFitTheDocumentTypeAreAsked(){
+  var invoiceKeys=AiFactSuggester.specsFor(DocumentType.COMMERCIAL_INVOICE,Set.of()).stream().map(AiFactSuggester.Spec::key).toList();
+  assertThat(invoiceKeys).contains("unit_price").doesNotContain("consignee","drawee","notify_party");
+  assertThat(AiFactSuggester.specsFor(DocumentType.BILL_OF_LADING,Set.of(Field.DOCUMENT_VESSEL)).stream().map(AiFactSuggester.Spec::key)).doesNotContain("vessel");
+  assertThat(AiFactSuggester.specsFor(DocumentType.ADVISING_LETTER,Set.of())).isEmpty();
+  assertThat(AiFactSuggester.prompt(AiFactSuggester.specsFor(DocumentType.COMMERCIAL_INVOICE,Set.of()),"x")).contains("unit price");
+ }
+ @Test void invalidAnswersYieldNothing(){
+  assertThat(AiFactSuggester.verify("not json",AiFactSuggester.specsFor(DocumentType.BILL_OF_LADING,Set.of()),TEXT,"t/m",Map.of())).isEmpty();
+ }
+ @Test void currencyMustAppearInTheQuote(){
+  assertThat(AiFactSuggester.accept(AiFactSuggester.Kind.CURRENCY,"eur","Sum insured 66.252,52 EUR")).isEqualTo("EUR");
+  assertThat(AiFactSuggester.accept(AiFactSuggester.Kind.CURRENCY,"USD","Sum insured 66.252,52 EUR")).isNull();
+ }
+ @Test void everyAskedFieldCanActuallyBeStored(){
+  for(var type:DocumentType.values())for(var spec:AiFactSuggester.specsFor(type,Set.of()))
+   assertThat(de.ostms.lc.rulepack.RuleFacts.DOCUMENT).as(type+" "+spec.key()).contains(spec.field());
  }
 }

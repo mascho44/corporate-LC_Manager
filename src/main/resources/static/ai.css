@@ -1,0 +1,5 @@
+#aiHintsDialog{max-width:min(46rem,94vw);padding:1rem 1.2rem;border-radius:12px}
+#aiHintsDialog .ai-note{font-size:.9rem;opacity:.8}
+.ai-hint{border-left:4px solid #94a3b8;padding:.4rem .7rem;margin:.6rem 0;background:rgba(148,163,184,.12);border-radius:6px}
+.ai-hint.ai-high{border-left-color:#dc2626}.ai-hint.ai-medium{border-left-color:#ea580c}
+.ai-hint small{display:block;opacity:.7}.ai-hint p{margin:.3rem 0}.ai-hint blockquote{margin:.3rem 0;font-size:.85rem;opacity:.85}
