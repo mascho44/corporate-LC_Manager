@@ -18,4 +18,9 @@ class PlatformSeparationPolicyTest {
   assertThatCode(()->PlatformSeparationPolicy.require(user(true),role(UserRole.VIEWER))).doesNotThrowAnyException();
   assertThatCode(()->PlatformSeparationPolicy.require(user(false),role(UserRole.ADMIN,UserPermission.USER_MANAGE,UserPermission.SETTINGS_MANAGE))).doesNotThrowAnyException();
  }
+ @Test void theSwitchOnlyExistsForTheSyntheticAcceptanceRun(){
+  try{PlatformSeparationPolicy.enabled(false);assertThatCode(()->PlatformSeparationPolicy.require(user(true),role(UserRole.ADMIN))).doesNotThrowAnyException();}
+  finally{PlatformSeparationPolicy.enabled(true);}
+  assertThatThrownBy(()->PlatformSeparationPolicy.require(user(true),role(UserRole.ADMIN))).isInstanceOf(AccessDeniedException.class);
+ }
 }

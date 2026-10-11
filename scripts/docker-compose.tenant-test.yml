@@ -20,6 +20,8 @@ services:
       DB_PASSWORD: SyntheticDbOnly
       ADMIN_USERNAME: admin
       ADMIN_PASSWORD: SyntheticOnly123!
+      # The synthetic run uses one identity as platform and tenant administrator; production keeps the separation (default true).
+      LC_SEPARATE_PLATFORM_ADMIN: "false"
       TOTP_ENCRYPTION_KEY: SyntheticTestEncryptionKeyOnly20261007
       SESSION_COOKIE_SECURE: "false"
       LC_TENANTS_TEST_PURGE_ENABLED: "true"

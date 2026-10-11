@@ -73,6 +73,9 @@ app:
     reset-password: ${ADMIN_RESET_PASSWORD:false}
 
 lc:
+  tenant:
+    # Plattformadministratoren erhalten in Mandanten keine Administrator-/Verwaltungsrechte. Nur der synthetische Abnahmelauf mit einer einzigen Identitaet setzt false.
+    separate-platform-admin: ${LC_SEPARATE_PLATFORM_ADMIN:true}
   ai:
     # Optionale KI-Vorschlaege, anbieterunabhaengig. Aus, solange nicht ausdruecklich aktiviert; zusaetzlich je Mandant einzuschalten.
     # Der Dokumenttext geht ausschliesslich an base-url. provider: ollama (lokal) oder openai-compatible (Mistral, OpenAI, vLLM, LM Studio, Gateways ...).
