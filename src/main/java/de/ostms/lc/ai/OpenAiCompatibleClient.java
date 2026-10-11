@@ -1,8 +1,5 @@
 package de.ostms.lc.ai;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
-import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.*;
@@ -13,16 +10,13 @@ import java.util.Map;
 
 /**
  * Any server that speaks the common "chat completions" API: hosted providers (Mistral, OpenAI and others), vLLM, LM Studio, Ollama's /v1 endpoint, gateways.
- * Configure lc.ai.base-url (without /chat/completions), lc.ai.model and the key via lc.ai.api-key or lc.ai.api-key-file. The key is only sent in the Authorization header and never logged.
+ * Built by {@link LlmClientFactory} from the tenant configuration or the operator default (lc.ai.*). The key is only sent in the Authorization header and never logged.
  */
-@Component
-@ConditionalOnExpression("'${lc.ai.enabled:false}'=='true' && '${lc.ai.provider:ollama}'=='openai-compatible'")
 public class OpenAiCompatibleClient implements LlmClient {
  private static final ObjectMapper JSON=new ObjectMapper();
  private final URI endpoint;private final String model,key;private final Duration timeout;
  private final HttpClient http=HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
- public OpenAiCompatibleClient(@Value("${lc.ai.base-url:}") String baseUrl,@Value("${lc.ai.model:}") String model,@Value("${lc.ai.api-key:}") String apiKey,
-   @Value("${lc.ai.api-key-file:}") String apiKeyFile,@Value("${lc.ai.timeout-seconds:120}") int timeoutSeconds)throws IOException{
+ public OpenAiCompatibleClient(String baseUrl,String model,String apiKey,String apiKeyFile,int timeoutSeconds)throws IOException{
   if(baseUrl.isBlank()||model.isBlank())throw new IllegalStateException("lc.ai.base-url und lc.ai.model müssen für den Anbieter openai-compatible gesetzt sein.");
   var uri=URI.create(baseUrl.replaceAll("/+$","")+"/chat/completions");
   boolean local="localhost".equals(uri.getHost())||"127.0.0.1".equals(uri.getHost());

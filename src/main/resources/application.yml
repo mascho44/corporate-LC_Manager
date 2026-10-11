@@ -86,6 +86,12 @@ lc:
     api-key: ${LC_AI_API_KEY:}
     api-key-file: ${LC_AI_API_KEY_FILE:}
     timeout-seconds: ${LC_AI_TIMEOUT_SECONDS:240}
+    # Eigene Konfiguration der Mandanten (Oberflaeche unter Mandant -> KI-Vorschlaege): nur Hosts aus dieser Liste, nur HTTPS, keine internen Adressen.
+    allowed-hosts: ${LC_AI_ALLOWED_HOSTS:}
+    # true erlaubt lokale Endpunkte (z. B. Ollama); nur bewusst setzen.
+    allow-local: ${LC_AI_ALLOW_LOCAL:false}
+    # Schluessel zum Verschluesseln der Mandanten-API-Schluessel; faellt auf EBICS_ENCRYPTION_KEY zurueck.
+    encryption-key: ${LC_AI_ENCRYPTION_KEY:${EBICS_ENCRYPTION_KEY:}}
   audit:
     # Aufbewahrungsfrist des Audit-Protokolls in Jahren (Richtwert fuer die Revision; es wird nie automatisch geloescht).
     retention-years: ${AUDIT_RETENTION_YEARS:10}

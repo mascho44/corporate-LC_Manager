@@ -12,7 +12,7 @@ class AiFactSuggesterTest {
  private static Map<Field,String> asMap(List<de.ostms.lc.rulepack.DocumentFactSuggester.Suggestion> l){var m=new EnumMap<Field,String>(Field.class);l.forEach(s->m.put(s.field(),s.value()));return m;}
 
  @Test void withoutAClientNothingHappens()throws Exception{
-  var s=new AiFactSuggester(null,null);assertThat(s.available()).isFalse();assertThat(s.suggest(doc(DocumentType.BILL_OF_LADING))).isEmpty();
+  var s=new AiFactSuggester(()->java.util.Optional.empty(),null);assertThat(s.available()).isFalse();assertThat(s.suggest(doc(DocumentType.BILL_OF_LADING))).isEmpty();
  }
  @Test void textNumbersDatesAndCountsAreVerifiedAgainstTheirQuotes()throws Exception{
   String answer="{\"document_number\":{\"value\":\"HLC123456\",\"quote\":\"B/L No: HLC123456\"},"
@@ -23,14 +23,14 @@ class AiFactSuggesterTest {
    +"\"consignee\":{\"value\":\"ACME TRADING\",\"quote\":\"Consignee: ACME TRADING\"},"        // quote not in the document
    +"\"signer_name\":{\"value\":\"Captain J. Meyer\",\"quote\":\"Signed by Master\"},"       // quote does not contain the value
    +"\"carrier\":{\"value\":null,\"quote\":null}}";
-  var f=asMap(new AiFactSuggester(answering(answer),null).suggest(doc(DocumentType.BILL_OF_LADING)));
+  var f=asMap(new AiFactSuggester(()->java.util.Optional.of(answering(answer)),null).suggest(doc(DocumentType.BILL_OF_LADING)));
   assertThat(f).containsEntry(Field.DOCUMENT_VESSEL,"MSC AURORA").containsEntry(Field.DOCUMENT_GROSS_WEIGHT,"12345.6")
    .containsEntry(Field.DOCUMENT_ON_BOARD_DATE,"2026-03-12").containsEntry(Field.DOCUMENT_ORIGINAL_COUNT,"3");
   assertThat(f).doesNotContainKeys(Field.DOCUMENT_CONSIGNEE,Field.DOCUMENT_SIGNER_NAME,Field.DOCUMENT_CARRIER);
  }
  @Test void aWrongNumberOrDateIsRejectedEvenWithARealQuote()throws Exception{
   String answer="{\"gross_weight\":{\"value\":99999,\"quote\":\"Gross weight: 12,345.60 KGS\"},\"on_board_date\":{\"value\":\"2026-04-12\",\"quote\":\"SHIPPED ON BOARD 12.03.2026\"}}";
-  assertThat(new AiFactSuggester(answering(answer),null).suggest(doc(DocumentType.BILL_OF_LADING))).isEmpty();
+  assertThat(new AiFactSuggester(()->java.util.Optional.of(answering(answer)),null).suggest(doc(DocumentType.BILL_OF_LADING))).isEmpty();
  }
  @Test void onlyFieldsThatFitTheDocumentTypeAreAsked(){
   var invoiceKeys=AiFactSuggester.specsFor(DocumentType.COMMERCIAL_INVOICE,Set.of()).stream().map(AiFactSuggester.Spec::key).toList();

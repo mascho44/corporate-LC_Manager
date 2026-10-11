@@ -6,7 +6,14 @@
  function sortHints(hints) {
   return [...(hints || [])].sort((a, b) => (ORDER[a.severity] ?? 2) - (ORDER[b.severity] ?? 2));
  }
- globalThis.LcAi = { sortHints, LABEL };
+/** One line telling whose configuration is in effect. */
+ function describeSource(view) {
+  if (!view) return '';
+  if (view.source === 'mandant') return `Aktiv konfiguriert: eigener Dienst (${view.provider}, Modell ${view.model}).`;
+  if (view.source === 'betreiber') return `Es gilt der Standard des Betreibers (${view.provider}, Modell ${view.model}); hier kann der Mandant einen eigenen Dienst hinterlegen.`;
+  return view.available ? 'Noch kein KI-Dienst konfiguriert.' : 'In dieser Installation sind noch keine KI-Dienste freigegeben.';
+ }
+ globalThis.LcAi = { sortHints, LABEL, describeSource };
  if (typeof document === 'undefined' || !document.body) return;
 
  const node = (tag, text, className) => { const n = document.createElement(tag); if (text !== undefined) n.textContent = text; if (className) n.className = className; return n; };
@@ -59,24 +66,72 @@
  async function buildSettings(host) {
   const box = node('section', undefined, 'scan-profile'); box.id = 'aiSettingsBox';
   const message = node('p', ''); message.setAttribute('role', 'status');
+  const field = (label, input) => { const l = node('label', label + ' '); l.append(input); return l; };
+  const provider = document.createElement('select');
+  const baseUrl = document.createElement('input'); baseUrl.type = 'url'; baseUrl.maxLength = 300; baseUrl.autocomplete = 'off';
+  const model = document.createElement('input'); model.type = 'text'; model.maxLength = 100; model.autocomplete = 'off';
+  const key = document.createElement('input'); key.type = 'password'; key.maxLength = 500; key.autocomplete = 'new-password';
+  const timeout = document.createElement('input'); timeout.type = 'number'; timeout.min = 10; timeout.max = 600; timeout.placeholder = '120';
+  const save = node('button', 'Speichern'); save.type = 'button';
+  const test = node('button', 'Verbindung testen'); test.type = 'button'; test.className = 'secondary';
+  const clear = node('button', 'Schlüssel entfernen'); clear.type = 'button'; clear.className = 'secondary';
   const checkbox = document.createElement('input'); checkbox.type = 'checkbox';
-  const label = node('label', ' KI-Vorschläge für diesen Mandanten aktivieren'); label.prepend(checkbox);
-  const info = node('small', '');
-  box.append(node('h3', 'KI-Vorschläge'), node('p', 'Optional und standardmäßig aus. Bei Aktivierung gehen Dokumenttexte an den vom Betreiber konfigurierten KI-Dienst. Vorschläge werden nie automatisch gespeichert und ersetzen keine Prüfung.'), label, info, message);
+  const enable = node('label', ' KI-Vorschläge für diesen Mandanten aktivieren'); enable.prepend(checkbox);
+  const info = node('small', ''), hosts = node('small', '');
+  const actions = node('p'); actions.append(save, ' ', test, ' ', clear);
+  box.append(node('h3', 'KI-Vorschläge'),
+   node('p', 'Optional und standardmäßig aus. Jeder Mandant hinterlegt hier seinen eigenen KI-Dienst und Schlüssel; Dokumenttexte gehen nur an diesen Dienst. Vorschläge werden nie automatisch gespeichert und ersetzen keine Prüfung.'),
+   info, field('Anbieter', provider), field('Adresse', baseUrl), field('Modell', model), field('API-Schlüssel', key), field('Zeitlimit (Sekunden)', timeout), hosts, actions, enable, message);
   host.append(box);
   let view = null;
-  async function load() {
-   view = await json('/api/ai/status'); checkbox.checked = !!view.enabled; checkbox.disabled = !view.available;
-   info.textContent = view.available ? `Dienst: ${view.provider} · Modell ${view.model}` : 'In dieser Installation ist kein KI-Dienst konfiguriert.';
-   message.textContent = view.changedBy ? `Zuletzt geändert von ${view.changedBy}.` : '';
-  }
-  checkbox.onchange = async () => {
-   checkbox.disabled = true;
-   try { view = await json('/api/ai/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled: checkbox.checked }) }); status = null; message.textContent = checkbox.checked ? 'KI-Vorschläge sind aktiv.' : 'KI-Vorschläge sind aus.'; }
-   catch (error) { message.textContent = error.message; checkbox.checked = !checkbox.checked; }
-   finally { checkbox.disabled = !(view && view.available); }
+  const preset = () => (view?.presets || []).find(p => p.id === provider.value) || {};
+  const sync = () => {
+   const p = preset();
+   baseUrl.placeholder = p.baseUrl || 'https://…';
+   baseUrl.readOnly = p.id === 'mistral' || p.id === 'openai';
+   if (baseUrl.readOnly) baseUrl.value = p.baseUrl;
+   key.disabled = !!p.local;
   };
-  try { await load(); } catch (error) { message.textContent = error.message; }
+  const show = v => {
+   view = v;
+   provider.replaceChildren();
+   (v.presets || []).forEach(p => { const o = node('option', p.label); o.value = p.id; if (p.local && !v.allowLocal) o.disabled = true; provider.append(o); });
+   const own = v.source === 'mandant';
+   provider.value = own && v.provider ? v.provider : 'mistral';
+   baseUrl.value = own && v.baseUrl ? v.baseUrl : ''; model.value = own && v.model ? v.model : ''; timeout.value = own && v.timeoutSeconds ? v.timeoutSeconds : '';
+   key.value = ''; key.placeholder = v.keySet ? 'hinterlegt – leer lassen, um ihn zu behalten' : 'noch kein Schlüssel';
+   sync();
+   checkbox.checked = !!v.enabled; checkbox.disabled = !v.available && !v.enabled;
+   info.textContent = describeSource(v);
+   hosts.textContent = v.allowedHosts && v.allowedHosts.length ? 'Freigegebene Hosts (Betreiber): ' + v.allowedHosts.join(', ') : 'Der Betreiber hat noch keine KI-Hosts freigegeben (LC_AI_ALLOWED_HOSTS).';
+   clear.disabled = !v.keySet;
+   if (!v.encryptionConfigured) message.textContent = 'Hinweis: Auf dem Server fehlt der Schlüssel zum Verschlüsseln (LC_AI_ENCRYPTION_KEY oder EBICS_ENCRYPTION_KEY); API-Schlüssel können noch nicht gespeichert werden.';
+   else message.textContent = v.changedBy ? `Zuletzt geändert von ${v.changedBy}.` : '';
+  };
+  const run = async (button, work) => {
+   if (button.disabled) return; const buttons = [save, test, clear, checkbox]; buttons.forEach(b => { b.dataset.was = b.disabled ? '1' : ''; b.disabled = true; });
+   try { await work(); } catch (error) { message.textContent = error.message; }
+   finally { buttons.forEach(b => { b.disabled = b.dataset.was === '1'; }); if (view) clear.disabled = !view.keySet; }
+  };
+  provider.onchange = sync;
+  save.onclick = () => run(save, async () => {
+   show(await json('/api/ai/config', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ provider: provider.value, baseUrl: baseUrl.value.trim(), model: model.value.trim(), timeoutSeconds: timeout.value ? Number(timeout.value) : null, apiKey: key.value }) }));
+   status = null; message.textContent = 'Gespeichert.';
+  });
+  test.onclick = () => run(test, async () => {
+   message.textContent = 'Teste die Verbindung …';
+   const r = await json('/api/ai/test', { method: 'POST' });
+   message.textContent = (r.ok ? '✓ ' : '✗ ') + r.message + (r.millis != null ? ` (${r.millis} ms)` : '');
+  });
+  clear.onclick = () => run(clear, async () => {
+   if (typeof confirmAction === 'function' && !await confirmAction('Den gespeicherten API-Schlüssel entfernen? Die KI-Vorschläge werden dabei ausgeschaltet.')) return;
+   show(await json('/api/ai/config/key', { method: 'DELETE' })); status = null; message.textContent = 'Schlüssel entfernt, KI ausgeschaltet.';
+  });
+  checkbox.onchange = () => run(checkbox, async () => {
+   try { show(await json('/api/ai/settings', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled: checkbox.checked }) })); status = null; message.textContent = checkbox.checked ? 'KI-Vorschläge sind aktiv.' : 'KI-Vorschläge sind aus.'; }
+   catch (error) { checkbox.checked = !checkbox.checked; throw error; }
+  });
+  try { show(await json('/api/ai/status')); } catch (error) { message.textContent = error.message; }
  }
  const wait = setInterval(() => {
   const host = document.querySelector('#tenantSection');

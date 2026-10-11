@@ -1,4 +1,5 @@
 package de.ostms.lc.ai;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.ostms.lc.audit.service.AuditService;
 import de.ostms.lc.document.repository.LcDocumentRepository;
 import de.ostms.lc.rulepack.DocumentFactSuggester;
@@ -10,18 +11,47 @@ import java.util.*;
 
 @RestController
 public class AiController {
- private final AiFactSuggester suggester;private final AiSettingsService settings;private final LcDocumentRepository documents;private final AuditService audit;
- private final org.springframework.beans.factory.ObjectProvider<LlmClient> client;
- public AiController(AiFactSuggester s,AiSettingsService st,LcDocumentRepository d,AuditService a,org.springframework.beans.factory.ObjectProvider<LlmClient> client){suggester=s;settings=st;documents=d;audit=a;this.client=client;}
+ private static final ObjectMapper JSON=new ObjectMapper();
+ private final AiFactSuggester suggester;private final AiSettingsService settings;private final LlmClientFactory factory;private final LcDocumentRepository documents;private final AuditService audit;
+ public AiController(AiFactSuggester s,AiSettingsService st,LlmClientFactory factory,LcDocumentRepository d,AuditService a){suggester=s;settings=st;this.factory=factory;documents=d;audit=a;}
 
- /** What the UI needs: is AI usable for the current tenant, and which model is behind it. */
+ /** What the UI needs: is AI usable for the current tenant, and the tenant's configuration (never the key). */
  @GetMapping("/api/ai/status") public AiSettingsService.View status(){return settings.view();}
  @PutMapping("/api/ai/settings")
  public AiSettingsService.View change(@RequestBody Map<String,Boolean> body,Authentication auth){
   boolean wanted=body!=null&&Boolean.TRUE.equals(body.get("enabled"));
   boolean before=settings.change(wanted,auth.getName());
-  audit.record(auth,"AI_SETTING_CHANGED","TENANT",null,"KI-Vorschläge "+(before?"an":"aus")+" → "+(wanted?"an":"aus")+(settings.available()?" · Anbieter "+suggester.provider()+", Modell "+suggester.model():""));
+  audit.record(auth,"AI_SETTING_CHANGED","TENANT",null,"KI-Vorschläge "+(before?"an":"aus")+" → "+(wanted?"an":"aus"));
   return settings.view();
+ }
+ /** The tenant's own provider configuration. The key is write-only; an empty key keeps the stored one. */
+ @PutMapping("/api/ai/config")
+ public AiSettingsService.View configure(@RequestBody AiSettingsService.Config body,Authentication auth){
+  String summary=settings.configure(body,auth.getName());
+  audit.record(auth,"AI_CONFIG_CHANGED","TENANT",null,summary);
+  return settings.view();
+ }
+ @DeleteMapping("/api/ai/config/key")
+ public AiSettingsService.View clearKey(Authentication auth){
+  settings.clearKey(auth.getName());
+  audit.record(auth,"AI_KEY_REMOVED","TENANT",null,"API-Schlüssel entfernt, KI-Vorschläge ausgeschaltet");
+  return settings.view();
+ }
+ /** Sends an invented mini document to the configured model and checks that the answer is usable JSON. No tenant data leaves the system. */
+ @PostMapping("/api/ai/test")
+ public Map<String,Object> test(Authentication auth){
+  long start=System.currentTimeMillis();
+  try{
+   var resolved=factory.resolveOrThrow().orElseThrow(()->new IllegalStateException("Es ist kein KI-Dienst konfiguriert."));
+   String answer=resolved.client().generateJson("Reply with JSON only: {\"vessel\": value, \"quote\": exact quote} for this text. Text: \"Vessel: MSC EXAMPLE, voyage 1\"");
+   boolean json;try{JSON.readTree(answer);json=!answer.isBlank();}catch(IOException e){json=false;}
+   long ms=System.currentTimeMillis()-start;
+   audit.record(auth,"AI_TEST","TENANT",null,resolved.client().provider()+"/"+resolved.client().model()+" · "+(json?"ok":"Antwort nicht verwertbar")+" · "+ms+" ms");
+   return Map.of("ok",json,"millis",ms,"provider",resolved.client().provider(),"model",resolved.client().model(),"message",json?"Verbindung funktioniert.":"Der Dienst antwortet, aber nicht mit auswertbarem JSON.");
+  }catch(IOException|RuntimeException e){
+   audit.record(auth,"AI_TEST","TENANT",null,"fehlgeschlagen: "+e.getMessage());
+   return Map.of("ok",false,"millis",System.currentTimeMillis()-start,"message",String.valueOf(e.getMessage()));
+  }
  }
  private void requireActive(){if(!settings.active())throw new IllegalStateException("KI-Vorschläge sind für diesen Mandanten nicht aktiviert.");}
 
@@ -40,8 +70,9 @@ public class AiController {
  public List<AiHintService.Hint> hints(@PathVariable UUID lcId,Authentication auth)throws IOException{
   requireActive();
   var list=documents.findByLetterOfCreditIdOrderByUploadedAtDesc(lcId);
-  var result=new AiHintService(client.getObject()).hints(list);
-  audit.record(auth,"AI_HINTS_REQUESTED","LETTER_OF_CREDIT",lcId,suggester.provider()+"/"+suggester.model()+" · "+result.size()+" Hinweise bei "+list.size()+" Dokumenten");
+  var client=factory.current().orElseThrow(()->new IllegalStateException("Es ist kein KI-Dienst konfiguriert."));
+  var result=new AiHintService(client).hints(list);
+  audit.record(auth,"AI_HINTS_REQUESTED","LETTER_OF_CREDIT",lcId,client.provider()+"/"+client.model()+" · "+result.size()+" Hinweise bei "+list.size()+" Dokumenten");
   return result;
  }
 }
