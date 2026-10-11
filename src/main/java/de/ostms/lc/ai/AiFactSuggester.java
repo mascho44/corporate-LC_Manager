@@ -48,13 +48,14 @@ public class AiFactSuggester {
   SPECS.put(DocumentType.BENEFICIARY_CERTIFICATE,List.of(t("signer_name",Field.DOCUMENT_SIGNER_NAME,"name of the signer"),t("signer_role",Field.DOCUMENT_SIGNER_ROLE,"role of the signer")));
  }
  private static final int MAX_TEXT=12000;
- private final LlmClient client;private final DocumentFactSuggester rules;
- @Autowired public AiFactSuggester(@Autowired(required=false) LlmClient client,@Autowired(required=false) DocumentFactSuggester rules){this.client=client;this.rules=rules;}
- public boolean available(){return client!=null;}
- public String provider(){return client==null?null:client.provider();}
- public String model(){return client==null?null:client.model();}
+ private final LlmClientProvider provider;private final DocumentFactSuggester rules;
+ @Autowired public AiFactSuggester(LlmClientProvider provider,@Autowired(required=false) DocumentFactSuggester rules){this.provider=provider;this.rules=rules;}
+ public boolean available(){return provider.current().isPresent();}
+ public String provider(){return provider.current().map(LlmClient::provider).orElse(null);}
+ public String model(){return provider.current().map(LlmClient::model).orElse(null);}
 
  public List<DocumentFactSuggester.Suggestion> suggest(LcDocument doc)throws IOException{
+  var client=provider.current().orElse(null);
   if(client==null)return List.of();
   String text=doc.getExtractedText()==null?"":doc.getExtractedText();
   if(text.isBlank()||doc.getDocumentType()==null)return List.of();
