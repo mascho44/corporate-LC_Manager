@@ -106,8 +106,9 @@ public class PlatformMembershipService {
  }
 
  /**
-  * Takes the business rights away from the home membership of a platform administrator: the identity keeps its bootstrap membership
-  * (a login needs an active membership) but with the system viewer role, which has no permissions. Idempotent; only for platform administrators.
+  * Takes the home membership of a platform administrator away: the role becomes the system viewer role (no permissions) and the membership is suspended.
+  * The identity can still sign in as a platform-only identity (two-factor authentication required), so this refuses accounts without live platform access to avoid a lock-out.
+  * Idempotent; only for platform administrators.
   */
  @Transactional
  public TenantMembershipService.Membership releaseHomeAccess(UUID userId,Authentication authentication){
@@ -118,12 +119,15 @@ public class PlatformMembershipService {
    if(!user.isPlatformAdministrator())throw new IllegalArgumentException("Only platform administrators can be released from their home tenant this way.");
    var role=roles.findByBaseRoleAndSystemRoleTrue(UserRole.VIEWER).orElseThrow(()->new IllegalStateException("Bootstrap viewer role is missing."));
    if(!Tenant.DEFAULT_ID.equals(role.getTenantId())||!role.getPermissions().isEmpty())throw new IllegalStateException("Bootstrap viewer role must have no permissions.");
+   if(!user.isTotpEnabled()||!users.hasLivePlatformAccess(userId))throw new IllegalArgumentException("The account needs live platform access with two-factor authentication; otherwise it would be locked out.");
    var before=access.forUser(userId).orElseThrow(()->new NoSuchElementException("Membership not found."));
-   if(before.roleId().equals(role.getId()))return before;
+   if(before.roleId().equals(role.getId())&&before.suspended())return before;
    user.setAssignedRole(role);
    users.flush(); // the PostgreSQL membership sync trigger writes the home membership
-   var after=new TenantMembershipService.Membership(Tenant.DEFAULT_ID,userId,user.getUsername(),role.getId(),role.getName(),Set.copyOf(role.getPermissions()),before.active(),before.suspended(),before.identityActive());
-   audit.recordChangeInTransaction(authentication,"PLATFORM_HOME_ACCESS_RELEASED","MEMBERSHIP",userId,"Business rights of a platform administrator's home membership removed",AdministrationAuditSnapshot.membership(before),AdministrationAuditSnapshot.membership(after));
+   var state=suspensions.findByUserId(userId).orElseGet(()->new TenantMembershipSuspension(userId));TenantContext.require(state.getTenantId());
+   state.setSuspended(true);suspensions.saveAndFlush(state);
+   var after=new TenantMembershipService.Membership(Tenant.DEFAULT_ID,userId,user.getUsername(),role.getId(),role.getName(),Set.copyOf(role.getPermissions()),false,true,before.identityActive());
+   audit.recordChangeInTransaction(authentication,"PLATFORM_HOME_ACCESS_RELEASED","MEMBERSHIP",userId,"Home membership of a platform administrator suspended and reduced to the no-permission viewer role",AdministrationAuditSnapshot.membership(before),AdministrationAuditSnapshot.membership(after));
    return after;
   }
  }

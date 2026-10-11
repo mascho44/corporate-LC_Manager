@@ -11,6 +11,9 @@ public interface TenantMembershipRepository extends TenantScopedRepository<Tenan
  long countAccessibleAdministrators();
  @Query("select count(m) from TenantMembership m where m.tenantId=:#{T(de.ostms.lc.tenant.domain.TenantContext).currentId()} and m.active=true and m.user.active=true and not exists(select s.id from TenantMembershipSuspension s where s.tenantId=m.tenantId and s.userId=m.user.id and s.suspended=true)")
  long countAccessibleMembers();
+ /** Administrators of the tenant itself: platform administrators do not count, they belong to no tenant. */
+ @Query("select count(m) from TenantMembership m where m.tenantId=:#{T(de.ostms.lc.tenant.domain.TenantContext).currentId()} and m.active=true and m.user.active=true and m.user.platformAdministrator=false and m.role.baseRole=de.ostms.lc.user.domain.UserRole.ADMIN and not exists(select s.id from TenantMembershipSuspension s where s.tenantId=m.tenantId and s.userId=m.user.id and s.suspended=true)")
+ long countAccessibleTenantAdministrators();
  // Only the authenticated identity's chooser may use this deliberate global lookup.
  @Query("select m from TenantMembership m where m.user.id=:userId and m.active=true and m.user.active=true and not exists(select s.id from TenantMembershipSuspension s where s.tenantId=m.tenantId and s.userId=m.user.id and s.suspended=true)")
  List<TenantMembership> findWorkspaceMemberships(UUID userId);

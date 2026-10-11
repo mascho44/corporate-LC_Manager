@@ -25,4 +25,14 @@ class PlatformTenantServiceTest {
  @Test void creationUsesHomeScopeAndRestoresCaller(){when(platform.enabled(auth)).thenReturn(true);var selected=UUID.randomUUID();try(var scope=TenantContext.open(selected)){service.create("code","Name","en",true,false,auth);assertThat(TenantContext.currentId()).isEqualTo(selected);}verify(workspaces).createForPlatform("code","Name","en",true,false,null,auth);}
  @Test void protectsCurrentAndDefaultTenant(){when(platform.enabled(auth)).thenReturn(true);assertThatThrownBy(()->service.update(Tenant.DEFAULT_ID,false,true,false,auth)).isInstanceOf(IllegalArgumentException.class);var selected=UUID.randomUUID();try(var scope=TenantContext.open(selected)){assertThatThrownBy(()->service.update(selected,false,true,false,auth)).isInstanceOf(IllegalArgumentException.class);}verifyNoInteractions(lock);}
  @Test void profileAndActivationAuditedWithScopeRestored(){when(platform.enabled(auth)).thenReturn(true);var tenant=new Tenant("target","Target","en",true,false);when(tenants.findForAdministration(tenant.getId())).thenReturn(Optional.of(tenant));var selected=UUID.randomUUID();try(var scope=TenantContext.open(selected)){var result=service.update(tenant.getId(),false,false,true,auth);assertThat(result.active()).isFalse();assertThat(result.corporateEnabled()).isTrue();assertThat(TenantContext.currentId()).isEqualTo(selected);}verify(audit).recordChangeInTransaction(eq(auth),eq("PLATFORM_TENANT_UPDATED"),eq("TENANT"),eq(tenant.getId()),anyString(),contains("\"active\":true"),contains("\"active\":false"));}
+ @Test void aSuspendedTenantWithoutAnActiveTenantAdministratorCannotBeReactivated(){
+  when(platform.enabled(auth)).thenReturn(true);
+  var members=mock(de.ostms.lc.tenant.repository.TenantMembershipRepository.class);org.springframework.test.util.ReflectionTestUtils.setField(service,"memberships",members);
+  var tenant=new Tenant("quiet","Quiet","en",true,true);tenant.setActive(false);when(tenants.findForAdministration(tenant.getId())).thenReturn(Optional.of(tenant));
+  when(members.countAccessibleTenantAdministrators()).thenReturn(0L);
+  assertThatThrownBy(()->service.update(tenant.getId(),true,true,true,auth)).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Mandantenadmin");
+  assertThat(tenant.isActive()).isFalse();
+  when(members.countAccessibleTenantAdministrators()).thenReturn(1L);
+  assertThat(service.update(tenant.getId(),true,true,true,auth).administrators()).isEqualTo(1);assertThat(tenant.isActive()).isTrue();
+ }
 }
