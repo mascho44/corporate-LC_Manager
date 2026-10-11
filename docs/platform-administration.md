@@ -64,6 +64,11 @@ wird der Zugang des Plattformkontos zum Mandanten ausgesetzt
 (`PUT /api/platform/memberships/{tenantId}/{userId}/access`). Der letzte aktive
 Administrator eines Mandanten bleibt dabei geschützt.
 
+Zum Umstellen gibt es ein Hilfsskript, das nur die Plattform-API benutzt (Anmeldung mit
+Passwort und Code im Terminal, nichts wird gespeichert): `node scripts/platform-separate-admin.cjs
+--new-admin <Benutzer> --tenants "<Mandant>,<Mandant>"` zeigt den Plan, mit `--apply` führt es ihn nach
+Bestätigung aus (erst Administratorrolle für das Mandantenkonto, dann Zugang des Plattformkontos aussetzen).
+
 ## Invitations
 
 Choose a tenant and one of that tenant's roles on the platform page; permissions
