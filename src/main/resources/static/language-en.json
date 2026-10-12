@@ -1,5 +1,11 @@
 {
-  "inbox.autoSplit.button": "Split automatically",
+  "inbox.autoSplit.close": "Close",
+  "inbox.autoSplit.checking": "Checking page boundaries and document types …",
+  "inbox.autoSplit.uncertainRow": "Uncertain – please review",
+  "inbox.autoSplit.uncertain": "Uncertain pages (please review): ",
+  "inbox.autoSplit.apply": "Accept proposal",
+  "inbox.autoSplit.clear": "Proposal is unambiguous",
+  "inbox.autoSplit.button": "Split …",
   "inbox.autoSplit.origin": "Automatically created from a combined PDF. Review the document type; original and page range are retained.",
   "inbox.autoSplit.confirm": "Split clearly recognized document types automatically? The original is retained. Uncertain pages require manual review.",
   "inbox.autoSplit.created": "documents split automatically. Review their document types.",
