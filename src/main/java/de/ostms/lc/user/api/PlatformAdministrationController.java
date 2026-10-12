@@ -24,7 +24,11 @@ import java.util.*;
  private final PlatformAdministrationService service;
  @org.springframework.beans.factory.annotation.Autowired private de.ostms.lc.audit.service.AuditService audit;
  public PlatformAdministrationController(PlatformAdministrationService service){this.service=service;}
- @GetMapping("/access") public Map<String,Boolean> access(Authentication auth){return Map.of("enabled",service.enabled(auth));}
+ /** enabled: the identity may use platform administration; tenantless: its session carries no tenant authority (only platform resources work, the workspace chooser must be skipped). */
+ @GetMapping("/access") public Map<String,Boolean> access(Authentication auth){
+  boolean tenantless=auth!=null&&auth.getAuthorities().stream().anyMatch(a->de.ostms.lc.user.service.AppUserDetailsService.PLATFORM_ONLY.equals(a.getAuthority()));
+  return Map.of("enabled",service.enabled(auth),"tenantless",tenantless);
+ }
  @GetMapping("/session") public Map<String,String> session(Authentication auth,org.springframework.security.web.csrf.CsrfToken csrf){
   service.verifyLiveAccess(auth);return Map.of("username",auth.getName(),"csrfToken",csrf.getToken());
  }
