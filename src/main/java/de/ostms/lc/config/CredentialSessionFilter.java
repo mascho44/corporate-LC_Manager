@@ -35,7 +35,7 @@ public class CredentialSessionFilter extends OncePerRequestFilter {
             // Enrollment alone never upgrades a concurrent password-only session.
             valid=valid&&(account==null||!account.isTotpEnabled()||Boolean.TRUE.equals(session==null?null:session.getAttribute(TOTP_VERIFIED)));
             String uri=request.getRequestURI();
-            boolean platformResource=uri.startsWith("/api/platform/")||(uri.equals("/api/tenants")&&"GET".equals(request.getMethod()))||uri.equals("/platform")||uri.startsWith("/platform.")||uri.startsWith("/platform-")||java.util.Set.of("/tenant-inventory.js","/i18n.js","/language-en.json","/language-de.json","/ui-feedback.js","/ui-feedback.css","/styles.css","/controls.css","/tenants.css").contains(uri);
+            boolean platformResource=uri.startsWith("/api/platform/")||uri.equals("/platform")||uri.startsWith("/platform.")||uri.startsWith("/platform-")||java.util.Set.of("/tenant-inventory.js","/i18n.js","/language-en.json","/language-de.json","/ui-feedback.js","/ui-feedback.css","/styles.css","/controls.css","/tenants.css").contains(uri);
             boolean globalAccess=valid&&platformResource&&account.isPlatformAdministrator()&&account.isTotpEnabled()&&Boolean.TRUE.equals(session.getAttribute(TOTP_VERIFIED));
             if(valid&&!globalAccess){
                 try(var scope=de.ostms.lc.tenant.domain.TenantContext.open(tenantId)){

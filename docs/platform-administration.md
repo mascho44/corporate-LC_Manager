@@ -117,8 +117,7 @@ eigener Eintrag); Teilerfolge werden pro Benutzer gemeldet. Mandantenadmins sehe
 Mandanten; ein globales Benutzerverzeichnis gibt es für sie bewusst nicht.
 
 Nach der Anmeldung geht ein Plattformadministrator **immer direkt in die Plattformverwaltung**, nie in eine Mandantenauswahl
-(`GET /api/platform/access` meldet `enabled`/`tenantless`; die Anmeldeseite wertet es aus). Auch ältere Anmeldeseiten sehen für
-ein mandantenloses Konto eine leere Mandantenliste statt eines Fehlers, und der Link „Zur Mandantenanwendung“ entfällt für
+(`GET /api/platform/access` meldet `enabled`/`tenantless`; die Anmeldeseite wertet es aus). Der Link „Zur Mandantenanwendung“ entfällt für
 mandantenlose Sitzungen. Wer in irgendeinem Mandanten Administrator ist, richtet bei der Anmeldung die Zwei-Faktor-Anmeldung
 ein, auch wenn seine Rolle im Anmelde-Mandanten kein Administrator ist (sonst lehnt das Öffnen dieses Mandanten mit 403 ab).
 
