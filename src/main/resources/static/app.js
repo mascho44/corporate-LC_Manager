@@ -193,6 +193,7 @@ document.addEventListener('click',async event=>{
 });
 function inboxPending(item){return ['QUEUED','PROCESSING'].includes(item.extractionStatus);}
 function inboxStatusHtml(item){const pages=item.recognitionPages||[],completed=pages.filter(page=>['EXTRACTED','OCR_EXTRACTED'].includes(page.status)).length;const diagnostics=(item.recognitionPages||[]).filter(page=>['FAILED','OCR_TIMEOUT','NO_TEXT'].includes(page.status));const pageErrors=diagnostics.length?'<details><summary>Seiten mit Erkennungsproblemen ('+diagnostics.length+')</summary>'+diagnostics.map(page=>'<p>Seite '+page.page+': '+esc(extractionLabel(page.status))+'</p>').join('')+'</details>':'';const corrections=pages.filter(page=>Number.isFinite(page.correctionDegrees)&&Math.abs(page.correctionDegrees)>.1).map(page=>'<small>Seite '+page.page+': OCR-Ausrichtung um '+Math.round(page.correctionDegrees*10)/10+'° korrigiert · Original unverändert</small>').join('');return inboxPending(item)?`<div class="inbox-processing" role="status">${esc(extractionLabel(item.extractionStatus))}<progress aria-label="Dokumentenerkennung läuft" ${pages.length?`value="${completed}" max="${pages.length}"`:''}></progress>${pages.length?`<small>${completed} / ${pages.length} Seiten erkannt</small>`:''}<small>Die Datei ist gespeichert. Du kannst diese Seite verlassen; die Erkennung läuft weiter.</small></div>`:`<small>${esc(extractionLabel(item.extractionStatus))}</small>${corrections}${pageErrors}${can('DOCUMENT_UPLOAD')&&['FAILED','OCR_PARTIAL','OCR_TIMEOUT','OCR_UNAVAILABLE','OCR_PAGE_LIMIT','NO_TEXT','NOT_PROCESSED'].includes(item.extractionStatus)?'<button type="button" class="secondary" data-inbox-retry="'+item.id+'">Erkennung erneut starten</button>':can('DOCUMENT_UPLOAD')&&['EXTRACTED','OCR_EXTRACTED'].includes(item.extractionStatus)?'<button type="button" class="secondary" data-inbox-retry="'+item.id+'" data-inbox-force="true">Neu erkennen</button>':''}`;}
+let inboxRenderedSignature='';
 async function loadInbox(silent=false){
     if(inboxBulkDeleting)return;
     const version=++inboxLoadVersion;
@@ -203,12 +204,15 @@ async function loadInbox(silent=false){
         if(version!==inboxLoadVersion)return;
         if(items.some(inboxPending))inboxRefreshTimer=setTimeout(()=>{if(!$('#inboxSection').classList.contains('hidden'))loadInbox(true);},4000);
         // Never overwrite an in-progress assignment with a polling refresh.
-        if(silent&&(inboxEditedItems.size||list.contains(document.activeElement)||list.querySelector('details[open]')||list.querySelector('[data-inbox-select]:checked'))){
+        const signature=items.map(item=>item.id+'|'+item.extractionStatus+'|'+Boolean(item.automaticallySplit)).join(',');
+        const unchanged=silent&&signature===inboxRenderedSignature&&list.querySelector('[data-inbox-id]');
+        if(silent&&(unchanged||document.querySelector?.('dialog[open]')||inboxEditedItems.size||list.contains(document.activeElement)||list.querySelector('details[open]')||list.querySelector('[data-inbox-select]:checked'))){
             items.forEach(item=>{const status=list.querySelector(`[data-inbox-status="${item.id}"]`);if(status)status.innerHTML=inboxStatusHtml(item);const article=list.querySelector(`[data-inbox-id="${item.id}"]`);if(article?.dataset.pending==='true'&&!inboxPending(item)){article.querySelectorAll('form input,form select,form button:not([data-inbox-delete])').forEach(control=>control.disabled=false);article.dataset.pending='false';}});
             if(items.some(item=>item.automaticallySplit&&!list.querySelector(`[data-inbox-id="${item.id}"]`)))$('#inboxMessage').textContent=inboxAutoText('refresh','Automatically split documents are available. Refresh when your current edits are saved.');
             bindInboxRetry(list);
             return;
         }
+        inboxRenderedSignature=signature;
         list.innerHTML=items.length?inboxBulkToolbar()+'<p class="inbox-limit">'+items.length+' offene Dateien'+(items.length===100?' · die neuesten 100 werden angezeigt':'')+'</p>'+items.map(item=>renderInboxItem(item,inboxLcs)).join(''):'<div class="empty compact">Keine offenen Dateien im Posteingang.</div>';
         if(can('SETTINGS_MANAGE')){const manage=document.createElement('button');manage.type='button';manage.className='secondary';manage.textContent='Layoutprofile verwalten';manage.onclick=openDocumentLayouts;list.prepend(manage);}
         if(items.length>1){const duplicates=document.createElement('button');duplicates.type='button';duplicates.className='secondary';duplicates.textContent='Identische Dateien prüfen';duplicates.onclick=()=>openDocumentDuplicates('/api/inbox/duplicates');list.prepend(duplicates);}
@@ -621,7 +625,7 @@ document.addEventListener('click',event=>{
 });
 document.addEventListener('keydown',event=>{
     const row=event.target;
-    if(!row.matches?.('[data-finding-severity]')||row.isContentEditable||!row.getClientRects().length||document.querySelector('dialog[open]'))return;
+    if(!row.matches?.('[data-finding-severity]')||row.isContentEditable||!row.getClientRects().length||document.querySelector?.('dialog[open]'))return;
     if(event.key==='Enter'&&!event.repeat&&!event.isComposing&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.shiftKey&&findingShortcutSettings().enabled){
         const original=row.querySelector('[data-finding-original]');
         if(original){event.preventDefault();original.click();}return;
