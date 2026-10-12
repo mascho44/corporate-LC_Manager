@@ -56,20 +56,18 @@ test('multiple authorized workspaces are selected after authentication with CSRF
 });
 test('login page no longer requests a tenant code',()=>{assert.doesNotMatch(fs.readFileSync('src/main/resources/static/login.html','utf8'),/name="tenantCode"/);});
 
-test('platform administrators reach the platform area without a tenant and may choose it next to workspaces',async()=>{
-  const none=fixture([{requiresTotp:false},{enabled:true},{error:'Kein Mandant',workspaces:[]}]);
+test('a platform administrator goes straight to the platform area and never sees the workspace chooser',async()=>{
+  const none=fixture([{requiresTotp:false},{enabled:true,tenantless:true}]);
   await none.submit();
-  assert.ok(none.redirects.includes('/platform.html'));
-  const both=fixture([{requiresTotp:false},{enabled:true},{selectedTenantId:'one',workspaces:[{id:'one',name:'A'}]}]);
-  await both.submit();
-  assert.equal(both.redirects.length,0);
-  const select=both.form.children.find(child=>child.tag==='label').children.find(child=>child.tag==='select');
-  assert.ok(!select.children.some(option=>option.value==='__platform__'));
-  const consoleButton=both.form.children.find(child=>child.tag==='button'&&child.textContent==='Plattformverwaltung öffnen');
-  assert.ok(consoleButton);consoleButton.onclick();assert.ok(both.redirects.includes('/platform.html'));
+  assert.deepEqual(none.redirects,['/platform.html']);assert.equal(none.calls.some(c=>c.url==='/api/tenants'),false);
+  const withMemberships=fixture([{requiresTotp:false},{enabled:true,tenantless:false}]);
+  await withMemberships.submit();
+  assert.deepEqual(withMemberships.redirects,['/platform.html']);assert.equal(withMemberships.calls.some(c=>c.url==='/api/tenants'),false);
+  const ordinary=fixture([{requiresTotp:false},{enabled:false},{selectedTenantId:'one',workspaces:[{id:'one',name:'A'},{id:'two',name:'B'}]}]);
+  await ordinary.submit();assert.equal(ordinary.redirects.length,0);
+  assert.ok(ordinary.form.children.some(child=>child.tag==='label'));
 });
-test('a platform administrator without any tenant goes straight to the platform area and never asks for workspaces',async()=>{
-  const f=fixture([{requiresTotp:false},{enabled:true,tenantless:true}]);await f.submit();
-  assert.deepEqual(f.redirects,['/platform.html']);
-  assert.equal(f.calls.some(c=>c.url==='/api/tenants'),false);
+test('a refused workspace opening explains the likely two-factor reason instead of showing a bare status',async()=>{
+  const code=fs.readFileSync('src/main/resources/static/login.js','utf8');
+  assert.ok(code.includes('selected.status===403')&&code.includes('Zwei-Faktor-Anmeldung'));
 });

@@ -12,6 +12,8 @@ document.addEventListener('DOMContentLoaded',async()=>{
  const error=document.getElementById('platformError');
  try{
   currentUser=await json('/api/platform/session');csrfToken=currentUser.csrfToken;
+  // A platform administrator without any tenant has no workspace to open: the link would only end the session.
+  try{const access=await json('/api/platform/access');if(access.tenantless)document.querySelector('.header-actions a.button-link')?.remove();}catch{}
   document.getElementById('platformIdentity').textContent=currentUser.username;
   await globalThis.LcI18n?.setLanguage('en');
   await setupPlatformAdministration(true);

@@ -26,7 +26,13 @@ public class TenantWorkspaceService {
   if(!user.isActive())throw new AccessDeniedException("Active identity is required.");return user;
  }
  @Transactional(readOnly=true) public Overview overview(Authentication auth){
-  var user=identity(auth);var current=access.requireActiveAccess(user.getId());
+  var user=identity(auth);
+  try{access.requireActiveAccess(user.getId());}
+  catch(AccessDeniedException denied){
+   // A platform administrator may belong to no tenant: nothing to choose, not an error.
+   if(user.isPlatformAdministrator()&&user.isTotpEnabled()&&!user.isInvitationPending())return new Overview(TenantContext.currentId(),List.of(),false);
+   throw denied;
+  }
   var choices=memberships.findWorkspaceMemberships(user.getId()).stream().map(m->tenants.findById(m.getTenantId()).orElseThrow()).filter(Tenant::isActive).map(t->new Workspace(t.getId(),t.getCode(),t.getName())).sorted(Comparator.comparing(Workspace::name)).toList();
   return new Overview(TenantContext.currentId(),withoutPlatformHome(choices,TenantContext.currentId()),false);
  }
