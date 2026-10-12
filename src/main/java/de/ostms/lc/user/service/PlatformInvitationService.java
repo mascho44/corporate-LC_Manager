@@ -47,6 +47,50 @@ public class PlatformInvitationService {
    return issue(user,actor,target,auth);
   }
  }
+ private static final int MAX_PENDING_PER_TENANT=100;
+ /** Pending invitations of one tenant (for its administrators). */
+ @Transactional(readOnly=true) public List<InvitationView> listForTenant(UUID tenantId){
+  try(var home=TenantContext.open(Tenant.DEFAULT_ID)){return invitations.findAll().stream().filter(i->tenantId.equals(i.getTenantId())).map(this::view).toList();}
+ }
+ /**
+  * Invitation issued by an administrator of the tenant itself; the caller has verified that authority. A fresh user name is derived from the address, so an existing
+  * account is never revealed; an address that already has an account is skipped silently (empty result) and handled by the platform administration.
+  */
+ @Transactional public Optional<InvitationView> inviteForTenant(String displayName,String email,UUID tenantId,UUID roleId,Authentication auth){
+  try(var home=TenantContext.open(Tenant.DEFAULT_ID)){
+   lock.acquire();requireMail();var actor=users.findByUsernameIgnoreCase(auth.getName()).orElseThrow(()->new AccessDeniedException("Identity unavailable."));
+   var target=target(tenantId,roleId);String address=UserEmail.required(email);
+   if(displayName==null||displayName.isBlank()||displayName.trim().length()>255)throw new IllegalArgumentException("Bitte einen Namen angeben.");
+   if(invitations.findAll().stream().filter(i->tenantId.equals(i.getTenantId())).count()>=MAX_PENDING_PER_TENANT)throw new IllegalArgumentException("Zu viele offene Einladungen. Bitte zuerst nicht mehr benötigte widerrufen.");
+   if(users.existsByEmailIgnoreCase(address)){audit.recordInTransaction(auth,"TENANT_INVITATION_SKIPPED","INVITATION",null,"Adresse hat bereits ein Konto; Zuweisung über die Plattformverwaltung");return Optional.empty();}
+   String name=freeUserName(address);
+   var created=creation.createPendingForTenantAdmin(name,displayName.trim(),address,"InviteOnly1-"+secret(),auth);var user=users.findById(created.id()).orElseThrow();
+   return Optional.of(issue(user,actor,target,auth));
+  }
+ }
+ @Transactional public InvitationView resendForTenant(UUID userId,UUID tenantId,Authentication auth){
+  try(var home=TenantContext.open(Tenant.DEFAULT_ID)){
+   lock.acquire();requireMail();var actor=users.findByUsernameIgnoreCase(auth.getName()).orElseThrow(()->new AccessDeniedException("Identity unavailable."));
+   var saved=invitations.findByUserId(userId).filter(i->tenantId.equals(i.getTenantId())).orElseThrow(()->new NoSuchElementException("Einladung nicht gefunden."));var target=target(saved.getTenantId(),saved.getRoleId());
+   var user=users.findForPasswordReset(userId).orElseThrow(PlatformInvitationService::invalid);if(!Tenant.DEFAULT_ID.equals(user.getTenantId())||!user.isInvitationPending()||user.isActive())throw invalid();return issue(user,actor,target,auth);
+  }
+ }
+ @Transactional public void revokeForTenant(UUID userId,UUID tenantId,Authentication auth){
+  try(var home=TenantContext.open(Tenant.DEFAULT_ID)){
+   lock.acquire();var saved=invitations.findByUserId(userId).filter(i->tenantId.equals(i.getTenantId())).orElseThrow(()->new NoSuchElementException("Einladung nicht gefunden."));
+   var user=users.findForPasswordReset(userId).orElseThrow(PlatformInvitationService::invalid);if(!user.isInvitationPending()||user.isActive())throw invalid();
+   invitations.deleteForUser(userId);audit.recordChangeInTransaction(auth,"TENANT_INVITATION_REVOKED","INVITATION",userId,"Einladung widerrufen",snapshot(saved),null);
+  }
+ }
+ /** user name from the local part of the address; a random suffix if it is taken (generated, never chosen by the inviter, so nothing about existing names is revealed). */
+ private String freeUserName(String address){
+  String base=address.substring(0,address.indexOf('@')).toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+",".").replaceAll("^[.]+|[.]+$","");
+  if(base.isEmpty())base="user";if(base.length()>40)base=base.substring(0,40);
+  String candidate=base;
+  for(int i=0;i<20&&users.existsByUsernameIgnoreCase(candidate);i++)candidate=base+"-"+Integer.toString(random.nextInt(36*36*36*36),36);
+  if(users.existsByUsernameIgnoreCase(candidate))throw new IllegalStateException("Kein freier Benutzername gefunden.");
+  return candidate;
+ }
  @Transactional public InvitationView resend(UUID userId,Authentication auth){
   try(var home=TenantContext.open(Tenant.DEFAULT_ID)){
    authorize(auth);lock.acquire();var actor=authorize(auth);requireMail();var saved=invitations.findByUserId(userId).orElseThrow(()->new NoSuchElementException("Invitation not found."));var target=target(saved.getTenantId(),saved.getRoleId());

@@ -25,15 +25,20 @@ public class PlatformAccountCreationService {
  private void authorize(Authentication auth){if(!platform.enabled(auth))throw new AccessDeniedException("An active platform administrator with two-factor authentication is required.");}
  @Transactional
  public PlatformAdministrationService.Account create(String username,String displayName,String email,String password,Authentication auth){
-  return createIdentity(username,displayName,email,password,false,auth);
+  return createIdentity(username,displayName,email,password,false,auth,true);
  }
  @Transactional
  public PlatformAdministrationService.Account createPending(String username,String displayName,String email,String password,Authentication auth){
-  return createIdentity(username,displayName,email,password,true,auth);
+  return createIdentity(username,displayName,email,password,true,auth,true);
  }
- private PlatformAdministrationService.Account createIdentity(String username,String displayName,String email,String password,boolean pending,Authentication auth){
+ /** Used by tenant invitations: the caller has already verified the tenant administrator's authority; platform authority is not required for a pending identity without any access. */
+ @Transactional
+ public PlatformAdministrationService.Account createPendingForTenantAdmin(String username,String displayName,String email,String password,Authentication auth){
+  return createIdentity(username,displayName,email,password,true,auth,false);
+ }
+ private PlatformAdministrationService.Account createIdentity(String username,String displayName,String email,String password,boolean pending,Authentication auth,boolean platformChecked){
   try(var scope=TenantContext.open(Tenant.DEFAULT_ID)){
-   authorize(auth);lock.acquire();authorize(auth);
+   if(platformChecked)authorize(auth);lock.acquire();if(platformChecked)authorize(auth);
    String name=username==null?"":username.trim().toLowerCase(java.util.Locale.ROOT);
    String display=displayName==null?"":displayName.trim();
    if(!name.matches("[a-z0-9][a-z0-9._@-]{0,99}"))throw new IllegalArgumentException("Username must contain 1–100 letters, numbers, dots, underscores, @ or hyphens.");

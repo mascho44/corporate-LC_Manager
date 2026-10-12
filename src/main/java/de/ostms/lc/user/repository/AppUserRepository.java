@@ -12,6 +12,7 @@ public interface AppUserRepository extends de.ostms.lc.tenant.repository.TenantS
  List<AppUser> findAssignableMembershipUsers();
  // Global identity lookup is reserved for authentication/password reset; administration is scoped below.
  Optional<AppUser> findByUsernameIgnoreCase(String username);boolean existsByUsernameIgnoreCase(String username);
+ boolean existsByEmailIgnoreCase(String email);
  // Internal identity mutation guard; never expose cross-tenant membership details.
  @org.springframework.data.jpa.repository.Query("select count(m) from TenantMembership m where m.user.id=:userId and m.tenantId<>:#{T(de.ostms.lc.tenant.domain.TenantContext).currentId()}")
  long countForeignMemberships(UUID userId);
