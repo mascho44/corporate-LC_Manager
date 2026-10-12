@@ -37,12 +37,25 @@ public class CredentialSessionFilter extends OncePerRequestFilter {
             String uri=request.getRequestURI();
             boolean platformResource=uri.startsWith("/api/platform/")||uri.equals("/platform")||uri.startsWith("/platform.")||uri.startsWith("/platform-")||java.util.Set.of("/tenant-inventory.js","/i18n.js","/language-en.json","/language-de.json","/ui-feedback.js","/ui-feedback.css","/styles.css","/controls.css","/tenants.css").contains(uri);
             boolean globalAccess=valid&&platformResource&&account.isPlatformAdministrator()&&account.isTotpEnabled()&&Boolean.TRUE.equals(session.getAttribute(TOTP_VERIFIED));
+            boolean platformIdentity=valid&&account.isPlatformAdministrator()&&account.isTotpEnabled()&&Boolean.TRUE.equals(session==null?null:session.getAttribute(TOTP_VERIFIED));
+            boolean tenantless=false;
             if(valid&&!globalAccess){
                 try(var scope=de.ostms.lc.tenant.domain.TenantContext.open(tenantId)){
                     var access=memberships.requireActiveAccess(account.getId());
                     valid=(access.baseRole()!=de.ostms.lc.user.domain.UserRole.ADMIN||account.isTotpEnabled())&&
                         de.ostms.lc.user.service.AuthorizationStamp.of(access).equals(session.getAttribute(AUTHORIZATION_STAMP));
-                }catch(org.springframework.security.access.AccessDeniedException denied){valid=false;}
+                }catch(org.springframework.security.access.AccessDeniedException denied){
+                    // A platform administrator without a membership in the requested scope keeps the session: stray requests (favicon, an old link, the tenant start page)
+                    // are refused or sent to the platform area instead of ending the platform session.
+                    if(platformIdentity){tenantless=true;}
+                    valid=false;
+                }
+            }
+            if(!valid&&tenantless){
+                if(request.getRequestURI().startsWith("/api/")){response.setStatus(403);response.setContentType("application/json");response.getWriter().write("{\"error\":\"Kein Mandantenzugriff. Bitte die Plattformverwaltung nutzen.\"}");}
+                else if(request.getRequestURI().equals("/")||request.getRequestURI().endsWith(".html"))response.sendRedirect("/platform.html");
+                else response.setStatus(404);
+                return;
             }
             if(!valid){if(session!=null)session.invalidate();SecurityContextHolder.clearContext();
                 if(request.getRequestURI().startsWith("/api/")){response.setStatus(401);response.setContentType("application/json");response.getWriter().write("{\"error\":\"Bitte erneut anmelden.\"}");}

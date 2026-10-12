@@ -121,6 +121,11 @@ Nach der Anmeldung geht ein Plattformadministrator **immer direkt in die Plattfo
 mandantenlose Sitzungen. Wer in irgendeinem Mandanten Administrator ist, richtet bei der Anmeldung die Zwei-Faktor-Anmeldung
 ein, auch wenn seine Rolle im Anmelde-Mandanten kein Administrator ist (sonst lehnt das Öffnen dieses Mandanten mit 403 ab).
 
+Eine mandantenlose Plattform-Sitzung wird vom Sitzungsfilter nicht mehr beendet, wenn sie etwas außerhalb der
+Plattformverwaltung anfragt (z. B. `/favicon.ico`, die Startseite, eine alte Verknüpfung): Seiten leiten auf
+`/platform.html` um, Schnittstellen antworten mit 403, sonstige Ressourcen mit 404; Geschäftsdaten bleiben unerreichbar.
+Für alle anderen Konten gilt unverändert: ohne Mitgliedschaft endet die Sitzung (401).
+
 ## Invitations
 
 Choose a tenant and one of that tenant's roles on the platform page; permissions
