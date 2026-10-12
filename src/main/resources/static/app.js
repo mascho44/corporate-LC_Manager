@@ -1150,6 +1150,7 @@ function renderMembershipAssignment(body,roles){
  const button=membershipNode('button',membershipText('tenant.assign','Assign existing user'));button.type='submit';
  const error=membershipNode('small','','error');error.setAttribute('role','alert');let busy=false;
  form.append(username,select,preview,button,error);body.append(form);
+ globalThis.LcTenantInvitations?.render?.(body); // inviting new people by e-mail comes first, assigning an existing account by name is the exception
  form.onsubmit=async event=>{event.preventDefault();if(busy||!can('USER_MANAGE'))return;busy=true;button.disabled=true;error.textContent='';
   try{await json('/api/users/memberships/shared',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:username.value.trim(),roleId:select.value})});await loadUsers();}
   catch(failure){error.textContent=failure.message;}finally{busy=false;button.disabled=false;}

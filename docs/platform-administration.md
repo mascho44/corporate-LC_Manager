@@ -126,6 +126,21 @@ Plattformverwaltung anfragt (z. B. `/favicon.ico`, die Startseite, eine alte Ver
 `/platform.html` um, Schnittstellen antworten mit 403, sonstige Ressourcen mit 404; Geschäftsdaten bleiben unerreichbar.
 Für alle anderen Konten gilt unverändert: ohne Mitgliedschaft endet die Sitzung (401).
 
+## Einladungen durch Mandantenadmins
+
+Mandantenadmins mit der Berechtigung `USER_MANAGE` laden neue Personen für **ihren eigenen Mandanten** selbst ein
+(Benutzerverwaltung im Mandanten, Bereich „Neue Personen einladen“; `GET/POST /api/users/invitations`,
+`POST /api/users/invitations/{id}/resend`, `DELETE /api/users/invitations/{id}`): Name, E-Mail und Rolle des Mandanten.
+Die Einladung nutzt den bestehenden Ablauf (24 Stunden gültiger Einmal-Link per E-Mail, die Person wählt ihr Passwort, die
+Mitgliedschaft entsteht erst bei der Annahme).
+
+- Der Benutzername wird aus der E-Mail-Adresse **erzeugt** (bei Kollision mit Zufallssuffix) und nie vom Einladenden gewählt;
+  so lässt sich über die Einladung nicht prüfen, welche Namen es bereits gibt.
+- Hat die Adresse bereits ein Konto, wird nichts versendet; die Antwort sagt nur, dass es schon ein Konto gibt und der
+  Plattformadministrator es zuweisen soll. Die Adresse selbst wird nicht zurückgegeben. Es gibt kein globales Benutzerverzeichnis.
+- Nur der aktuelle Mandant (nie der Heimat-Mandant), nur Rollen dieses Mandanten, höchstens 100 offene Einladungen je Mandant;
+  Erneut-Senden und Widerrufen gelten nur für Einladungen des eigenen Mandanten. Alles wird im Audit protokolliert.
+
 ## Invitations
 
 Choose a tenant and one of that tenant's roles on the platform page; permissions

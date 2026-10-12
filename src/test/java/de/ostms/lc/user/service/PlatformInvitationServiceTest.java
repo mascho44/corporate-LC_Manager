@@ -46,4 +46,37 @@ class PlatformInvitationServiceTest {
  @Test void revokedIssuerOrChangedEmailBlocksAcceptance(){actor.setPlatformAdministrator(false);assertThatThrownBy(()->service.accept(token,"SyntheticNew123!")).isInstanceOf(IllegalArgumentException.class);actor.setPlatformAdministrator(true);user.setEmail("changed@example.invalid");assertThatThrownBy(()->service.accept(token,"SyntheticNew123!")).isInstanceOf(IllegalArgumentException.class);verifyNoInteractions(encoder,memberships);}
  @Test void changedCredentialStampAndAlreadyAcceptedIdentityCannotBeReused(){user.setPasswordHash("changed");assertThatThrownBy(()->service.accept(token,"SyntheticNew123!")).isInstanceOf(IllegalArgumentException.class);user.setPasswordHash("synthetic-hash");user.setInvitationPending(false);user.setActive(true);assertThatThrownBy(()->service.accept(token,"SyntheticNew123!")).isInstanceOf(IllegalArgumentException.class);verifyNoInteractions(encoder,memberships);}
  @Test void malformedSecretAndWeakPasswordNeverReachTokenStore(){assertThatThrownBy(()->service.accept("bad","SyntheticNew123!")).isInstanceOf(IllegalArgumentException.class);assertThatThrownBy(()->service.accept(token,"weak")).isInstanceOf(IllegalArgumentException.class);verify(invitations,never()).findById(any());}
+
+ // ---- invitations issued by tenant administrators ----
+ PlatformAdministrationService.Account created(){return new PlatformAdministrationService.Account(userId,"x","Synthetic Invite","invite@example.invalid",false,false,false,true);}
+ @Test void aTenantAdministratorInviteDerivesAFreeUserNameAndNeverNeedsPlatformAuthority(){
+  when(users.existsByEmailIgnoreCase("invite@example.invalid")).thenReturn(false);
+  when(users.existsByUsernameIgnoreCase("invite")).thenReturn(false);
+  when(creation.createPendingForTenantAdmin(eq("invite"),eq("Synthetic Invite"),eq("invite@example.invalid"),anyString(),eq(auth))).thenReturn(created());
+  var result=service.inviteForTenant("Synthetic Invite","invite@example.invalid",tenantId,roleId,auth);
+  assertThat(result).isPresent();verify(platform,never()).enabled(any());verify(events).publishEvent(any(Object.class));verifyNoInteractions(memberships);
+ }
+ @Test void aTakenUserNameGetsARandomSuffixSoNoExistingNameIsRevealed(){
+  when(users.existsByEmailIgnoreCase(anyString())).thenReturn(false);
+  when(users.existsByUsernameIgnoreCase("invite")).thenReturn(true);
+  when(users.existsByUsernameIgnoreCase(argThat((String n)->n!=null&&n.startsWith("invite-")))).thenReturn(false);
+  when(creation.createPendingForTenantAdmin(argThat((String n)->n!=null&&n.matches("invite-[a-z0-9]{1,4}")),anyString(),anyString(),anyString(),eq(auth))).thenReturn(created());
+  assertThat(service.inviteForTenant("Synthetic Invite","invite@example.invalid",tenantId,roleId,auth)).isPresent();
+ }
+ @Test void anAddressThatAlreadyHasAnAccountIsSkippedSilently(){
+  when(users.existsByEmailIgnoreCase("invite@example.invalid")).thenReturn(true);
+  assertThat(service.inviteForTenant("Synthetic Invite","invite@example.invalid",tenantId,roleId,auth)).isEmpty();
+  verify(creation,never()).createPendingForTenantAdmin(any(),any(),any(),any(),any());verify(events,never()).publishEvent(any(Object.class));
+ }
+ @Test void tenantLevelResendAndRevokeOnlyTouchInvitationsOfThatTenant(){
+  var other=UUID.randomUUID();
+  assertThatThrownBy(()->service.revokeForTenant(userId,other,auth)).isInstanceOf(NoSuchElementException.class);
+  assertThatThrownBy(()->service.resendForTenant(userId,other,auth)).isInstanceOf(NoSuchElementException.class);
+  verify(invitations,never()).deleteForUser(any());
+  service.revokeForTenant(userId,tenantId,auth);verify(invitations).deleteForUser(userId);
+ }
+ @Test void listForTenantFiltersByTenant(){
+  when(invitations.findAll()).thenReturn(List.of(saved));
+  assertThat(service.listForTenant(tenantId)).hasSize(1);assertThat(service.listForTenant(UUID.randomUUID())).isEmpty();
+ }
 }
