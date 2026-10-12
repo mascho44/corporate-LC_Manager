@@ -23,3 +23,8 @@ html body :is(.membership-row,.queue-row,.user-row,.pu-row,.pu-table,.pu-bulk,.p
  height:var(--control-height-sm);min-height:var(--control-height-sm);padding:2px 8px;font-size:var(--control-font-sm)}
 html body :is(.membership-row,.queue-row,.user-row,.pu-row,.pu-table,.document-item-row,table) input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not([type=hidden]){
  min-height:var(--control-height-sm);padding:2px 8px;font-size:var(--control-font-sm)}
+
+.split-clarity{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:8px 0}
+.split-clarity p{margin:0}
+.inbox-split-row.split-uncertain{border-left:3px solid #b45309}
+.split-uncertain-note{margin:0;color:#b45309;font-weight:600;flex-basis:100%}

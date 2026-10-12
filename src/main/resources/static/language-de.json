@@ -1,5 +1,11 @@
 {
-  "inbox.autoSplit.button": "Automatisch aufteilen",
+  "inbox.autoSplit.close": "Schließen",
+  "inbox.autoSplit.checking": "Seitengrenzen und Dokumenttypen werden geprüft …",
+  "inbox.autoSplit.uncertainRow": "Unsicher – bitte prüfen",
+  "inbox.autoSplit.uncertain": "Unsichere Seiten (bitte prüfen): ",
+  "inbox.autoSplit.apply": "Vorschlag übernehmen",
+  "inbox.autoSplit.clear": "Vorschlag ist eindeutig",
+  "inbox.autoSplit.button": "Aufteilen …",
   "inbox.autoSplit.origin": "Automatisch aus Sammel-PDF erstellt. Dokumenttyp bitte prüfen; Original und Seitenbereich bleiben erhalten.",
   "inbox.autoSplit.confirm": "Eindeutig erkannte Dokumenttypen automatisch aufteilen? Das Original bleibt erhalten. Unklare Seiten müssen manuell geprüft werden.",
   "inbox.autoSplit.created": "Dokumente automatisch aufgeteilt. Dokumenttypen bitte prüfen.",

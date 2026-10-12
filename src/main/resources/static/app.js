@@ -251,8 +251,7 @@ async function loadInbox(silent=false){
             article.dataset.pending=String(inboxPending(item));
             if(item.sourceInboxId){const link=document.createElement('a');link.href=`/api/inbox/${item.sourceInboxId}/content#page=${item.sourceFromPage}`;link.target='_blank';link.rel='noopener';link.textContent=`Sammeloriginal ansehen · Seiten ${item.sourceFromPage}–${item.sourceToPage}`;article.querySelector('.inbox-item-head').after(link);}
             if(item.automaticallySplit){const note=document.createElement('p');note.textContent=inboxAutoText('origin','Automatically created from a combined PDF. Review the document type; original and page range are retained.');article.querySelector('.inbox-item-head').after(note);}
-            if(item.contentType==='application/pdf'&&can('DOCUMENT_UPLOAD')&&!inboxPending(item)&&!item.sourceInboxId){const automatic=document.createElement('button');automatic.type='button';automatic.className='secondary inbox-split-action';automatic.textContent=inboxAutoText('button','Split automatically');automatic.onclick=async()=>{if(!await confirmAction(inboxAutoText('confirm','Split clearly recognized document types automatically? The original is retained. Uncertain pages require manual review.')))return;automatic.disabled=true;try{const parts=await json(`/api/inbox/${item.id}/auto-split`,{method:'POST'});$('#inboxMessage').textContent=parts.length?parts.length+' '+inboxAutoText('created','documents split automatically. Review their document types.'):inboxAutoText('review','No safe automatic split available. Use the page-range review to split manually.');await loadInbox();if(!parts.length)await openInboxSplit(item);}catch(error){$('#inboxMessage').textContent=error.message;automatic.disabled=false;}};article.querySelector('.inbox-item-head').after(automatic);}
-            if(item.contentType==='application/pdf'&&can('DOCUMENT_UPLOAD')&&!inboxPending(item)){const split=document.createElement('button');split.type='button';split.className='secondary inbox-split-action';split.textContent='Seitenaufteilung prüfen';split.onclick=()=>openInboxSplit(item);article.querySelector('.inbox-item-head').after(split);}
+            if(item.contentType==='application/pdf'&&can('DOCUMENT_UPLOAD')&&!inboxPending(item)){const split=document.createElement('button');split.type='button';split.className='secondary inbox-split-action';split.textContent=inboxAutoText('button','Split …');split.onclick=()=>openInboxSplit(item);article.querySelector('.inbox-item-head').after(split);}
             if(inboxPending(item))article.querySelectorAll('form input,form select,form button:not([data-inbox-delete])').forEach(control=>control.disabled=true);
         });
         bindInboxRetry(list);
@@ -319,7 +318,7 @@ async function openSplitPretraining(){
 async function openInboxSplit(item){
     const originalUrl=item.pretraining?URL.createObjectURL(item.file):`/api/inbox/${item.id}/content`;
     const dialog=document.createElement('dialog');dialog.className='wide-dialog inbox-split-dialog';
-    dialog.innerHTML='<p role="status">Seitengrenzen und Dokumenttypen werden geprüft …</p><button type="button">Schließen</button>';
+    dialog.innerHTML='<p role="status"></p><button type="button"></button>';dialog.querySelector('p').textContent=inboxAutoText('checking','Checking page boundaries and document types …');dialog.querySelector('button').textContent=inboxAutoText('close','Close');
     dialog.querySelector('button').onclick=()=>dialog.close();dialog.onclose=()=>{if(item.pretraining)URL.revokeObjectURL(originalUrl);dialog.remove();};document.body.append(dialog);dialog.showModal();
     try{
         const proposal=item.proposal||await json(`/api/inbox/${item.id}/split-proposal`);if(!dialog.isConnected)return;
@@ -334,6 +333,19 @@ async function openInboxSplit(item){
         if(proposal.pages.some(page=>page.classification.method==='CONFIRMED_SPLIT_PATTERN_V1')){
             const learned=document.createElement('p');learned.setAttribute('role','status');
             learned.textContent='Vorschlag aus bestätigtem Training. Bitte Seitenbereiche und Dokumenttypen erneut prüfen.';form.before(learned);
+        }
+        const uncertainPages=new Set(proposal.pages.filter(page=>page.classification.status==='REVIEW'||!page.classification.suggestedType).map(page=>page.number));
+        if(!item.pretraining&&!item.sourceInboxId&&proposal.pages.length>0){
+            const clarity=document.createElement('div');clarity.className='split-clarity';clarity.setAttribute('role','status');
+            if(uncertainPages.size===0){
+                const text=document.createElement('p');text.textContent=inboxAutoText('clear','Proposal is unambiguous');
+                const apply=document.createElement('button');apply.type='button';apply.textContent=inboxAutoText('apply','Accept proposal');
+                apply.onclick=async()=>{apply.disabled=true;try{const parts=await json(`/api/inbox/${item.id}/auto-split`,{method:'POST'});if(!parts.length){text.textContent=inboxAutoText('review','No safe automatic split available. Please review the page ranges manually.');apply.disabled=false;return;}dialog.close();$('#inboxMessage').textContent=parts.length+' '+inboxAutoText('created','documents split automatically. Review their document types.');await loadInbox();}catch(error){text.textContent=error.message;apply.disabled=false;}};
+                clarity.append(text,apply);
+            }else{
+                const text=document.createElement('p');text.textContent=inboxAutoText('uncertain','Uncertain pages (please review): ')+[...uncertainPages].join(', ');clarity.append(text);
+            }
+            form.before(clarity);
         }
         const preview=document.createElement('section');preview.className='split-page-preview';preview.hidden=true;preview.innerHTML='<div class="split-preview-head"><h3>Seitenbild vergrößert</h3><button type="button">Vorschau schließen</button></div><p role="status"></p><img alt="Vergrößerte PDF-Seite">';
         let previewOrigin=null,previewScroll=0;
@@ -397,7 +409,9 @@ async function openInboxSplit(item){
             row.querySelector('[data-merge]').onclick=async()=>{const error=dialog.querySelector('[data-error]');error.textContent='';try{const previous=row.previousElementSibling,a=readRange(previous),b=readRange(row),merged=mergeInboxSplitRanges(a,b);if((a.documentType!==b.documentType||a.copyNumber!==b.copyNumber)&&!await confirmAction('Unterschiedliche Dokumenttypen oder Original/Copy-Kennzeichnungen verbinden? Dokumenttyp und Kennzeichnung des vorherigen Bereichs bleiben erhalten. Bitte anschließend prüfen.'))return;previous.querySelector('[name=toPage]').value=merged.toPage;row.remove();refreshMergeButtons();renderThumbs(previous);}catch(failure){error.textContent=failure.message;}};
             rows.append(row);refreshMergeButtons();renderThumbs(row);
         };
-        proposal.parts.forEach(add);dialog.querySelector('[data-add]').onclick=()=>{
+        proposal.parts.forEach(add);
+        [...rows.children].forEach(row=>{const range=readRange(row);for(let page=range.fromPage;page<=range.toPage;page++)if(uncertainPages.has(page)){row.classList.add('split-uncertain');const mark=document.createElement('p');mark.className='split-uncertain-note';mark.textContent=inboxAutoText('uncertainRow','Uncertain – please review');row.prepend(mark);break;}});
+        dialog.querySelector('[data-add]').onclick=()=>{
             const error=dialog.querySelector('[data-error]');error.textContent='';
             const row=[...rows.children].reverse().find(row=>readRange(row).toPage>readRange(row).fromPage);
             if(!row){error.textContent='Jede Seite hat bereits einen eigenen Bereich. Zum Zusammenfassen „Mit vorherigem verbinden“ verwenden.';return;}
