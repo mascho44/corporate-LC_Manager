@@ -34,16 +34,6 @@ test('manageable memberships offer role change and access toggle, home identitie
  assert.deepEqual(f.writes.at(-1),{url:'/api/platform/memberships/t1/u1/access',body:{suspended:true}});
 });
 
-test('an existing identity can be assigned to a tenant role with confirmation',async()=>{
- const f=await fixture({'/api/platform/memberships':[],'/api/platform/invitations/choices':[{id:'t1',name:'Acme',code:'acme',roles:[{id:'r1',name:'Admin'},{id:'r9',name:'Viewer'}]}],'/api/platform/audit':[]});await f.refresh();
- const form=descendants(f.section).find(n=>n.tag==='form');
- const selects=descendants(form).filter(n=>n.tag==='select'),input=descendants(form).find(n=>n.tag==='input');
- assert.equal(selects[0].children.length,1);assert.deepEqual(selects[1].children.map(o=>o.value),['r1','r9']);
- selects[0].value='t1';selects[1].value='r9';input.value='  shared.user ';
- await form.onsubmit({preventDefault(){}});
- const write=f.writes.at(-1);assert.equal(write.url,'/api/platform/memberships');assert.deepEqual(write.body,{tenantId:'t1',username:'shared.user',roleId:'r9'});
-});
-
 test('audit chains are verified per tenant with head hash and breaks',async()=>{
  const f=await fixture({'/api/platform/memberships':[],'/api/platform/audit':[],'/api/platform/audit/chain':[{tenantCode:'acme',ok:true,checked:10,unchained:3,headSeq:10,headHash:'f'.repeat(64)},{tenantCode:'beta',ok:false,checked:4,firstBadSeq:4,reason:'Inhalt veraendert'}]});await f.refresh();
  await descendants(f.section).find(n=>n.tag==='button'&&n.textContent==='Verify audit chains').onclick();

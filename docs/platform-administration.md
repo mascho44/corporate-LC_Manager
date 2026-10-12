@@ -97,6 +97,25 @@ Das eigene Passwort ändert ein Plattformkonto in der Plattformverwaltung (Berei
 `POST /api/platform/password`): aktuelles Passwort, neues Passwort mit der üblichen Stärkeregel, Audit-Eintrag
 `PASSWORD_CHANGED`. Die Änderung beendet die Sitzung; danach ist eine neue Anmeldung nötig.
 
+## Benutzer & Mandanten (Listen statt Namenseingabe)
+
+Die Plattformverwaltung hat den Bereich „Benutzer & Mandanten“ mit drei Ansichten; die frühere Zuweisung per
+Namenseingabe entfällt:
+
+- **Benutzer:** durchsuchbare Liste (Name, E-Mail, Mandant, Rolle) mit Filter nach Mandant und Kontostatus. Ein Klick zeigt die
+  Mandanten des Benutzers mit Rolle (Auswahlliste) und Zugang (aussetzen/wiederherstellen) und die Liste der Mandanten, in
+  denen er noch nicht ist. Mehrere Benutzer lassen sich ankreuzen und gemeinsam einem Mandanten mit einer Rolle zuweisen
+  oder dort aussetzen; vorher zeigt die Bestätigung, was passiert und was übersprungen wird.
+- **Mandanten:** Mitgliederliste eines Mandanten (Rolle, Zugang) mit Hinweis, wenn kein aktiver Mandantenadmin existiert,
+  und eine Checkliste der noch nicht zugewiesenen Benutzer mit Rollenauswahl für die gemeinsame Zuweisung.
+- **Matrix:** Benutzer × Mandanten mit der Rolle in jeder Zelle (ausgesetzte Zugänge durchgestrichen).
+
+Plattformadministratoren erscheinen in den Listen, erhalten aber keine Administratorrollen (die Auswahl ist gesperrt, der
+Server lehnt es zusätzlich ab). Konten ohne aktive Anmeldung und Heimat-Identitäten werden bei der Sammelzuweisung
+übersprungen. Es werden dieselben geprüften und auditierten Plattform-Endpunkte verwendet wie zuvor (jede Zuweisung ein
+eigener Eintrag); Teilerfolge werden pro Benutzer gemeldet. Mandantenadmins sehen weiterhin nur die Mitglieder ihres eigenen
+Mandanten; ein globales Benutzerverzeichnis gibt es für sie bewusst nicht.
+
 ## Invitations
 
 Choose a tenant and one of that tenant's roles on the platform page; permissions
