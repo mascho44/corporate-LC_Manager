@@ -15,3 +15,7 @@ test('the link to the tenant application is removed for tenantless platform sess
   const code=require('node:fs').readFileSync(require('node:path').resolve(__dirname,'../../main/resources/static/platform-shell.js'),'utf8');
   assert.ok(code.includes('access.tenantless')&&code.includes("a.button-link"));
 });
+test('the platform page shows the latest refused requests without building HTML from data',()=>{
+  const code=require('node:fs').readFileSync(require('node:path').resolve(__dirname,'../../main/resources/static/platform-shell.js'),'utf8');
+  assert.ok(code.includes("/api/platform/denials")&&code.includes('buildDenialsSection'));assert.equal(code.includes('innerHTML'),false);
+});

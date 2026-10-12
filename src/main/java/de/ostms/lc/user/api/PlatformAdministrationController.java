@@ -8,6 +8,9 @@ import java.util.*;
 
 @RestController @RequestMapping("/api/platform") public class PlatformAdministrationController {
  public record Access(@NotNull Boolean active){}
+ @org.springframework.beans.factory.annotation.Autowired(required=false) private de.ostms.lc.config.AccessDenialLog denials;
+ /** The latest refused requests (method, path, user, reason), for finding the cause of a "forbidden" without server access. */
+ @GetMapping("/denials") public java.util.List<de.ostms.lc.config.AccessDenialLog.Entry> denials(Authentication auth){service.verifyLiveAccess(auth);return denials==null?java.util.List.of():denials.recent();}
  public record Grant(@NotNull Boolean granted){}
  public record PasswordChange(@jakarta.validation.constraints.NotBlank @jakarta.validation.constraints.Size(max=200) String currentPassword,@jakarta.validation.constraints.NotBlank @jakarta.validation.constraints.Size(max=200) String newPassword){}
  @org.springframework.beans.factory.annotation.Autowired(required=false) private de.ostms.lc.user.service.IdentityCredentialService credentials;
