@@ -47,7 +47,7 @@ public class CredentialSessionFilter extends OncePerRequestFilter {
                 }catch(org.springframework.security.access.AccessDeniedException denied){
                     // A platform administrator without a membership in the requested scope keeps the session: stray requests (favicon, an old link, the tenant start page)
                     // are refused or sent to the platform area instead of ending the platform session.
-                    if(platformIdentity){tenantless=true;}
+                    if(platformIdentity){tenantless=true;request.setAttribute(AccessDenialFilter.REASON,"Plattform-Sitzung ohne Mandantenzugriff");}else request.setAttribute(AccessDenialFilter.REASON,"keine aktive Mitgliedschaft im gewählten Mandanten");
                     valid=false;
                 }
             }
@@ -57,7 +57,7 @@ public class CredentialSessionFilter extends OncePerRequestFilter {
                 else response.setStatus(404);
                 return;
             }
-            if(!valid){if(session!=null)session.invalidate();SecurityContextHolder.clearContext();
+            if(!valid){if(request.getAttribute(AccessDenialFilter.REASON)==null)request.setAttribute(AccessDenialFilter.REASON,"Sitzung abgelaufen, Zugangsdaten oder Rechte geändert");if(session!=null)session.invalidate();SecurityContextHolder.clearContext();
                 if(request.getRequestURI().startsWith("/api/")){response.setStatus(401);response.setContentType("application/json");response.getWriter().write("{\"error\":\"Bitte erneut anmelden.\"}");}
                 else response.sendRedirect(uri.equals("/platform")||uri.startsWith("/platform.")||uri.startsWith("/platform-")?"/platform-login.html":"/login.html");
                 return;

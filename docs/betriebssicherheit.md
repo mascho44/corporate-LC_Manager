@@ -95,3 +95,16 @@ Zeitplan. Ein externer Restore darf erst nach tatsächlicher Prüfung behauptet 
 Grundlagen: [OWASP Uploads](https://cheatsheetseries.owasp.org/cheatsheets/File_Upload_Cheat_Sheet.html),
 [ClamAV](https://docs.clamav.net/manual/Usage/ClamdProtocol.html),
 [Restic](https://restic.readthedocs.io/en/stable/).
+
+
+## Abgelehnte Anfragen (401/403)
+
+Jede abgelehnte Anfrage wird im Anwendungsprotokoll (`access-denied`, Stufe WARN) vermerkt: Status, Methode, Adresse **ohne Parameter**,
+Benutzer, gewählter Mandant, Absenderadresse und ein Grund (z. B. „keine aktive Mitgliedschaft im gewählten Mandanten“,
+„CSRF-Token fehlt“, „Berechtigung fehlt oder CSRF-Token ungültig“, „Sitzung abgelaufen, Zugangsdaten oder Rechte geändert“).
+Inhalte, Parameter und Passwörter werden nie aufgenommen; Steuerzeichen werden entfernt (kein Einschleusen von Zeilen). Gleiche
+Ablehnungen (gleicher Benutzer, gleiche Anfrageart, gleiche Adresse mit ersetzten IDs) erscheinen höchstens einmal pro Minute mit
+der Zahl der unterdrückten Wiederholungen. Falsche Passwörter beim Login stehen weiterhin nur im Audit.
+
+Die letzten 200 Einträge sehen Plattformadministratoren in der Plattformverwaltung unter „Abgelehnte Anfragen“
+(`GET /api/platform/denials`); die Liste liegt im Arbeitsspeicher und wird beim Neustart geleert.

@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   await setupPlatformAdministration(true);
   const nav=document.getElementById('appNavPlatform');if(!nav)throw new Error('Platform access is unavailable.');await nav.onclick();await globalThis.LcPlatformUsers?.setup?.(document.getElementById('platformSection'));buildSubnav();
   buildPasswordSection();
+  buildDenialsSection();
   document.getElementById('platformLogout').onclick=async event=>{const button=event.currentTarget;button.disabled=true;try{await json('/api/platform/logout',{method:'POST'});location.replace('/platform-login.html');}catch(failure){error.textContent=failure.message;button.disabled=false;}};
  }catch(failure){error.textContent=failure.message;}
 });
@@ -55,4 +56,26 @@ function buildPasswordSection(){
   }catch(failure){status.textContent=failure.message;button.disabled=false;}
  };
  host.append(form);
+}
+
+/* Latest refused requests (401/403) with the likely reason: find the cause of a "forbidden" without server access. */
+function buildDenialsSection(){
+ const host=document.getElementById('platformSection');if(!host||document.getElementById('platformDenials'))return;
+ const node=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
+ const box=node('section');box.id='platformDenials';
+ const reload=node('button','Aktualisieren');reload.type='button';reload.className='secondary';
+ const status=node('p','');status.setAttribute('role','status');const table=node('table');table.className='pu-table';
+ box.append(node('h3','Abgelehnte Anfragen (zuletzt)'),node('small','Nur Methode, Adresse ohne Parameter, Benutzer und Grund – keine Inhalte. Gleiche Ablehnungen erscheinen höchstens einmal pro Minute; die Liste wird beim Neustart geleert.'),reload,status,table);
+ host.append(box);
+ async function load(){
+  status.textContent='Lade …';
+  try{
+   const rows=await json('/api/platform/denials');table.replaceChildren();
+   const head=node('tr');['Zeit','Status','Anfrage','Benutzer','Mandant','Grund'].forEach(h=>head.append(node('th',h)));table.append(head);
+   rows.forEach(r=>{const tr=node('tr');
+    [new Date(r.at).toLocaleTimeString('de-DE'),String(r.status),r.method+' '+r.path,r.user,r.tenant,r.reason+(r.repeats?' (+'+r.repeats+' gleiche)':'')].forEach(v=>tr.append(node('td',v)));table.append(tr);});
+   status.textContent=rows.length?'':'Keine abgelehnten Anfragen seit dem letzten Start.';
+  }catch(e){status.textContent=e.message;}
+ }
+ reload.onclick=load;load();
 }
