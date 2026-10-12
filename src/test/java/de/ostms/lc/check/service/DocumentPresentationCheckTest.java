@@ -19,4 +19,13 @@ class DocumentPresentationCheckTest {
   assertThat(unclear.code()).isEqualTo("DOCUMENT_COPIES_MANUAL_REVIEW");assertThat(unclear.message()).contains("nicht eindeutig").contains("manuell prüfen");
   assertThat(DocumentPresentationCheck.evaluate("one original",List.of(doc(0,"P1"))).get(0).documentEvidence()).contains("1 Original,");
  }
+ @Test void fullSetUsesTheNumberStatedOnTheBillOfLading(){
+  var docs=new ArrayList<LcDocument>();
+  for(int i=0;i<3;i++){var o=doc(0,"BL1");o.setExtractedText("BILL OF LADING\nNumber of original B/L: THREE (3)");docs.add(o);}
+  for(int i=0;i<3;i++)docs.add(doc(1,"BL1"));
+  var result=DocumentPresentationCheck.evaluate("Full set of clean on board B/L plus 3 non-negotiable copies",docs);
+  assertThat(result).hasSize(2).allMatch(r->r.severity()==CheckResult.Severity.OK);
+  var noStatement=DocumentPresentationCheck.evaluate("Full set of B/L",List.of(doc(0,"BL1")));
+  assertThat(noStatement.get(0).code()).isEqualTo("DOCUMENT_COPIES_MANUAL_REVIEW");
+ }
 }

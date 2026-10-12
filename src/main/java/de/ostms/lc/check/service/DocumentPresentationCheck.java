@@ -22,15 +22,24 @@ final class DocumentPresentationCheck {
   String noun=originals?"originals?|originalen?|originale":"copies|copy|kopien?|kopie";
   var fractions=Pattern.compile("(?iu)\\b([0-9]+)\\s*/\\s*([0-9]+)\\s+(?:"+noun+")\\b").matcher(requirement);
   while(fractions.find())if(!fractions.group(1).equals(fractions.group(2)))return OptionalInt.empty();
-  var matcher=Pattern.compile("(?iu)(?<![\\w/])\\b("+number+")(?:\\s*/\\s*\\1)?\\s+(?:signed\\s+)?(?:"+noun+")\\b").matcher(requirement);
+  var matcher=Pattern.compile("(?iu)(?<![\\w/])\\b("+number+")(?:\\s*/\\s*\\1)?\\s+(?:signed\\s+|(?:non[- ]?negotiable|additional|extra|true|photo)\\s+){0,2}(?:"+noun+")\\b").matcher(requirement);
   var values=new HashSet<Integer>();while(matcher.find())values.add(switch(matcher.group(1).toLowerCase(Locale.ROOT)){case "one","ein","eine","einem","einen"->1;case "two","zwei"->2;case "three","drei"->3;case "four","vier"->4;case "five","fünf"->5;case "six","sechs"->6;default->Integer.parseInt(matcher.group(1));});
   return values.size()==1?OptionalInt.of(values.iterator().next()):OptionalInt.empty();
+ }
+ private static final Pattern FULL_SET=Pattern.compile("(?i)\\bfull\\s+sets?\\b|\\bvollst(?:ä|ae)ndig\\w*\\s+(?:satz|ausfertigung)");
+ private static final Pattern STATED_ORIGINALS=Pattern.compile("(?i)(?:number\\s+of\\s+(?:original\\s+)?(?:bills?\\s+of\\s+lading|b/?l|bs/l|originals?)|no\\.?\\s+of\\s+originals?)\\s{0,3}[:\\-]?\\s{0,3}\\(?\\s*(one|two|three|four|[1-4])\\b");
+ /** "Full set" names no number; the number of originals is what the bill of lading itself states. */
+ static OptionalInt fullSetOriginals(String requirement,List<LcDocument> docs){
+  if(!FULL_SET.matcher(requirement).find())return OptionalInt.empty();
+  for(var doc:docs){String text=doc.getExtractedText();if(text==null)continue;var m=STATED_ORIGINALS.matcher(text);
+   if(m.find())return OptionalInt.of(switch(m.group(1).toLowerCase(Locale.ROOT)){case "one"->1;case "two"->2;case "three"->3;case "four"->4;default->Integer.parseInt(m.group(1));});}
+  return OptionalInt.empty();
  }
  static List<CheckResult> evaluate(String requirement,List<LcDocument> docs){
   if(docs.isEmpty())return List.of();var counts=count(docs);var results=new ArrayList<CheckResult>();
   String evidence="Erfasste Kennzeichnungen: "+counts.originals()+" "+(counts.originals()==1?"Original":"Originale")+", "+counts.copies()+" "+(counts.copies()==1?"Kopie":"Kopien")+", "+counts.unspecified()+" ohne Kennzeichnung. Jedes Dokument zählt einmal. Physische Originale und Echtheit müssen von einer Person geprüft werden.";
   String name=docs.get(0).getOriginalFilename();boolean uncertain=counts.unspecified()>0||counts.duplicateNumbers()||counts.multipleDocuments();
-  var original=required(requirement,true);var copy=required(requirement,false);
+  var original=required(requirement,true);if(original.isEmpty())original=fullSetOriginals(requirement,docs);var copy=required(requirement,false);
   for(boolean originals:new boolean[]{true,false}){
    var expected=originals?original:copy;if(expected.isEmpty())continue;
    int actual=originals?counts.originals():counts.copies();var severity=uncertain?CheckResult.Severity.WARNING:actual<expected.getAsInt()?CheckResult.Severity.DISCREPANCY:CheckResult.Severity.OK;
