@@ -68,8 +68,29 @@
   bar.before(tools, panel);
   const filters = { kind: '', document: '', code: '' };
 
+  // Findings that only say "data missing" are bundled per document into one collapsed line instead of a long run of rows.
+  const NOT_CHECKABLE = KINDS.find(([re]) => re.test('Regel nicht prüfbar'))[1];
+  const groups = [];
+  const bundles = new Map();
+  rows.filter(r => r.kind === NOT_CHECKABLE).forEach(r => { const l = bundles.get(r.document) || []; l.push(r); bundles.set(r.document, l); });
+  bundles.forEach((members, document_) => {
+   if (members.length < 3 || !members[0].row.parentNode) return;
+   const details = node('details', undefined, 'finding-group');
+   const summary = node('summary'); details.append(summary);
+   members[0].row.before(details);
+   members.forEach(m => details.append(m.row));
+   groups.push({ details, summary, members, name: document_ || 'Dokument' });
+  });
+  const updateGroups = () => groups.forEach(g => {
+   const visible = g.members.filter(m => !m.row.classList.contains('hidden')).length;
+   const openCount = g.members.filter(m => open(m) && !m.row.classList.contains('hidden')).length;
+   g.details.classList.toggle('hidden', visible === 0);
+   g.summary.textContent = `${g.name}: ${visible} Angaben zur Prüfung fehlen${openCount !== visible ? ` (${openCount} offen)` : ''}`;
+  });
+
   const apply = () => {
    rows.forEach(r => { if (!matches(r, filters)) r.row.classList.add('hidden'); });
+   updateGroups();
    const visible = rows.filter(r => !r.row.classList.contains('hidden')).length;
    const selected = Object.entries(filters).filter(([, v]) => v).map(([d, v]) => rows.find(r => r[d] === v)?.labels[d] || v);
    const count = bar.querySelector('[data-review-count]'); if (count) count.textContent = `${visible} von ${rows.length} Befunden${selected.length ? ' · ' + selected.join(' · ') : ''} · Gesamtbewertung unverändert`;

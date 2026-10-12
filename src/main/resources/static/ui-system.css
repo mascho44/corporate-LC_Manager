@@ -32,3 +32,8 @@ html body :is(.membership-row,.queue-row,.user-row,.pu-row,.pu-table,.document-i
 .finding-filters{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
 .finding-select{display:flex;align-items:center;gap:6px;min-width:0;flex:1 1 220px;max-width:420px}
 .finding-select select{min-width:0;flex:1;text-overflow:ellipsis}
+
+.finding-group{border:1px solid var(--line,#d5dbe5);border-radius:8px;margin:6px 0;padding:0 12px}
+.finding-group>summary{cursor:pointer;padding:8px 0;font-weight:600}
+.finding-group[open]>summary{border-bottom:1px solid var(--line,#d5dbe5);margin-bottom:6px}
+.finding-group.hidden{display:none}
