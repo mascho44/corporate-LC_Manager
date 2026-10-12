@@ -1,12 +1,15 @@
 const form=document.querySelector('#loginForm'),error=document.querySelector('#loginError'),button=form.querySelector('button');
 let secondFactor=false,busy=false;
-async function platformEnabled(){
-  try{const response=await fetch('/api/platform/access');if(!response.ok)return false;return (await response.json()).enabled===true;}catch{return false;}
+async function platformAccess(){
+  try{const response=await fetch('/api/platform/access');if(!response.ok)return {};return await response.json();}catch{return {};}
 }
 async function chooseWorkspace(){
+  // A platform administrator without any tenant has a platform-only session: asking for workspaces would end it, so go straight to the platform area.
+  const access=await platformAccess();
+  if(access.enabled===true&&access.tenantless===true){location.replace('/platform.html');return;}
   const response=await fetch('/api/tenants');
   const overview=await response.json().catch(()=>({}));
-  const platform=await platformEnabled();
+  const platform=access.enabled===true;
   if(!response.ok&&!platform)throw Error(overview.error||'Mandanten konnten nicht geladen werden.');
   const all=response.ok&&Array.isArray(overview.workspaces)?overview.workspaces:[];
   // The bootstrap tenant (code "default") only homes the accounts; offer it only when nothing else is available.
