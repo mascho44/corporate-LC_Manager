@@ -73,7 +73,7 @@
    const visible = rows.filter(r => !r.row.classList.contains('hidden')).length;
    const selected = Object.entries(filters).filter(([, v]) => v).map(([d, v]) => rows.find(r => r[d] === v)?.labels[d] || v);
    const count = bar.querySelector('[data-review-count]'); if (count) count.textContent = `${visible} von ${rows.length} Befunden${selected.length ? ' · ' + selected.join(' · ') : ''} · Gesamtbewertung unverändert`;
-   panel.querySelectorAll('[data-chip]').forEach(b => b.setAttribute('aria-pressed', String(filters[b.dataset.dimension] === b.dataset.chip)));
+   panel.querySelectorAll('select[data-dimension]').forEach(sel => { sel.value = filters[sel.dataset.dimension] || ''; });
    reset.hidden = !selected.length;
    const targets = bulkTargets(rows, filters).filter(r => !r.row.classList.contains('hidden'));
    bulk.hidden = !(targets.length >= 2 && typeof can === 'function' && can('DOCUMENT_REVIEW'));
@@ -81,29 +81,17 @@
   };
   const refilter = event => { if (event.target.matches?.('[data-review-filter],[data-review-search]') && bar.contains(event.target)) apply(); };
   document.addEventListener('input', refilter); document.addEventListener('change', refilter);
-  const choose = (dimension, key) => {
-   filters[dimension] = filters[dimension] === key ? '' : key;
-   bar.querySelector('[data-review-filter]')?.dispatchEvent(new Event('change', { bubbles: true }));
-   apply();
-  };
   reset.onclick = () => { Object.keys(filters).forEach(k => { filters[k] = ''; }); bar.querySelector('[data-review-filter]')?.dispatchEvent(new Event('change', { bubbles: true })); apply(); };
 
   GROUPS.forEach(([dimension, title]) => {
    const entries = summarizeBy(rows, dimension);
    if (!entries.length || (dimension !== 'code' && entries.length < 2)) return;
-   const group = node('div', undefined, 'finding-chips'); group.setAttribute('role', 'group'); group.setAttribute('aria-label', `Offene Befunde nach ${title}`);
-   group.append(node('b', title + ':', 'finding-chip-title'));
-   const chip = e => {
-    const b = node('button', `${e.label.length > 70 ? e.label.slice(0, 67) + '…' : e.label} (${e.open})`, 'finding-chip'); b.type = 'button';
-    b.dataset.chip = e.key; b.dataset.dimension = dimension; b.title = `${e.label} · ${e.warnings} Hinweise, ${e.discrepancies} Abweichungen offen`; b.setAttribute('aria-pressed', 'false');
-    b.onclick = () => choose(dimension, e.key); return b;
-   };
-   entries.slice(0, COLLAPSED).forEach(e => group.append(chip(e)));
-   if (entries.length > COLLAPSED) {
-    const more = node('button', `weitere ${entries.length - COLLAPSED} anzeigen`, 'finding-chip finding-more'); more.type = 'button'; more.setAttribute('aria-expanded', 'false');
-    more.onclick = () => { entries.slice(COLLAPSED).forEach(e => group.insertBefore(chip(e), more)); more.remove(); apply(); };
-    group.append(more);
-   }
+   const group = node('label', undefined, 'finding-select'); group.append(node('span', title + ':', 'finding-chip-title'));
+   const select = node('select'); select.dataset.dimension = dimension; select.setAttribute('aria-label', `Offene Befunde nach ${title}`);
+   const all = node('option', `Alle (${entries.reduce((n, e) => n + e.open, 0)})`); all.value = ''; select.append(all);
+   entries.forEach(e => { const o = node('option', `${e.label.length > 60 ? e.label.slice(0, 57) + '…' : e.label} (${e.open})`); o.value = e.key; o.title = `${e.label} · ${e.warnings} Hinweise, ${e.discrepancies} Abweichungen offen`; select.append(o); });
+   select.onchange = () => { filters[dimension] = select.value; bar.querySelector('[data-review-filter]')?.dispatchEvent(new Event('change', { bubbles: true })); apply(); };
+   group.append(select);
    panel.append(group);
   });
   if (!panel.children.length) panel.append(node('small', 'Keine offenen Hinweise.'));
