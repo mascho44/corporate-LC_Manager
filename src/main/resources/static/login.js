@@ -4,9 +4,9 @@ async function platformAccess(){
   try{const response=await fetch('/api/platform/access');if(!response.ok)return {};return await response.json();}catch{return {};}
 }
 async function chooseWorkspace(){
-  // A platform administrator without any tenant has a platform-only session: asking for workspaces would end it, so go straight to the platform area.
+  // A platform administrator belongs to no tenant: straight to the platform area, never a workspace chooser (a platform-only session could not even list workspaces).
   const access=await platformAccess();
-  if(access.enabled===true&&access.tenantless===true){location.replace('/platform.html');return;}
+  if(access.enabled===true){location.replace('/platform.html');return;}
   const response=await fetch('/api/tenants');
   const overview=await response.json().catch(()=>({}));
   const platform=access.enabled===true;
@@ -27,7 +27,7 @@ async function chooseWorkspace(){
   proceed.onclick=async()=>{if(proceed.disabled)return;proceed.disabled=true;error.textContent='';try{
     const meResponse=await fetch('/api/auth/me');const me=await meResponse.json();if(!meResponse.ok)throw Error('Anmeldung erforderlich.');
     const selected=await fetch('/api/tenants/'+encodeURIComponent(select.value)+'/select',{method:'POST',headers:{'X-CSRF-TOKEN':me.csrfToken}});
-    if(!selected.ok){const body=await selected.json().catch(()=>({}));throw Error(body.error||'Mandant konnte nicht geöffnet werden.');}
+    if(!selected.ok){const body=await selected.json().catch(()=>({}));if(selected.status===403)throw Error('Der Zugriff auf diesen Mandanten wurde verweigert. Mögliche Ursache: Administratoren brauchen die Zwei-Faktor-Anmeldung. Bitte neu anmelden und sie einrichten.');throw Error(body.error||'Mandant konnte nicht geöffnet werden.');}
     location.replace('/');
   }catch(e){error.textContent=e.message;}finally{proceed.disabled=false;}};
   form.onsubmit=event=>{event.preventDefault();return proceed.onclick();};

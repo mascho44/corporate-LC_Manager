@@ -14,6 +14,11 @@ import java.util.UUID;
  @org.springframework.beans.factory.annotation.Autowired private de.ostms.lc.tenant.repository.TenantMembershipRepository memberships;
  @org.springframework.beans.factory.annotation.Autowired private de.ostms.lc.tenant.repository.TenantRepository tenants;
  public TenantLoginService(TenantLoginResolver resolver,AppUserDetailsService details,PasswordEncoder encoder){this.resolver=resolver;this.details=details;this.encoder=encoder;dummyHash=encoder.encode(UUID.randomUUID().toString());}
+/** True if the identity has the administrator base role in any workspace; such identities must use two-factor authentication, wherever they sign in first. */
+ public boolean administersAnyTenant(String username){
+  if(identities==null||memberships==null||username==null)return false;
+  return identities.findByUsernameIgnoreCase(username).map(i->memberships.findWorkspaceMemberships(i.getId()).stream().anyMatch(m->m.getRole().getBaseRole()==de.ostms.lc.user.domain.UserRole.ADMIN)).orElse(false);
+ }
  public Verified verify(String username,String password,String code){
   UUID tenant;UserDetails user;
   try{tenant=resolver.resolve(code);try{user=details.loadForTenant(username,tenant);}catch(AuthenticationException denied){

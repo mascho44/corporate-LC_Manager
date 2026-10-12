@@ -11,3 +11,7 @@ test('platform page has no workspace selector or business application scripts',(
  const html=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/platform.html'),'utf8');
  assert.match(html,/GLOBAL SCOPE/);assert.match(html,/platform-shell.js/);assert.doesNotMatch(html,/src="\/app.js|src="\/tenants.js|id="tenantChooser"|lcSection|cockpitSection/);
 });
+test('the link to the tenant application is removed for tenantless platform sessions',()=>{
+  const code=require('node:fs').readFileSync(require('node:path').resolve(__dirname,'../../main/resources/static/platform-shell.js'),'utf8');
+  assert.ok(code.includes('access.tenantless')&&code.includes("a.button-link"));
+});
