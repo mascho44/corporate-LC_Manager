@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   document.getElementById('platformIdentity').textContent=currentUser.username;
   await globalThis.LcI18n?.setLanguage('en');
   await setupPlatformAdministration(true);
-  const nav=document.getElementById('appNavPlatform');if(!nav)throw new Error('Platform access is unavailable.');await nav.onclick();buildSubnav();
+  const nav=document.getElementById('appNavPlatform');if(!nav)throw new Error('Platform access is unavailable.');await nav.onclick();await globalThis.LcPlatformUsers?.setup?.(document.getElementById('platformSection'));buildSubnav();
   buildPasswordSection();
   document.getElementById('platformLogout').onclick=async event=>{const button=event.currentTarget;button.disabled=true;try{await json('/api/platform/logout',{method:'POST'});location.replace('/platform-login.html');}catch(failure){error.textContent=failure.message;button.disabled=false;}};
  }catch(failure){error.textContent=failure.message;}
