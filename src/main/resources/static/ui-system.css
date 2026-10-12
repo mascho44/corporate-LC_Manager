@@ -1,0 +1,25 @@
+/*
+ * One size for every control. Buttons, links styled as buttons, dropdowns and single-line inputs share height, type size and corner radius;
+ * rows, tables and item lists use the small size. Loaded last, so it wins over the page-specific sizes it replaces.
+ * Excluded on purpose: navigation, tabs, icon ("ghost") buttons, thumbnails and the zoom handle.
+ */
+:root{--control-height:36px;--control-height-sm:30px;--control-radius:8px;--control-font:14px;--control-font-sm:13px;--control-pad-x:14px;--control-pad-x-sm:10px}
+
+html body :is(button,a.button-link):not(.ghost):not(.pu-open):not(.pu-tab):not(.snippet-zoom):not(.app-nav button):not(.dossier-nav button){
+ min-height:var(--control-height);height:auto;box-sizing:border-box;padding:6px var(--control-pad-x);font-size:var(--control-font);font-weight:600;line-height:1.25;border-radius:var(--control-radius)}
+html body a.button-link:not(.ghost){display:inline-flex;align-items:center;justify-content:center}
+
+html body select:not([multiple]):not([size]),html body select:not([multiple])[size="1"]{
+ height:var(--control-height);min-height:var(--control-height);box-sizing:border-box;padding:4px 10px;font-size:var(--control-font);border-radius:var(--control-radius)}
+
+html body input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not([type=hidden]){
+ min-height:var(--control-height);box-sizing:border-box;padding:4px 10px;font-size:var(--control-font);border-radius:var(--control-radius)}
+html body textarea{border-radius:var(--control-radius)}
+
+/* small size: controls inside rows, tables and item lists */
+html body :is(.membership-row,.queue-row,.user-row,.pu-row,.pu-table,.pu-bulk,.pu-add,.document-actions,.review-actions,.split-row-actions,.template-row,.document-item-row,.draft-document-actions,.learning-rule,.training-links,.document-quick-actions,.tenant-invitation-row,table) :is(button,a.button-link):not(.ghost):not(.pu-open):not(.pu-tab):not(.snippet-zoom):not(.app-nav button):not(.dossier-nav button){
+ min-height:var(--control-height-sm);padding:3px var(--control-pad-x-sm);font-size:var(--control-font-sm)}
+html body :is(.membership-row,.queue-row,.user-row,.pu-row,.pu-table,.pu-bulk,.pu-add,.document-item-row,table) select:not([multiple]):not([size]){
+ height:var(--control-height-sm);min-height:var(--control-height-sm);padding:2px 8px;font-size:var(--control-font-sm)}
+html body :is(.membership-row,.queue-row,.user-row,.pu-row,.pu-table,.document-item-row,table) input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not([type=hidden]){
+ min-height:var(--control-height-sm);padding:2px 8px;font-size:var(--control-font-sm)}
