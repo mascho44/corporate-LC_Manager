@@ -20,7 +20,16 @@ Dokument dieses Typs vorliegt, den Zieltermin und das Risiko.
 Der Plan ist eine Planungshilfe und ersetzt weder die Prüfung noch die Einreichung bei der Bank. „Vorhanden" bedeutet nur, dass ein Dokument
 dieses Typs hochgeladen wurde.
 
+## Vorlaufzeiten und Stand
+
+* **Vorlaufzeiten pro Mandant:** Mit dem Recht „Einstellungen verwalten" öffnet der Knopf *Vorlaufzeiten* im Plan eine Tabelle mit den Arbeitstagen
+  je Dokumentart (`GET/PUT/DELETE /api/procurement/lead-times`). Geänderte Werte gelten für alle LC-Akten des Mandanten, „Standard" stellt den
+  Richtwert wieder her. Transportdokumente sind fest am Versandtag fällig. Änderungen werden im Audit protokolliert.
+* **Manueller Stand:** Mit dem Recht „LC bearbeiten" lässt sich je fehlendem Dokument *Nicht begonnen*, *In Arbeit* oder *Beantragt / bestellt* setzen,
+  dazu eine Notiz (`PUT /api/lcs/{id}/procurement-status`). Der Stand ändert die Ampel nicht, er zeigt nur, wer woran arbeitet. „Vorhanden" kommt weiter
+  allein aus dem Upload. Auch das wird protokolliert.
+
 ## Noch offen (nächste Schritte)
 
-Vorlaufzeiten pro Mandant einstellbar, manuelle Status („in Arbeit", „beantragt"), Warnungen per Kalender und E-Mail, Ampel in der LC-Liste und im
+Warnungen per Kalender und E-Mail, Ampel in der LC-Liste und im
 Cockpit, Rolle Exporteur/Importeur je Akte.

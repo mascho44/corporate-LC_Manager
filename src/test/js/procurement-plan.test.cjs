@@ -23,3 +23,11 @@ test('list chip shows shipment light, days and what is missing', () => {
  assert.match(api.chipHtml({ shipmentRisk: 'DONE', daysToShipment: -3, open: 0 }), /versandt · komplett/);
  assert.equal(api.chipHtml(null), '');
 });
+test('open documents get a status selector with note when editable, plain text otherwise', () => {
+ const items = [{ requirement: 'Packing list', documentType: 'PACKING_LIST', documentName: 'Packing List', present: false, dueDate: '2026-11-17', daysLeft: 3, risk: 'CRITICAL', hint: '', status: 'REQUESTED', note: 'beim Lager' }];
+ const base = { latestShipment: '2026-11-20', daysToShipment: 8, shipmentRisk: 'SOON', open: 1, overdue: 0, critical: 1, items };
+ const editable = api.planHtml(base, { canEdit: true, canSettings: true });
+ assert.match(editable, /data-plan-status/); assert.match(editable, /option value="REQUESTED" selected/); assert.match(editable, /value="beim Lager"/); assert.match(editable, /data-plan-lead-times/);
+ const readOnly = api.planHtml(base, {});
+ assert.doesNotMatch(readOnly, /data-plan-status/); assert.match(readOnly, /Beantragt \/ bestellt · beim Lager/); assert.doesNotMatch(readOnly, /data-plan-lead-times/);
+});

@@ -36,4 +36,24 @@ class ProcurementPlanServiceTest {
         assertThat(unknown.risk()).isEqualTo(ProcurementPlanService.Risk.UNKNOWN);
         assertThat(unknown.dueDate()).isNull();
     }
+    @Test void tenantLeadTimeMovesTheDueDateAndStatusIsCarried() {
+        var item = ProcurementPlanService.item("c", DocumentType.CERTIFICATE_OF_ORIGIN, false, shipment, LocalDate.of(2026, 11, 1), 12,
+                de.ostms.lc.lc.domain.ProcurementItemStatus.Status.REQUESTED, "bei IHK beantragt");
+        assertThat(item.leadWorkingDays()).isEqualTo(12);
+        assertThat(item.dueDate()).isEqualTo(LocalDate.of(2026, 11, 4));
+        assertThat(item.status()).isEqualTo(de.ostms.lc.lc.domain.ProcurementItemStatus.Status.REQUESTED);
+        assertThat(item.note()).isEqualTo("bei IHK beantragt");
+    }
+
+    @Test void transportDocumentsKeepTheShipmentDateWhateverTheLeadTime() {
+        var item = ProcurementPlanService.item("b", DocumentType.BILL_OF_LADING, false, shipment, LocalDate.of(2026, 11, 1), 30,
+                de.ostms.lc.lc.domain.ProcurementItemStatus.Status.NOT_STARTED, null);
+        assertThat(item.dueDate()).isEqualTo(shipment);
+    }
+
+    @Test void plannedTypesExcludeTransportAndInternalTypes() {
+        var planned = ProcurementPlanService.planned();
+        assertThat(planned).contains(DocumentType.CERTIFICATE_OF_ORIGIN, DocumentType.PACKING_LIST)
+                .doesNotContain(DocumentType.BILL_OF_LADING, DocumentType.AIR_WAYBILL, DocumentType.SWIFT_MT700);
+    }
 }

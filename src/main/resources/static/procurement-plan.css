@@ -17,3 +17,5 @@
 .plan-note{margin:8px 0 0;color:#5b6573}
 .plan-chip{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:4px}
 .plan-chip small{color:#5b6573}
+.plan-table select,.plan-table input[type=text],.plan-table input[type=number]{max-width:200px}
+.plan-head>span{display:flex;align-items:center;gap:8px}
