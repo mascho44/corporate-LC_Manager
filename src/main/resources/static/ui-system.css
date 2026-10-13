@@ -39,3 +39,9 @@ html body :is(.membership-row,.queue-row,.user-row,.pu-row,.pu-table,.document-i
 .finding-group.hidden{display:none}
 
 .finding-pick{flex:none;width:18px;height:18px;min-height:0;margin:2px 10px 0 0;accent-color:#1f4ed8}
+
+/* User menu: plain list entries, not filled buttons (the generic blue button rule has higher specificity than .avatar-menu button). */
+html body #avatarMenu button{display:block;width:100%;min-height:var(--control-height);margin:0;padding:8px 12px;text-align:left;background:transparent;color:#344054;border:0;border-radius:var(--control-radius);font-weight:500;box-shadow:none}
+html body #avatarMenu button:hover:not(:disabled),html body #avatarMenu button:focus-visible{background:#eef2f6;color:#14213d}
+html body #avatarMenu #avatarLogout{color:#b42318;border-top:1px solid #e5e9ef;border-radius:0 0 var(--control-radius) var(--control-radius);margin-top:6px}
+html body #avatarMenu #avatarLogout:hover:not(:disabled){background:#fdecea}
