@@ -151,3 +151,22 @@ form.membership-role-controls>button{justify-self:start}
  html body.nav-open .app-nav{transform:none;visibility:visible;box-shadow:0 0 0 100vmax #0b1424a6}
  html body>main{margin-left:0;padding-left:12px;padding-right:12px}
 }
+/* Phone header and drawer details (the older 900 px rule turned the menu into a scroll strip; undo that inside the drawer). */
+@media(max-width:900px){
+ html body>header{height:auto;min-height:56px}
+ html body>header .header-actions{flex:1 1 100%;flex-wrap:nowrap;margin-left:0;justify-content:space-between}
+ html body>header .header-actions select{min-width:0;flex:1 1 auto}
+ html body>header .tls-copy,html body>header #avatarUserName{display:none}
+ html body>header .avatar-toggle{padding-left:6px;padding-right:6px}
+ html body .app-nav-title{display:flex}
+ html body .app-nav nav>small{display:block}
+ html body .app-nav-footer{display:block}
+ html body .app-nav nav{flex-direction:column;min-width:0;flex:1}
+ html body .app-nav button{white-space:normal;text-align:left}
+}
+@media(max-width:700px){
+ html body>header>div:first-of-type b{display:none}
+ html body>header .header-actions{flex:1 1 0;min-width:0}
+ #mobileNavToggle{font-size:0;padding:0;width:44px;min-width:44px;justify-content:center}
+ #mobileNavToggle::before{content:'☰';font-size:20px;line-height:1}
+}
