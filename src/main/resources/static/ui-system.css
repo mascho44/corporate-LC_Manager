@@ -45,3 +45,27 @@ html body #avatarMenu button{display:block;width:100%;min-height:var(--control-h
 html body #avatarMenu button:hover:not(:disabled),html body #avatarMenu button:focus-visible{background:#eef2f6;color:#14213d}
 html body #avatarMenu #avatarLogout{color:#b42318;border-top:1px solid #e5e9ef;border-radius:0 0 var(--control-radius) var(--control-radius);margin-top:6px}
 html body #avatarMenu #avatarLogout:hover:not(:disabled){background:#fdecea}
+
+/* Settings boxes (customer master, scan-station access) and the cost dialog: label above field, an even grid, calm spacing. */
+.settings-box{margin:18px 0;padding:16px 18px;border:1px solid var(--line,#d5dbe5);border-radius:10px;background:var(--panel,#fff)}
+.settings-box>h3{margin:0 0 6px}
+.settings-box>p{margin:0 0 12px;color:#5b6573;font-size:13px;max-width:72ch}
+.lc-form,.tool-content .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px 16px;align-items:end;margin:0 0 14px}
+.lc-form label,.tool-content label{display:flex;flex-direction:column;gap:4px;margin:0;font-size:13px;font-weight:600;color:#5b6573}
+.lc-form input,.lc-form select,.tool-content input,.tool-content select{width:100%;margin:0}
+.lc-form button{justify-self:start}
+.settings-list{margin:8px 0 0}
+.settings-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:9px 0;border-top:1px solid var(--line,#e5e9ef);margin:0}
+.settings-row>span:first-child{flex:1 1 280px;min-width:0;overflow-wrap:anywhere}
+.settings-status{margin:8px 0 0;min-height:1.2em;color:#5b6573}
+.settings-inline{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:0 0 14px}
+.settings-inline input{flex:1 1 260px;max-width:420px}
+.tool-content>p{margin:0 0 14px;color:#5b6573;max-width:72ch}
+.tool-content .form-grid{padding:0}
+.tool-content .estimate-form>label{max-width:520px;margin-bottom:14px}
+.tool-content fieldset{border:1px solid var(--line,#d5dbe5);border-radius:8px;margin:12px 0;padding:10px 14px}
+.tool-content fieldset legend{padding:0 6px;font-weight:600}
+.tool-content h3{margin:20px 0 6px}
+.tool-content .estimates section{padding:10px 0;border-top:1px solid var(--line,#e5e9ef)}
+.tool-content .estimates h4{margin:0 0 2px}
+.tool-content form>button{margin-top:4px}
