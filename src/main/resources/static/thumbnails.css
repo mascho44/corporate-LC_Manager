@@ -6,3 +6,7 @@
 .inbox-item.has-thumb>.inbox-item-head>div{min-width:0;flex:1}
 .thumb-large-dialog{max-width:min(92vw,900px)}
 .thumb-large-dialog img{display:block;max-width:100%;max-height:80vh;margin:8px auto}
+.avis-facts{display:grid;grid-template-columns:max-content 1fr;gap:4px 16px;margin:8px 0}
+.avis-facts dt{color:#5b6573}.avis-facts dd{margin:0;font-weight:600}
+.avis-docs{margin:4px 0 8px 18px}
+.avis-error{color:#a11d1d;font-weight:600}

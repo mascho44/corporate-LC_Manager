@@ -1,4 +1,5 @@
 package de.ostms.lc.document.api;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import de.ostms.lc.audit.service.AuditService;
 import de.ostms.lc.document.domain.DocumentInboxItem;
@@ -174,6 +175,20 @@ public class DocumentInboxController {
         audit.record(authentication,"LC_CREATED","LETTER_OF_CREDIT",lcId,"Neue Akte aus Posteingang · "+request.reference());
         audit.record(authentication,"DOCUMENT_INBOX_ATTACHED","LETTER_OF_CREDIT",lcId,result.attachment().document().originalFilename()+" · Posteingang "+id+" · Dokument "+result.attachment().document().id());
         return result;
+    }
+
+    @Autowired private de.ostms.lc.document.service.InboxAvisService avis;
+
+    @GetMapping("/{id}/avis-preview")
+    public de.ostms.lc.document.service.InboxAvisService.Preview avisPreview(@PathVariable UUID id){ return avis.preview(id); }
+
+    @PostMapping("/{id}/avis-case")
+    public de.ostms.lc.document.service.InboxAvisService.Created avisCase(@PathVariable UUID id,Authentication authentication){
+        if(authentication.getAuthorities().stream().noneMatch(a->a.getAuthority().equals("PERM_LC_EDIT")))throw new org.springframework.security.access.AccessDeniedException("Keine Berechtigung zur Aktenanlage.");
+        var created=avis.create(id);
+        audit.record(authentication,"LC_CREATED","LETTER_OF_CREDIT",created.lcId(),"Neue Akte aus Avis · "+created.reference());
+        audit.record(authentication,"DOCUMENT_INBOX_ATTACHED","LETTER_OF_CREDIT",created.lcId(),"Avis aus Posteingang "+id);
+        return created;
     }
 
     @GetMapping("/{id}/advising-preview")
