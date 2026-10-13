@@ -98,7 +98,7 @@
    g.summary.textContent = `${g.name}: ${visible} Angaben zur Prüfung fehlen${openCount !== visible ? ` (${openCount} offen)` : ''}`;
   });
 
-  const apply = () => {
+  let apply = () => {
    rows.forEach(r => { if (!matches(r, filters)) r.row.classList.add('hidden'); });
    updateGroups();
    const visible = rows.filter(r => !r.row.classList.contains('hidden')).length;
@@ -133,9 +133,9 @@
    const expanded = row.classList.toggle('expanded'); row.setAttribute('aria-expanded', String(expanded));
   });
 
-  bulk.onclick = async () => {
-   const targets = bulkTargets(rows, filters).filter(r => !r.row.classList.contains('hidden'));
-   if (targets.length < 2 || typeof activeLc === 'undefined' || !activeLc) return;
+  /** Confirms the given open warnings with one shared reason; every finding is logged on its own. */
+  const confirmTargets = async (targets, button) => {
+   if (targets.length < 1 || typeof activeLc === 'undefined' || !activeLc) return;
    const kinds = [...new Set(targets.map(t => t.kind))].join(', ');
    const comment = prompt(`Pflichtbegründung für ${targets.length} Hinweise (${kinds}). Sie gilt für alle und wird je Befund protokolliert:`);
    if (comment === null) return;
@@ -143,15 +143,36 @@
    if (comment.length > 1000) { alert('Die Begründung darf maximal 1000 Zeichen enthalten.'); return; }
    if (typeof confirmAction === 'function' && !await confirmAction(`${targets.length} Hinweise (${kinds}) als erfüllt bestätigen? Abweichungen sind nicht betroffen.`)) return;
    const lcId = activeLc.id; let done = 0, failed = 0;
-   bulk.disabled = true;
+   button.disabled = true;
    for (const t of targets) {
     try { await json(`/api/lcs/${lcId}/document-checks/decisions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ findingCode: t.code, documentName: t.document, decision: 'ACCEPTED', comment: comment.trim(), reviewFingerprint: t.fingerprint }) }); done++; }
     catch (error) { failed++; }
    }
-   bulk.disabled = false;
+   button.disabled = false;
    if (failed) alert(`${done} bestätigt, ${failed} konnten nicht gespeichert werden (z. B. geändert seit dem Laden). Bitte Prüfung neu laden.`);
    if (typeof activeLc !== 'undefined' && activeLc?.id === lcId) await (typeof refreshReviewInline === 'function' ? refreshReviewInline : showKeepingView)(lcId);
   };
+  bulk.onclick = () => confirmTargets(bulkTargets(rows, filters).filter(r => !r.row.classList.contains('hidden')), bulk);
+
+  // Pick single open warnings with a checkbox and confirm just those.
+  if (typeof can === 'function' && can('DOCUMENT_REVIEW')) {
+   const pickable = rows.filter(r => r.severity === 'WARNING' && !r.decided);
+   pickable.forEach(r => {
+    const box = node('input', undefined, 'finding-pick'); box.type = 'checkbox'; box.setAttribute('aria-label', 'Befund zur Sammelbestätigung auswählen');
+    r.row.prepend(box); r.pick = box;
+   });
+   if (pickable.length >= 2) {
+    const selectAll = node('button', 'Alle sichtbaren Hinweise auswählen'); selectAll.type = 'button'; selectAll.className = 'secondary';
+    const confirmPicked = node('button', ''); confirmPicked.type = 'button'; confirmPicked.hidden = true;
+    const picked = () => pickable.filter(r => r.pick.checked && !r.row.classList.contains('hidden'));
+    const update = () => { const n = picked().length; confirmPicked.hidden = n === 0; confirmPicked.textContent = `${n} ausgewählte Hinweise als erfüllt bestätigen`; };
+    list.addEventListener('change', event => { if (event.target.matches?.('.finding-pick')) update(); });
+    selectAll.onclick = () => { const visible = pickable.filter(r => !r.row.classList.contains('hidden')); const all = visible.every(r => r.pick.checked); visible.forEach(r => { r.pick.checked = !all; }); update(); };
+    confirmPicked.onclick = () => confirmTargets(picked(), confirmPicked);
+    tools.append(selectAll, confirmPicked);
+    const baseApply = apply; apply = () => { baseApply(); update(); };
+   }
+  }
   live = { bar, list, filters, rows, groups };
   if (pendingState) {
    const st = pendingState; pendingState = null;
