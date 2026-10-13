@@ -18,3 +18,9 @@ test('unclear or missing data asks for a manual choice; an assigned customer can
  assert.match(done, /Kunde: <b>Andere AG<\/b> \(manuell gewählt\)/); assert.match(done, /option value="c2" selected/); assert.match(done, /Zuordnung entfernen/);
  assert.match(api.blockHtml({ fields: {}, candidates: [], clear: false, assigned: null }, []), /noch kein Kunde angelegt/);
 });
+test('the letter facts of a bank form are listed, an unverified IBAN is marked as such', () => {
+ const html = api.blockHtml({ fields: { lcReference: 'LCB1', yourReference: 'BW1', applicant: 'EXAMPLE VISION LTD', documentValue: 'EUR 60.229,56', ibanCandidate: 'DE893704004405320130' }, candidates: [], clear: false, assigned: null }, customers);
+ assert.match(html, /<dt>Akkreditivnummer<\/dt><dd>LCB1<\/dd>/); assert.match(html, /<dt>Dokumentengegenwert<\/dt><dd>EUR 60\.229,56<\/dd>/);
+ assert.match(html, /<dt>Auftraggeber \(Akkreditiv\)<\/dt><dd>EXAMPLE VISION LTD<\/dd>/); assert.match(html, /IBAN \(nicht prüfbar/);
+ assert.doesNotMatch(html, /<dt>Kunde<\/dt>/);
+});

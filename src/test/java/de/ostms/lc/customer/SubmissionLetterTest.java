@@ -62,4 +62,55 @@ class SubmissionLetterTest {
   var a = customer("A", null, null, "DE89370400440532013000"); var b = customer("B", null, null, "DE89 3704 0044 0532 0130 00");
   assertThat(CustomerMatcher.suggest(new SubmissionLetterReader.Fields(null, null, null, "DE89370400440532013000", null), List.of(a, b)).clear()).isFalse();
  }
+
+ /** Layout of a bank's submission form: no customer name or number; the credit account (IBAN) identifies the customer, "Auftraggeber" is the applicant of the credit. */
+ static final String BANK_FORM = """
+   Dokumenteneinreichung
+
+   Akkreditivnummer            LCB0319990000001
+   Ihre Referenz               BW000AE0000001
+   Akkreditiv über             EUR 100.000,00 +05%/-05%
+   Eröffnende Bank             EXAMPLE BANK OF TRADE CO. LTD.
+   Auftraggeber                EXAMPLE VISION LTD
+
+   Sehr geehrte Damen und Herren,
+   anbei erhalten Sie folgende Dokumente zur Ausnutzung des oben genannten Akkreditivs.
+   Dokumentengegenwert / Währung:   EuR 60.229,56
+   Dokument            Original   Kopien
+   Handelsrechnung        1          1
+   Konnossement          3/3         3
+   [X] Die geforderten Kopien für die Auslandsbank sind beigefügt.
+   [X] Es handelt sich um eine Teillieferung.
+   Wir bitten um Gutschrift des Dokumentengegenwertes zu Gunsten:
+   [X] EUR-Konto Nummer: DE89 3704 0044 0532 0130 00
+   [ ] FW-Konto Nummer:
+   Mit freundlichen Grüßen
+   """;
+
+ @Test void bankFormIdentifiesTheCustomerByTheCreditAccountAndDoesNotMistakeTheApplicantForTheCustomer() {
+  var f = SubmissionLetterReader.read(BANK_FORM);
+  assertThat(f.customerName()).isNull();
+  assertThat(f.iban()).isEqualTo("DE89370400440532013000");
+  assertThat(f.lcReference()).isEqualTo("LCB0319990000001");
+  assertThat(f.yourReference()).isEqualTo("BW000AE0000001");
+  assertThat(f.issuingBank()).isEqualTo("EXAMPLE BANK OF TRADE CO. LTD.");
+  assertThat(f.applicant()).isEqualTo("EXAMPLE VISION LTD");
+  assertThat(f.documentValue()).isEqualTo("EUR 60.229,56");
+  assertThat(SubmissionLetterReader.looksLikeSubmission("scan.pdf", BANK_FORM)).isTrue();
+  var customer = customer("Beispiel Export GmbH", "4711", null, "DE89 3704 0044 0532 0130 00");
+  var result = CustomerMatcher.suggest(f, List.of(customer));
+  assertThat(result.clear()).isTrue();
+  assertThat(result.best().reason()).isEqualTo("IBAN");
+ }
+
+ @Test void anIbanReadWithHandwritingErrorsIsShownButNeverUsedForMatching() {
+  var f = SubmissionLetterReader.read(BANK_FORM.replace("0532 0130 00", "0532 0130 01"));
+  assertThat(f.iban()).isNull();
+  assertThat(f.ibanCandidate()).isEqualTo("DE89370400440532013001");
+  assertThat(CustomerMatcher.suggest(f, List.of(customer("Beispiel Export GmbH", null, null, "DE89370400440532013000"))).candidates()).isEmpty();
+ }
+
+ @Test void creditAccountLabelsWithCurrencyPrefixAreAccountNumbers() {
+  assertThat(SubmissionLetterReader.read("EUR-Konto Nummer: 0012 3456 78\nFW-Konto Nummer:").accountNumber()).isEqualTo("0012345678");
+ }
 }
