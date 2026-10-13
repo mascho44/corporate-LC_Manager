@@ -23,15 +23,15 @@
    `<br><input type="text" data-plan-note maxlength="500" placeholder="Notiz" value="${esc(item.note || '')}" aria-label="Notiz zum Dokument">`;
  }
  function itemRow(item, editable) {
-  return `<tr class="plan-row plan-row-${item.risk.toLowerCase()}"><td>${badge(item.risk)}</td><td><b>${esc(item.documentName || 'Nicht erkannt')}</b><br><small>${esc(item.requirement)}</small></td>` +
-   `<td>${statusCell(item, editable)}</td><td>${item.dueDate ? date(item.dueDate) + '<br><small>' + when(item.daysLeft) + '</small>' : '–'}</td><td><small>${esc(item.hint)}</small></td></tr>`;
+  return `<tr class="plan-row plan-row-${item.risk.toLowerCase()}"><td>${badge(item.risk)}</td><td><b>${esc(item.documentName || 'Nicht erkannt')}</b><br><small>${esc(item.requirement)}</small>${item.hint ? `<br><small class="plan-hint">${esc(item.hint)}</small>` : ''}</td>` +
+   `<td>${statusCell(item, editable)}</td><td>${item.dueDate ? date(item.dueDate) + '<br><small>' + when(item.daysLeft) + '</small>' : '–'}</td></tr>`;
  }
  function planHtml(plan, options = {}) {
   if (!plan || !plan.items) return '';
   const done = plan.items.length - plan.open;
   const counts = `<p class="plan-counts"><span class="plan-light plan-done">✓ ${done} vorhanden</span> <span class="plan-light plan-ok">● ${plan.open - plan.overdue - plan.critical} offen</span>` +
    `${plan.critical ? ` <span class="plan-light plan-critical">! ${plan.critical} kritisch</span>` : ''}${plan.overdue ? ` <span class="plan-light plan-overdue">! ${plan.overdue} überfällig</span>` : ''}</p>`;
-  const table = plan.items.length ? `<div class="plan-scroll"><table class="plan-table"><thead><tr><th>Ampel</th><th>Dokument</th><th>Stand</th><th>Zieltermin</th><th>Hinweis</th></tr></thead><tbody>${plan.items.map(item => itemRow(item, options.canEdit)).join('')}</tbody></table></div>`
+  const table = plan.items.length ? `<div class="plan-scroll"><table class="plan-table"><thead><tr><th>Ampel</th><th>Dokument</th><th>Stand</th><th>Zieltermin</th></tr></thead><tbody>${plan.items.map(item => itemRow(item, options.canEdit)).join('')}</tbody></table></div>`
    : '<p>Keine Dokumentenanforderungen erkannt.</p>';
   return `<section class="procurement-plan"><div class="plan-head"><h3>Beschaffungsplan</h3><span>${options.canSettings ? '<button type="button" class="secondary" data-plan-lead-times>Vorlaufzeiten</button> ' : ''}${badge(plan.shipmentRisk)}</span></div><p>${esc(headline(plan))}</p>${counts}${table}` +
    `<p class="plan-note"><small>Zieltermine zählen die eingestellten Vorlaufzeiten in Arbeitstagen rückwärts vom spätesten Versand (ohne Feiertage). Das Ziel dient der rechtzeitigen Beschaffung und ersetzt keine Prüfung durch die Bank.</small></p></section>`;

@@ -348,4 +348,16 @@ class DocumentCheckServiceTest {
         when(signatures.evidence(any())).thenReturn(new de.ostms.lc.document.service.SignatureEvidenceService.Evidence(true,List.of(new de.ostms.lc.document.service.SignatureDetector.PageResult(1,List.of(),0,List.of()))));
         assertThat(service.check(id).results()).extracting("code").contains("SIGNATURE_REQUIREMENT_REVIEW").doesNotContain("SIGNATURE_REQUIREMENT_EVIDENCED");
     }
+
+    @Test void pluralFormsOfTransportAndCertificateClausesAreRecognised(){
+        var service=new DocumentCheckService(mock(LetterOfCreditRepository.class),mock(LcDocumentRepository.class),mock(DocumentCheckDecisionRepository.class));
+        UUID lc=UUID.randomUUID();
+        assertThat(service.expectedType(lc,"FULL SET OF CLEAN ON BOARD BILLS OF LADING MADE OUT TO ORDER")).contains(DocumentType.BILL_OF_LADING);
+        assertThat(service.expectedType(lc,"Full set of clean on board bill of lading")).contains(DocumentType.BILL_OF_LADING);
+        assertThat(service.expectedType(lc,"2 certificates of origin issued by the chamber of commerce")).contains(DocumentType.CERTIFICATE_OF_ORIGIN);
+        assertThat(service.expectedType(lc,"Certificate of origin")).contains(DocumentType.CERTIFICATE_OF_ORIGIN);
+        assertThat(service.expectedType(lc,"certificates of analysis for each lot")).contains(DocumentType.QUALITY_CERTIFICATE);
+        assertThat(service.expectedType(lc,"certificates of inspection")).contains(DocumentType.INSPECTION_CERTIFICATE);
+        assertThat(service.expectedType(lc,"A statement on the weather")).isEmpty();
+    }
 }

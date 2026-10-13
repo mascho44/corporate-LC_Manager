@@ -48,6 +48,13 @@
   };
  }
 
+ /** The long finding list is folded away until asked for; the filter bar is built a moment after the card, so this runs on every change too. */
+ function foldFindings() {
+  if (!document.querySelector('#detail .submission-check')) return;
+  document.querySelectorAll('#detail .finding-keyboard-help,#detail .finding-tools,#detail .finding-filters,#detail .review-filter-bar,#detail .check-list')
+   .forEach(node => node.classList.toggle('submission-folded', !showAll));
+ }
+
  /** Ready-to-submit card above the review for corporate-only tenants on exporter files; the long finding list is folded away until asked for. */
  async function submissionCard() {
   const summary = document.querySelector('#detail .review-summary');
@@ -58,8 +65,7 @@
   document.querySelectorAll('#detail .submission-check').forEach(node => node.remove());
   const card = document.createElement('section'); card.className = 'submission-check'; card.innerHTML = checkHtml(submissionCheck(review), showAll);
   summary.before(card);
-  const apply = () => document.querySelectorAll('#detail .finding-keyboard-help,#detail .finding-tools,#detail .finding-filters,#detail .review-filter-bar,#detail .check-list')
-   .forEach(node => node.classList.toggle('submission-folded', !showAll));
+  const apply = () => foldFindings();
   card.querySelector('[data-submission-all]').onclick = event => { showAll = !showAll; event.currentTarget.textContent = showAll ? 'Befundliste ausblenden' : `Alle Befunde anzeigen (${review.results.length})`; event.currentTarget.setAttribute('aria-pressed', String(showAll)); apply(); };
   apply();
  }
@@ -74,6 +80,7 @@
  const run = () => {
   scheduled = false;
   hideBankTools();
+  foldFindings();
   const block = document.querySelector('#detail .review-summary');
   if (block && block !== lastBlock) { lastBlock = block; submissionCard().catch(() => { }); }
   else if (!block) lastBlock = null;

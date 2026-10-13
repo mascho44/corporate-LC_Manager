@@ -258,14 +258,14 @@ public class DocumentCheckService {
 
     private Optional<DocumentType> classify(String requirement) {
         String text = requirement.toLowerCase(Locale.ROOT);
-        if (text.contains("inspection certificate") || text.contains("certificate of inspection") || text.contains("inspection report")) return Optional.of(DocumentType.INSPECTION_CERTIFICATE);
-        if (text.contains("certificate of analysis") || text.contains("analysis certificate") || text.contains("quality certificate") || text.contains("test certificate")) return Optional.of(DocumentType.QUALITY_CERTIFICATE);
+        if (text.contains("inspection certificate") || text.matches("(?s).*\\bcertificates? of inspection\\b.*") || text.contains("inspection report")) return Optional.of(DocumentType.INSPECTION_CERTIFICATE);
+        if (text.matches("(?s).*\\bcertificates? of analysis\\b.*") || text.contains("analysis certificate") || text.contains("quality certificate") || text.contains("test certificate")) return Optional.of(DocumentType.QUALITY_CERTIFICATE);
         if (text.contains("courier receipt") || text.contains("dhl receipt") || text.contains("fedex receipt") || text.contains("courier service receipt")) return Optional.of(DocumentType.COURIER_RECEIPT);
         if (text.contains("packing") || text.contains("weight list")) return Optional.of(DocumentType.PACKING_LIST);
-        if (text.contains("bill of lading") || text.matches(".*\\bb/?l\\b.*")) return Optional.of(DocumentType.BILL_OF_LADING);
+        if (text.matches("(?s).*\\bbills? of lading\\b.*") || text.matches(".*\\bb/?l\\b.*")) return Optional.of(DocumentType.BILL_OF_LADING);
         if (text.contains("air waybill") || text.contains("airway bill") || text.matches(".*\\bawb\\b.*")) return Optional.of(DocumentType.AIR_WAYBILL);
         if (text.contains("road consignment") || text.matches(".*\\bcmr\\b.*") || text.contains("truck consignment")) return Optional.of(DocumentType.ROAD_CONSIGNMENT_NOTE);
-        if (text.contains("certificate of origin") || text.contains("origin certificate")) return Optional.of(DocumentType.CERTIFICATE_OF_ORIGIN);
+        if (text.matches("(?s).*\\bcertificates? of origin\\b.*") || text.contains("origin certificate")) return Optional.of(DocumentType.CERTIFICATE_OF_ORIGIN);
         if (text.contains("insurance")) return Optional.of(DocumentType.INSURANCE_CERTIFICATE);
         if (text.contains("bill of exchange") || text.matches(".*\\bdraft(?:s)?\\b.*") || text.contains("wechsel")) return Optional.of(DocumentType.BILL_OF_EXCHANGE);
         if (text.contains("beneficiary certificate") || text.contains("beneficiary's certificate") || text.contains("beneficiaries certificate")) return Optional.of(DocumentType.BENEFICIARY_CERTIFICATE);
