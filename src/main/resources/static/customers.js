@@ -64,23 +64,23 @@
 
  /* ---- customer master in the tenant settings ---- */
  async function buildMaster(host) {
-  const box = document.createElement('section'); box.className = 'scan-profile'; box.id = 'customerMasterBox';
-  const message = document.createElement('p'); message.setAttribute('role', 'status');
-  const list = document.createElement('div');
-  const form = document.createElement('form'); form.className = 'form-grid';
+  const box = document.createElement('section'); box.className = 'settings-box'; box.id = 'customerMasterBox';
+  const message = document.createElement('p'); message.className = 'settings-status'; message.setAttribute('role', 'status');
+  const list = document.createElement('div'); list.className = 'settings-list';
+  const form = document.createElement('form'); form.className = 'lc-form';
   const field = (name, text, max) => { const l = document.createElement('label'); l.textContent = text + ' '; const i = document.createElement('input'); i.name = name; i.maxLength = max; l.append(i); return l; };
   form.append(field('name', 'Name', 255), field('customerNumber', 'Kundennummer', 60), field('accountNumber', 'Kontonummer', 60), field('iban', 'IBAN', 42), field('bic', 'BIC', 11));
   const save = document.createElement('button'); save.type = 'submit'; save.textContent = 'Kunde speichern'; form.append(save);
   const heading = document.createElement('h3'); heading.textContent = 'Kundenstamm';
   const intro = document.createElement('p'); intro.textContent = 'Kunden mit Kunden-, Konto- und IBAN-Angaben. Sie dienen dazu, Einreichungsschreiben im Posteingang einem Kunden zuzuordnen. Weitere Quellen (z. B. aus einem Kernsystem) können später angebunden werden.';
-  box.append(heading, intro, form, list, message); host.append(box);
+  box.append(heading, intro, form, message, list); host.append(box);
   let editing = null;
   const render = customers => {
    list.replaceChildren();
    if (!customers.length) { const p = document.createElement('p'); p.textContent = 'Noch kein Kunde angelegt.'; list.append(p); }
    customers.forEach(c => {
-    const row = document.createElement('p'); row.className = 'customer-row';
-    row.textContent = [c.name, c.customerNumber && 'Kd-Nr. ' + c.customerNumber, c.accountNumber && 'Konto ' + c.accountNumber, c.iban].filter(Boolean).join(' · ') + ' ';
+    const row = document.createElement('div'); row.className = 'settings-row';
+    const text = document.createElement('span'); text.textContent = [c.name, c.customerNumber && 'Kd-Nr. ' + c.customerNumber, c.accountNumber && 'Konto ' + c.accountNumber, c.iban].filter(Boolean).join(' · '); row.append(text);
     const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'secondary'; edit.textContent = 'Bearbeiten';
     edit.onclick = () => { editing = c.id; ['name', 'customerNumber', 'accountNumber', 'iban', 'bic'].forEach(k => { form.elements[k].value = c[k] || ''; }); save.textContent = 'Änderung speichern'; form.elements.name.focus(); };
     const del = document.createElement('button'); del.type = 'button'; del.className = 'danger'; del.textContent = 'Löschen';
@@ -88,7 +88,7 @@
      if (typeof confirmAction === 'function' && !await confirmAction(`Kunde „${c.name}" löschen? Zuordnungen im Posteingang werden entfernt.`)) return;
      try { await json('/api/customers/' + encodeURIComponent(c.id), { method: 'DELETE' }); message.textContent = 'Kunde gelöscht.'; render(await json('/api/customers')); } catch (error) { message.textContent = error.message; }
     };
-    row.append(edit, ' ', del); list.append(row);
+    row.append(edit, del); list.append(row);
    });
   };
   form.onsubmit = async event => {

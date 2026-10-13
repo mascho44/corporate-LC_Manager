@@ -33,7 +33,9 @@
     || row.querySelector('[data-document-edit]')?.dataset.documentEdit;
    if (!id || !isPdf(name)) return;
    row.classList.add('has-thumb');
-   row.querySelector('.file-icon')?.after(thumb(documentThumbUrl(id), documentLargeUrl(id), name));
+   // Inside the icon cell: the row is a grid with fixed columns, an extra child would push the text into the wrong column.
+   const cell = row.querySelector('.file-icon') || row;
+   cell.append(thumb(documentThumbUrl(id), documentLargeUrl(id), name));
   });
   document.querySelectorAll('.inbox-item:not([data-thumb])').forEach(article => {
    article.dataset.thumb = '1';

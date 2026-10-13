@@ -1,7 +1,7 @@
 .doc-thumb{flex:none;width:56px;height:76px;padding:0;border:1px solid var(--line,#d5dbe5);border-radius:6px;background:#fff;overflow:hidden;cursor:zoom-in;box-shadow:0 1px 2px #14213d1a}
 .doc-thumb img{display:block;width:100%;height:100%;object-fit:cover;object-position:top}
-.document-row.has-thumb{align-items:center}
-.document-row.has-thumb>.file-icon{margin-right:6px}
+.document-row .file-icon .doc-thumb{display:block;margin-top:6px}
+.document-row.has-thumb .file-icon{width:auto;min-width:42px;height:auto;padding:5px;display:flex;flex-direction:column;align-items:center;gap:4px}
 .inbox-item.has-thumb>.inbox-item-head{display:flex;gap:12px;align-items:flex-start}
 .inbox-item.has-thumb>.inbox-item-head>div{min-width:0;flex:1}
 .thumb-large-dialog{max-width:min(92vw,900px)}
