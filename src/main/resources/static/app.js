@@ -547,7 +547,7 @@ let dossierStale=false;
 async function refreshReviewInline(lcId){
     const buttons=document.querySelector('[data-precheck-open]')?.closest('p'),list=document.querySelector('.check-list');
     if(!buttons||!list||activeLc?.id!==lcId)return showKeepingView(lcId);
-    const y=window.scrollY;
+    const y=window.scrollY,anchor=findingScrollAnchor(list);
     globalThis.LcFindingsOverview?.restoreOnNext?.(globalThis.LcFindingsOverview?.captureState?.());
     const [review,documents]=await Promise.all([json(`/api/lcs/${lcId}/document-checks`),json(`/api/lcs/${lcId}/documents`).catch(()=>[])]);
     if(activeLc?.id!==lcId||!buttons.isConnected||!list.isConnected)return;
@@ -557,7 +557,27 @@ async function refreshReviewInline(lcId){
     list.remove();
     buttons.after(template.content);
     dossierStale=true;
-    window.scrollTo({top:y,behavior:'instant'});
+    // The filter bar is rebuilt shortly after (findings-overview), which changes heights: restore against the anchor several times.
+    const restore=()=>restoreFindingScroll(anchor,y);
+    restore();[120,300].forEach(delay=>setTimeout(restore,delay));
+}
+const findingRowKey=row=>{const d=row.querySelector('[data-check-code]'),e=row.querySelector('[data-finding-evidence]');return (d?.dataset.checkCode||e?.dataset.findingEvidence||'')+'|'+(d?.dataset.checkDocument??e?.dataset.findingDocument??'');};
+/** The first finding row at the top of the viewport (with the rows after it as fallback, in case it is decided and drops out of the list). */
+function findingScrollAnchor(list){
+    const rows=[...list.querySelectorAll('[data-finding-severity]')].filter(row=>row.offsetParent!==null);
+    const index=rows.findIndex(row=>row.getBoundingClientRect().bottom>0);
+    if(index<0)return null;
+    return {top:rows[index].getBoundingClientRect().top,keys:rows.slice(index,index+12).map(findingRowKey)};
+}
+function restoreFindingScroll(anchor,fallbackY){
+    if(anchor){
+        const rows=[...document.querySelectorAll('.check-list [data-finding-severity]')].filter(row=>row.offsetParent!==null);
+        for(const key of anchor.keys){
+            const row=rows.find(candidate=>findingRowKey(candidate)===key);
+            if(row){window.scrollTo({top:window.scrollY+row.getBoundingClientRect().top-anchor.top,behavior:'instant'});return;}
+        }
+    }
+    window.scrollTo({top:fallbackY,behavior:'instant'});
 }
 document.addEventListener('click',event=>{const nav=event.target.closest('.dossier-nav button');if(!nav||!dossierStale||nav.dataset.section==='checks')return;setTimeout(()=>{if(dossierStale&&activeLc){dossierStale=false;showKeepingView(activeLc.id);}},0);});
 // show() is wrapped many times and each wrapper reads the same LC endpoints again (the rule check alone up to five times).
