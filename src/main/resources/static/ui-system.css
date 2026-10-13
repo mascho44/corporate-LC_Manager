@@ -98,3 +98,16 @@ html body .dossier-nav>button:not(.active):hover,html body .dossier-nav>button.a
 button,input,textarea,select{font-family:inherit}
 .app-nav,.app-nav button{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
 .app-nav button{font-size:14px;font-weight:600;letter-spacing:.005em}
+
+/* Tabs of a file wrap instead of hiding the last one behind a scroll bar. */
+html body .dossier-nav{flex-wrap:wrap;overflow-x:visible}
+/* New-task form: the generic ".panel input" width (330 px) pushed the fields over each other. */
+.task-form{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.task-form input:first-child{grid-column:1/-1}
+html body .task-form>*{min-width:0;width:100%;box-sizing:border-box}
+.task-form button{white-space:nowrap}
+
+/* The generic ".panel input" width (330 px) also hit check boxes (a 330 px "box" floating above the file name) and overran narrow containers. */
+html body input[type=checkbox],html body input[type=radio]{width:16px;height:16px;min-width:0;padding:0;margin:0}
+html body .panel input:not([type=checkbox]):not([type=radio]),html body .panel select,html body .panel textarea{max-width:100%}
+.form-grid>button,.auto-rule>button{justify-self:start;align-self:end;white-space:nowrap}
