@@ -97,7 +97,7 @@ public class ProcurementDigestService {
             if (user.getEmail() != null && !user.getEmail().isBlank()) emails.put(user.getUsername().toLowerCase(Locale.ROOT), user.getEmail().strip());
         Map<String, List<Entry>> perRecipient = new TreeMap<>();
         for (LetterOfCredit lc : lettersOfCredit.findAll()) {
-            if (lc.getStatus() == LetterOfCreditStatus.CLOSED || lc.getStatus() == LetterOfCreditStatus.EXPIRED) continue;
+            if (lc.getStatus() == LetterOfCreditStatus.CLOSED || lc.getStatus() == LetterOfCreditStatus.EXPIRED || !lc.isExporterSide()) continue;
             var plan = plans.forLc(lc.getId(), today);
             List<Line> lines = plan.items().stream().filter(i -> worthMentioning(i.risk()))
                     .sorted(Comparator.comparing(ProcurementPlanService.Item::dueDate, Comparator.nullsLast(Comparator.naturalOrder())))

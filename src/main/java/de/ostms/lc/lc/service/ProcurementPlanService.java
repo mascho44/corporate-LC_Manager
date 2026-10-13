@@ -73,6 +73,11 @@ public class ProcurementPlanService {
     }
     public void resetLeadTime(DocumentType type) { leadTimes.byType(type).ifPresent(leadTimes::delete); }
 
+    public void setPartyRole(UUID lcId, String role) {
+        LetterOfCredit lc = lettersOfCredit.findById(lcId).orElseThrow(() -> new NoSuchElementException("Akkreditiv nicht gefunden."));
+        lc.setPartyRole(role); lettersOfCredit.save(lc);
+    }
+
     public void setStatus(UUID lcId, String requirement, ProcurementItemStatus.Status status, String note, String user) {
         LetterOfCredit lc = lettersOfCredit.findById(lcId).orElseThrow(() -> new NoSuchElementException("Akkreditiv nicht gefunden."));
         if (!lc.getRequiredDocuments().contains(requirement)) throw new IllegalArgumentException("Diese Dokumentenanforderung gehört nicht zur LC.");
@@ -90,6 +95,7 @@ public class ProcurementPlanService {
         List<Summary> out = new ArrayList<>();
         for (LetterOfCredit lc : lettersOfCredit.findAll()) {
             if (lc.getStatus() == de.ostms.lc.lc.domain.LetterOfCreditStatus.CLOSED || lc.getStatus() == de.ostms.lc.lc.domain.LetterOfCreditStatus.EXPIRED) continue;
+            if (!lc.isExporterSide()) continue;
             if (lc.getRequiredDocuments().isEmpty() && lc.getLatestShipmentDate() == null) continue;
             Plan plan = forLc(lc.getId(), today);
             Item next = plan.items().stream().filter(i -> i.risk() != Risk.DONE && i.dueDate() != null).min(Comparator.comparing(Item::dueDate)).orElse(null);

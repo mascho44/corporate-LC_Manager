@@ -55,7 +55,7 @@ public class ProcurementReminderService {
         Set<String> wanted = new HashSet<>();
         int created = 0;
         for (LetterOfCredit lc : lettersOfCredit.findAll()) {
-            if (lc.getStatus() == LetterOfCreditStatus.CLOSED || lc.getStatus() == LetterOfCreditStatus.EXPIRED) continue;
+            if (lc.getStatus() == LetterOfCreditStatus.CLOSED || lc.getStatus() == LetterOfCreditStatus.EXPIRED || !lc.isExporterSide()) continue;
             for (var item : plans.forLc(lc.getId(), today).items()) {
                 if (item.risk() == ProcurementPlanService.Risk.DONE || item.dueDate() == null || item.dueDate().isAfter(horizon)) continue;
                 String key = keyOf(lc.getId(), item.requirement(), item.dueDate());
