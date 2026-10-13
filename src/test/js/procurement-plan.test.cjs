@@ -17,3 +17,9 @@ test('headline explains the shipment deadline and handles a missing date', () =>
  assert.match(api.headline({ latestShipment: null }), /nicht berechnet/);
  assert.match(api.headline({ ...plan, shipmentRisk: 'DONE' }), /Transportdokument liegt vor/);
 });
+test('list chip shows shipment light, days and what is missing', () => {
+ const html = api.chipHtml({ shipmentRisk: 'CRITICAL', daysToShipment: 2, open: 3, nextDocument: 'Certificate of Origin', nextDue: '2026-11-11' });
+ assert.match(html, /Kritisch/); assert.match(html, /Versand in 2 Tagen/); assert.match(html, /3 Dokumente fehlen/); assert.match(html, /Certificate of Origin bis 11\.11\.2026/);
+ assert.match(api.chipHtml({ shipmentRisk: 'DONE', daysToShipment: -3, open: 0 }), /versandt · komplett/);
+ assert.equal(api.chipHtml(null), '');
+});

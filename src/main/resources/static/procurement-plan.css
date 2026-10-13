@@ -15,3 +15,5 @@
 .plan-table th{font-size:12px;text-transform:uppercase;letter-spacing:.03em;color:#5b6573}
 .plan-row-done td{opacity:.75}
 .plan-note{margin:8px 0 0;color:#5b6573}
+.plan-chip{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:4px}
+.plan-chip small{color:#5b6573}
