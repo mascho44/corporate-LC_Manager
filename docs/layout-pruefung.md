@@ -12,6 +12,7 @@ Ziel: Fehler wie verrutschte Spalten, überlappende Knöpfe, abgeschnittener Tex
 | `overlap` | zwei Bedienelemente liegen übereinander |
 | `cutOff` | ein Bedienelement ragt aus einem beschneidenden Elternelement heraus |
 | `clippedText` | Text wird ohne Auslassungspunkte abgeschnitten |
+| `rowMisaligned` | Felder nebeneinander, die nicht auf gleicher Höhe beginnen (z. B. hebt ein Hinweistext unter einem Feld das Nachbarfeld an) |
 | `controlSize` | Knopf/Feld außerhalb 28–44 px Höhe (Standard aus `ui-system.css`: 36 px, klein 30 px) |
 
 Einsatz: Skript in die Browser-Konsole kopieren und `lcLayoutCheck()` aufrufen, oder mit Playwright per `page.evaluate(src)` einspielen. Getestet an Testseiten: das frühere Raster der Dokumentzeile (Vorschau als zusätzliches Rasterelement) wird als `overlap` gemeldet, die korrigierte Fassung ist ohne Befund.

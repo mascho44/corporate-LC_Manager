@@ -1,6 +1,6 @@
 /* Layout rules for a rendered page. Paste into the browser console, run through a browser tool, or inject with Playwright: `await page.evaluate(src)`
    then `window.lcLayoutCheck()`. Returns a list of findings; an empty list means none of these rules was violated.
-   Rules: pageOverflow, covered (a control that another element lies over), overlap (two controls on top of each other), cutOff (a control reaching
+   Rules: rowMisaligned (fields of one row not level), pageOverflow, covered (a control that another element lies over), overlap (two controls on top of each other), cutOff (a control reaching
    outside a clipping parent), clippedText (text cut off without an ellipsis), controlSize (outside the 28–56 px range (36/30 px standard, 44 px header, up to two text lines) of ui-system.css). */
 (() => {
  const CONTROLS = 'button,a[href],input:not([type=hidden]),select,textarea,summary,[role=button]';
@@ -45,6 +45,15 @@
    if (a.contains(b) || b.contains(a) || floating(a) !== floating(b)) continue;
    const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect(), shared = intersection(ra, rb);
    if (shared > 0 && shared / Math.min(area(ra), area(rb)) > 0.2) add('overlap', a, `überlappt ${label(b)}`);
+  }
+  // Fields side by side that look like one row but do not start level (typically a hint line under one of them lifts its neighbour).
+  const fields = controls.filter(el => /^(INPUT|SELECT)$/.test(el.tagName) && !/^(checkbox|radio|range|file)$/.test(el.type));
+  for (let i = 0; i < fields.length; i++) for (let j = i + 1; j < fields.length; j++) {
+   const a = fields[i], b = fields[j], ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+   const apart = ra.right <= rb.left + 1 || rb.right <= ra.left + 1;
+   const shared = Math.min(ra.bottom, rb.bottom) - Math.max(ra.top, rb.top);
+   const differ = Math.abs(ra.top - rb.top);
+   if (apart && Math.abs(ra.height - rb.height) <= 4 && shared > 0.3 * Math.min(ra.height, rb.height) && differ > 3 && differ <= 30 && a.closest('form,dialog,section') === b.closest('form,dialog,section')) add('rowMisaligned', a, `${Math.round(differ)} px höher/tiefer als ${label(b)}`);
   }
   root.querySelectorAll('h1,h2,h3,h4,b,strong,small,label,p,span,td,th,li,legend,dt,dd').forEach(el => {
    if (!visible(el) || el.children.length || !el.textContent.trim() || el.getBoundingClientRect().width <= 2) return;
