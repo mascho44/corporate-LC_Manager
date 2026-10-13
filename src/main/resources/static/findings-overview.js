@@ -150,7 +150,7 @@
    }
    bulk.disabled = false;
    if (failed) alert(`${done} bestätigt, ${failed} konnten nicht gespeichert werden (z. B. geändert seit dem Laden). Bitte Prüfung neu laden.`);
-   if (typeof activeLc !== 'undefined' && activeLc?.id === lcId) await showKeepingView(lcId);
+   if (typeof activeLc !== 'undefined' && activeLc?.id === lcId) await (typeof refreshReviewInline === 'function' ? refreshReviewInline : showKeepingView)(lcId);
   };
   live = { bar, list, filters, rows, groups };
   if (pendingState) {
