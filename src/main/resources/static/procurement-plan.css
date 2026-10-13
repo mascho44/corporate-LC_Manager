@@ -19,3 +19,5 @@
 .plan-chip small{color:#5b6573}
 .plan-table select,.plan-table input[type=text],.plan-table input[type=number]{max-width:200px}
 .plan-head>span{display:flex;align-items:center;gap:8px}
+.packing-import-options{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;margin:10px 0}
+.packing-import-warnings{color:#9a3a00}
