@@ -27,7 +27,8 @@ public class DocumentController {
         LcDocument document=service.one(id);
         if(!"application/pdf".equals(document.getContentType()))throw new IllegalArgumentException("Seitenvorschau benötigt eine PDF.");
         byte[] content=document.getContent();int pages=pagePreview.pageCount(content);
-        return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).cacheControl(CacheControl.noStore())
+        boolean thumb="thumb".equals(size);
+        return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).cacheControl(thumb?CacheControl.maxAge(java.time.Duration.ofHours(12)).cachePrivate():CacheControl.noStore())
                 .header("X-Page-Count",Integer.toString(pages)).header("X-Content-Type-Options","nosniff")
                 .body(pagePreview.render(content,page,!"thumb".equals(size)));
     }
