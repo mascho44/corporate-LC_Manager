@@ -33,7 +33,17 @@
   if (!Object.values(f).some(Boolean)) return [];
   return rows.filter(r => r.severity === 'WARNING' && !r.decided && matches(r, f));
  }
- globalThis.LcFindingsOverview = { summarize, summarizeBy, bulkTargets, kindOf, ruleLabel, matches };
+ /** View state (filters, search, open groups, expanded rows) survives a reload of the dossier: captured before, applied to the next filter bar. */
+ let live = null, pendingState = null;
+ const rowKey = r => r.code + '|' + r.document;
+ function captureState() {
+  if (!live || !document.contains(live.bar)) return null;
+  const { bar, list, filters, rows, groups } = live;
+  return { ...filters, filter: bar.querySelector('[data-review-filter]')?.value || '', search: bar.querySelector('[data-review-search]')?.value || '',
+   compact: list.classList.contains('findings-compact'), groups: groups.filter(g => g.details.open).map(g => g.name),
+   expanded: rows.filter(r => r.row.classList.contains('expanded')).map(rowKey) };
+ }
+ globalThis.LcFindingsOverview = { summarize, summarizeBy, bulkTargets, kindOf, ruleLabel, matches, captureState, restoreOnNext: state => { pendingState = state; } };
  if (typeof document === 'undefined' || !document.body) return;
 
  const node = (tag, text, css) => { const n = document.createElement(tag); if (text !== undefined) n.textContent = text; if (css) n.className = css; return n; };
@@ -140,8 +150,19 @@
    }
    bulk.disabled = false;
    if (failed) alert(`${done} bestätigt, ${failed} konnten nicht gespeichert werden (z. B. geändert seit dem Laden). Bitte Prüfung neu laden.`);
-   if (typeof activeLc !== 'undefined' && activeLc?.id === lcId) { await show(lcId); if (typeof activateDossierSection === 'function') activateDossierSection('checks'); }
+   if (typeof activeLc !== 'undefined' && activeLc?.id === lcId) await showKeepingView(lcId);
   };
+  live = { bar, list, filters, rows, groups };
+  if (pendingState) {
+   const st = pendingState; pendingState = null;
+   ['kind', 'document', 'code'].forEach(d => { filters[d] = st[d] && summarizeBy(rows, d).some(e => e.key === st[d]) ? st[d] : ''; });
+   if (st.compact === false && list.classList.contains('findings-compact')) compact.onclick();
+   groups.forEach(g => { if ((st.groups || []).includes(g.name)) g.details.open = true; });
+   rows.forEach(r => { if ((st.expanded || []).includes(rowKey(r))) { r.row.classList.add('expanded'); r.row.setAttribute('aria-expanded', 'true'); } });
+   const f = bar.querySelector('[data-review-filter]'), q = bar.querySelector('[data-review-search]');
+   if (f && st.filter) f.value = st.filter; if (q && st.search) q.value = st.search;
+   f?.dispatchEvent(new Event('change', { bubbles: true }));
+  }
   apply();
  }
 
