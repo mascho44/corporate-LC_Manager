@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * Bearer tokens of scan stations. A valid token is accepted for exactly one request: POST /api/inbox (document upload); it carries only the
+ * Bearer tokens of scan stations. A valid token is accepted only for document delivery: POST /api/inbox and POST /api/capture/upload; it carries only the
  * upload authority and the tenant of the token. Anywhere else, and with an invalid token, the request is refused. No session is created.
  */
 public class CaptureTokenFilter extends OncePerRequestFilter {
@@ -34,7 +34,7 @@ public class CaptureTokenFilter extends OncePerRequestFilter {
   String secret=bearer(request);
   if(secret==null){chain.doFilter(request,response);return;}
   String path=request.getRequestURI().substring(request.getContextPath().length());
-  if(!"POST".equals(request.getMethod())||!path.equals("/api/inbox")){refuse(request,response,403,"Dieser Zugang darf nur Dokumente in den Posteingang laden.","Erfassungszugang außerhalb des Posteingangs");return;}
+  if(!"POST".equals(request.getMethod())||!(path.equals("/api/inbox")||path.equals("/api/capture/upload"))){refuse(request,response,403,"Dieser Zugang darf nur Dokumente in den Posteingang laden.","Erfassungszugang außerhalb des Posteingangs");return;}
   var service=tokens.get();
   var identity=service==null?null:service.authenticate(secret).orElse(null);
   if(identity==null){refuse(request,response,401,"Der Erfassungszugang ist ungültig oder widerrufen.","Erfassungszugang ungültig oder widerrufen");return;}

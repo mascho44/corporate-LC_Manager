@@ -22,3 +22,5 @@
 .customer-facts{display:grid;grid-template-columns:max-content 1fr;gap:2px 14px;margin:6px 0}
 .customer-facts dt{color:#5b6573}.customer-facts dd{margin:0;font-weight:600}
 .customer-assigned{color:#14602b}.customer-missing{color:#9a3a00}.customer-error{color:#a11d1d}
+.capture-info{display:flex;flex-direction:column;gap:2px;margin-top:2px}
+.capture-warning{color:#9a3a00;font-weight:600}

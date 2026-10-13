@@ -4,7 +4,7 @@ Eine Scan-Station (z. B. in der Poststelle) liefert Dokumente über einen **Erfa
 
 * **Anlegen:** Mandanteneinstellungen → *Erfassungszugänge* (Recht „Einstellungen verwalten"). Der Zugang bekommt einen Namen (z. B. „Poststelle Scanner 2"); das
   Geheimnis (`lcc_…`) wird **einmal** angezeigt. Gespeichert wird nur sein SHA-256-Hash. Höchstens 20 aktive Zugänge je Mandant, Widerruf jederzeit.
-* **Was er darf:** ausschließlich `POST /api/inbox` (Datei-Upload in den Posteingang des eigenen Mandanten). Jeder andere Pfad antwortet 403. Der Zugang
+* **Was er darf:** ausschließlich die Dokumentenlieferung: `POST /api/capture/upload` (empfohlen, mit Metadaten) und `POST /api/inbox` (Datei-Upload in den Posteingang des eigenen Mandanten). Jeder andere Pfad antwortet 403. Der Zugang
   hat kein Recht außer „Dokumente hochladen", benötigt keinen CSRF-Token und erzeugt keine Sitzung. Er funktioniert nur, solange der Mandant aktiv ist.
 * **Aufruf:**
   ```
@@ -12,4 +12,17 @@ Eine Scan-Station (z. B. in der Poststelle) liefert Dokumente über einen **Erfa
   ```
   Die Antwort (`202`) enthält die Posteingangs-Einträge; der Eingang erscheint im Posteingang als „capture:<Name>".
 * **Protokoll:** Anlegen und Widerruf stehen im Audit-Protokoll; der Upload wie jeder Posteingang. Abgelehnte Aufrufe erscheinen im Protokoll abgelehnter Anfragen.
-* **Noch offen:** Metadaten je Upload (Stapel, Scanner, Seitenzahl), Erkennung doppelter Uploads, Eingangsweg im Posteingang anzeigen.
+## Lieferung mit Metadaten: `POST /api/capture/upload`
+Multipart-Felder: `file` (eine Datei je Aufruf; keine ZIP-Archive), optional `batchId` (Stapel), `scanner` (Gerät), `pages` (gemeldete Seitenzahl), `scannedAt` (ISO-8601, z. B. `2026-10-13T08:15:00+02:00`), `sha256` (Prüfwert der Datei).
+```
+curl -X POST https://<server>/api/capture/upload -H "Authorization: Bearer lcc_…" \
+  -F "file=@scan.pdf" -F "batchId=17" -F "scanner=Scanner 2" -F "pages=4" -F "sha256=$(shasum -a 256 scan.pdf | cut -d' ' -f1)"
+```
+Die Antwort (`202`) ist eine Quittung je Datei: `status` `CREATED` oder `DUPLICATE`, `inboxItemId`, `sha256`, gemeldete und erkannte Seiten, `pageCountMatches`, `note`.
+* **Doppelte Lieferung:** Dieselbe Datei (gleicher SHA-256) wird nicht ein zweites Mal angelegt; die Quittung nennt den früheren Eintrag. Ein Scanner darf also gefahrlos wiederholen.
+* **Prüfwert:** Stimmt `sha256` nicht mit der Datei überein, wird die Lieferung abgelehnt (Übertragungsfehler).
+* **Seitenzahl:** Weicht `pages` von der erkannten Seitenzahl der PDF ab, steht das in der Quittung und als Warnung am Dokument im Posteingang („Gemeldet 4, erkannt 3 – bitte den Stapel prüfen").
+* **Anzeige:** Im Posteingang steht am Dokument eine Zeile „Eingang: Poststelle Scanner 2 · Gerät … · Stapel … · … Seiten gemeldet · gescannt …".
+
+## Noch offen
+Die Kundenzuordnung steuert noch nicht die Auswahl der LC-Akte; Benachrichtigung, wenn lange nichts von einem Zugang kommt.
