@@ -10,7 +10,7 @@ test('review submission sends the displayed finding fingerprint',async()=>{
   const end=source.indexOf('function downloadCheckReport()',start);
   let submitted;let refreshed=false;
   const context=vm.createContext({activeLc:{id:'lc-test'},prompt:()=> 'Original geprüft',alert:assert.fail,
-    json:async(url,request)=>{submitted=JSON.parse(request.body);},showKeepingView:async()=>{refreshed=true;},activateDossierSection:()=>{}});
+    json:async(url,request)=>{submitted=JSON.parse(request.body);},refreshReviewInline:async()=>{refreshed=true;},activateDossierSection:()=>{}});
   vm.runInContext(source.slice(start,end),context);
   await context.decideCheck('INVOICE_AMOUNT_EXCEEDED','invoice.pdf','ACCEPTED','a'.repeat(64));
   assert.equal(submitted.reviewFingerprint,'a'.repeat(64));

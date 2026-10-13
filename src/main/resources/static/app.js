@@ -532,6 +532,7 @@ const fileSize=n=>n<1024?`${n} B`:n<1048576?`${(n/1024).toFixed(1)} KB`:`${(n/10
 // Reload the open dossier after an action without losing the place: same tab, same scroll position, same filters.
 let keepingView=false;
 async function showKeepingView(lcId){
+    dossierStale=false;
     const section=document.querySelector('.dossier-section.active')?.dataset.section,y=window.scrollY;
     globalThis.LcFindingsOverview?.restoreOnNext?.(globalThis.LcFindingsOverview?.captureState?.());
     keepingView=true;
@@ -540,6 +541,25 @@ async function showKeepingView(lcId){
     window.scrollTo({top:y,behavior:'instant'});
     setTimeout(()=>window.scrollTo({top:y,behavior:'instant'}),120);
 }
+// After a finding decision only the review block is replaced in place (no rebuild of the dossier, no jump). The other tabs
+// (overview, completeness) are refreshed when the user switches to them.
+let dossierStale=false;
+async function refreshReviewInline(lcId){
+    const buttons=document.querySelector('[data-precheck-open]')?.closest('p'),list=document.querySelector('.check-list');
+    if(!buttons||!list||activeLc?.id!==lcId)return showKeepingView(lcId);
+    const y=window.scrollY;
+    globalThis.LcFindingsOverview?.restoreOnNext?.(globalThis.LcFindingsOverview?.captureState?.());
+    const [review,documents]=await Promise.all([json(`/api/lcs/${lcId}/document-checks`),json(`/api/lcs/${lcId}/documents`).catch(()=>[])]);
+    if(activeLc?.id!==lcId||!buttons.isConnected||!list.isConnected)return;
+    const html=renderReview(review,documents),cut=html.indexOf('</p>')+4,template=document.createElement('template');
+    template.innerHTML=html.slice(cut);
+    while(buttons.nextSibling&&buttons.nextSibling!==list)buttons.nextSibling.remove();
+    list.remove();
+    buttons.after(template.content);
+    dossierStale=true;
+    window.scrollTo({top:y,behavior:'instant'});
+}
+document.addEventListener('click',event=>{const nav=event.target.closest('.dossier-nav button');if(!nav||!dossierStale||nav.dataset.section==='checks')return;setTimeout(()=>{if(dossierStale&&activeLc){dossierStale=false;showKeepingView(activeLc.id);}},0);});
 // show() is wrapped many times and each wrapper reads the same LC endpoints again (the rule check alone up to five times).
 // For a few seconds after show() starts, repeated reads of the same LC URL share one request; any write clears the memo.
 const showMemo=new Map();let showMemoUntil=0;
@@ -750,7 +770,7 @@ async function decideCheck(findingCode,documentName,decision,reviewFingerprint){
     if(comment.length>1000){alert('Die Begründung darf maximal 1000 Zeichen enthalten.');return;}
     try{
         await json(`/api/lcs/${lcId}/document-checks/decisions`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({findingCode,documentName,decision,comment:comment.trim(),reviewFingerprint})});
-        if(activeLc?.id===lcId)await showKeepingView(lcId);
+        if(activeLc?.id===lcId)await refreshReviewInline(lcId);
     }catch(error){alert('Entscheidung konnte nicht gespeichert werden: '+error.message);}
 }
 function downloadCheckReport(){location.href=`/api/lcs/${activeLc.id}/document-checks/report`}
