@@ -63,7 +63,7 @@ public class DocumentInboxController {
     public ResponseEntity<byte[]> pagePreview(@PathVariable UUID id,@PathVariable int page,@RequestParam(defaultValue="false") boolean enlarged)throws Exception{
         var item=service.openItem(id);
         if(!"application/pdf".equals(item.getContentType()))throw new IllegalArgumentException("Nur PDF-Seiten können angezeigt werden.");
-        return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).cacheControl(CacheControl.noStore())
+        return ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).cacheControl(enlarged?CacheControl.noStore():CacheControl.maxAge(java.time.Duration.ofHours(1)).cachePrivate())
             .header("X-Content-Type-Options","nosniff").body(pagePreview.render(item.getContent(),page,enlarged));
     }
     private final de.ostms.lc.training.service.AdvisingTrainingService advisingTraining;
