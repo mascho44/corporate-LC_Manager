@@ -40,6 +40,10 @@ public class LetterOfCredit {
  @Column(nullable=false) private String reference;
  private String applicant; private String beneficiary; private String issuingBank; private String advisingBank;
  @Column(precision=19,scale=2) private BigDecimal amount; private String currency; private LocalDate issueDate; private LocalDate expiryDate; private String expiryPlace; private LocalDate latestShipmentDate; private String assignedTo; private LocalDate followUpDate;
+ @Column(name="party_role",nullable=false,length=12) private String partyRole="BENEFICIARY";
+ public String getPartyRole(){return partyRole;}
+ public void setPartyRole(String role){if(!"BENEFICIARY".equals(role)&&!"APPLICANT".equals(role))throw new IllegalArgumentException("Unbekannte Rolle.");partyRole=role;}
+ @com.fasterxml.jackson.annotation.JsonIgnore public boolean isExporterSide(){return "BENEFICIARY".equals(partyRole);}
  @Enumerated(EnumType.STRING) private LetterOfCreditStatus status=LetterOfCreditStatus.RECEIVED;
  @Column(name="waiting_since") private LocalDate waitingSince;
  /** A received document ends the wait for the customer: the LC moves on to examination. */

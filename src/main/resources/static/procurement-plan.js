@@ -50,6 +50,7 @@
  async function renderPlan(id) {
   const overview = document.querySelector('#detail .dossier-section[data-section="overview"]');
   if (!overview) return;
+  if (typeof activeLc !== 'undefined' && activeLc?.partyRole === 'APPLICANT') { overview.querySelector('.procurement-plan')?.remove(); return; }
   const plan = await json(`/api/lcs/${encodeURIComponent(id)}/procurement-plan`).catch(() => null);
   if (typeof activeLc === 'undefined' || activeLc?.id !== id) return;
   overview.querySelector('.procurement-plan')?.remove();
