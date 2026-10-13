@@ -27,7 +27,15 @@
   return `<section class="procurement-plan"><div class="plan-head"><h3>Beschaffungsplan</h3>${badge(plan.shipmentRisk)}</div><p>${esc(headline(plan))}</p>${counts}${table}` +
    `<p class="plan-note"><small>Zieltermine sind Richtwerte in Arbeitstagen vor dem spätesten Versand (ohne Feiertage). Das Ziel dient der rechtzeitigen Beschaffung und ersetzt keine Prüfung durch die Bank.</small></p></section>`;
  }
- globalThis.LcProcurementPlan = { planHtml, headline };
+ /** Compact form for the LC list: shipment light, days to shipment and what is still missing. */
+ function chipHtml(summary) {
+  if (!summary) return '';
+  const left = summary.daysToShipment == null ? 'kein Versandtermin' : summary.shipmentRisk === 'DONE' ? 'versandt' : `Versand ${when(summary.daysToShipment)}`;
+  const missing = summary.open ? `${summary.open} Dokument${summary.open === 1 ? '' : 'e'} fehlen` : 'komplett';
+  const next = summary.nextDocument && summary.nextDue && summary.open ? ` · als Nächstes ${esc(summary.nextDocument)} bis ${date(summary.nextDue)}` : '';
+  return `<span class="plan-chip">${badge(summary.shipmentRisk)} <small>${left} · ${missing}${next}</small></span>`;
+ }
+ globalThis.LcProcurementPlan = { planHtml, headline, chipHtml };
  if (typeof document === 'undefined' || !document.body || typeof show !== 'function') return;
  const base = show;
  show = async function (id) {
@@ -43,4 +51,23 @@
    if (html) overview.insertAdjacentHTML('afterbegin', html);
   } catch (ignored) { }
  };
+
+ // LC list: one request for all running LCs after each render of the list.
+ if (typeof render === 'function') {
+  const renderBase = render;
+  let loading = false;
+  render = function () {
+   renderBase();
+   if (!globalThis.LcWorkspaceModules?.corporate || loading) return;
+   loading = true;
+   json('/api/procurement-overview').then(list => {
+    const byId = new Map((list || []).map(item => [item.lcId, item]));
+    document.querySelectorAll('#list .dossier-row').forEach(row => {
+     row.querySelector('.plan-chip')?.remove();
+     const html = chipHtml(byId.get(row.dataset.id));
+     if (html) row.querySelector('div')?.insertAdjacentHTML('beforeend', html);
+    });
+   }).catch(() => { }).finally(() => { loading = false; });
+  };
+ }
 })();

@@ -21,6 +21,9 @@ public class ProcurementPlanService {
     public record Item(String requirement, DocumentType documentType, String documentName, boolean present, LocalDate dueDate, int leadWorkingDays, Integer daysLeft, Risk risk, String hint) {}
     public record Plan(LocalDate latestShipment, LocalDate expiry, Integer daysToShipment, Risk shipmentRisk, long open, long overdue, long critical, List<Item> items) {}
 
+    /** Short form for lists: the shipment light plus how many documents are missing and which one is due next. */
+    public record Summary(UUID lcId, Risk shipmentRisk, Integer daysToShipment, long open, long overdue, long critical, String nextDocument, LocalDate nextDue) {}
+
     static final int CRITICAL_DAYS = 3, SOON_DAYS = 10;
     private static final Map<DocumentType, Integer> LEAD = Map.ofEntries(
             Map.entry(DocumentType.COMMERCIAL_INVOICE, 2), Map.entry(DocumentType.PACKING_LIST, 3), Map.entry(DocumentType.WEIGHT_LIST, 3),
@@ -37,6 +40,22 @@ public class ProcurementPlanService {
     }
 
     public Plan forLc(UUID lcId) { return forLc(lcId, LocalDate.now()); }
+
+    /** One summary per running LC that has a shipment date or requirements (at most 300, soonest shipment first). */
+    public List<Summary> summaries() {
+        LocalDate today = LocalDate.now();
+        List<Summary> out = new ArrayList<>();
+        for (LetterOfCredit lc : lettersOfCredit.findAll()) {
+            if (lc.getStatus() == de.ostms.lc.lc.domain.LetterOfCreditStatus.CLOSED || lc.getStatus() == de.ostms.lc.lc.domain.LetterOfCreditStatus.EXPIRED) continue;
+            if (lc.getRequiredDocuments().isEmpty() && lc.getLatestShipmentDate() == null) continue;
+            Plan plan = forLc(lc.getId(), today);
+            Item next = plan.items().stream().filter(i -> i.risk() != Risk.DONE && i.dueDate() != null).min(Comparator.comparing(Item::dueDate)).orElse(null);
+            out.add(new Summary(lc.getId(), plan.shipmentRisk(), plan.daysToShipment(), plan.open(), plan.overdue(), plan.critical(), next == null ? null : next.documentName(), next == null ? null : next.dueDate()));
+            if (out.size() >= 300) break;
+        }
+        out.sort(Comparator.comparing(Summary::daysToShipment, Comparator.nullsLast(Comparator.naturalOrder())));
+        return out;
+    }
 
     Plan forLc(UUID lcId, LocalDate today) {
         LetterOfCredit lc = lettersOfCredit.findById(lcId).orElseThrow(() -> new NoSuchElementException("Akkreditiv nicht gefunden."));

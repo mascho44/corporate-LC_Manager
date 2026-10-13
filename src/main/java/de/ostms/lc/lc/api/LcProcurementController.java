@@ -10,6 +10,9 @@ public class LcProcurementController {
     private final ProcurementPlanService plans;
     public LcProcurementController(ProcurementPlanService plans) { this.plans = plans; }
 
+    @GetMapping("/api/procurement-overview")
+    public java.util.List<ProcurementPlanService.Summary> overview() { return plans.summaries(); }
+
     @GetMapping("/api/lcs/{id}/procurement-plan")
     public ProcurementPlanService.Plan plan(@PathVariable UUID id) { return plans.forLc(id); }
 }
