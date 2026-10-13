@@ -5,7 +5,8 @@
  const documentLargeUrl = id => `/api/documents/${encodeURIComponent(id)}/pages/1/preview`;
  const inboxThumbUrl = id => `/api/inbox/${encodeURIComponent(id)}/pages/1/preview?enlarged=false`;
  const inboxLargeUrl = id => `/api/inbox/${encodeURIComponent(id)}/pages/1/preview?enlarged=true`;
- globalThis.LcThumbnails = { isPdf, documentThumbUrl, documentLargeUrl, inboxThumbUrl, inboxLargeUrl };
+ const templateOutlineUrl = id => `/api/document-templates/${encodeURIComponent(id)}/outline`;
+ globalThis.LcThumbnails = { isPdf, documentThumbUrl, documentLargeUrl, inboxThumbUrl, inboxLargeUrl, templateOutlineUrl };
  if (typeof document === 'undefined' || !document.body) return;
 
  function enlarge(url, title) {
@@ -42,7 +43,24 @@
    article.querySelector('.inbox-item-head')?.prepend(thumb(inboxThumbUrl(id), inboxLargeUrl(id), name));
   });
  }
+ /** Word templates cannot be rendered on the server; the list shows a small sheet with the first text lines of the template instead. */
+ function templateSheet(title, lines) {
+  const sheet = document.createElement('div'); sheet.className = 'tpl-thumb'; sheet.setAttribute('role', 'img'); sheet.setAttribute('aria-label', 'Textvorschau der Vorlage ' + title);
+  sheet.title = lines.length ? lines.join('\n') : 'Kein Text erkannt';
+  lines.slice(0, 7).forEach((line, index) => { const p = document.createElement('p'); p.textContent = line; if (index === 0) p.className = 'tpl-thumb-title'; sheet.append(p); });
+  if (!lines.length) { const p = document.createElement('p'); p.textContent = 'Kein Text erkannt'; sheet.append(p); }
+  return sheet;
+ }
+ function enhanceTemplates() {
+  document.querySelectorAll('.template-row:not([data-thumb])').forEach(row => {
+   row.dataset.thumb = '1';
+   const id = row.querySelector('[data-template-delete]')?.dataset.templateDelete; if (!id) return;
+   const title = row.querySelector('b')?.textContent || 'Vorlage';
+   json(templateOutlineUrl(id)).then(lines => { if (row.isConnected) { row.classList.add('has-thumb'); row.prepend(templateSheet(title, lines || [])); } }).catch(() => { });
+  });
+ }
  let scheduled = false;
- new MutationObserver(() => { if (!scheduled) { scheduled = true; setTimeout(() => { scheduled = false; enhance(); }, 50); } }).observe(document.body, { childList: true, subtree: true });
+ new MutationObserver(() => { if (!scheduled) { scheduled = true; setTimeout(() => { scheduled = false; enhance(); enhanceTemplates(); }, 50); } }).observe(document.body, { childList: true, subtree: true });
  enhance();
+ enhanceTemplates();
 })();

@@ -9,4 +9,5 @@ test('thumbnails only for PDFs, with the cached small and the large first page',
  assert.equal(api.documentLargeUrl('x'), '/api/documents/x/pages/1/preview');
  assert.equal(api.inboxThumbUrl('i'), '/api/inbox/i/pages/1/preview?enlarged=false');
  assert.equal(api.inboxLargeUrl('i'), '/api/inbox/i/pages/1/preview?enlarged=true');
+ assert.equal(api.templateOutlineUrl('t 1'), '/api/document-templates/t%201/outline');
 });
