@@ -20,6 +20,8 @@ public class CredentialSessionFilter extends OncePerRequestFilter {
     public CredentialSessionFilter(AppUserRepository users,de.ostms.lc.tenant.service.TenantMembershipService memberships){this.users=users;this.memberships=memberships;}
     @Override protected void doFilterInternal(HttpServletRequest request,HttpServletResponse response,FilterChain chain)throws ServletException,IOException {
         var auth=SecurityContextHolder.getContext().getAuthentication();
+        // A scan-station token was already checked (and the tenant opened) by CaptureTokenFilter; there is no session to validate.
+        if(auth!=null&&auth.getName()!=null&&auth.getName().startsWith("capture:")&&request.getHeader("Authorization")!=null){chain.doFilter(request,response);return;}
         var session=request.getSession(false);
         if(auth!=null&&auth.isAuthenticated()&&!(auth instanceof AnonymousAuthenticationToken)){
             Object stamp=session==null?null:session.getAttribute(STAMP);

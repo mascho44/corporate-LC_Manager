@@ -3,7 +3,7 @@ import de.ostms.lc.user.service.AppUserDetailsService; import jakarta.servlet.ht
 @Configuration public class SecurityConfig {
  @Bean PasswordEncoder passwordEncoder(){return new BCryptPasswordEncoder();}
  @Bean AuthenticationManager authenticationManager(AuthenticationConfiguration c)throws Exception{return c.getAuthenticationManager();}
- @Bean SecurityFilterChain security(HttpSecurity http,org.springframework.beans.factory.ObjectProvider<AccessDenialLog> denialLogs,AppUserDetailsService users,de.ostms.lc.user.repository.AppUserRepository accounts,de.ostms.lc.tenant.service.TenantMembershipService memberships)throws Exception{return http.userDetailsService(users)
+ @Bean SecurityFilterChain security(HttpSecurity http,de.ostms.lc.capture.CaptureTokenService captureTokens,org.springframework.beans.factory.ObjectProvider<AccessDenialLog> denialLogs,AppUserDetailsService users,de.ostms.lc.user.repository.AppUserRepository accounts,de.ostms.lc.tenant.service.TenantMembershipService memberships)throws Exception{return http.userDetailsService(users)
   .authorizeHttpRequests(a->a
    .requestMatchers("/platform-login.html","/platform-login.js","/platform-login.css").permitAll()
    .requestMatchers("/invitation.html","/invitation.js","/api/auth/invitation/accept").permitAll()
@@ -70,6 +70,7 @@ import de.ostms.lc.user.service.AppUserDetailsService; import jakarta.servlet.ht
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/lcs/*/ai-hints").hasAuthority("PERM_DOCUMENT_UPLOAD")
    .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/ai/settings").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/lcs/*/procurement-status").hasAuthority("PERM_LC_EDIT")
+   .requestMatchers("/api/capture-tokens","/api/capture-tokens/**").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/procurement/lead-times/*").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers(org.springframework.http.HttpMethod.DELETE,"/api/procurement/lead-times/*").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers("/api/users/invitations","/api/users/invitations/**").hasAuthority("PERM_USER_MANAGE")
@@ -82,9 +83,10 @@ import de.ostms.lc.user.service.AppUserDetailsService; import jakarta.servlet.ht
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/charge-profiles").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/lcs/*/charges").hasAuthority("PERM_LC_EDIT")
    .anyRequest().authenticated())
-  .csrf(c->c.ignoringRequestMatchers("/api/auth/login","/api/auth/login/totp","/api/auth/password-reset/request","/api/auth/password-reset/complete","/api/auth/invitation/accept"))
+  .csrf(c->c.ignoringRequestMatchers(de.ostms.lc.capture.CaptureTokenFilter::isCaptureRequest).ignoringRequestMatchers("/api/auth/login","/api/auth/login/totp","/api/auth/password-reset/request","/api/auth/password-reset/complete","/api/auth/invitation/accept"))
   .addFilterAfter(new AccessDenialFilter(denialLogs.getIfAvailable(AccessDenialLog::new)),org.springframework.security.web.context.SecurityContextHolderFilter.class)
   .addFilterAfter(new CredentialSessionFilter(accounts,memberships),org.springframework.security.web.context.SecurityContextHolderFilter.class)
+  .addFilterBefore(new de.ostms.lc.capture.CaptureTokenFilter(captureTokens),CredentialSessionFilter.class)
   .exceptionHandling(e->e.defaultAuthenticationEntryPointFor(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),new AntPathRequestMatcher("/api/**")).defaultAuthenticationEntryPointFor(new org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint("/platform-login.html"),new org.springframework.security.web.util.matcher.OrRequestMatcher(new AntPathRequestMatcher("/platform"),new AntPathRequestMatcher("/platform.html"))))
   .formLogin(f->f.loginPage("/login.html").permitAll()).logout(l->l.disable())
   .headers(h->h.frameOptions(f->f.disable()).contentTypeOptions(c->{}).addHeaderWriter(new BrowserSecurityHeaders()))

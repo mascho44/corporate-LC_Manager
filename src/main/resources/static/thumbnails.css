@@ -15,3 +15,5 @@
 .tpl-thumb .tpl-thumb-title{font-weight:700;font-size:8px;color:#14213d}
 .template-row.has-thumb{display:flex;align-items:center;gap:14px}
 .template-row.has-thumb>div:not(.tpl-thumb){flex:1;min-width:0}
+.capture-secret{margin:8px 0;padding:10px 12px;border:1px solid #f2d98a;border-radius:8px;background:#fff9e6}
+.capture-token-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
