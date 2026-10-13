@@ -40,4 +40,23 @@ public class DocumentTemplateService {
     @Transactional public DocumentTemplate delete(UUID id){DocumentTemplate template=repository.findById(id).orElseThrow();repository.delete(template);return template;}
     @Transactional(readOnly=true) public DocumentTemplate one(UUID id){return repository.findById(id).orElseThrow();}
     private String company(String value){if(value==null||value.isBlank())return"*";String result=value.trim();if(result.length()>255)throw new IllegalArgumentException("Der Firmenname ist zu lang.");return result;}
+
+    /** The first readable lines of a Word template (paragraphs, then table cells), for a small text preview in the template list. */
+    @Transactional(readOnly=true) public List<String> outline(UUID id){
+        DocumentTemplate template=one(id);List<String> lines=new ArrayList<>();
+        try(XWPFDocument document=new XWPFDocument(new ByteArrayInputStream(template.getContent()))){
+            for(var paragraph:document.getParagraphs()){add(lines,paragraph.getText());if(lines.size()>=OUTLINE_LINES)return lines;}
+            for(var table:document.getTables())for(var row:table.getRows()){
+                StringBuilder cells=new StringBuilder();
+                for(var cell:row.getTableCells()){String text=cell.getText().strip();if(!text.isEmpty())cells.append(cells.isEmpty()?"":" | ").append(text);}
+                add(lines,cells.toString());if(lines.size()>=OUTLINE_LINES)return lines;
+            }
+        }catch(Exception exception){return List.of();}
+        return lines;
+    }
+    private static final int OUTLINE_LINES=10,OUTLINE_WIDTH=70;
+    private static void add(List<String> lines,String text){
+        String line=text==null?"":text.replaceAll("\\s+"," ").strip();
+        if(!line.isEmpty())lines.add(line.length()>OUTLINE_WIDTH?line.substring(0,OUTLINE_WIDTH-1)+"…":line);
+    }
 }
