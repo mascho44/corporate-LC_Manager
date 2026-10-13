@@ -69,3 +69,32 @@ html body #avatarMenu #avatarLogout:hover:not(:disabled){background:#fdecea}
 .tool-content .estimates section{padding:10px 0;border-top:1px solid var(--line,#e5e9ef)}
 .tool-content .estimates h4{margin:0 0 2px}
 .tool-content form>button{margin-top:4px}
+
+/* Found with scripts/layout-rules.js on a real installation (about 850 px of content width). */
+/* LC list: columns may shrink; on medium widths the second line carries deadline, document counts and amount, so nothing runs out of the panel. */
+.dossier-row{grid-template-columns:auto minmax(150px,1.5fr) minmax(0,1.2fr) minmax(0,1.2fr) minmax(0,.8fr) minmax(0,1.1fr) minmax(0,1fr) auto}
+.dossier-row>*{min-width:0;overflow-wrap:anywhere}
+.dossier-row .muted{display:block}
+@media(max-width:1320px) and (min-width:901px){
+ .dossier-row{grid-template-columns:auto minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr) auto;row-gap:8px}
+ .dossier-row>:nth-child(5){grid-column:2;grid-row:2}
+ .dossier-row>:nth-child(6){grid-column:3;grid-row:2}
+ .dossier-row>:nth-child(7){grid-column:4;grid-row:2;text-align:left}
+ .dossier-row>:nth-child(8){grid-column:5;grid-row:1/3;align-self:center}
+}
+/* Section heads with several buttons wrap instead of running out of the section; buttons keep one line. */
+.sectionhead{flex-wrap:wrap;gap:10px 12px;align-items:center;justify-content:flex-start}
+.sectionhead>div:first-child{flex:1 1 100%;min-width:0}
+.sectionhead button,#detail .header-actions button,#detail .header-actions a.button-link{white-space:nowrap}
+#detail .header-actions{flex-wrap:wrap;gap:8px}
+/* Tabs of a file: all alike (tabs added later had fallen back to the filled blue button). */
+html body .dossier-nav>button:not(.active){background:transparent;color:#475467;box-shadow:none}
+html body .dossier-nav>button:not(.active):hover,html body .dossier-nav>button.active{background:#e8eef9;color:#1849a9}
+/* Inbox: the selection label sits on its own line above the file name. */
+.inbox-selection{display:flex;align-items:center;gap:6px;margin:0 0 4px;font-weight:500;color:#5b6573}
+.inbox-selection input{margin:0}
+
+/* Type: form controls take the page font (browsers default them to Arial 13.3 px, which looked blurry next to Inter, especially light text in the menu). */
+button,input,textarea,select{font-family:inherit}
+.app-nav,.app-nav button{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
+.app-nav button{font-size:14px;font-weight:600;letter-spacing:.005em}
