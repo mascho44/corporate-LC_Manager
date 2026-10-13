@@ -19,8 +19,9 @@ import java.util.List;
  */
 public class CaptureTokenFilter extends OncePerRequestFilter {
  public static final String AUTHORITY="PERM_DOCUMENT_UPLOAD";
- private final CaptureTokenService tokens;
- public CaptureTokenFilter(CaptureTokenService tokens){this.tokens=tokens;}
+ private final java.util.function.Supplier<CaptureTokenService> tokens;
+ /** The service is looked up per request: slices of the application without it (and tests) simply refuse tokens. */
+ public CaptureTokenFilter(java.util.function.Supplier<CaptureTokenService> tokens){this.tokens=tokens;}
 
  static String bearer(HttpServletRequest request){
   String header=request.getHeader("Authorization");
@@ -34,7 +35,8 @@ public class CaptureTokenFilter extends OncePerRequestFilter {
   if(secret==null){chain.doFilter(request,response);return;}
   String path=request.getRequestURI().substring(request.getContextPath().length());
   if(!"POST".equals(request.getMethod())||!path.equals("/api/inbox")){refuse(request,response,403,"Dieser Zugang darf nur Dokumente in den Posteingang laden.","Erfassungszugang außerhalb des Posteingangs");return;}
-  var identity=tokens.authenticate(secret).orElse(null);
+  var service=tokens.get();
+  var identity=service==null?null:service.authenticate(secret).orElse(null);
   if(identity==null){refuse(request,response,401,"Der Erfassungszugang ist ungültig oder widerrufen.","Erfassungszugang ungültig oder widerrufen");return;}
   var authentication=new UsernamePasswordAuthenticationToken("capture:"+identity.name(),null,List.of(new SimpleGrantedAuthority(AUTHORITY)));
   var context=SecurityContextHolder.createEmptyContext();context.setAuthentication(authentication);SecurityContextHolder.setContext(context);
