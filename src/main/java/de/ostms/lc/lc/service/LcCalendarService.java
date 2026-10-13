@@ -18,12 +18,22 @@ public class LcCalendarService {
         this.lettersOfCredit = lettersOfCredit; this.tasks = tasks; this.deadlines = deadlines;
     }
 
+    private ProcurementPlanService procurement;
+    private de.ostms.lc.tenant.repository.TenantRepository tenants;
+    /** Optional: corporate tenants also see the target dates of missing documents. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    void setProcurement(ProcurementPlanService procurement, de.ostms.lc.tenant.repository.TenantRepository tenants) { this.procurement = procurement; this.tenants = tenants; }
+
     public record CalendarEvent(String uid, UUID lcId, String reference, String kind, String title, LocalDate date, String assignedTo, String description) {}
 
     /** All dated items (LC deadlines and open tasks) the user may see, in the order they were collected. */
     public List<CalendarEvent> events(String scope, String username) {
         List<CalendarEvent> out = new ArrayList<>();
+        boolean corporate = procurement != null && tenants != null && tenants.findById(de.ostms.lc.tenant.domain.TenantContext.currentId()).map(de.ostms.lc.tenant.domain.Tenant::isCorporateEnabled).orElse(false);
         lettersOfCredit.findAll().stream().filter(lc -> active(lc) && visible(scope, username, lc.getAssignedTo())).forEach(lc -> {
+            if (corporate) procurement.forLc(lc.getId()).items().stream().filter(i -> i.risk() != ProcurementPlanService.Risk.DONE && i.dueDate() != null)
+                    .forEach(i -> add(out, lc, "procurement", lc.getId()+"-procurement-"+java.util.UUID.nameUUIDFromBytes(i.requirement().getBytes(StandardCharsets.UTF_8)), i.dueDate(),
+                            "Beschaffung: "+i.documentName()+(i.documentType() != null && ProcurementPlanService.isTransport(i.documentType()) ? " (Versand)" : " bereitstellen"), party(lc)+" | "+i.hint()));
             add(out, lc, "expiry", lc.getId()+"-expiry", lc.getExpiryDate(), "Ablauf", party(lc));
             add(out, lc, "shipment", lc.getId()+"-shipment", lc.getLatestShipmentDate(), "spätester Versand", party(lc));
             add(out, lc, "follow-up", lc.getId()+"-follow-up", lc.getFollowUpDate(), "Wiedervorlage", party(lc));

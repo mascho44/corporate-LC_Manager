@@ -100,7 +100,7 @@ public class ProcurementPlanService {
         return out;
     }
 
-    Plan forLc(UUID lcId, LocalDate today) {
+    public Plan forLc(UUID lcId, LocalDate today) {
         LetterOfCredit lc = lettersOfCredit.findById(lcId).orElseThrow(() -> new NoSuchElementException("Akkreditiv nicht gefunden."));
         var uploaded = documents.findByLetterOfCreditIdOrderByUploadedAtDesc(lcId);
         Set<DocumentType> present = new HashSet<>();

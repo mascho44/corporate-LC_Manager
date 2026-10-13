@@ -1,6 +1,6 @@
 /* Deadline calendar: month grid of LC deadlines and open tasks. Click an entry to open the file. */
 (() => {
- const KINDS = { expiry: 'Ablauf', shipment: 'Versand', 'follow-up': 'Wiedervorlage', presentation: 'Vorlage', maturity: 'Fälligkeit', task: 'Aufgabe' };
+ const KINDS = { expiry: 'Ablauf', shipment: 'Versand', 'follow-up': 'Wiedervorlage', presentation: 'Vorlage', maturity: 'Fälligkeit', procurement: 'Beschaffung', task: 'Aufgabe' };
  const pad = n => String(n).padStart(2, '0');
  const iso = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;
 

@@ -99,9 +99,10 @@
  async function automationPanel(teams) {
   const rules = await json('/api/automation-rules').catch(() => []);
   if (!rules.length) return null;
-  const names = { EBICS_MESSAGE: 'Neue EBICS-Nachricht', INBOX_ITEM: 'Neues Dokument im Posteingang', DEADLINE: 'Frist oder Wiedervorlage steht an' };
+  const corporate = globalThis.LcWorkspaceModules?.corporate === true;
+  const names = { EBICS_MESSAGE: 'Neue EBICS-Nachricht', INBOX_ITEM: 'Neues Dokument im Posteingang', DEADLINE: 'Frist oder Wiedervorlage steht an', PROCUREMENT: 'Dokument für die Beschaffung wird knapp' };
   const box = node('div'); box.append(node('h3', 'Automatische Aufträge'), node('p', 'Aufträge entstehen automatisch für das gewählte Team und schließen sich, sobald die Nachricht bzw. das Dokument bearbeitet ist.'));
-  rules.forEach(rule => {
+  rules.filter(rule => rule.trigger !== 'PROCUREMENT' || corporate).forEach(rule => {
    const form = document.createElement('form'); form.className = 'form-grid auto-rule';
    const on = document.createElement('input'); on.type = 'checkbox'; on.checked = rule.enabled;
    const onLabel = node('label', ' ' + names[rule.trigger]); onLabel.prepend(on);
@@ -109,7 +110,7 @@
    const teamLabel = node('label', 'Team'); teamLabel.append(team);
    form.append(onLabel, teamLabel);
    let days = null;
-   if (rule.trigger === 'DEADLINE') { days = document.createElement('input'); days.type = 'number'; days.min = 0; days.max = 60; days.value = rule.leadDays; const l = node('label', 'Vorlauf (Tage)'); l.append(days); form.append(l); }
+   if (rule.trigger === 'DEADLINE' || rule.trigger === 'PROCUREMENT') { days = document.createElement('input'); days.type = 'number'; days.min = 0; days.max = 60; days.value = rule.leadDays; const l = node('label', 'Vorlauf (Tage)'); l.append(days); form.append(l); }
    const save = node('button', 'Speichern'); save.type = 'submit'; form.append(save);
    form.onsubmit = event => { event.preventDefault(); return act(() => json('/api/automation-rules', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ trigger: rule.trigger, enabled: on.checked, teamId: team.value || null, leadDays: days ? Number(days.value) : null }) }), 'Regel gespeichert.'); };
    box.append(form);

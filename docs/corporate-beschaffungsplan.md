@@ -29,7 +29,16 @@ dieses Typs hochgeladen wurde.
   dazu eine Notiz (`PUT /api/lcs/{id}/procurement-status`). Der Stand ändert die Ampel nicht, er zeigt nur, wer woran arbeitet. „Vorhanden" kommt weiter
   allein aus dem Upload. Auch das wird protokolliert.
 
+## Warnungen
+
+* **Kalender:** Für Corporate-Mandanten erscheinen die Zieltermine fehlender Dokumente im Fristenkalender und im iCal-Export
+  („Beschaffung: Certificate of Origin bereitstellen", Transportdokumente als „(Versand)").
+* **Aufgaben:** Unter *Automatische Aufträge* gibt es den Auslöser *Dokument für die Beschaffung wird knapp*. Ist er für ein Team aktiv, entsteht
+  für jedes fehlende Dokument, dessen Zieltermin innerhalb des eingestellten Vorlaufs liegt (oder überschritten ist), eine Teamaufgabe
+  („Beschaffung: LC-Referenz – Dokument bis TT.MM.JJJJ"). Sie schließt sich selbst, sobald das Dokument hochgeladen ist oder die LC abgeschlossen wird.
+  Der Lauf erfolgt stündlich, höchstens eine Aufgabe je LC, Dokument und Zieltermin.
+
 ## Noch offen (nächste Schritte)
 
-Warnungen per Kalender und E-Mail, Ampel in der LC-Liste und im
+E-Mail-Benachrichtigung, Ampel in der LC-Liste und im
 Cockpit, Rolle Exporteur/Importeur je Akte.

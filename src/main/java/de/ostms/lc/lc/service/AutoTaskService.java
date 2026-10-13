@@ -16,8 +16,8 @@ import java.util.*;
 /** Creates team tasks from events (EBICS message, inbox document, approaching deadline) according to the tenant's rules, and closes them when the subject is handled. */
 @Service
 public class AutoTaskService {
- public static final String EBICS_MESSAGE="EBICS_MESSAGE",INBOX_ITEM="INBOX_ITEM",DEADLINE="DEADLINE";
- public static final List<String> TRIGGERS=List.of(EBICS_MESSAGE,INBOX_ITEM,DEADLINE);
+ public static final String EBICS_MESSAGE="EBICS_MESSAGE",INBOX_ITEM="INBOX_ITEM",DEADLINE="DEADLINE",PROCUREMENT="PROCUREMENT";
+ public static final List<String> TRIGGERS=List.of(EBICS_MESSAGE,INBOX_ITEM,DEADLINE,PROCUREMENT);
  static final String SYSTEM="system:automation";
  public record RuleView(String trigger,boolean enabled,UUID teamId,String teamName,int leadDays){}
  public record RuleRequest(String trigger,boolean enabled,UUID teamId,Integer leadDays){}

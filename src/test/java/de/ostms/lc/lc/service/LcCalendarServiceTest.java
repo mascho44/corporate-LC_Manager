@@ -29,4 +29,21 @@ class LcCalendarServiceTest {
   when(tasks.findByCompletedFalseOrderByDueDateAscCreatedAtAsc()).thenReturn(List.of());
   assertThat(new String(service.export("all","x"))).contains("SUMMARY:LC A – Ablauf").contains("DTSTART;VALUE=DATE:20261020");
  }
+ @Test void corporateTenantsAlsoSeeTargetDatesOfMissingDocuments(){
+  var plans=mock(ProcurementPlanService.class);var tenants=mock(de.ostms.lc.tenant.repository.TenantRepository.class);
+  var tenant=new de.ostms.lc.tenant.domain.Tenant();tenant.updateProfile(false,true);
+  when(tenants.findById(any())).thenReturn(Optional.of(tenant));
+  var item=new ProcurementPlanService.Item("Certificate of origin",de.ostms.lc.document.domain.DocumentType.CERTIFICATE_OF_ORIGIN,"Certificate of Origin",false,LocalDate.of(2026,10,12),7,null,ProcurementPlanService.Risk.SOON,"Vorlauf 7 Arbeitstage",ProcurementItemStatus.Status.NOT_STARTED,null);
+  var done=new ProcurementPlanService.Item("Packing list",de.ostms.lc.document.domain.DocumentType.PACKING_LIST,"Packing List",true,LocalDate.of(2026,10,14),3,null,ProcurementPlanService.Risk.DONE,"",ProcurementItemStatus.Status.NOT_STARTED,null);
+  var lc=lc("A",null,LocalDate.of(2027,1,1));
+  when(plans.forLc(any())).thenReturn(new ProcurementPlanService.Plan(null,null,null,ProcurementPlanService.Risk.OK,1,0,0,List.of(item,done)));
+  when(lcs.findAll()).thenReturn(List.of(lc));
+  when(tasks.findByCompletedFalseOrderByDueDateAscCreatedAtAsc()).thenReturn(List.of());
+  service.setProcurement(plans,tenants);
+  try(var context=de.ostms.lc.tenant.domain.TenantContext.open(de.ostms.lc.tenant.domain.Tenant.DEFAULT_ID)){
+   var events=service.events("all","x",LocalDate.of(2026,10,1),LocalDate.of(2026,10,31));
+   assertThat(events).extracting(LcCalendarService.CalendarEvent::kind).containsExactly("procurement");
+   assertThat(events.get(0).title()).isEqualTo("Beschaffung: Certificate of Origin bereitstellen");
+  }
+ }
 }
