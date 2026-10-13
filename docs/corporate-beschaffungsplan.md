@@ -38,7 +38,12 @@ dieses Typs hochgeladen wurde.
   („Beschaffung: LC-Referenz – Dokument bis TT.MM.JJJJ"). Sie schließt sich selbst, sobald das Dokument hochgeladen ist oder die LC abgeschlossen wird.
   Der Lauf erfolgt stündlich, höchstens eine Aufgabe je LC, Dokument und Zieltermin.
 
+* **E-Mail:** Mit demselben Auslöser versendet das System einmal täglich (ab 7 Uhr, beim ersten stündlichen Lauf) eine Zusammenfassung an jeden Empfänger
+  mit allen Dokumenten, die überfällig, kritisch oder bald fällig sind. Empfänger ist die zugewiesene Person der LC; ohne Zuweisung die Mitglieder des Teams der Regel.
+  Gibt es nichts zu melden, kommt keine Mail. Voraussetzung sind `SMTP_ENABLED=true`, `SMTP_FROM` und ein funktionierender SMTP-Zugang; sonst wird nichts gesendet.
+  Je Mandant und Tag wird höchstens einmal gesendet (Tabelle `procurement_digest_log`, vor dem Versand geschrieben).
+
 ## Noch offen (nächste Schritte)
 
-E-Mail-Benachrichtigung, Ampel in der LC-Liste und im
+Ampel in der LC-Liste und im
 Cockpit, Rolle Exporteur/Importeur je Akte.
