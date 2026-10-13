@@ -9,3 +9,9 @@ test('the module is loaded, hooked into the membership assignment and builds no 
  const html=fs.readFileSync(path.join(root,'index.html'),'utf8'),app=fs.readFileSync(path.join(root,'app.js'),'utf8'),code=fs.readFileSync(path.join(root,'tenant-invitations.js'),'utf8');
  assert.ok(html.includes('/tenant-invitations.js'));assert.ok(app.includes('LcTenantInvitations?.render'));assert.equal(code.includes('innerHTML'),false);
 });
+test('cancelled mail and permission codes are shown in words',()=>{
+ const {statusText,permissionText}=load();
+ assert.equal(statusText('MAIL_CANCELLED'),'Versand abgebrochen');assert.equal(statusText('MAIL_FAILED'),'Versand fehlgeschlagen');
+ assert.equal(permissionText(['USER_MANAGE','AUDIT_VIEW','NEW_CODE']),'Audit-Protokoll ansehen · Benutzer verwalten · NEW_CODE');
+ assert.equal(permissionText([]),'keine');assert.equal(permissionText(null),'keine');
+});

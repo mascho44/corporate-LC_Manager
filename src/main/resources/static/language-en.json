@@ -211,6 +211,7 @@
   "tenant.selected": "Selected",
   "tenant.open": "Open workspace",
   "tenant.created": "Tenant created: ",
+  "tenant.assignHeading": "Assign an existing user",
   "tenant.existingUsername": "Existing username",
   "tenant.assign": "Assign existing user",
   "tenant.settings": "Current tenant settings",
