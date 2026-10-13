@@ -43,7 +43,16 @@ dieses Typs hochgeladen wurde.
   Gibt es nichts zu melden, kommt keine Mail. Voraussetzung sind `SMTP_ENABLED=true`, `SMTP_FROM` und ein funktionierender SMTP-Zugang; sonst wird nichts gesendet.
   Je Mandant und Tag wird höchstens einmal gesendet (Tabelle `procurement_digest_log`, vor dem Versand geschrieben).
 
+## Rolle je Akte, Einreichungs-Check, Bankwerkzeuge
+
+* **Rolle je Akte:** Auf der Übersicht einer Akte (Corporate-Mandant) legt *Unsere Rolle in dieser Akte* fest, ob der Mandant **Begünstigter (Exporteur)** oder
+  **Antragsteller (Importeur)** ist (`PUT /api/lcs/{id}/party-role`, Recht „LC bearbeiten", Standard Begünstigter; Migration V101). Nur Akten mit der Rolle
+  Begünstigter haben Beschaffungsplan, Kalendertermine, Aufgaben, E-Mail und den Einreichungs-Check. Importeurakten werden mit der vollen Prüfung angezeigt.
+* **Einreichungs-Check:** Bei reinen Corporate-Mandanten steht über der Prüfung eine Karte *Einreichungsbereit* oder *Noch nicht einreichungsbereit*. Sie zählt nur
+  offene Abweichungen (inkl. fehlender Dokumente); Hinweise werden erwähnt, blockieren aber nicht. Bereits manuell entschiedene Befunde zählen nicht. Die lange
+  Befundliste ist eingeklappt (*Alle Befunde anzeigen*). Die Karte ist eine oberflächliche Vorprüfung; die Bank prüft endgültig.
+* **Bankwerkzeuge:** Reine Corporate-Mandanten sehen *Regelquelle* und *Validierung simulieren* nicht. Kombinierte Mandanten (Bank und Corporate) behalten alles.
+
 ## Noch offen (nächste Schritte)
 
-Ampel in der LC-Liste und im
-Cockpit, Rolle Exporteur/Importeur je Akte.
+Ampel im Cockpit, Feiertage in den Fristen.

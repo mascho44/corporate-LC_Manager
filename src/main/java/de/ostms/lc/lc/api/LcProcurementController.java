@@ -35,6 +35,16 @@ public class LcProcurementController {
         return plans.forLc(id);
     }
 
+    public record RoleRequest(String role) {}
+
+    @PutMapping("/api/lcs/{id}/party-role")
+    public java.util.Map<String, String> setPartyRole(@PathVariable UUID id, @RequestBody RoleRequest request, Authentication authentication) {
+        if (request == null || request.role() == null) throw new IllegalArgumentException("Die Rolle ist erforderlich.");
+        plans.setPartyRole(id, request.role());
+        audit.record(authentication, "LC_PARTY_ROLE_CHANGED", "LETTER_OF_CREDIT", id, "Rolle: " + request.role());
+        return java.util.Map.of("partyRole", request.role());
+    }
+
     @GetMapping("/api/procurement/lead-times")
     public List<ProcurementPlanService.LeadTime> leadTimes() { return plans.leadTimes(); }
 
