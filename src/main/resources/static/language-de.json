@@ -211,6 +211,7 @@
   "tenant.selected": "Ausgewählt",
   "tenant.open": "Arbeitsbereich öffnen",
   "tenant.created": "Mandant angelegt: ",
+  "tenant.assignHeading": "Vorhandenen Benutzer zuordnen",
   "tenant.existingUsername": "Vorhandener Benutzername",
   "tenant.assign": "Vorhandenen Benutzer zuordnen",
   "tenant.settings": "Einstellungen des aktuellen Mandanten",

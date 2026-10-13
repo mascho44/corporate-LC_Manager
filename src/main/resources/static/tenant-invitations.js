@@ -1,9 +1,14 @@
 /* Invitations of the current tenant: tenant administrators invite new people by e-mail instead of asking the platform administration. */
 (() => {
- const STATUS = { SENT: 'versendet', PENDING_MAIL: 'wird versendet', MAIL_RETRY: 'Versand wird erneut versucht', SMTP_FAILED: 'Versand fehlgeschlagen', EXPIRED: 'abgelaufen' };
+ const STATUS = { SENT: 'versendet', PENDING_MAIL: 'wird versendet', MAIL_RETRY: 'Versand wird erneut versucht', SMTP_FAILED: 'Versand fehlgeschlagen', MAIL_FAILED: 'Versand fehlgeschlagen', MAIL_CANCELLED: 'Versand abgebrochen', EXPIRED: 'abgelaufen' };
  /** Delivery status in words; unknown values are shown as they are. */
  function statusText(status) { return STATUS[String(status || '').toUpperCase()] || String(status || ''); }
- globalThis.LcTenantInvitations = { statusText };
+ const PERMISSIONS = { AUDIT_VIEW: 'Audit-Protokoll ansehen', DOCUMENT_APPROVE: 'Dokumente freigeben', DOCUMENT_DELETE: 'Dokumente löschen', DOCUMENT_GENERATE: 'Dokumente erstellen', DOCUMENT_REVIEW: 'Dokumente prüfen',
+  DOCUMENT_UPLOAD: 'Dokumente hochladen', EMAIL_SEND: 'E-Mails senden', LC_DELETE: 'LC-Akten löschen', LC_EDIT: 'LC-Akten bearbeiten', SETTINGS_MANAGE: 'Einstellungen verwalten',
+  SWIFT_IMPORT: 'SWIFT-Nachrichten importieren', TRAINING_MANAGE: 'Training verwalten', USER_MANAGE: 'Benutzer verwalten' };
+ /** Permission codes in words; unknown codes are shown as they are. */
+ function permissionText(codes) { const words = (codes || []).map(c => PERMISSIONS[c] || c).sort((a, b) => a.localeCompare(b, 'de')); return words.length ? words.join(' · ') : 'keine'; }
+ globalThis.LcTenantInvitations = { statusText, permissionText };
  if (typeof document === 'undefined' || !document.body) return;
 
  const node = (tag, text, className) => { const n = document.createElement(tag); if (text !== undefined) n.textContent = text; if (className) n.className = className; return n; };
@@ -23,7 +28,7 @@
   box.append(node('h4', 'Neue Personen einladen'), node('small', 'Die Person erhält eine E-Mail mit einem Link (24 Stunden gültig), wählt dort ihr Passwort und wird mit der gewählten Rolle diesem Mandanten zugeordnet.'), form, message, node('h4', 'Offene Einladungen'), list);
   body.prepend(box);
   let roles = [];
-  const permissions = () => { const r = roles.find(x => x.id === role.value); preview.textContent = r ? 'Berechtigungen: ' + ((r.permissions || []).slice().sort().join(', ') || 'keine') : ''; };
+  const permissions = () => { const r = roles.find(x => x.id === role.value); preview.textContent = r ? 'Berechtigungen: ' + permissionText(r.permissions) : ''; };
   role.onchange = permissions;
   const call = (method, path, payload) => json(path, { method, headers: { 'Content-Type': 'application/json' }, body: payload === undefined ? undefined : JSON.stringify(payload) });
   async function load() {
