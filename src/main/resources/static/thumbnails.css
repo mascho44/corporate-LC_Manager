@@ -15,3 +15,8 @@
 .tpl-thumb .tpl-thumb-title{font-weight:700;font-size:8px;color:#14213d}
 .template-row.has-thumb{display:flex;align-items:center;gap:14px}
 .template-row.has-thumb>div:not(.tpl-thumb){flex:1;min-width:0}
+.inbox-customer{margin:8px 0;padding:8px 12px;border:1px solid var(--line,#d5dbe5);border-radius:8px;background:var(--panel,#fff)}
+.inbox-customer>summary{cursor:pointer;font-weight:600}
+.customer-facts{display:grid;grid-template-columns:max-content 1fr;gap:2px 14px;margin:6px 0}
+.customer-facts dt{color:#5b6573}.customer-facts dd{margin:0;font-weight:600}
+.customer-assigned{color:#14602b}.customer-missing{color:#9a3a00}.customer-error{color:#a11d1d}
