@@ -1,7 +1,8 @@
 /* Customer master (settings) and the customer block of submission letters in the inbox: what the letter says, the suggested customer, and a manual choice. */
 (() => {
  const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
- const label = { customerName: 'Kunde', customerNumber: 'Kundennummer', accountNumber: 'Kontonummer', iban: 'IBAN', bic: 'BIC' };
+ const label = { customerName: 'Kunde', customerNumber: 'Kundennummer', accountNumber: 'Kontonummer', iban: 'IBAN', ibanCandidate: 'IBAN (nicht prüfbar – bitte am Original prüfen)', bic: 'BIC',
+  lcReference: 'Akkreditivnummer', yourReference: 'Ihre Referenz', applicant: 'Auftraggeber (Akkreditiv)', issuingBank: 'Eröffnende Bank', documentValue: 'Dokumentengegenwert' };
 
  /** The block shown for one submission letter. `customers` is the master list for the manual choice. */
  function blockHtml(entry, customers) {
