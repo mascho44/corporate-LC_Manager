@@ -28,5 +28,9 @@ Aufgabenformular (Felder lagen übereinander), Auswahlkästchen im Posteingang (
 Speichern-Knopf der Gruppeninbox. Außerdem: Knöpfe und Eingabefelder wurden in Arial 13 px gezeichnet statt in der Seitenschrift; das Menü wirkte dadurch unscharf.
 Inhaltlicher Fund: Anforderungen im Plural („bills of lading", „certificates of origin") wurden nicht als Dokumenttyp erkannt.
 
+## Handy-Breite (390 px)
+Die Ansichten einer Akte, die LC-Liste und der Beschaffungsplan sind in schmaler Breite ohne Befund. **Nicht behoben:** Kopfzeile und Seitenmenü liegen auf dem Handy übereinander (die Menüleiste wird von der Kopfzeile überdeckt).
+Die Anwendung ist für den Desktop gebaut; ob eine vollständige Handy-Ansicht gewünscht ist, ist eine eigene Entscheidung.
+
 ## Noch offen
 Automatischer Durchlauf aller Schlüsselansichten in drei Breiten als Browser-Test in der CI, danach Bildvergleich gegen freigegebene Referenzbilder.
