@@ -370,7 +370,7 @@ async function openInboxSplit(item){
         async function showPage(page){
             if(!Number.isInteger(page)||page<1||page>proposal.pageCount)return;
             const version=++zoomVersion;selectedPage=page;pageLabel.textContent=`Seite ${page} / ${proposal.pageCount}`;prevButton.disabled=page<=1;nextButton.disabled=page>=proposal.pageCount;
-            pagesNav.querySelectorAll('.evidence-page-thumb').forEach(thumb=>{const on=Number(thumb.dataset.page)===page;thumb.classList.toggle('selected',on);if(on)thumb.scrollIntoView({block:'nearest'});});
+            dialog.querySelectorAll('.evidence-page-thumb').forEach(thumb=>{const on=Number(thumb.dataset.page)===page;thumb.classList.toggle('selected',on);if(on&&pagesNav.contains(thumb))thumb.scrollIntoView({block:'nearest'});});
             status.textContent=`Seite ${page} wird geladen …`;image.hidden=true;
             try{const url=await pageImage(page,true);if(version!==zoomVersion||!dialog.isConnected)return;image.src=url;image.alt=`PDF-Seite ${page}`;image.hidden=false;status.textContent='';}catch(error){if(version===zoomVersion&&dialog.isConnected)status.textContent=error.message;}
         }
@@ -385,10 +385,20 @@ async function openInboxSplit(item){
         function markRanges(){
             const marks=new Map();[...rows.children].forEach((row,index)=>{const part=readRange(row);for(let page=part.fromPage;page<=part.toPage;page++)marks.set(page,index+1);});
             pagesNav.querySelectorAll('.evidence-page-thumb').forEach(thumb=>{const range=marks.get(Number(thumb.dataset.page));thumb.querySelector('small').textContent=range?`Bereich ${range}`:'–';thumb.classList.toggle('has-other',!range);});
+            [...rows.children].forEach((row,index)=>{const part=readRange(row),title=row.querySelector('.split-range-title');if(title)title.textContent=`Bereich ${index+1} · ${part.fromPage===part.toPage?`Seite ${part.fromPage}`:`Seiten ${part.fromPage}–${part.toPage}`}`;});
         }
-        const renderThumbs=()=>markRanges();
+        /** The pages of one range as small previews inside its card; a click shows the page large on the right. */
+        function renderThumbs(row){
+            if(row){
+                let strip=row.querySelector('.split-thumbnails');if(!strip){strip=document.createElement('div');strip.className='split-thumbnails';row.querySelector('.split-row-actions').before(strip);}
+                strip.querySelectorAll('button').forEach(button=>observer?.unobserve(button));strip.replaceChildren();const part=readRange(row);
+                if(Number.isInteger(part.fromPage)&&Number.isInteger(part.toPage)&&part.fromPage>=1&&part.toPage<=proposal.pageCount&&part.toPage>=part.fromPage)
+                    for(let page=part.fromPage;page<=part.toPage;page++){const thumb=document.createElement('button');thumb.type='button';thumb.className='evidence-page-thumb';thumb.dataset.page=page;thumb.setAttribute('aria-label',`Seite ${page} ansehen`);thumb.innerHTML=`<img alt="" decoding="async"><span>Seite ${page}</span>`;thumb.onclick=()=>{loadThumb(thumb);showPage(page);};strip.append(thumb);if(observer)observer.observe(thumb);else loadThumb(thumb);}
+            }
+            markRanges();
+        }
         const readRange=row=>({fromPage:Number(row.querySelector('[name=fromPage]').value),toPage:Number(row.querySelector('[name=toPage]').value),documentType:row.querySelector('[name=documentType]').value,copyNumber:readDocumentCopy(row.querySelector('[name=copyNumber]').value)});
-        const refreshMergeButtons=()=>[...rows.children].forEach((row,index)=>row.querySelector('[data-merge]').disabled=index===0);
+        const refreshMergeButtons=()=>{[...rows.children].forEach((row,index)=>row.querySelector('[data-merge]').disabled=index===0);markRanges();};
         rows.addEventListener('change',event=>{
             if(!['fromPage','toPage'].includes(event.target.name))return;
             const error=dialog.querySelector('[data-error]');error.textContent='';
@@ -400,7 +410,7 @@ async function openInboxSplit(item){
         });
         const add=part=>{
             const row=document.createElement('div');row.className='inbox-split-row';
-            row.innerHTML=`<label>Von Seite<input name="fromPage" type="number" min="1" max="${proposal.pageCount}" value="${part.fromPage}" required></label><label>Bis Seite<input name="toPage" type="number" min="1" max="${proposal.pageCount}" value="${part.toPage}" required></label><label class="split-type">Dokumenttyp<select name="documentType" required>${inboxDocumentTypes.map(([type,label])=>`<option value="${type}"${type===part.documentType?' selected':''}>${label}</option>`).join('')}</select></label><label>Kennzeichnung<select name="copyNumber" ${item.pretraining?'disabled':''}>${documentCopyOptions(part.copyNumber)}</select></label>${item.pretraining?'':'<label class="split-date">Datum, falls nicht erkannt<input name="documentDate" type="date"></label><label class="split-signed"><input name="signed" type="checkbox"> Unterschrift vorhanden</label>'}<div class="split-row-actions"><button type="button" class="secondary" data-preview>Seite ansehen</button><button type="button" class="secondary" data-merge>Mit vorherigem verbinden</button><button type="button" class="secondary" data-remove>Bereich auflösen (in Einzelseiten)</button></div>`;
+            row.innerHTML=`<h4 class="split-range-title"></h4><label>Von Seite<input name="fromPage" type="number" min="1" max="${proposal.pageCount}" value="${part.fromPage}" required></label><label>Bis Seite<input name="toPage" type="number" min="1" max="${proposal.pageCount}" value="${part.toPage}" required></label><label class="split-type">Dokumenttyp<select name="documentType" required>${inboxDocumentTypes.map(([type,label])=>`<option value="${type}"${type===part.documentType?' selected':''}>${label}</option>`).join('')}</select></label><label>Kennzeichnung<select name="copyNumber" ${item.pretraining?'disabled':''}>${documentCopyOptions(part.copyNumber)}</select></label>${item.pretraining?'':'<label class="split-date">Datum, falls nicht erkannt<input name="documentDate" type="date"></label><label class="split-signed"><input name="signed" type="checkbox"> Unterschrift vorhanden</label>'}<div class="split-row-actions"><button type="button" class="secondary" data-preview>Seite ansehen</button><button type="button" class="secondary" data-merge>Mit vorherigem verbinden</button><button type="button" class="secondary" data-remove>Bereich auflösen (in Einzelseiten)</button></div>`;
             row.querySelector('[data-remove]').onclick=()=>{
                 const error=dialog.querySelector('[data-error]');error.textContent='';
                 const range=readRange(row);
@@ -425,7 +435,7 @@ async function openInboxSplit(item){
         };
         proposal.parts.forEach(add);
         markRanges();showPage(1);
-        [...rows.children].forEach(row=>{const range=readRange(row);for(let page=range.fromPage;page<=range.toPage;page++)if(uncertainPages.has(page)){row.classList.add('split-uncertain');const mark=document.createElement('p');mark.className='split-uncertain-note';mark.textContent=inboxAutoText('uncertainRow','Uncertain – please review');row.prepend(mark);break;}});
+        [...rows.children].forEach(row=>{const range=readRange(row);for(let page=range.fromPage;page<=range.toPage;page++)if(uncertainPages.has(page)){row.classList.add('split-uncertain');const mark=document.createElement('p');mark.className='split-uncertain-note';mark.textContent=inboxAutoText('uncertainRow','Uncertain – please review');row.querySelector('.split-range-title').after(mark);break;}});
         dialog.querySelector('[data-add]').onclick=()=>{
             const error=dialog.querySelector('[data-error]');error.textContent='';
             const row=[...rows.children].reverse().find(row=>readRange(row).toPage>readRange(row).fromPage);
