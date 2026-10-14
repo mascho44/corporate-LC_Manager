@@ -21,7 +21,7 @@ class CustomerMasterTest {
 
  @BeforeEach void setUp(){
   if(tenants.findById(Tenant.DEFAULT_ID).isEmpty())tenants.saveAndFlush(new Tenant());
-  service=new CustomerService(customers);inboxCustomers=new InboxCustomerService(inbox,customers,assignments,lettersOfCredit,captureInfos);
+  service=new CustomerService(customers,lettersOfCredit);inboxCustomers=new InboxCustomerService(inbox,customers,assignments,lettersOfCredit,captureInfos);
  }
  DocumentInboxItem item(String filename,String text){var i=new DocumentInboxItem();i.setOriginalFilename(filename);i.setContentType("application/pdf");i.setFileSize(10);i.setReceivedBy("capture:Scanner");i.setExtractionStatus("EXTRACTED");i.setExtractedText(text);return inbox.saveAndFlush(i);}
 
@@ -115,5 +115,22 @@ class CustomerMasterTest {
   assertThat(inherited.via()).isEqualTo("BATCH");assertThat(inherited.assigned()).isNull();assertThat(inherited.clear()).isTrue();
   assertThat(inherited.candidates().get(0).customerId()).isEqualTo(customer.id());assertThat(inherited.candidates().get(0).reason()).isEqualTo("Stapel B1");
   assertThat(inherited.lcs()).extracting(InboxCustomerService.LcOption::reference).contains("LCB-ALPHA");
+ }
+ @Test void anExplicitLinkWinsOverTheNameComparison(){
+  var customer=service.create(new CustomerService.Request("Beispiel Export GmbH",null,null,"DE89370400440532013000",null),"admin");
+  var other=service.create(new CustomerService.Request("Andere GmbH",null,null,null,null),"admin");
+  var byName=lc("LCB-NAME","BEISPIEL EXPORT GMBH",de.ostms.lc.lc.domain.LetterOfCreditStatus.ACTIVE);
+  var linkedElsewhere=lc("LCB-ANDERS","BEISPIEL EXPORT GMBH",de.ostms.lc.lc.domain.LetterOfCreditStatus.ACTIVE);
+  var linked=lc("LCB-FEST","ZWISCHENHAENDLER AG",de.ostms.lc.lc.domain.LetterOfCreditStatus.ACTIVE);
+  assertThat(service.linkLc(linkedElsewhere.getId(),other.id())).isEqualTo("Andere GmbH");
+  assertThat(service.linkLc(linked.getId(),customer.id())).isEqualTo("Beispiel Export GmbH");
+  var letter=item("brief.pdf",SubmissionLetterTest.LETTER);
+  var lcs=inboxCustomers.overview().get(letter.getId()).lcs();
+  assertThat(lcs).extracting(InboxCustomerService.LcOption::reference).containsExactly("LCB-FEST","LCB-NAME");
+  assertThat(lcs.get(0).linked()).isTrue();assertThat(lcs.get(1).linked()).isFalse();
+  assertThat(service.linkLc(linked.getId(),null)).isNull();
+  assertThat(inboxCustomers.overview().get(letter.getId()).lcs()).extracting(InboxCustomerService.LcOption::reference).containsExactly("LCB-NAME");
+  assertThatThrownBy(()->service.linkLc(java.util.UUID.randomUUID(),customer.id())).hasMessageContaining("nicht gefunden");
+  assertThat(byName.getCustomerId()).isNull();
  }
 }

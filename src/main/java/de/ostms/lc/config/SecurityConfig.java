@@ -77,6 +77,7 @@ import de.ostms.lc.user.service.AppUserDetailsService; import jakarta.servlet.ht
    .requestMatchers(org.springframework.http.HttpMethod.DELETE,"/api/customers/*").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/inbox-customers/*").hasAuthority("PERM_DOCUMENT_UPLOAD")
    .requestMatchers(org.springframework.http.HttpMethod.DELETE,"/api/inbox-customers/*").hasAuthority("PERM_DOCUMENT_UPLOAD")
+   .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/lcs/*/customer").hasAuthority("PERM_LC_EDIT")
    .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/lcs/*/party-role").hasAuthority("PERM_LC_EDIT")
    .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/procurement/lead-times/*").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers(org.springframework.http.HttpMethod.DELETE,"/api/procurement/lead-times/*").hasAuthority("PERM_SETTINGS_MANAGE")

@@ -38,7 +38,22 @@
   const bar = document.createElement('div'); bar.className = 'party-role';
   bar.innerHTML = `<label>Unsere Rolle in dieser Akte <select data-party-role${can_('LC_EDIT') ? '' : ' disabled'}><option value="BENEFICIARY"${current === 'BENEFICIARY' ? ' selected' : ''}>Begünstigter (Exporteur)</option><option value="APPLICANT"${current === 'APPLICANT' ? ' selected' : ''}>Antragsteller (Importeur)</option></select></label>` +
    `<small>${current === 'BENEFICIARY' ? 'Wir liefern die Dokumente: Beschaffungsplan, Fristen und Einreichungs-Check gelten.' : 'Wir eröffnen das Akkreditiv: Es gibt keinen Beschaffungsplan; eingehende Dokumente werden vollständig geprüft.'}</small>`;
+  const customerLabel = document.createElement('label'); customerLabel.className = 'lc-customer';
+  customerLabel.append('Kunde dieser Akte ');
+  const customerSelect = document.createElement('select'); customerSelect.dataset.lcCustomer = ''; customerSelect.disabled = !can_('LC_EDIT');
+  customerSelect.innerHTML = '<option value="">– nicht verknüpft –</option>'; customerLabel.append(customerSelect);
+  bar.append(customerLabel);
   overview.prepend(bar);
+  json('/api/customers').then(list => {
+   customerSelect.innerHTML = '<option value="">– nicht verknüpft –</option>' + (list || []).map(c => `<option value="${esc(c.id)}"${activeLc?.customerId === c.id ? ' selected' : ''}>${esc(c.name)}${c.customerNumber ? ' · ' + esc(c.customerNumber) : ''}</option>`).join('');
+  }).catch(() => { customerLabel.hidden = true; });
+  customerSelect.onchange = async event => {
+   const previous = activeLc?.customerId || '';
+   try {
+    await json(`/api/lcs/${encodeURIComponent(id)}/customer`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customerId: event.target.value || null }) });
+    if (activeLc) activeLc.customerId = event.target.value || null;
+   } catch (error) { alert('Kunde konnte nicht gespeichert werden: ' + error.message); event.target.value = previous; }
+  };
   bar.querySelector('select').onchange = async event => {
    try {
     await json(`/api/lcs/${encodeURIComponent(id)}/party-role`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: event.target.value }) });
