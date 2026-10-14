@@ -29,6 +29,7 @@ public class DocumentInboxService {
     private final de.ostms.lc.check.service.DocumentCheckService checks;
     @org.springframework.beans.factory.annotation.Autowired private InboxAutomaticSplitter automaticSplitter;
     @org.springframework.beans.factory.annotation.Autowired private SplitTrainingService splitTraining;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private DocumentTypeTrainingService typeTraining;
     @Transactional(rollbackFor=Exception.class)
     public List<DocumentInboxItemView> automaticSplit(UUID id,String requestedBy)throws Exception{
         var item=lockedOpenItem(id);requireProcessed(item);requirePdf(item);
@@ -85,7 +86,10 @@ public class DocumentInboxService {
     public PdfDocumentSplitter.Proposal splitProposal(UUID id) throws Exception {
         var item=openItem(id);requireProcessed(item);requirePdf(item);
         var baseline=PdfDocumentSplitter.propose(item.getContent(),item.getOcrEvidenceJson());
-        return splitTraining==null?baseline:splitTraining.suggest(item.getContent(),item.getOcrEvidenceJson(),baseline);
+        var proposal=splitTraining==null?baseline:splitTraining.suggest(item.getContent(),item.getOcrEvidenceJson(),baseline);
+        // Types the fixed headings could not name are filled in from what people confirmed before (only where no learned split pattern applies).
+        boolean patternApplied=proposal!=baseline;
+        return typeTraining==null||patternApplied?proposal:typeTraining.apply(proposal,PdfDocumentSplitter.texts(item.getContent(),item.getOcrEvidenceJson()));
     }
 
     /** What a person adds to one split range: the document date (if not recognised) and a confirmed signature. */
@@ -117,6 +121,7 @@ public class DocumentInboxService {
             result.add(view(inbox.save(item),targets));
         }
         if(splitTraining!=null)splitTraining.confirm(original.getContent(),original.getOcrEvidenceJson(),parts,username);
+        if(typeTraining!=null)for(var output:outputs)typeTraining.learn(output.text(),output.part().documentType(),username);
         original.setStatus("SPLIT");inbox.save(original);closeTasks(original.getId());return List.copyOf(result);
     }
 
@@ -171,6 +176,7 @@ public class DocumentInboxService {
         var auth=org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
         document.setClassificationHistoryJson(ClassificationHistory.manual(item.getClassificationHistoryJson(),request.documentType(),auth==null?"unknown":auth.getName()));
         LcDocument saved = documents.save(document);
+        if(typeTraining!=null)typeTraining.learn(item.getExtractedText(),request.documentType(),auth==null?"unknown":auth.getName());
         if (lc.releaseWaitingForCustomer()) lettersOfCredit.save(lc);
         checks.invalidateDecisions(request.lcId());
         item.setStatus("ATTACHED");closeTasks(item.getId());
