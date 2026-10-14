@@ -32,6 +32,13 @@ public class CustomerController {
  @DeleteMapping("/api/customers/{id}") @ResponseStatus(HttpStatus.NO_CONTENT)
  public void delete(@PathVariable UUID id,Authentication authentication){audit.record(authentication,"CUSTOMER_DELETED","CUSTOMER",id,customers.delete(id));}
 
+ @PutMapping("/api/lcs/{id}/customer")
+ public Map<String,Object> linkLc(@PathVariable UUID id,@RequestBody AssignRequest request,Authentication authentication){
+  var name=customers.linkLc(id,request==null?null:request.customerId());
+  audit.record(authentication,"LC_CUSTOMER_LINKED","LETTER_OF_CREDIT",id,name==null?"Verknüpfung entfernt":name);
+  return java.util.Collections.singletonMap("customerId",request==null?null:request.customerId());
+ }
+
  @GetMapping("/api/inbox-customers") public Map<UUID,InboxCustomerService.Entry> overview(){return inboxCustomers.overview();}
 
  @PutMapping("/api/inbox-customers/{itemId}")

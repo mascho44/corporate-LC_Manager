@@ -17,7 +17,7 @@
   else if (best) status = `<p class="customer-suggestion">Mögliche Kunden: ${entry.candidates.map(c => `<b>${esc(c.name)}</b> (${esc(c.reason)})`).join(', ')}. Bitte auswählen.</p>`;
   else status = '<p class="customer-missing">Kein Kunde erkannt. Bitte den Kunden auswählen.</p>';
   const lcs = (entry.lcs || []).length
-   ? `<p class="customer-lcs">Akten dieses Kunden: ${entry.lcs.map(l => `<button type="button" class="secondary" data-pick-lc="${esc(l.id)}" title="LC-Akte in der Zuordnung auswählen">${esc(l.reference)}${l.byLetter ? ' · laut Schreiben' : ''}</button>`).join(' ')}</p>` : '';
+   ? `<p class="customer-lcs">Akten dieses Kunden: ${entry.lcs.map(l => `<button type="button" class="secondary" data-pick-lc="${esc(l.id)}" title="LC-Akte in der Zuordnung auswählen">${esc(l.reference)}${l.byLetter ? ' · laut Schreiben' : l.linked ? ' · fest verknüpft' : ''}</button>`).join(' ')}</p>` : '';
   const options = (customers || []).map(c => `<option value="${esc(c.id)}"${entry.assigned?.customerId === c.id ? ' selected' : ''}>${esc(c.name)}${c.customerNumber ? ' · ' + esc(c.customerNumber) : ''}</option>`).join('');
   const choose = customers?.length
    ? `<label>Kunde wählen <select data-customer-select><option value="">– bitte wählen –</option>${options}</select></label>${entry.assigned ? ' <button type="button" class="secondary" data-customer-clear>Zuordnung entfernen</button>' : ''}`

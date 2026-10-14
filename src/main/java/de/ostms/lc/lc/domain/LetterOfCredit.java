@@ -43,6 +43,9 @@ public class LetterOfCredit {
  @Column(name="party_role",nullable=false,length=12) private String partyRole="BENEFICIARY";
  public String getPartyRole(){return partyRole;}
  public void setPartyRole(String role){if(!"BENEFICIARY".equals(role)&&!"APPLICANT".equals(role))throw new IllegalArgumentException("Unbekannte Rolle.");partyRole=role;}
+ @Column(name="customer_id") private java.util.UUID customerId;
+ public java.util.UUID getCustomerId(){return customerId;}
+ public void setCustomerId(java.util.UUID id){customerId=id;}
  @com.fasterxml.jackson.annotation.JsonIgnore public boolean isExporterSide(){return "BENEFICIARY".equals(partyRole);}
  @Enumerated(EnumType.STRING) private LetterOfCreditStatus status=LetterOfCreditStatus.RECEIVED;
  @Column(name="waiting_since") private LocalDate waitingSince;

@@ -15,7 +15,7 @@ import java.util.*;
 public class InboxCustomerService {
  public record Assigned(UUID customerId,String name,String method){}
  /** An LC file of the customer; `byLetter` marks the one the letter itself names. */
- public record LcOption(UUID id,String reference,String status,boolean byLetter){}
+ public record LcOption(UUID id,String reference,String status,boolean byLetter,boolean linked){}
  /** `via` is LETTER (read from the submission letter) or BATCH (taken from the submission letter of the same delivery batch). */
  public record Entry(SubmissionLetterReader.Fields fields,List<CustomerMatcher.Candidate> candidates,boolean clear,Assigned assigned,List<LcOption> lcs,String via){}
  private static final int MAX_CANDIDATES=3;
@@ -32,9 +32,11 @@ public class InboxCustomerService {
   for(LetterOfCredit lc:all){
    if(lc.getStatus()==LetterOfCreditStatus.CLOSED||lc.getStatus()==LetterOfCreditStatus.EXPIRED)continue;
    boolean named=!key(letterReference).isEmpty()&&key(letterReference).equals(key(lc.getReference()));
-   if(named||LcCustomerMatcher.matches(customer,lc))out.add(new LcOption(lc.getId(),lc.getReference(),lc.getStatus()==null?null:lc.getStatus().name(),named));
+   boolean linked=customer.getId().equals(lc.getCustomerId());
+   // An explicit link wins over the name comparison: a file linked to another customer is never offered here.
+   if(named||linked||(lc.getCustomerId()==null&&LcCustomerMatcher.matches(customer,lc)))out.add(new LcOption(lc.getId(),lc.getReference(),lc.getStatus()==null?null:lc.getStatus().name(),named,linked));
   }
-  out.sort(Comparator.comparing(LcOption::byLetter).reversed().thenComparing(LcOption::reference,Comparator.nullsLast(Comparator.naturalOrder())));
+  out.sort(Comparator.comparing(LcOption::byLetter).reversed().thenComparing(LcOption::linked,Comparator.reverseOrder()).thenComparing(LcOption::reference,Comparator.nullsLast(Comparator.naturalOrder())));
   return out.size()>10?List.copyOf(out.subList(0,10)):out;
  }
 

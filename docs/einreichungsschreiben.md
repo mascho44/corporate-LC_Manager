@@ -27,6 +27,7 @@ Handschriftliche Einträge liest die Texterkennung oft mit Fehlern. Besteht eine
 Steht der Kunde fest (bestätigt oder als klarer Vorschlag), zeigt der Block die **LC-Akten dieses Kunden**: aktive Akten, bei denen der Kundenname im Begünstigten oder Antragsteller steht (Namen zählen ab fünf Buchstaben,
 Groß-/Kleinschreibung und Satzzeichen egal), dazu die Akte, die das Schreiben mit der Akkreditivnummer selbst nennt („laut Schreiben", immer zuerst, auch wenn der Name nicht passt). Ein Klick auf die Akte wählt sie im
 Zuordnungsformular des Dokuments aus; gespeichert wird erst mit „Zuordnung bestätigen". Bei nur möglichen oder fehlenden Kunden wird keine Akte vorgeschlagen.
+**Feste Verknüpfung:** In der Akte (Übersicht, neben der Rolle) lässt sich der „Kunde dieser Akte" aus dem Kundenstamm wählen. Eine verknüpfte Akte wird diesem Kunden immer vorgeschlagen („fest verknüpft", nach der Akte laut Schreiben); eine Akte, die mit einem *anderen* Kunden verknüpft ist, wird ihm nie vorgeschlagen, auch wenn der Name passt. Ohne Verknüpfung gilt weiter der Namensvergleich. Wird der Kunde gelöscht, fällt die Verknüpfung weg.
 **Lieferungen:** Die übrigen Dokumente derselben Erfassungslieferung (gleiche `batchId`) bekommen den Kunden des bestätigten Einreichungsschreibens als Vorschlag („Aus dem Einreichungsschreiben dieser Lieferung"),
 ebenfalls mit Bestätigen und denselben Aktenvorschlägen. Es wird nichts ohne Bestätigung zugeordnet.
 

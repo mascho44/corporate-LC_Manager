@@ -10,8 +10,8 @@ import java.util.*;
 public class CustomerService {
  public record Request(String name,String customerNumber,String accountNumber,String iban,String bic){}
  public record View(UUID id,String name,String customerNumber,String accountNumber,String iban,String bic,String source){}
- private final CustomerRepository customers;
- public CustomerService(CustomerRepository customers){this.customers=customers;}
+ private final CustomerRepository customers;private final de.ostms.lc.lc.repository.LetterOfCreditRepository lettersOfCredit;
+ public CustomerService(CustomerRepository customers,de.ostms.lc.lc.repository.LetterOfCreditRepository lettersOfCredit){this.customers=customers;this.lettersOfCredit=lettersOfCredit;}
 
  static View view(Customer c){return new View(c.getId(),c.getName(),c.getCustomerNumber(),c.getAccountNumber(),c.getIban(),c.getBic(),c.getSource());}
  private static String clean(String value,int max,String label){
@@ -24,6 +24,14 @@ public class CustomerService {
  @Transactional public View create(Request request,String user){var c=new Customer();apply(c,request,user);return view(customers.save(c));}
  @Transactional public View update(UUID id,Request request,String user){var c=customers.findById(id).orElseThrow(()->new NoSuchElementException("Kunde nicht gefunden."));apply(c,request,user);return view(customers.save(c));}
  @Transactional public String delete(UUID id){var c=customers.findById(id).orElseThrow(()->new NoSuchElementException("Kunde nicht gefunden."));customers.delete(c);return c.getName();}
+
+ /** Links an LC file to a customer (or removes the link with null); returns the customer name. */
+ @Transactional public String linkLc(UUID lcId,UUID customerId){
+  var lc=lettersOfCredit.findById(lcId).orElseThrow(()->new NoSuchElementException("Akkreditiv nicht gefunden."));
+  String name=null;
+  if(customerId!=null)name=customers.findById(customerId).orElseThrow(()->new NoSuchElementException("Kunde nicht gefunden.")).getName();
+  lc.setCustomerId(customerId);lettersOfCredit.save(lc);return name;
+ }
 
  private void apply(Customer c,Request r,String user){
   if(r==null)throw new IllegalArgumentException("Angaben fehlen.");
