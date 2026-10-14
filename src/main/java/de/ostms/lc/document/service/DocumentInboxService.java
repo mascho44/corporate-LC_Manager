@@ -177,7 +177,7 @@ public class DocumentInboxService {
         document.setClassificationHistoryJson(ClassificationHistory.manual(item.getClassificationHistoryJson(),request.documentType(),auth==null?"unknown":auth.getName()));
         LcDocument saved = documents.save(document);
         if(typeTraining!=null)typeTraining.learn(item.getExtractedText(),request.documentType(),auth==null?"unknown":auth.getName());
-        if (lc.releaseWaitingForCustomer()) lettersOfCredit.save(lc);
+        if (lc.releaseWaitingForCustomer()) { de.ostms.lc.rulepack.PresentationDate.stamp(lc, java.time.LocalDate.now()); lettersOfCredit.save(lc); }
         checks.invalidateDecisions(request.lcId());
         item.setStatus("ATTACHED");closeTasks(item.getId());
         item.setAttachedLcId(lc.getId());
