@@ -7,3 +7,8 @@ Der Menüpunkt **Benutzer** öffnet für Mandanten-Admins (Recht „Benutzer ver
 * **Rollen & Rechte:** Matrix aller Rechte (nach Bereich gruppiert) je Rolle mit Häkchen und der Zahl der Mitglieder je Rolle; „Rollen bearbeiten" öffnet den Rolleneditor.
 
 Die Schnittstellen sind unverändert (`/api/users/memberships…`, Einladungen, Rollen); die Seite ersetzt nur die Oberfläche.
+
+## Mehrfachaktionen und mehrere Einladungen
+* **Auswahl in der Mitgliederliste:** Mit den Häkchen (links, oben für alle angezeigten) erscheint eine Leiste mit „Rolle setzen", „Sperren" und „Aktivieren" für alle Ausgewählten. Das System fragt vorher nach, nennt die Zahl der betroffenen Mitglieder und überspringt (mit Grund): das eigene Konto, Mitglieder die die Rolle schon haben bzw. schon gesperrt/nicht gesperrt sind und Mitglieder mit inaktivem Konto. Danach steht die Bilanz („3 von 3 geändert, 1 übersprungen (…)") über den Reitern.
+* **Mehrere Personen einladen:** Unter „Einladungen" → „Mehrere Personen auf einmal einladen": eine Person pro Zeile, als „Name <E-Mail>", „E-Mail" oder „E-Mail; Name" (ohne Name wird er aus der Adresse abgeleitet), höchstens 50, doppelte Adressen und fehlerhafte Zeilen werden gemeldet. Alle bekommen die oben gewählte Rolle; das Ergebnis steht je Zeile darunter.
+* **Rechte in Kurzform:** Beim Einladen und Zuordnen steht statt der langen Liste z. B. „Alle 13 Rechte" oder „11 von 13 Rechten – es fehlen: …" mit dem Link „Rollen vergleichen" (öffnet die Matrix).

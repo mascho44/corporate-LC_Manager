@@ -255,3 +255,12 @@ html[data-profile="bank"] #appNavEbics{display:none!important}
 .members-matrix td.yes{color:#0f6b3a;font-weight:700}.members-matrix td.no{color:#b6bdc9}
 .members-invitations{display:grid;gap:14px;max-width:760px}
 @media(max-width:700px){.members-table th:nth-child(3),.members-table td:nth-child(3){display:none}.members-actions{text-align:left}}
+.members-flash{margin:0 0 8px;color:#475467;min-height:0}.members-flash:empty{display:none}
+.members-page .members-select{width:36px;padding-right:0}.members-page .members-select input{width:auto;margin:0}
+.members-bulk{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 12px;padding:10px 14px;border:1px solid #b9ccf5;border-radius:12px;background:#eef3ff}
+.members-bulk[hidden]{display:none}
+.members-bulk select{width:auto;min-width:150px}.members-bulk button{min-height:36px}
+.link-button{display:inline;min-height:0;padding:0;border:0;background:none;color:#1f4ed8;text-decoration:underline;font:inherit;cursor:pointer}
+.tenant-invitation-bulk{margin:10px 0;padding:10px 14px;border:1px solid #dbe2ec;border-radius:12px;background:#f8fafc}.tenant-invitation-bulk summary{cursor:pointer;font-weight:600}
+.tenant-invitation-bulk textarea{display:block;width:100%;margin:10px 0 6px;box-sizing:border-box}.tenant-invitation-bulk button{margin-top:8px}
+.tenant-invitation-bulk-result p{margin:4px 0}.tenant-invitation-bulk-result .ok{color:#0f6b3a}.tenant-invitation-bulk-result .error{color:#a31313}.tenant-invitation-bulk-summary{font-weight:700}

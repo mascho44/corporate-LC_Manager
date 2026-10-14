@@ -25,7 +25,21 @@
  }
  /** How many members hold each role: Map roleId -> count. */
  function memberCounts(members) { const counts = new Map(); (members || []).forEach(m => counts.set(m.roleId, (counts.get(m.roleId) || 0) + 1)); return counts; }
- globalThis.LcMembersPage = { filterMembers, permissionMatrix, memberCounts, LABELS };
+
+ /** What a bulk action does to the selected members and what it leaves alone (and why): action 'role' (needs roleId), 'suspend' or 'activate'; `me` is the own user name. */
+ function bulkPlan(selected, action, { roleId = '', me = '' } = {}) {
+  const apply = [], skipped = [], mine = String(me).toLowerCase();
+  (selected || []).forEach(m => {
+   const own = String(m.username).toLowerCase() === mine;
+   let reason = null;
+   if (action === 'role') reason = own ? 'eigene Rolle' : m.roleId === roleId ? 'hat die Rolle schon' : null;
+   else if (action === 'suspend') reason = own ? 'eigener Zugang' : m.suspended ? 'schon gesperrt' : m.identityActive === false ? 'Konto inaktiv' : null;
+   else if (action === 'activate') reason = !m.suspended ? 'nicht gesperrt' : m.identityActive === false ? 'Konto inaktiv' : null;
+   (reason ? skipped.push({ username: m.username, reason }) : apply.push(m));
+  });
+  return { apply, skipped };
+ }
+ globalThis.LcMembersPage = { filterMembers, permissionMatrix, memberCounts, bulkPlan, LABELS };
  if (typeof document === 'undefined' || !document.body) return;
 
  const node = (tag, text, css) => { const n = document.createElement(tag); if (text !== undefined) n.textContent = text; if (css) n.className = css; return n; };
@@ -37,13 +51,14 @@
   title.append(node('h2', 'Benutzer & Rechte'), node('p', '', 'members-facts'));
   const refresh = node('button', 'Aktualisieren', 'secondary'); refresh.type = 'button'; refresh.onclick = () => load();
   head.append(title, refresh);
+  const flash = node('p', '', 'members-flash'); flash.setAttribute('role', 'status');
   const tabs = node('div', undefined, 'members-tabs'); tabs.setAttribute('role', 'tablist');
   [['members', 'Mitglieder'], ['invitations', 'Einladungen'], ['roles', 'Rollen & Rechte']].forEach(([key, text]) => {
    const tab = node('button', text, 'members-tab'); tab.type = 'button'; tab.dataset.tab = key; tab.setAttribute('role', 'tab');
-   tab.onclick = () => { active = key; paint(); }; tabs.append(tab);
+   tab.onclick = () => { active = key; setFlash(''); paint(); }; tabs.append(tab);
   });
   const body = node('div', undefined, 'members-body'); body.setAttribute('role', 'tabpanel');
-  section.append(head, tabs, body);
+  section.append(head, flash, tabs, body);
   (document.querySelector('main') || document.body).append(section);
  }
 
@@ -53,6 +68,8 @@
   catch (error) { body.textContent = 'Mitglieder konnten nicht geladen werden: ' + error.message; }
  }
 
+ globalThis.LcMembersPage.showTab = key => { active = key; if (section && overview) paint(); };
+ const setFlash = text => { const f = section?.querySelector('.members-flash'); if (f) f.textContent = text || ''; };
  function paint() {
   if (!overview) return;
   const s = overview.settings;
@@ -74,16 +91,25 @@
   const count = node('small', '', 'members-count'); count.setAttribute('role', 'status');
   bar.append(search, roleFilter, statusFilter, count);
   const wrap = node('div', undefined, 'members-table-wrap'), table = node('table', undefined, 'members-table');
-  const head = node('thead'), hr = node('tr'); ['Benutzer', 'Rolle', 'Status', ''].forEach(t => hr.append(node('th', t))); head.append(hr);
-  const tbody = node('tbody'); table.append(head, tbody); wrap.append(table); body.append(bar, wrap);
+  const selected = new Set(); // user ids
+  const head = node('thead'), hr = node('tr');
+  const allBox = node('input'); allBox.type = 'checkbox'; allBox.setAttribute('aria-label', 'Alle angezeigten Mitglieder auswählen');
+  const boxTh = node('th'); boxTh.className = 'members-select'; boxTh.append(allBox); hr.append(boxTh);
+  ['Benutzer', 'Rolle', 'Status', ''].forEach(t => hr.append(node('th', t))); head.append(hr);
+  const tbody = node('tbody'); table.append(head, tbody); wrap.append(table);
+  const bulkBar = node('div', undefined, 'members-bulk'); bulkBar.hidden = true;
+  body.append(bar, bulkBar, wrap);
   const canEditRole = overview.roleEditingEnabled && roles.length && can('USER_MANAGE'), canAccess = overview.accessEditingEnabled && can('USER_MANAGE');
   const me = String(typeof currentUser !== 'undefined' ? currentUser?.username || '' : '').toLowerCase();
   const draw = () => {
    const list = filterMembers(members, { text: search.value, roleId: roleFilter.value, status: statusFilter.value });
    count.textContent = `${list.length} von ${members.length} Mitgliedern`; tbody.replaceChildren();
-   if (!list.length) { const r = node('tr'), c = node('td', 'Keine Mitglieder gefunden.'); c.colSpan = 4; r.append(c); tbody.append(r); return; }
+   allBox.checked = list.length > 0 && list.every(m => selected.has(m.userId)); refreshBulk();
+   if (!list.length) { const r = node('tr'), c = node('td', 'Keine Mitglieder gefunden.'); c.colSpan = 5; r.append(c); tbody.append(r); return; }
    list.forEach(m => {
     const own = String(m.username).toLowerCase() === me, row = node('tr');
+    const pick = node('td'); pick.className = 'members-select'; const box = node('input'); box.type = 'checkbox'; box.checked = selected.has(m.userId); box.setAttribute('aria-label', m.username + ' auswählen');
+    box.onchange = () => { box.checked ? selected.add(m.userId) : selected.delete(m.userId); allBox.checked = list.every(x => selected.has(x.userId)); refreshBulk(); }; pick.append(box);
     const who = node('td'); who.append(node('b', m.username)); if (own) who.append(node('small', ' (Sie)'));
     const roleCell = node('td'), message = node('small', '', 'members-saved'); message.setAttribute('role', 'status');
     if (canEditRole) {
@@ -111,9 +137,40 @@
      };
      actions.append(toggle);
     }
-    row.append(who, roleCell, state, actions); tbody.append(row);
+    row.append(pick, who, roleCell, state, actions); tbody.append(row);
    });
   };
+  allBox.onchange = () => { filterMembers(members, { text: search.value, roleId: roleFilter.value, status: statusFilter.value }).forEach(m => allBox.checked ? selected.add(m.userId) : selected.delete(m.userId)); draw(); };
+  function refreshBulk() {
+   bulkBar.replaceChildren(); bulkBar.hidden = !selected.size; if (!selected.size) return;
+   const chosen = members.filter(m => selected.has(m.userId));
+   bulkBar.append(node('b', `${chosen.length} ausgewählt`));
+   const run = async (action, roleId) => {
+    const plan = bulkPlan(chosen, action, { roleId, me });
+    if (!plan.apply.length) { setFlash('Nichts zu tun: ' + plan.skipped.map(s => `${s.username} (${s.reason})`).join(', ') + '.'); return; }
+    const what = action === 'role' ? `die Rolle „${roles.find(r => r.id === roleId)?.name}" vergeben` : action === 'suspend' ? 'den Zugang sperren' : 'den Zugang wieder aktivieren';
+    if (!await confirmAction(`${plan.apply.length} Mitglied${plan.apply.length === 1 ? '' : 'ern'} ${what}?${plan.skipped.length ? ` Übersprungen: ${plan.skipped.map(s => `${s.username} (${s.reason})`).join(', ')}.` : ''}`)) return;
+    bulkBar.querySelectorAll('button,select').forEach(c => c.disabled = true); let done = 0; const failed = [];
+    for (const [i, m] of plan.apply.entries()) {
+     setFlash(`${i + 1} von ${plan.apply.length} …`);
+     try { await json(route + encodeURIComponent(m.userId) + (action === 'role' ? '/role' : '/access'), { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(action === 'role' ? { roleId } : { suspended: action === 'suspend' }) }); done++; }
+     catch (error) { failed.push(`${m.username}: ${error.message}`); }
+    }
+    await load();
+    setFlash(`${done} von ${plan.apply.length} geändert${plan.skipped.length ? `, ${plan.skipped.length} übersprungen (${plan.skipped.map(s => `${s.username}: ${s.reason}`).join(', ')})` : ''}${failed.length ? `. Fehler: ${failed.join('; ')}` : ''}.`);
+   };
+   if (canEditRole) {
+    const choose = node('select'); choose.setAttribute('aria-label', 'Rolle für die Auswahl'); roles.forEach(r => choose.append(Object.assign(node('option', r.name), { value: r.id })));
+    const setRole = node('button', 'Rolle setzen', 'secondary'); setRole.type = 'button'; setRole.onclick = () => run('role', choose.value);
+    bulkBar.append(choose, setRole);
+   }
+   if (canAccess) {
+    const suspend = node('button', 'Sperren', 'danger'); suspend.type = 'button'; suspend.onclick = () => run('suspend');
+    const activate = node('button', 'Aktivieren', 'secondary'); activate.type = 'button'; activate.onclick = () => run('activate');
+    bulkBar.append(suspend, activate);
+   }
+   const clear = node('button', 'Auswahl aufheben', 'ghost'); clear.type = 'button'; clear.onclick = () => { selected.clear(); draw(); }; bulkBar.append(clear);
+  }
   [search, roleFilter, statusFilter].forEach(c => c.addEventListener(c === search ? 'input' : 'change', draw)); draw();
  }
 
