@@ -62,11 +62,13 @@
   (document.querySelector('main') || document.body).append(section);
  }
 
+ let generation = 0;
  async function load() {
-  const body = section.querySelector('.members-body'); body.textContent = 'Mitglieder werden geladen …';
-  try { overview = await json('/api/users/memberships'); if (!Array.isArray(overview.memberships)) throw new Error('Ungültige Antwort'); paint(); }
-  catch (error) { body.textContent = 'Mitglieder konnten nicht geladen werden: ' + error.message; }
+  const mine = ++generation, body = section.querySelector('.members-body'); body.textContent = 'Mitglieder werden geladen …';
+  try { const fresh = await json('/api/users/memberships'); if (mine !== generation) return; if (!Array.isArray(fresh.memberships)) throw new Error('Ungültige Antwort'); overview = fresh; paint(); }
+  catch (error) { if (mine === generation) body.textContent = 'Mitglieder konnten nicht geladen werden: ' + error.message; }
  }
+ globalThis.LcMembersPage.reload = () => (section ? load() : undefined);
 
  globalThis.LcMembersPage.showTab = key => { active = key; if (section && overview) paint(); };
  const setFlash = text => { const f = section?.querySelector('.members-flash'); if (f) f.textContent = text || ''; };
@@ -185,7 +187,7 @@
   const roles = overview.roleChoices || [], counts = memberCounts(overview.memberships);
   const top = node('div', undefined, 'members-toolbar');
   top.append(node('p', 'Welche Rolle darf was: ✓ bedeutet, die Rolle hat das Recht. Mitglieder erben alle Rechte ihrer Rolle.', 'members-note'));
-  if (can('USER_MANAGE') && document.querySelector('#manageRoles')) { const edit = node('button', 'Rollen bearbeiten', 'secondary'); edit.type = 'button'; edit.onclick = () => document.querySelector('#manageRoles')?.click(); top.append(edit); }
+  if (can('USER_MANAGE') && typeof openRolesEditor === 'function') { const edit = node('button', 'Rollen bearbeiten', 'secondary'); edit.type = 'button'; edit.onclick = async () => { await openRolesEditor(); }; top.append(edit); }
   const wrap = node('div', undefined, 'members-table-wrap'), table = node('table', undefined, 'members-matrix');
   const head = node('thead'), hr = node('tr'); hr.append(node('th', 'Recht'));
   roles.forEach(r => { const th = node('th'); th.append(node('span', r.name), node('small', `${counts.get(r.id) || 0} Mitglied${(counts.get(r.id) || 0) === 1 ? '' : 'er'}`)); hr.append(th); });
