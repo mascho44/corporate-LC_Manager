@@ -39,7 +39,7 @@
   if (!groups.length) { dialog.querySelector('p').textContent = 'Keine Befunde zu Dokumenten vorhanden.'; return; }
   gi = Math.max(0, nextGroupWithOpen(groups)); 
   dialog.innerHTML = '<div class="dialoghead"><h2>Dokumentweise Prüfung</h2><div class="doc-review-nav"><button type="button" class="secondary" data-doc-prev aria-label="Vorheriges Dokument">←</button><b data-doc-label></b><button type="button" class="secondary" data-doc-next aria-label="Nächstes Dokument">→</button></div><button type="button" data-close>Schließen</button></div>' +
-   '<div class="evidence-workspace"><section class="evidence-details"><div data-doc-findings></div></section><section class="evidence-document" data-pdf-pages></section></div>';
+   '<div class="evidence-workspace"><section class="evidence-details">' + (can('DOCUMENT_UPLOAD') ? '<p class="doc-review-bar"><button type="button" class="secondary" data-doc-apply>Erkannte Prüfdaten übernehmen</button> <small data-doc-apply-status role="status"></small></p>' : '') + '<div data-doc-findings></div></section><section class="evidence-document" data-pdf-pages></section></div>';
   dialog.querySelector('[data-close]').onclick = () => dialog.close();
   const list = dialog.querySelector('[data-doc-findings]'), viewer = dialog.querySelector('[data-pdf-pages]'), label = dialog.querySelector('[data-doc-label]');
   const prev = dialog.querySelector('[data-doc-prev]'), next = dialog.querySelector('[data-doc-next]');
@@ -107,6 +107,19 @@
    } catch (error) { alert('Entscheidung konnte nicht gespeichert werden: ' + error.message); }
    finally { busy = false; if (dialog.open) renderList(); }
   }
+  const applyButton = dialog.querySelector('[data-doc-apply]');
+  if (applyButton) applyButton.onclick = async () => {
+   const status = dialog.querySelector('[data-doc-apply-status]'); applyButton.disabled = true; status.textContent = 'Wird übernommen …';
+   try {
+    const result = await json(`/api/lcs/${lcId}/rule-facts/suggestions/apply`, { method: 'POST' });
+    const count = (result.documentFields || 0) + (result.lcFields || 0);
+    const name = groups[gi]?.name; await load();
+    const at = groups.findIndex(g => g.name === name);
+    status.textContent = count ? `${count} erkannte Angabe${count === 1 ? '' : 'n'} übernommen (nur leere Felder); die Befunde wurden neu berechnet.` : 'Es gab keine neuen erkannten Angaben.';
+    if (groups.length) await showGroup(at >= 0 ? at : 0);
+   } catch (error) { status.textContent = 'Nicht übernommen: ' + error.message; }
+   finally { applyButton.disabled = false; }
+  };
   prev.onclick = () => gi > 0 && showGroup(gi - 1); next.onclick = () => gi < groups.length - 1 && showGroup(gi + 1);
   await showGroup(gi);
  }

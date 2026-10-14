@@ -41,3 +41,4 @@
 .doc-review-actions{display:flex;gap:8px;flex-wrap:wrap}.doc-review-actions button{min-height:36px}
 .doc-review-finding small{color:#667085}.doc-review-doneline{color:#0f6b3a!important;font-weight:600}.doc-review-done{font-weight:700;color:#0f6b3a}
 @media(max-width:850px){#documentReviewDialog .evidence-workspace{grid-template-columns:1fr}}
+.doc-review-bar{margin:0 0 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}.doc-review-bar small{color:#475467}

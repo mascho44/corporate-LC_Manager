@@ -24,6 +24,14 @@ public final class DocumentTextFacts {
    out.add(new Fact(Field.DOCUMENT_QUANTITY,quantity.get(),"Menge im Text erkannt"));
    unit(text).ifPresent(u->out.add(new Fact(Field.DOCUMENT_QUANTITY_UNIT,u,"Mengeneinheit im Text erkannt")));
   }
+  if(quantity.isEmpty()){
+   // Table layout: the quantity stands in the item row below a header, not behind a label.
+   ItemTableFacts.detect(text).ifPresent(row->{
+    out.add(new Fact(Field.DOCUMENT_QUANTITY,row.quantity(),"Menge aus der Positionszeile erkannt"));
+    out.add(new Fact(Field.DOCUMENT_QUANTITY_UNIT,row.unit(),"Mengeneinheit aus der Positionszeile erkannt"));
+    if(row.unitPrice()!=null&&single(text,UNIT_PRICE,1).isEmpty())out.add(new Fact(Field.DOCUMENT_UNIT_PRICE_AMOUNT,row.unitPrice(),"Einzelpreis aus der Positionszeile erkannt"));
+   });
+  }
   single(text,UNIT_PRICE,1).ifPresent(p->{String n=DocumentFactSuggester.normalizeNumber(p);if(n!=null)out.add(new Fact(Field.DOCUMENT_UNIT_PRICE_AMOUNT,n,"Einzelpreis im Text erkannt"));});
   if(type!=DocumentType.COMMERCIAL_INVOICE)single(text,INVOICE_REF,1).ifPresent(v->out.add(new Fact(Field.DOCUMENT_INVOICE_REFERENCE,v,"Rechnungsreferenz im Text erkannt")));
   labelledDate(text,"(?:date\\s+of\\s+shipment|shipment\\s+date|shipped\\s+on)").ifPresent(d->out.add(new Fact(Field.DOCUMENT_SHIPMENT_DATE,d,"Versanddatum im Text erkannt")));
