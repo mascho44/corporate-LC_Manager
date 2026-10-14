@@ -13,8 +13,11 @@ public final class PdfDocumentSplitter {
         public Part(int fromPage,int toPage,DocumentType type){this(fromPage,toPage,type,null);}
         public Part {de.ostms.lc.document.domain.DocumentCopy.validate(copyNumber);}
     }
-    public record Page(int number,DocumentClassifier.Classification classification,String textSource,DocumentCopyDetector.Hint copyHint) {
-        public Page(int number,DocumentClassifier.Classification classification,String textSource){this(number,classification,textSource,DocumentCopyDetector.detect(null));}
+    /** `sample` is the beginning of the text read from the page (for the person to judge what the recognition delivered); null when nothing was read. */
+    public record Page(int number,DocumentClassifier.Classification classification,String textSource,DocumentCopyDetector.Hint copyHint,String sample) {
+        public Page(int number,DocumentClassifier.Classification classification,String textSource,DocumentCopyDetector.Hint copyHint){this(number,classification,textSource,copyHint,null);}
+        public Page(int number,DocumentClassifier.Classification classification,String textSource){this(number,classification,textSource,DocumentCopyDetector.detect(null),null);}
+        static String sampleOf(String text){String flat=text==null?"":text.replaceAll("\\s+"," ").trim();return flat.isEmpty()?null:flat.length()>160?flat.substring(0,160)+"…":flat;}
     }
     public record Proposal(int pageCount,List<Page> pages,List<Part> parts) {}
     public record Output(Part part,byte[] content,String text,OcrEvidence evidence) {}
@@ -71,7 +74,7 @@ public final class PdfDocumentSplitter {
                     detected=current;
                     classification=new DocumentClassifier.Classification(current,.8,"REVIEW",numberedContinuation?"PAGE_SEQUENCE_V1":referenceContinuation?"DOCUMENT_REFERENCE_V1":blankPage?"BLANK_PAGE_V1":attachmentCue!=null?attachmentCue:"PAGE_TOTAL_V1",List.of(numberedContinuation?"Fortsetzungsseite "+number[0]+" / "+number[1]+"; bitte prüfen":referenceContinuation?"Gleiche Dokumentnummer wie vorherige Seite; bitte prüfen":blankPage?"Leere Seite, der vorherigen zugeordnet; bitte prüfen":"Vorherige Seite kündigt weitere Seiten an; bitte prüfen"));
                 }
-                pages.add(new Page(i+1,classification,texts.get(i).isBlank()?"UNAVAILABLE":"PAGE_TEXT",DocumentCopyDetector.detect(texts.get(i))));
+                pages.add(new Page(i+1,classification,texts.get(i).isBlank()?"UNAVAILABLE":"PAGE_TEXT",DocumentCopyDetector.detect(texts.get(i)),Page.sampleOf(texts.get(i))));
                 // Unknown pages are isolated instead of silently treated as continuations.
                 // A page with its own heading after a headed front page that already has back sides or enclosures attached is a new document (e.g. the next original of a bill of lading); two bare headed pages stay together as before.
                 boolean headed=detected!=null&&classification.score()>=.9;
