@@ -15,3 +15,22 @@ test('cancelled mail and permission codes are shown in words',()=>{
  assert.equal(permissionText(['USER_MANAGE','AUDIT_VIEW','NEW_CODE']),'Audit-Protokoll ansehen · Benutzer verwalten · NEW_CODE');
  assert.equal(permissionText([]),'keine');assert.equal(permissionText(null),'keine');
 });
+test('pasted people are parsed from several notations, duplicates and bad lines are reported', () => {
+ const vm2 = require('node:vm'), fs2 = require('node:fs');
+ const ctx = vm2.createContext({}); ctx.globalThis = ctx; vm2.runInContext(fs2.readFileSync('src/main/resources/static/tenant-invitations.js', 'utf8'), ctx);
+ const api = ctx.LcTenantInvitations;
+ const result = api.parseInviteLines('Anna Beispiel <anna@firma.de>\nben.muster@firma.de\ncem@firma.de; Cem Muster\nDora Test, dora@firma.de\n\nkein mail\nANNA@firma.de\n"Eva Neu" <eva@firma.de>');
+ assert.deepEqual(Array.from(result.entries, e => e.displayName + '|' + e.email), ['Anna Beispiel|anna@firma.de', 'Ben Muster|ben.muster@firma.de', 'Cem Muster|cem@firma.de', 'Dora Test|dora@firma.de', 'Eva Neu|eva@firma.de']);
+ assert.equal(result.problems.length, 2); assert.match(result.problems[0], /Zeile 6/); assert.match(result.problems[1], /Zeile 7.*schon in der Liste/);
+ assert.equal(api.nameFromEmail('max_mustermann@x.de'), 'Max Mustermann');
+ const many = api.parseInviteLines(Array.from({ length: 60 }, (_, i) => `p${i}@firma.de`).join('\n'));
+ assert.equal(many.entries.length, 50); assert.match(many.problems[0], /ersten 50/);
+});
+test('the role summary names the missing rights when there are few, only counts when many', () => {
+ const ctx = require('node:vm').createContext({}); ctx.globalThis = ctx; require('node:vm').runInContext(require('node:fs').readFileSync('src/main/resources/static/tenant-invitations.js', 'utf8'), ctx);
+ const api = ctx.LcTenantInvitations;
+ const all = ['AUDIT_VIEW', 'DOCUMENT_APPROVE', 'DOCUMENT_DELETE', 'DOCUMENT_GENERATE', 'DOCUMENT_REVIEW', 'DOCUMENT_UPLOAD', 'EMAIL_SEND', 'LC_DELETE', 'LC_EDIT', 'SETTINGS_MANAGE', 'SWIFT_IMPORT', 'TRAINING_MANAGE', 'USER_MANAGE'];
+ assert.equal(api.permissionSummary(all), 'Alle 13 Rechte'); assert.equal(api.permissionSummary([]), 'Keine Rechte (nur ansehen)');
+ assert.equal(api.permissionSummary(all.filter(c => c !== 'USER_MANAGE' && c !== 'LC_DELETE')), '11 von 13 Rechten – es fehlen: Benutzer verwalten, LC-Akten löschen');
+ assert.equal(api.permissionSummary(['LC_EDIT', 'DOCUMENT_UPLOAD']), '2 von 13 Rechten');
+});

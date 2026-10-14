@@ -25,3 +25,16 @@ test('the permission matrix lists every permission once per area with a flag per
 test('members are counted per role', () => {
  const counts = api.memberCounts(members); assert.equal(counts.get('r2'), 2); assert.equal(counts.get('r1'), 1); assert.equal(counts.get('x') || 0, 0);
 });
+test('bulk actions skip the own user and members that need no change, and say why', () => {
+ const group = [{ username: 'Anna', roleId: 'r1', suspended: false }, { username: 'ben', roleId: 'r2', suspended: false }, { username: 'cem', roleId: 'r2', suspended: true }, { username: 'dan', roleId: 'r2', suspended: false, identityActive: false }];
+ const names = list => Array.from(list, m => m.username);
+ const role = api.bulkPlan(group, 'role', { roleId: 'r2', me: 'anna' });
+ assert.equal(role.apply.length, 0, 'everyone already has r2 or is the own user');
+ assert.deepEqual(Array.from(role.skipped, s => s.reason), ['eigene Rolle', 'hat die Rolle schon', 'hat die Rolle schon', 'hat die Rolle schon']);
+ const r1 = api.bulkPlan(group, 'role', { roleId: 'r1', me: 'anna' });
+ assert.deepEqual(names(r1.apply), ['ben', 'cem', 'dan']);
+ const suspend = api.bulkPlan(group, 'suspend', { me: 'ANNA' });
+ assert.deepEqual(names(suspend.apply), ['ben']); assert.deepEqual(Array.from(suspend.skipped, s => s.reason), ['eigener Zugang', 'schon gesperrt', 'Konto inaktiv']);
+ const activate = api.bulkPlan(group, 'activate', { me: 'anna' });
+ assert.deepEqual(names(activate.apply), ['cem']); assert.equal(activate.skipped.length, 3);
+});
