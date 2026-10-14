@@ -147,10 +147,31 @@ public class DocumentExtractionService {
         return null;
     }
 
+    /**
+     * A page is a scan when its text layer is empty, or nearly empty (fewer than this many letters and digits) and a large image lies on the page: scanners and archive tools
+     * often leave only a stamp or page mark ("1+2K") as text, which must not stop the recognition of the image. Short digital pages (no image) keep their text.
+     */
+    static final int MIN_TEXT_LAYER_CHARS=25,MIN_SCAN_IMAGE_PIXELS=400;
+    static boolean scannedPage(org.apache.pdfbox.pdmodel.PDDocument pdf,int pageIndex,String text){
+        if(text==null||text.isBlank())return true;
+        if(text.replaceAll("[^\\p{L}\\p{N}]","").length()>=MIN_TEXT_LAYER_CHARS)return false;
+        return hasLargeImage(pdf.getPage(pageIndex));
+    }
+    private static boolean hasLargeImage(org.apache.pdfbox.pdmodel.PDPage page){
+        try{
+            var resources=page.getResources();if(resources==null)return false;
+            for(var name:resources.getXObjectNames()){
+                var object=resources.getXObject(name);
+                if(object instanceof org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject image&&image.getWidth()>=MIN_SCAN_IMAGE_PIXELS&&image.getHeight()>=MIN_SCAN_IMAGE_PIXELS)return true;
+            }
+        }catch(IOException unreadable){/* an unreadable resource is not evidence of a scan */}
+        return false;
+    }
+
     static List<String> readPdfPages(byte[] content)throws Exception{
         try(var pdf=Loader.loadPDF(content)){
             PdfProcessingSafety.validate(pdf);var stripper=new PDFTextStripper();var pages=new java.util.ArrayList<String>();
-            for(int page=1;page<=pdf.getNumberOfPages();page++){stripper.setStartPage(page);stripper.setEndPage(page);String text=stripper.getText(pdf);pages.add(text.length()>MAX_TEXT_LENGTH?text.substring(0,MAX_TEXT_LENGTH):text);}
+            for(int page=1;page<=pdf.getNumberOfPages();page++){stripper.setStartPage(page);stripper.setEndPage(page);String text=stripper.getText(pdf);pages.add(scannedPage(pdf,page-1,text)?"":text.length()>MAX_TEXT_LENGTH?text.substring(0,MAX_TEXT_LENGTH):text);}
             return List.copyOf(pages);
         }
     }
