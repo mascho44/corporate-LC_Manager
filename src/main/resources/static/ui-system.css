@@ -219,5 +219,15 @@ form.membership-role-controls>button{justify-self:start}
 html[data-profile="corporate"] :is(#appNavRulePacks,#appNavMonitoring){display:none!important}
 /* Bank-only workspaces receive their messages by SWIFT; the EBICS retrieval is the corporate way. Combined workspaces keep it. */
 html[data-profile="bank"] #appNavEbics{display:none!important}
-.re-recognition-progress{display:block;width:100%;max-width:480px;height:14px;accent-color:#1f4ed8}
-.re-recognition-progress-box{display:grid;gap:6px;margin:8px 0 14px}.re-recognition-label{margin:0;font-weight:600;overflow-wrap:anywhere}
+/* Progress of the bulk re-recognition: the same card and blue as the other waiting hints (.inbox-processing), a rounded bar instead of the browser default. */
+.re-recognition-progress-box{display:grid;gap:10px;margin:12px 0 16px;padding:14px 16px;background:#f8fafc;border:1px solid #dce5f2;border-radius:12px;color:#14213d}
+.re-recognition-label{margin:0;font-size:14px;font-weight:500;overflow-wrap:anywhere}
+.re-recognition-progress{-webkit-appearance:none;appearance:none;display:block;width:100%;height:10px;border:0;border-radius:99px;background:#e5e9ef;overflow:hidden;accent-color:#175cd3}
+.re-recognition-progress::-webkit-progress-bar{background:#e5e9ef;border-radius:99px}
+.re-recognition-progress::-webkit-progress-value{background:linear-gradient(90deg,#175cd3,#3b82f6);border-radius:99px;transition:width .3s ease}
+.re-recognition-progress::-moz-progress-bar{background:#175cd3;border-radius:99px}
+.re-recognition-progress:indeterminate{background:linear-gradient(90deg,#e5e9ef 0 30%,#175cd3 50%,#e5e9ef 70% 100%);background-size:200% 100%;animation:re-recognition-wait 1.2s linear infinite}
+.re-recognition-progress:indeterminate::-webkit-progress-bar{background:linear-gradient(90deg,#e5e9ef 0 30%,#175cd3 50%,#e5e9ef 70% 100%);background-size:200% 100%;animation:re-recognition-wait 1.2s linear infinite}
+.card>.re-recognition-progress{margin-top:10px;max-width:260px}
+@keyframes re-recognition-wait{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.re-recognition-progress:indeterminate,.re-recognition-progress:indeterminate::-webkit-progress-bar{animation:none}.re-recognition-progress::-webkit-progress-value{transition:none}}
