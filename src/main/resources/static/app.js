@@ -803,17 +803,19 @@ function renderRuleMetadata(result){
     const rule=result.rule;if(!rule)return '';
     return `<details><summary>Regelgrundlage · ${esc(rule.id)} · v${esc(rule.version)}</summary><p>${esc(rule.title)} · Katalog ${esc(result.ruleCatalogVersion||'–')}</p><p>${esc(rule.basis)}</p><p>${esc(rule.explanation)}</p><p><strong>Grenzen:</strong> ${esc(rule.limitations)}</p>${rule.sourceUrl==='https://library.iccwbo.org/tfb/tfb-iccrules.htm'?'<a href="https://library.iccwbo.org/tfb/tfb-iccrules.htm" target="_blank" rel="noopener noreferrer">ICC-Regelübersicht</a>':''}</details>`;
 }
-async function decideCheck(findingCode,documentName,decision,reviewFingerprint){
+async function decideCheck(findingCode,documentName,decision,reviewFingerprint,mark=null){
     const lcId=activeLc.id;
-    const comment=prompt(decision==='ACCEPTED'?'Pflichtbegründung: Warum wird dieser Befund als erfüllt bestätigt?':'Optionaler Prüfvermerk zur bestätigten Abweichung:');
+    // With a marked evidence in the PDF no written comment is needed (the mark shows where the evidence is).
+    const comment=mark?'':prompt(decision==='ACCEPTED'?'Pflichtbegründung (oder im PDF die Fundstelle markieren): Warum wird dieser Befund als erfüllt bestätigt?':'Optionaler Prüfvermerk zur bestätigten Abweichung:');
     if(comment===null)return;
-    if(decision==='ACCEPTED'&&!comment.trim()){alert('Bitte eine Begründung eingeben. Die Entscheidung wurde nicht gespeichert.');return;}
+    if(decision==='ACCEPTED'&&!mark&&!comment.trim()){alert('Bitte eine Begründung eingeben oder die Fundstelle im PDF markieren. Die Entscheidung wurde nicht gespeichert.');return;}
     if(comment.length>1000){alert('Die Begründung darf maximal 1000 Zeichen enthalten.');return;}
     try{
-        await json(`/api/lcs/${lcId}/document-checks/decisions`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({findingCode,documentName,decision,comment:comment.trim(),reviewFingerprint})});
+        await json(`/api/lcs/${lcId}/document-checks/decisions`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({findingCode,documentName,decision,comment:comment.trim()||null,reviewFingerprint,mark})});
         if(activeLc?.id===lcId)await refreshReviewInline(lcId);
     }catch(error){alert('Entscheidung konnte nicht gespeichert werden: '+error.message);}
 }
+function markPage(text){try{const m=JSON.parse(text||'null');return m&&Number.isInteger(m.page)?' (Seite '+m.page+')':'';}catch(ignore){return '';}}
 function downloadCheckReport(){location.href=`/api/lcs/${activeLc.id}/document-checks/report`}
 document.addEventListener('click',async event=>{
     if(!event.target.closest('[data-review-history]')||!activeLc||!can('AUDIT_VIEW'))return;
@@ -824,7 +826,7 @@ document.addEventListener('click',async event=>{
         const rows=await json(`/api/lcs/${id}/document-checks/decisions/history`);
         dialog.querySelector('[data-review-history-content]').innerHTML=rows.length?rows.map(row=>{
             let snapshot=null;try{snapshot=JSON.parse(row.findingSnapshot||'null');}catch(ignore){}
-            return `<section class="card"><h3>${esc(row.findingCode)} · ${esc(row.documentName||'Dokumentensatz')}</h3><p>${esc(row.decision==='ACCEPTED'?'Als erfüllt bestätigt':'Abweichung bestätigt')} · ${esc(row.reviewedBy)} · ${esc(row.reviewedAt)}</p><p>${esc(row.comment||'Kein Prüfvermerk')}</p><p>Regel ${esc(row.ruleId||'nicht gespeichert')} · Version ${esc(row.ruleVersion||'–')} · Katalog ${esc(row.ruleCatalogVersion||'Altbestand')}</p>${row.invalidatedAt?'<p class="placement-warning">Für erneute Prüfung ungültig markiert.</p>':''}${snapshot?`<details><summary>Gespeicherte Prüfgrundlage</summary><p>${esc(snapshot.message)}</p><p>LC-Bedingung: ${esc(snapshot.lcCondition||'–')}</p><p>Textbeleg: ${esc(snapshot.documentEvidence||'–')}</p><small>Befundstand: ${esc(row.findingFingerprint)}</small></details>`:'<p>Altentscheidung ohne gespeicherte Prüfgrundlage. Erneute Prüfung erforderlich.</p>'}</section>`;
+            return `<section class="card"><h3>${esc(row.findingCode)} · ${esc(row.documentName||'Dokumentensatz')}</h3><p>${esc(row.decision==='ACCEPTED'?'Als erfüllt bestätigt':'Abweichung bestätigt')} · ${esc(row.reviewedBy)} · ${esc(row.reviewedAt)}</p><p>${esc(row.comment||(row.evidenceMark?'Fundstelle im PDF markiert'+markPage(row.evidenceMark):'Kein Prüfvermerk'))}</p><p>Regel ${esc(row.ruleId||'nicht gespeichert')} · Version ${esc(row.ruleVersion||'–')} · Katalog ${esc(row.ruleCatalogVersion||'Altbestand')}</p>${row.invalidatedAt?'<p class="placement-warning">Für erneute Prüfung ungültig markiert.</p>':''}${snapshot?`<details><summary>Gespeicherte Prüfgrundlage</summary><p>${esc(snapshot.message)}</p><p>LC-Bedingung: ${esc(snapshot.lcCondition||'–')}</p><p>Textbeleg: ${esc(snapshot.documentEvidence||'–')}</p><small>Befundstand: ${esc(row.findingFingerprint)}</small></details>`:'<p>Altentscheidung ohne gespeicherte Prüfgrundlage. Erneute Prüfung erforderlich.</p>'}</section>`;
         }).join(''):'Noch keine Prüfentscheidungen gespeichert.';
     }catch(error){dialog.querySelector('[data-review-history-content]').textContent='Historie konnte nicht geladen werden: '+error.message;}
 });

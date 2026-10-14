@@ -54,6 +54,20 @@ class VersionedReviewTest {
         assertThat(fixture.amountFinding().severity()).isEqualTo(CheckResult.Severity.DISCREPANCY);
         assertThat(fixture.service.check(fixture.id).results()).extracting(CheckResult::code).contains("REVIEW_STALE");
     }
+    @Test void aMarkedEvidenceReplacesTheRequiredCommentAndIsStoredWithTheDecision() {
+        var fixture=new Fixture();var finding=fixture.amountFinding();
+        when(fixture.decisions.save(any())).thenAnswer(call->call.getArgument(0));
+        var mark=new CheckDecisionRequest.EvidenceMark(fixture.invoice.getId(),1,0.1,0.2,0.3,0.05);
+        var saved=fixture.service.decide(fixture.id,new CheckDecisionRequest(finding.code(),finding.documentName(),"ACCEPTED",null,finding.reviewFingerprint(),mark),"checker");
+        assertThat(saved.getComment()).isNull();
+        assertThat(saved.getEvidenceMark()).contains("\"page\":1").contains(fixture.invoice.getId().toString()).contains("\"w\":0.3");
+        assertThatThrownBy(()->fixture.service.decide(fixture.id,new CheckDecisionRequest(finding.code(),finding.documentName(),"ACCEPTED"," ",finding.reviewFingerprint(),null),"checker"))
+            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Fundstelle");
+        var foreign=new CheckDecisionRequest.EvidenceMark(UUID.randomUUID(),1,0.1,0.2,0.3,0.05);
+        assertThatThrownBy(()->fixture.service.decide(fixture.id,new CheckDecisionRequest(finding.code(),finding.documentName(),"ACCEPTED",null,finding.reviewFingerprint(),foreign),"checker"))
+            .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("nicht zu dieser LC-Akte");
+        assertThat(fixture.service.decisionMark(fixture.id,finding)).isEmpty();
+    }
     private static class Fixture {
         final UUID id=UUID.randomUUID();final LetterOfCredit lc=new LetterOfCredit();
         final LcDocument invoice=new LcDocument();
@@ -61,9 +75,9 @@ class VersionedReviewTest {
         final DocumentCheckService service;
         Fixture(){
             lc.setAmount(new BigDecimal("1000"));lc.setCurrency("EUR");lc.setRequiredDocuments(List.of());
-            invoice.setOriginalFilename("invoice.pdf");invoice.setDocumentType(DocumentType.COMMERCIAL_INVOICE);invoice.setAmount(new BigDecimal("1200"));invoice.setCurrency("EUR");
+            invoice.setOriginalFilename("invoice.pdf");invoice.setLetterOfCredit(lc);org.springframework.test.util.ReflectionTestUtils.setField(invoice,"id",UUID.randomUUID());org.springframework.test.util.ReflectionTestUtils.setField(lc,"id",id);invoice.setDocumentType(DocumentType.COMMERCIAL_INVOICE);invoice.setAmount(new BigDecimal("1200"));invoice.setCurrency("EUR");
             var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);
-            when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(invoice));when(decisions.findByLcId(id)).thenReturn(List.of());
+            when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findById(invoice.getId())).thenReturn(Optional.of(invoice));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(invoice));when(decisions.findByLcId(id)).thenReturn(List.of());
             service=new DocumentCheckService(lcs,docs,decisions);
         }
         CheckResult amountFinding(){return service.check(id).results().stream().filter(r->r.code().equals("INVOICE_AMOUNT_EXCEEDED")).findFirst().orElseThrow();}
