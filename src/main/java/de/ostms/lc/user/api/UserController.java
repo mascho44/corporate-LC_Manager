@@ -1,3 +1,20 @@
 package de.ostms.lc.user.api;
-import de.ostms.lc.audit.service.AuditService; import de.ostms.lc.user.service.UserService; import jakarta.validation.Valid; import org.springframework.http.ResponseEntity; import org.springframework.security.core.Authentication; import org.springframework.web.bind.annotation.*; import java.util.*;
-@RestController @RequestMapping("/api/users") public class UserController {private final UserService service;private final AuditService audit;public UserController(UserService s,AuditService a){service=s;audit=a;}@GetMapping public List<UserView> all(){return service.all();}@GetMapping("/assignable")public List<AssignableUser> assignable(){return service.assignable();}@org.springframework.transaction.annotation.Transactional @PostMapping public UserView create(@Valid @RequestBody UserRequest r,Authentication a){UserView u=service.create(r);audit.recordChangeInTransaction(a,"USER_CREATED","USER",u.id(),u.username()+" · "+u.role(),null,AdministrationAuditSnapshot.user(u));return u;}@org.springframework.transaction.annotation.Transactional @PutMapping("/{id}")public UserView update(@PathVariable UUID id,@Valid @RequestBody UserRequest r,Authentication a){String before=AdministrationAuditSnapshot.user(service.getForAdministration(id));UserView u=service.update(id,r,a.getName());audit.recordChangeInTransaction(a,"USER_UPDATED","USER",id,u.username()+" · "+u.role()+" · "+(u.active()?"aktiv":"gesperrt"),before,AdministrationAuditSnapshot.user(u));return u;}@org.springframework.transaction.annotation.Transactional @DeleteMapping("/{id}")public ResponseEntity<Void> delete(@PathVariable UUID id,Authentication a){String before=AdministrationAuditSnapshot.user(service.getForAdministration(id));service.delete(id,a.getName());audit.recordChangeInTransaction(a,"USER_DELETED","USER",id,"Benutzer gelöscht",before,null);return ResponseEntity.noContent().build();}}
+
+import de.ostms.lc.user.service.UserService;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+/**
+ * Only the list of people a task can be assigned to. Creating, changing and deleting accounts is not offered here: accounts are created through invitations and the platform
+ * administration, and tenant administrators manage membership and role under /api/users/memberships.
+ */
+@RestController @RequestMapping("/api/users")
+public class UserController {
+ private final UserService service;
+ public UserController(UserService service){this.service=service;}
+
+ @GetMapping("/assignable") public List<AssignableUser> assignable(){return service.assignable();}
+}
