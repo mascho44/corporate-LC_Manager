@@ -12,3 +12,6 @@ Ein Avis besteht aus dem **Anschreiben der Bank** und dem **Akkreditivtext**. Im
 
 Die Funktion steht Bank- und Corporate-Mandanten zur Verfügung (Recht „LC bearbeiten" und „Dokumente hochladen"). Erkannte Angaben sind Vorschläge; bitte mit
 dem Original vergleichen. Enthält ein Avis den Akkreditivtext nicht in dieser Form, meldet die Vorschau das, und die Akte wird manuell angelegt.
+
+## Anschreiben ohne Doppelpunkte (Tabellenform)
+„Angaben aus Avisierungsschreiben vorbelegen" liest auch Anschreiben, in denen Bezeichnung und Wert nur durch Leerzeichen getrennt sind („Akkreditivnummer ABC123", „Gültig bis 30.11.2026 / GERMANY", „Akkreditiv über EUR 1.945.400,00"). Weitere Schreibweisen: Akkreditiv-Nr., L/C-Nr., Eröffnungsbank, Ausstellende Bank, Akkreditivauftraggeber, Verfall, Ablaufdatum und englische Entsprechungen. Der **Begünstigte** wird – nur wenn nichts Ausdrückliches dasteht – aus der Anschrift abgeleitet (erster Namenszeile nach der Datumszeile, die keine Bank, Straße oder Postleitzahl ist) und mit Hinweis „bitte prüfen" vorgeschlagen. „Unsere Referenz" wird weiterhin keiner Bank zugeordnet. Die Akkreditivtext-Einlesung („Als Avis einlesen") braucht weiter den Akkreditivtext im selben PDF; steht dort nur „siehe beigefügte Kopie", muss die Kopie mit im PDF sein.
