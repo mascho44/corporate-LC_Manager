@@ -264,3 +264,8 @@ html[data-profile="bank"] #appNavEbics{display:none!important}
 .tenant-invitation-bulk{margin:10px 0;padding:10px 14px;border:1px solid #dbe2ec;border-radius:12px;background:#f8fafc}.tenant-invitation-bulk summary{cursor:pointer;font-weight:600}
 .tenant-invitation-bulk textarea{display:block;width:100%;margin:10px 0 6px;box-sizing:border-box}.tenant-invitation-bulk button{margin-top:8px}
 .tenant-invitation-bulk-result p{margin:4px 0}.tenant-invitation-bulk-result .ok{color:#0f6b3a}.tenant-invitation-bulk-result .error{color:#a31313}.tenant-invitation-bulk-summary{font-weight:700}
+
+.tenant-tabs{display:flex;gap:4px;border-bottom:1px solid #dbe2ec;margin:6px 0 16px;overflow-x:auto}
+.tenant-tab{min-height:40px;padding:8px 16px;background:none;border:0;border-bottom:3px solid transparent;border-radius:0;color:#475467;font-weight:600;white-space:nowrap}
+.tenant-tab:hover{color:#14213d}.tenant-tab.active{color:#1f4ed8;border-bottom-color:#1f4ed8}
+.tenant-tab[hidden],.tenant-pane[hidden]{display:none}
