@@ -214,3 +214,8 @@ form.membership-role-controls>button{justify-self:start}
 @media(max-width:760px){.inbox-split-row .split-date,.inbox-split-row .split-signed{grid-column:1/-1}}
 .inbox-split-dialog .inbox-split-row{grid-template-columns:72px 72px minmax(90px,1fr) minmax(130px,150px)}
 .inbox-split-dialog .inbox-split-row>*{min-width:0}
+
+/* Corporate-only workspaces: no bank-only entries in the menu (rule packs, operations monitor); import of advices and LCs, EBICS retrieval and training stay available. The server stays authoritative for permissions. */
+html[data-profile="corporate"] :is(#appNavRulePacks,#appNavMonitoring){display:none!important}
+/* Bank-only workspaces receive their messages by SWIFT; the EBICS retrieval is the corporate way. Combined workspaces keep it. */
+html[data-profile="bank"] #appNavEbics{display:none!important}
