@@ -219,3 +219,5 @@ form.membership-role-controls>button{justify-self:start}
 html[data-profile="corporate"] :is(#appNavRulePacks,#appNavMonitoring){display:none!important}
 /* Bank-only workspaces receive their messages by SWIFT; the EBICS retrieval is the corporate way. Combined workspaces keep it. */
 html[data-profile="bank"] #appNavEbics{display:none!important}
+.re-recognition-progress{display:block;width:100%;max-width:480px;height:14px;accent-color:#1f4ed8}
+.re-recognition-progress-box{display:grid;gap:6px;margin:8px 0 14px}.re-recognition-label{margin:0;font-weight:600;overflow-wrap:anywhere}

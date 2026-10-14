@@ -29,3 +29,12 @@ test('whole dossier: previews every document one after another, unchanged ones s
  assert.deepEqual(f.calls.map(c=>c.url),['/api/lcs/lc1/documents/d1/re-recognition','/api/lcs/lc1/documents/d2/re-recognition','/api/lcs/lc1/documents/d3/re-recognition']);
  assert.match(f.texts(),/Keine Änderung/);assert.match(f.texts(),/c\.pdf: Das Dokument hat mehr als 10 Seiten/);assert.match(f.texts(),/1 von 3 Dokumenten mit Änderungen/);
 });
+test('a progress bar counts the documents while they are recognised and disappears at the end',async()=>{
+ const f=setup([{body:{documentId:'d1',filename:'a.pdf',token:'t1',anyApplied:false,changes:[]}},{body:{documentId:'d2',filename:'b.pdf',token:'t2',anyApplied:false,changes:[]}}],
+  [{dataset:{documentRerecognize:'d1',documentName:'a.pdf'}},{dataset:{documentRerecognize:'d2',documentName:'b.pdf'}}]);
+ await f.click({'[data-document-rerecognize-all]':true,element:{}});
+ const bar=f.all(f.body).find(n=>n.tag==='progress'&&n.max===2);
+ assert.ok(bar,'progress bar with the number of documents');assert.equal(bar.value,2);
+ const box=f.all(f.body).find(n=>n.className==='re-recognition-progress-box');assert.equal(box.removed,true);
+ const label=f.all(f.body).find(n=>n.className==='re-recognition-label');assert.match(label.textContent,/Dokument 2 von 2: b\.pdf/);
+});
