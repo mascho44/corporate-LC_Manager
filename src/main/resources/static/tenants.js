@@ -2,10 +2,10 @@
 async function setupTenants(){
  const text=(key,fallback)=>{const value=globalThis.LcI18n?.t(key);return value&&value!==key?value:fallback;};
  const node=(tag,value)=>{const n=document.createElement(tag);n.textContent=value;return n;};
- const nav=node('button',text('tenant.title','Tenants'));nav.type='button';nav.id='appNavTenants';
+ const nav=node('button',text('tenant.title','Mandant'));nav.type='button';nav.id='appNavTenants';
  document.querySelector('#appNav nav').append(nav);
  const section=document.createElement('section');section.id='tenantSection';section.className='panel hidden';
- const heading=node('h2',text('tenant.title','Tenants'));const message=node('p','');message.setAttribute('role','status');const list=document.createElement('div');
+ const heading=node('h2',text('tenant.title','Mandant'));const message=node('p','');message.setAttribute('role','status');const list=document.createElement('div');
  const form=document.createElement('form');form.className='form-grid';
  const fields=[['code','tenant.code','Tenant code'],['name','tenant.name','Tenant name']];
  fields.forEach(([name,key,label])=>{const wrapper=node('label',text(key,label)),input=document.createElement('input');input.name=name;input.required=true;input.maxLength=name==='code'?50:255;if(name==='code')input.pattern='[a-z][a-z0-9-]{1,49}';wrapper.append(input);form.append(wrapper);});
@@ -20,7 +20,7 @@ async function setupTenants(){
  const createdInfo=document.createElement('section');createdInfo.id='tenantCreatedInfo';createdInfo.className='tenant-readiness';createdInfo.hidden=true;section.append(createdInfo);
  const loginInfo=document.createElement('section');loginInfo.id='tenantLoginInfo';loginInfo.className='tenant-readiness';loginInfo.hidden=true;section.append(loginInfo);
  const settingsForm=document.createElement('form');settingsForm.id='tenantSettingsForm';settingsForm.className='form-grid';settingsForm.hidden=true;
- const settingsTitle=node('h3',text('tenant.settings','Current tenant settings'));
+ const settingsTitle=node('h3',text('tenant.settings','Stammdaten des Mandanten'));
  const nameLabel=node('label',text('tenant.name','Tenant name')),settingsName=document.createElement('input');settingsName.name='name';settingsName.required=true;settingsName.maxLength=255;nameLabel.append(settingsName);
  const languageLabel=node('label',text('tenant.language','Default language')),settingsLanguage=document.createElement('select');settingsLanguage.name='defaultLanguage';[['en','English'],['de','Deutsch']].forEach(([value,label])=>{const option=node('option',label);option.value=value;settingsLanguage.append(option);});languageLabel.append(settingsLanguage);
  const saveSettings=node('button',text('tenant.saveSettings','Save settings'));saveSettings.type='submit';settingsForm.append(settingsTitle,nameLabel,languageLabel,saveSettings);section.append(settingsForm);
@@ -37,6 +37,19 @@ async function setupTenants(){
   }catch(error){if(generation!==refreshGeneration)return;const notice=node('p',error.message);notice.setAttribute('role','alert');readiness.append(notice);}
  }
  nav.onclick=()=>{appNavigate('tenants',nav);return refresh();};
+ /* Tabs: Übersicht / Erkennung & KI / Daten & Zugänge. Boxes of other modules append to the section and are routed into their pane. */
+ const panes={overview:document.createElement('div'),recognition:document.createElement('div'),data:document.createElement('div')};
+ const tabLabels=[['overview','tenant.tabOverview','Übersicht'],['recognition','tenant.tabRecognition','Erkennung & KI'],['data','tenant.tabData','Daten & Zugänge']];
+ const boxPane={scanProfileBox:'recognition',aiSettingsBox:'recognition',docTypeTrainingBox:'recognition',customerMasterBox:'data',captureTokenBox:'data'};
+ const tabs=document.createElement('div');tabs.className='tenant-tabs';tabs.setAttribute('role','tablist');
+ let activeTab='overview';
+ function paintTabs(){[...tabs.children].forEach(b=>{const on=b.dataset.tab===activeTab;b.classList?.toggle('active',on);b.setAttribute('aria-selected',String(on));b.hidden=b.dataset.tab!=='overview'&&!panes[b.dataset.tab].children.length;});Object.entries(panes).forEach(([key,pane])=>{pane.hidden=key!==activeTab;});}
+ tabLabels.forEach(([key,i18n,label])=>{const b=node('button',text(i18n,label));b.type='button';b.className='tenant-tab';b.dataset.tab=key;b.setAttribute('role','tab');b.onclick=()=>{activeTab=key;paintTabs();};tabs.append(b);panes[key].className='tenant-pane';});
+ [...section.children].filter(child=>child!==heading).forEach(child=>panes.overview.append(child));
+ section.append(tabs,panes.overview,panes.recognition,panes.data);
+ if(typeof MutationObserver==='function')new MutationObserver(()=>{[...section.children].forEach(child=>{const target=boxPane[child.id];if(target)panes[target].append(child);});paintTabs();}).observe(section,{childList:true});
+ paintTabs();
+ globalThis.openTenantTab=key=>{if(panes[key]){activeTab=key;paintTabs();}};
  const header=document.createElement('label');header.className='tenant-workspace-selector';header.append(node('span',text('tenant.workspace','Workspace')));
  const chooser=document.createElement('select');chooser.setAttribute('aria-label',text('tenant.workspace','Workspace'));header.append(chooser);document.querySelector('.header-actions').prepend(header);
  let overview,settings,busy=false,refreshGeneration=0;
@@ -60,11 +73,11 @@ async function setupTenants(){
    overview.workspaces.forEach(workspace=>{const option=node('option',workspace.name);option.value=workspace.id;chooser.append(option);
     const row=document.createElement('article');row.className='membership-row';row.append(node('b',workspace.name),node('small',workspace.code));
     const button=node('button',workspace.id===overview.selectedTenantId?text('tenant.selected','Selected'):text('tenant.open','Open workspace'));button.type='button';button.className='secondary';button.disabled=workspace.id===overview.selectedTenantId;button.onclick=()=>switchTo(workspace.id);row.append(button);list.append(row);
-   });chooser.value=overview.selectedTenantId;
+   });chooser.value=overview.selectedTenantId;const choice=overview.workspaces.length>1||overview.creationEnabled;list.hidden=!choice;header.hidden=overview.workspaces.length<=1;
    const nextSettings=await json('/api/tenants/current/settings');if(generation!==refreshGeneration)return;settings=nextSettings;settingsForm.hidden=!settings.editingEnabled;settingsName.value=settings.name;settingsLanguage.value=settings.defaultLanguage;
    if(typeof applyWorkspaceProfile==='function')applyWorkspaceProfile(settings);
    const current=overview.workspaces.find(workspace=>workspace.id===overview.selectedTenantId);
-   if(current){loginInfo.hidden=false;loginInfo.append(node('h3',text('tenant.loginInfo','Access to this tenant')),node('p',current.name),node('p',text('tenant.loginCode','Tenant identifier: ')+current.code),node('p',text('tenant.loginHelp','Sign in with your username, password and two-factor authentication when required, then select an authorized workspace. A single available workspace opens directly.')),node('p',text('tenant.accessHelp','A tenant administrator must first assign your existing account to a role under Users. Creating a tenant or knowing its code does not grant access.')));}
+   if(current){loginInfo.hidden=false;loginInfo.append(node('h3',text('tenant.loginInfo','Access to this tenant')),node('p',current.name),node('p',text('tenant.loginCode','Tenant identifier: ')+current.code),node('p',text('tenant.profile','Mandantenprofil')+': '+[settings.bankEnabled?text('tenant.profileBank','Bank'):'',settings.corporateEnabled?text('tenant.profileCorporate','Corporate'):''].filter(Boolean).join(' & ')),node('p',text('tenant.loginHelp','Sign in with your username, password and two-factor authentication when required, then select an authorized workspace. A single available workspace opens directly.')),node('p',text('tenant.accessHelp','A tenant administrator must first assign your existing account to a role under Users. Creating a tenant or knowing its code does not grant access.')));}
    await refreshReadiness(generation);if(generation===refreshGeneration)message.textContent='';
   }catch(error){if(generation!==refreshGeneration)return;message.textContent=error.message;form.hidden=true;chooser.disabled=true;retry.hidden=false;}
   finally{if(generation===refreshGeneration)section.setAttribute('aria-busy','false');}
