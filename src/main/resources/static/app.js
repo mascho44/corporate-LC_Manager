@@ -327,9 +327,9 @@ async function openInboxSplit(item){
     try{
         const proposal=item.proposal||await json(`/api/inbox/${item.id}/split-proposal`);if(!dialog.isConnected)return;
         if(proposal.pageCount<2)throw new Error('Diese PDF enthält nur eine Seite und kann nicht seitenweise aufgeteilt werden.');
-        dialog.innerHTML=`<div class="dialoghead"><h2>Sammel-PDF aufteilen</h2><button type="button" data-close>Schließen</button></div><p>${proposal.pageCount} Seiten · Vorschläge bitte prüfen. Das Original bleibt erhalten. Jede Seite muss genau einmal enthalten sein. Zusammenhängende, nummerierte Fortsetzungsseiten werden gemeinsam vorgeschlagen und müssen geprüft werden. Nicht zuordenbare Seiten bleiben separat. Mit der Bestätigung werden Aufteilung und Dokumenttypen als Trainingsmuster für diesen Mandanten gespeichert. Automatische Aufteilungen lernen nicht.</p><a target="_blank" rel="noopener" href="/api/inbox/${item.id}/content">Original-PDF ansehen</a><details><summary>Erkennung je Seite</summary>${proposal.pages.map(page=>`<p>Seite ${page.number}: ${esc(inboxDocumentTypes.find(([type])=>type===page.classification.suggestedType)?.[1]||'Unklar')} · ${page.classification.status==="REVIEW"?"Prüfen · ":""}${esc(page.classification.evidence.join(' · ')||'Keine eindeutige Überschrift erkannt')} ${esc(page.copyHint?.evidence||'')}</p>`).join('')}</details><form data-split-form><div data-parts></div><button type="button" class="secondary" data-add>Bereich hinzufügen</button><div class="split-submit-panel"><p data-error role="alert" tabindex="-1"></p><p data-submit-status role="status" aria-live="polite"></p><button type="submit">Aufteilung bestätigen</button></div></form>`;
+        dialog.innerHTML=`<div class="dialoghead"><h2>Sammel-PDF aufteilen</h2><button type="button" data-close>Schließen</button></div><div class="evidence-workspace"><section class="evidence-details"><h3>Hinweise</h3><p>${proposal.pageCount} Seiten · Vorschläge bitte prüfen. Das Original bleibt erhalten.</p><details><summary>Hinweise zur Aufteilung</summary><p>Jede Seite muss genau einmal enthalten sein. Zusammenhängende, nummerierte Fortsetzungsseiten werden gemeinsam vorgeschlagen und müssen geprüft werden. Nicht zuordenbare Seiten bleiben separat. Mit der Bestätigung werden Aufteilung und Dokumenttypen als Trainingsmuster für diesen Mandanten gespeichert. Automatische Aufteilungen lernen nicht.</p></details><details><summary>Erkennung je Seite</summary>${proposal.pages.map(page=>`<p>Seite ${page.number}: ${esc(inboxDocumentTypes.find(([type])=>type===page.classification.suggestedType)?.[1]||'Unklar')} · ${page.classification.status==="REVIEW"?"Prüfen · ":""}${esc(page.classification.evidence.join(' · ')||'Keine eindeutige Überschrift erkannt')} ${esc(page.copyHint?.evidence||'')}</p>`).join('')}</details><h3>Bereiche</h3><form data-split-form><div data-parts></div><button type="button" class="secondary" data-add>Bereich hinzufügen</button><div class="split-submit-panel"><p data-error role="alert" tabindex="-1"></p><p data-submit-status role="status" aria-live="polite"></p><button type="submit">Aufteilung bestätigen</button></div></form></section><section class="evidence-document"><div class="evidence-page-toolbar"><button type="button" data-prev disabled aria-label="Vorherige Seite">←</button><span data-page></span><button type="button" data-next disabled aria-label="Nächste Seite">→</button><button type="button" data-zoom>Vergrößern</button><button type="button" data-retry>Neu laden</button><a class="button-link" target="_blank" rel="noopener" data-original-pdf href="/api/inbox/${item.id}/content">Original separat öffnen</a></div><p data-status role="status"></p><div class="evidence-viewer"><nav class="evidence-pages" aria-label="Seiten"></nav><div class="evidence-document-viewport"><img alt="PDF-Seite" hidden></div></div></section></div>`;
         dialog.querySelector('[data-close]').onclick=()=>dialog.close();
-        dialog.querySelector('a').href=originalUrl;
+        dialog.querySelector('[data-original-pdf]').href=originalUrl;
         if(item.pretraining){dialog.querySelector('h2').textContent='Sammel-PDF vortrainieren';dialog.querySelector('[type=submit]').textContent='Trainingsmuster speichern';const notice=document.createElement('p');notice.textContent='Nur Training: Es entstehen keine Posteingangsdokumente und keine LC-Akte. Die PDF wird nicht gespeichert. Bitte alle Dokumenttypen und Seitengrenzen fachlich prüfen.';dialog.querySelector('form').before(notice);}
         const rows=dialog.querySelector('[data-parts]'),form=dialog.querySelector('form');
         form.noValidate=true;
@@ -351,9 +351,6 @@ async function openInboxSplit(item){
             }
             form.before(clarity);
         }
-        const preview=document.createElement('section');preview.className='split-page-preview';preview.hidden=true;preview.innerHTML='<div class="split-preview-head"><h3>Seitenbild vergrößert</h3><button type="button">Vorschau schließen</button></div><p role="status"></p><img alt="Vergrößerte PDF-Seite">';
-        let previewOrigin=null,previewScroll=0;
-        preview.querySelector('button').onclick=()=>{zoomVersion++;preview.hidden=true;previewOrigin?.focus({preventScroll:true});};
         const images=new Map(),imageUrls=[],abort=new AbortController();let rendering=Promise.resolve(),zoomVersion=0;
         const oldClose=dialog.onclose;dialog.onclose=()=>{abort.abort();observer?.disconnect();imageUrls.forEach(url=>URL.revokeObjectURL(url));oldClose();};
         function pageImage(page,enlarged=false){
@@ -367,15 +364,29 @@ async function openInboxSplit(item){
                 const imageUrl=URL.createObjectURL(await response.blob());if(!dialog.isConnected){URL.revokeObjectURL(imageUrl);throw new Error('Vorschau geschlossen.');}imageUrls.push(imageUrl);return imageUrl;
             });images.set(key,promise);rendering=promise;promise.catch(()=>images.delete(key));return promise;
         }
-        async function enlargePage(page,row,origin){const version=++zoomVersion;previewOrigin=origin;previewScroll=dialog.scrollTop;if(!preview.isConnected)dialog.append(preview);preview.hidden=false;preview.querySelector('p').textContent=`Seite ${page} wird geladen …`;preview.querySelector('img').removeAttribute('src');try{const url=await pageImage(page,true);if(version!==zoomVersion||!dialog.isConnected)return;preview.querySelector('img').src=url;preview.querySelector('img').alt=`PDF-Seite ${page}`;preview.querySelector('p').textContent=`Seite ${page}`;}catch(error){if(version===zoomVersion&&dialog.isConnected)preview.querySelector('p').textContent=error.message;}}
-        function loadThumb(button){if(button.dataset.loaded)return;button.dataset.loaded='true';pageImage(Number(button.dataset.page)).then(url=>{if(button.isConnected){button.querySelector('img').src=url;button.querySelector('small').textContent='Klicken zum Vergrößern';}}).catch(()=>{if(button.isConnected){delete button.dataset.loaded;button.querySelector('small').textContent='Nicht geladen · klicken zum Wiederholen';}});}
-        const observer=typeof IntersectionObserver==='function'?new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){observer.unobserve(entry.target);loadThumb(entry.target);}}),{root:dialog,rootMargin:'100px'}):null;
-        function renderThumbs(row){
-            let strip=row.querySelector('.split-thumbnails');if(!strip){strip=document.createElement('div');strip.className='split-thumbnails';row.querySelector('.split-row-actions').before(strip);}
-            strip.querySelectorAll('button').forEach(button=>observer?.unobserve(button));strip.replaceChildren();const part=readRange(row);
-            if(!Number.isInteger(part.fromPage)||!Number.isInteger(part.toPage)||part.fromPage<1||part.toPage>proposal.pageCount||part.toPage<part.fromPage)return;
-            for(let page=part.fromPage;page<=part.toPage;page++){const button=document.createElement('button');button.type='button';button.className='split-thumbnail';button.dataset.page=page;button.innerHTML=`<span>Seite ${page}</span><img alt="Vorschau Seite ${page}" decoding="async"><small>Wird geladen …</small>`;button.onclick=()=>{loadThumb(button);enlargePage(page,row,button);};strip.append(button);if(observer)observer.observe(button);else loadThumb(button);}
+        const viewport=dialog.querySelector('.evidence-document-viewport'),image=viewport.querySelector('img'),status=dialog.querySelector('[data-status]'),pagesNav=dialog.querySelector('.evidence-pages');
+        const prevButton=dialog.querySelector('[data-prev]'),nextButton=dialog.querySelector('[data-next]'),pageLabel=dialog.querySelector('[data-page]');
+        let selectedPage=1;
+        async function showPage(page){
+            if(!Number.isInteger(page)||page<1||page>proposal.pageCount)return;
+            const version=++zoomVersion;selectedPage=page;pageLabel.textContent=`Seite ${page} / ${proposal.pageCount}`;prevButton.disabled=page<=1;nextButton.disabled=page>=proposal.pageCount;
+            pagesNav.querySelectorAll('.evidence-page-thumb').forEach(thumb=>{const on=Number(thumb.dataset.page)===page;thumb.classList.toggle('selected',on);if(on)thumb.scrollIntoView({block:'nearest'});});
+            status.textContent=`Seite ${page} wird geladen …`;image.hidden=true;
+            try{const url=await pageImage(page,true);if(version!==zoomVersion||!dialog.isConnected)return;image.src=url;image.alt=`PDF-Seite ${page}`;image.hidden=false;status.textContent='';}catch(error){if(version===zoomVersion&&dialog.isConnected)status.textContent=error.message;}
         }
+        const enlargePage=(page)=>showPage(page);
+        function loadThumb(button){if(button.dataset.loaded)return;button.dataset.loaded='true';pageImage(Number(button.dataset.page)).then(url=>{if(button.isConnected)button.querySelector('img').src=url;}).catch(()=>{if(button.isConnected)delete button.dataset.loaded;});}
+        const observer=typeof IntersectionObserver==='function'?new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){observer.unobserve(entry.target);loadThumb(entry.target);}}),{root:dialog,rootMargin:'100px'}):null;
+        for(let page=1;page<=proposal.pageCount;page++){const thumb=document.createElement('button');thumb.type='button';thumb.className='evidence-page-thumb';thumb.dataset.page=page;thumb.setAttribute('aria-label',`Seite ${page}`);thumb.innerHTML=`<img alt="" decoding="async"><span>${page}</span><small></small>`;thumb.onclick=()=>{loadThumb(thumb);showPage(page);};pagesNav.append(thumb);if(observer)observer.observe(thumb);else loadThumb(thumb);}
+        prevButton.onclick=()=>showPage(selectedPage-1);nextButton.onclick=()=>showPage(selectedPage+1);
+        dialog.querySelector('[data-zoom]').onclick=event=>{const zoomed=image.classList.toggle('zoomed');event.currentTarget.textContent=zoomed?'Verkleinern':'Vergrößern';};
+        dialog.querySelector('[data-retry]').onclick=()=>showPage(selectedPage);
+        /** Each page thumbnail says which range it currently belongs to. */
+        function markRanges(){
+            const marks=new Map();[...rows.children].forEach((row,index)=>{const part=readRange(row);for(let page=part.fromPage;page<=part.toPage;page++)marks.set(page,index+1);});
+            pagesNav.querySelectorAll('.evidence-page-thumb').forEach(thumb=>{const range=marks.get(Number(thumb.dataset.page));thumb.querySelector('small').textContent=range?`Bereich ${range}`:'–';thumb.classList.toggle('has-other',!range);});
+        }
+        const renderThumbs=()=>markRanges();
         const readRange=row=>({fromPage:Number(row.querySelector('[name=fromPage]').value),toPage:Number(row.querySelector('[name=toPage]').value),documentType:row.querySelector('[name=documentType]').value,copyNumber:readDocumentCopy(row.querySelector('[name=copyNumber]').value)});
         const refreshMergeButtons=()=>[...rows.children].forEach((row,index)=>row.querySelector('[data-merge]').disabled=index===0);
         rows.addEventListener('change',event=>{
@@ -401,7 +412,6 @@ async function openInboxSplit(item){
                 confirmation.querySelector('[data-confirm]').onclick=()=>{
                     try{
                         const all=[...rows.children],index=all.indexOf(row),exploded=explodeInboxSplitRange(all.map(readRange),index);
-                        preview.hidden=true;
                         rows.replaceChildren();exploded.forEach(add);
                         refreshMergeButtons();
                         const first=rows.children[index];first?.querySelector('[name=fromPage]').focus({preventScroll:true});submitStatus.textContent='Bereich in Einzelseiten zerlegt. Bitte Dokumenttypen prüfen.';
@@ -409,11 +419,12 @@ async function openInboxSplit(item){
                 };
                 row.append(confirmation);confirmation.querySelector('[data-cancel]').focus({preventScroll:true});confirmation.scrollIntoView({behavior:'smooth',block:'nearest'});
             };
-            row.querySelector('[data-preview]').onclick=()=>{const page=readRange(row).fromPage;if(!Number.isInteger(page)||page<1||page>proposal.pageCount)return;enlargePage(page,row,row.querySelector('[data-preview]'));};
+            row.querySelector('[data-preview]').onclick=()=>{showPage(readRange(row).fromPage);};
             row.querySelector('[data-merge]').onclick=async()=>{const error=dialog.querySelector('[data-error]');error.textContent='';try{const previous=row.previousElementSibling,a=readRange(previous),b=readRange(row),merged=mergeInboxSplitRanges(a,b);if((a.documentType!==b.documentType||a.copyNumber!==b.copyNumber)&&!await confirmAction('Unterschiedliche Dokumenttypen oder Original/Copy-Kennzeichnungen verbinden? Dokumenttyp und Kennzeichnung des vorherigen Bereichs bleiben erhalten. Bitte anschließend prüfen.'))return;previous.querySelector('[name=toPage]').value=merged.toPage;row.remove();refreshMergeButtons();renderThumbs(previous);}catch(failure){error.textContent=failure.message;}};
             rows.append(row);refreshMergeButtons();renderThumbs(row);
         };
         proposal.parts.forEach(add);
+        markRanges();showPage(1);
         [...rows.children].forEach(row=>{const range=readRange(row);for(let page=range.fromPage;page<=range.toPage;page++)if(uncertainPages.has(page)){row.classList.add('split-uncertain');const mark=document.createElement('p');mark.className='split-uncertain-note';mark.textContent=inboxAutoText('uncertainRow','Uncertain – please review');row.prepend(mark);break;}});
         dialog.querySelector('[data-add]').onclick=()=>{
             const error=dialog.querySelector('[data-error]');error.textContent='';
