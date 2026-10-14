@@ -18,3 +18,11 @@ test('the next open finding and the next document with open findings are found w
  assert.equal(api.nextGroupWithOpen([{ openCount: 0 }, { openCount: 2 }, { openCount: 0 }]), 1); assert.equal(api.nextGroupWithOpen([{ openCount: 0 }, { openCount: 2 }], 1), -1);
  assert.equal(api.isOpen(f('A', 'x', 'DISCREPANCY', 'CONFIRMED_DISCREPANCY')), false);
 });
+test('the hint that an earlier decision no longer applies is not an open finding and cannot block finishing a document', () => {
+ const stale = f('REVIEW_STALE', 'a.pdf', 'WARNING');
+ assert.equal(api.isOpen(stale), false);
+ const groups = api.groupFindings([stale, f('X', 'a.pdf', 'WARNING', 'ACCEPTED')], docs);
+ assert.equal(groups[0].openCount, 0); assert.equal(api.nextOpen(groups[0].items), -1);
+ const mixed = api.groupFindings([stale, f('Y', 'a.pdf', 'DISCREPANCY')], docs);
+ assert.equal(mixed[0].openCount, 1); assert.equal(mixed[0].items[api.nextOpen(mixed[0].items)].code, 'Y');
+});
