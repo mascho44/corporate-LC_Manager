@@ -185,9 +185,12 @@ public final class PdfDocumentSplitter {
         List<String> result=new ArrayList<>();var stripper=new PDFTextStripper();
         for(int page=1;page<=pdf.getNumberOfPages();page++) {
             stripper.setStartPage(page);stripper.setEndPage(page);String text=stripper.getText(pdf);
-            if(text.isBlank()&&evidence!=null) {
+            // A page with only a stamp in its text layer is a scan: its recognised text replaces the stray layer text.
+            boolean sparse=!text.isBlank()&&DocumentExtractionService.scannedPage(pdf,page-1,text);
+            if((text.isBlank()||sparse)&&evidence!=null) {
                 String completed=evidence.completedPageText(page);
-                if(completed!=null){result.add(completed.length()>100_000?completed.substring(0,100_000):completed);continue;}
+                if(completed!=null&&(!sparse||!completed.isBlank())){result.add(completed.length()>100_000?completed.substring(0,100_000):completed);continue;}
+                if(sparse){result.add(text.length()>100_000?text.substring(0,100_000):text);continue;}
                 int number=page;var words=evidence.words().stream().filter(w->w.page()==number).toList();
                 StringBuilder rebuilt=new StringBuilder();int top=-1;
                 for(var word:words) {if(top>=0&&Math.abs(word.top()-top)>8)rebuilt.append('\n');else rebuilt.append(' ');rebuilt.append(word.text());top=word.top();}
