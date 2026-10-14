@@ -84,6 +84,8 @@ public class DocumentFactSuggester {
    if(!risks.isEmpty())add(out,current,Field.DOCUMENT_INSURANCE_RISKS,String.join("; ",risks),"Versicherungsrisiken im Text erkannt");
   }
   DocumentTextFacts.detect(doc.getDocumentType(),text).forEach(f->add(out,current,f.field(),f.value(),f.source()));
+  // Free-text parties and goods from the printed layout (labelled lines, letterhead, article column); proposals only.
+  DocumentPartyLines.detect(text).forEach(f->{if(out.stream().noneMatch(x->x.field()==f.field()))add(out,current,f.field(),f.value(),f.source());});
   DocumentIndicators.detect(doc.getDocumentType(),text).forEach(h->add(out,current,h.field(),"true",h.source()));
   var parties=DocumentPartyFacts.detect(text);
   if(parties.applicantCountry()!=null)add(out,current,Field.DOCUMENT_APPLICANT_ADDRESS_COUNTRY,parties.applicantCountry(),"Land der Auftraggeber-Adresse im Text erkannt: "+parties.applicantSource());
