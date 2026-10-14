@@ -6,19 +6,23 @@
 
  /** The block shown for one submission letter. `customers` is the master list for the manual choice. */
  function blockHtml(entry, customers) {
+  const batch = entry.via === 'BATCH';
   const read = Object.entries(label).filter(([key]) => entry.fields?.[key]).map(([key, text]) => `<dt>${text}</dt><dd>${esc(entry.fields[key])}</dd>`).join('');
-  const found = read ? `<dl class="customer-facts">${read}</dl>` : '<p>Im Einreichungsschreiben wurden keine Kundenangaben erkannt.</p>';
+  const found = batch ? '' : read ? `<dl class="customer-facts">${read}</dl>` : '<p>Im Einreichungsschreiben wurden keine Kundenangaben erkannt.</p>';
   const best = entry.candidates?.[0];
   let status;
   if (entry.assigned) status = `<p class="customer-assigned">✓ Kunde: <b>${esc(entry.assigned.name)}</b>${entry.assigned.method === 'SUGGESTION' ? ' (Vorschlag bestätigt)' : ' (manuell gewählt)'}</p>`;
+  else if (batch && best) status = `<p class="customer-suggestion">Aus dem Einreichungsschreiben dieser Lieferung (${esc(best.reason)}): <b>${esc(best.name)}</b> <button type="button" data-customer-confirm="${esc(best.customerId)}">Bestätigen</button></p>`;
   else if (best && entry.clear) status = `<p class="customer-suggestion">Erkannt: <b>${esc(best.name)}</b> (über ${esc(best.reason)}) <button type="button" data-customer-confirm="${esc(best.customerId)}">Bestätigen</button></p>`;
   else if (best) status = `<p class="customer-suggestion">Mögliche Kunden: ${entry.candidates.map(c => `<b>${esc(c.name)}</b> (${esc(c.reason)})`).join(', ')}. Bitte auswählen.</p>`;
   else status = '<p class="customer-missing">Kein Kunde erkannt. Bitte den Kunden auswählen.</p>';
+  const lcs = (entry.lcs || []).length
+   ? `<p class="customer-lcs">Akten dieses Kunden: ${entry.lcs.map(l => `<button type="button" class="secondary" data-pick-lc="${esc(l.id)}" title="LC-Akte in der Zuordnung auswählen">${esc(l.reference)}${l.byLetter ? ' · laut Schreiben' : ''}</button>`).join(' ')}</p>` : '';
   const options = (customers || []).map(c => `<option value="${esc(c.id)}"${entry.assigned?.customerId === c.id ? ' selected' : ''}>${esc(c.name)}${c.customerNumber ? ' · ' + esc(c.customerNumber) : ''}</option>`).join('');
   const choose = customers?.length
    ? `<label>Kunde wählen <select data-customer-select><option value="">– bitte wählen –</option>${options}</select></label>${entry.assigned ? ' <button type="button" class="secondary" data-customer-clear>Zuordnung entfernen</button>' : ''}`
    : '<p><small>Im Kundenstamm (Einstellungen) ist noch kein Kunde angelegt.</small></p>';
-  return `<summary>Einreichungsschreiben · Kunde</summary>${found}${status}<p>${choose}</p><p class="customer-error" role="alert"></p>`;
+  return `<summary>${batch ? 'Kunde dieser Lieferung' : 'Einreichungsschreiben · Kunde'}</summary>${found}${status}${lcs}<p>${choose}</p><p class="customer-error" role="alert"></p>`;
  }
  globalThis.LcCustomers = { blockHtml };
  if (typeof document === 'undefined' || !document.body) return;
@@ -46,6 +50,12 @@
     try { await json(`/api/inbox-customers/${encodeURIComponent(id)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customerId }) }); await load(); }
     catch (error) { box.querySelector('.customer-error').textContent = error.message; }
    };
+   box.querySelectorAll('[data-pick-lc]').forEach(pick => pick.addEventListener('click', () => {
+    const select = article.querySelector('form[data-inbox-attach] select[name=lcId]');
+    if (!select) { box.querySelector('.customer-error').textContent = 'Das Zuordnungsformular ist gerade nicht verfügbar.'; return; }
+    select.value = pick.dataset.pickLc; select.dispatchEvent(new Event('input', { bubbles: true })); select.dispatchEvent(new Event('change', { bubbles: true }));
+    select.scrollIntoView({ block: 'center', behavior: 'smooth' }); select.focus({ preventScroll: true });
+   }));
    box.querySelector('[data-customer-confirm]')?.addEventListener('click', event => send(event.currentTarget.dataset.customerConfirm));
    box.querySelector('[data-customer-select]')?.addEventListener('change', event => { if (event.target.value) send(event.target.value); });
    box.querySelector('[data-customer-clear]')?.addEventListener('click', async () => {

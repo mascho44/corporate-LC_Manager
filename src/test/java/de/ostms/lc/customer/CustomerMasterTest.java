@@ -16,12 +16,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DataJpaTest(properties={"spring.flyway.enabled=false","spring.jpa.hibernate.ddl-auto=create-drop","spring.datasource.url=jdbc:h2:mem:customermaster;MODE=PostgreSQL;DB_CLOSE_DELAY=-1","spring.datasource.driver-class-name=org.h2.Driver"},showSql=false)
 @AutoConfigureTestDatabase(replace=AutoConfigureTestDatabase.Replace.NONE)
 class CustomerMasterTest {
- @Autowired CustomerRepository customers;@Autowired InboxCustomerAssignmentRepository assignments;@Autowired DocumentInboxRepository inbox;@Autowired TenantRepository tenants;
+ @Autowired CustomerRepository customers;@Autowired InboxCustomerAssignmentRepository assignments;@Autowired DocumentInboxRepository inbox;@Autowired TenantRepository tenants;@Autowired de.ostms.lc.lc.repository.LetterOfCreditRepository lettersOfCredit;@Autowired de.ostms.lc.capture.InboxCaptureInfoRepository captureInfos;
  CustomerService service;InboxCustomerService inboxCustomers;
 
  @BeforeEach void setUp(){
   if(tenants.findById(Tenant.DEFAULT_ID).isEmpty())tenants.saveAndFlush(new Tenant());
-  service=new CustomerService(customers);inboxCustomers=new InboxCustomerService(inbox,customers,assignments);
+  service=new CustomerService(customers);inboxCustomers=new InboxCustomerService(inbox,customers,assignments,lettersOfCredit,captureInfos);
  }
  DocumentInboxItem item(String filename,String text){var i=new DocumentInboxItem();i.setOriginalFilename(filename);i.setContentType("application/pdf");i.setFileSize(10);i.setReceivedBy("capture:Scanner");i.setExtractionStatus("EXTRACTED");i.setExtractedText(text);return inbox.saveAndFlush(i);}
 
@@ -67,5 +67,53 @@ class CustomerMasterTest {
   var entry=inboxCustomers.overview().get(letter.getId());
   assertThat(entry.candidates()).isEmpty();assertThat(entry.clear()).isFalse();
   assertThat(inboxCustomers.assign(letter.getId(),customer.id(),"anna").method()).isEqualTo("MANUAL");
+ }
+
+ de.ostms.lc.lc.domain.LetterOfCredit lc(String reference,String beneficiary,de.ostms.lc.lc.domain.LetterOfCreditStatus status){
+  var l=new de.ostms.lc.lc.domain.LetterOfCredit();l.setReference(reference);l.setBeneficiary(beneficiary);l.setStatus(status);return lettersOfCredit.saveAndFlush(l);
+ }
+
+ @Test void theCustomerSteersTheChoiceOfTheLcFileAndTheLcNamedByTheLetterComesFirst(){
+  var customer=service.create(new CustomerService.Request("Beispiel Export GmbH",null,null,"DE89370400440532013000",null),"admin");
+  lc("LCB-ALPHA","BEISPIEL EXPORT GMBH, STUTTGART",de.ostms.lc.lc.domain.LetterOfCreditStatus.ACTIVE);
+  lc("LCB0319990000001","ANDERER BEGÜNSTIGTER",de.ostms.lc.lc.domain.LetterOfCreditStatus.ACTIVE);
+  lc("LCB-ALT","BEISPIEL EXPORT GMBH",de.ostms.lc.lc.domain.LetterOfCreditStatus.CLOSED);
+  lc("LCB-FREMD","FREMDE FIRMA AG",de.ostms.lc.lc.domain.LetterOfCreditStatus.ACTIVE);
+  var letter=item("einreichung.pdf",SubmissionLetterTest.BANK_FORM);
+  var entry=inboxCustomers.overview().get(letter.getId());
+  assertThat(entry.clear()).isTrue();assertThat(entry.via()).isEqualTo("LETTER");
+  assertThat(entry.lcs()).extracting(InboxCustomerService.LcOption::reference).containsExactly("LCB0319990000001","LCB-ALPHA");
+  assertThat(entry.lcs().get(0).byLetter()).isTrue();assertThat(entry.lcs().get(1).byLetter()).isFalse();
+  inboxCustomers.assign(letter.getId(),customer.id(),"anna");
+  assertThat(inboxCustomers.overview().get(letter.getId()).lcs()).extracting(InboxCustomerService.LcOption::reference).containsExactly("LCB0319990000001","LCB-ALPHA");
+ }
+
+ @Test void withoutAClearCustomerNoLcFilesAreSuggested(){
+  service.create(new CustomerService.Request("Beispiel Export GmbH",null,null,null,null),"admin");
+  lc("LCB-ALPHA","BEISPIEL EXPORT GMBH",de.ostms.lc.lc.domain.LetterOfCreditStatus.ACTIVE);
+  var letter=item("einreichung.pdf","Dokumenteneinreichung\nKunde: Beispiel Export GmbH\nKundennummer: 99\nIBAN: DE89 3704 0044 0532 0130 00");
+  var entry=inboxCustomers.overview().get(letter.getId());
+  assertThat(entry.clear()).isFalse();assertThat(entry.lcs()).isEmpty();
+ }
+
+ @Test void otherDocumentsOfTheSameBatchGetTheCustomerOfTheConfirmedLetter(){
+  var customer=service.create(new CustomerService.Request("Beispiel Export GmbH",null,null,"DE89370400440532013000",null),"admin");
+  lc("LCB-ALPHA","BEISPIEL EXPORT GMBH",de.ostms.lc.lc.domain.LetterOfCreditStatus.ACTIVE);
+  var letter=item("einreichung.pdf",SubmissionLetterTest.BANK_FORM);
+  var invoice=item("rechnung.pdf","Rechnung Nr. 5\nBetrag 100,00 EUR");
+  var packing=item("packliste.pdf","Packing list 1");
+  var otherBatch=item("fremd.pdf","Rechnung Nr. 9");
+  captureInfos.saveAndFlush(new de.ostms.lc.capture.InboxCaptureInfo(letter.getId(),"capture:x","B1","S1",2,2,null,"a1"));
+  captureInfos.saveAndFlush(new de.ostms.lc.capture.InboxCaptureInfo(invoice.getId(),"capture:x","B1","S1",1,1,null,"a2"));
+  captureInfos.saveAndFlush(new de.ostms.lc.capture.InboxCaptureInfo(packing.getId(),"capture:x","B1","S1",1,1,null,"a3"));
+  captureInfos.saveAndFlush(new de.ostms.lc.capture.InboxCaptureInfo(otherBatch.getId(),"capture:x","B2","S1",1,1,null,"a4"));
+  assertThat(inboxCustomers.overview()).containsOnlyKeys(letter.getId());
+  inboxCustomers.assign(letter.getId(),customer.id(),"anna");
+  var entries=inboxCustomers.overview();
+  assertThat(entries).containsOnlyKeys(letter.getId(),invoice.getId(),packing.getId());
+  var inherited=entries.get(invoice.getId());
+  assertThat(inherited.via()).isEqualTo("BATCH");assertThat(inherited.assigned()).isNull();assertThat(inherited.clear()).isTrue();
+  assertThat(inherited.candidates().get(0).customerId()).isEqualTo(customer.id());assertThat(inherited.candidates().get(0).reason()).isEqualTo("Stapel B1");
+  assertThat(inherited.lcs()).extracting(InboxCustomerService.LcOption::reference).contains("LCB-ALPHA");
  }
 }
