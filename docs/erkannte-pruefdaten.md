@@ -34,3 +34,10 @@ Ursprungsland (nur wenn als Land erkannt) sowie beim Versicherungszertifikat Ver
 
 **Vermerke (`DocumentIndicators`)** – die `*_INDICATED`/`*_PRESENT`-Fakten (Umladung, Charter Party, On Deck, To Order, Container, Agent, Rabatt, Prämie bezahlt, Franchise, Indossament u. a.)
 werden nur bei **gefundenem** Textmuster als „true“ vorgeschlagen; ein fehlender Text beweist nichts und erzeugt keinen Vorschlag. Alle Vorschläge werden erst nach Bestätigung gespeichert.
+
+## Aussteller, Empfänger und Warenbeschreibung aus dem Druckbild
+Für diese drei Freitextfelder schlägt die Regel-Erkennung (ohne KI) vor:
+* **Aussteller:** eine beschriftete Zeile („Seller:", „Issued by", „Aussteller", „Lieferant" …), sonst die erste Zeile mit Firmenform (GmbH, AG, Ltd, Limited, Co., Inc …) in den ersten 12 Zeilen (Briefkopf).
+* **Empfänger:** eine beschriftete Zeile („Buyer", „Sold to", „Bill to", „Consignee", „Rechnungsempfänger" …), sonst die nächste Firma nach dem Aussteller.
+* **Warenbeschreibung:** die Zeile(n) hinter „Description of goods", „Warenbezeichnung" …, sonst die Wörter der ersten Artikelzeile unter einer Tabellenüberschrift mit Artikel-/Beschreibungs- und Mengenspalte (Codes, Zahlen und Einheiten entfallen).
+Widersprüchliche Beschriftungen ergeben keinen Vorschlag. Vorschläge aus Position und Tabelle sind mit „bitte prüfen" gekennzeichnet und wie alle Vorschläge unbestätigt.
