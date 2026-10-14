@@ -15,3 +15,5 @@ Die Schnittstellen sind unverändert (`/api/users/memberships…`, Einladungen, 
 
 ## Entfernt
 Dialog „Benutzerverwaltung" samt Kopfzeilen-Knopf, Benutzerliste, Kontoformular und die alte Mitgliedschaftsübersicht sind aus der Oberfläche entfernt. Der Rolleneditor („Rollen bearbeiten" im Reiter Rollen & Rechte) und „Vorhandenen Benutzer zuordnen" bleiben. Die Schnittstellen `/api/users` (Konten anlegen, ändern, löschen) bestehen im Server weiter, werden von der Oberfläche aber nicht mehr aufgerufen.
+
+Auch im Server gibt es keine Schnittstellen mehr zum Anlegen, Ändern oder Löschen von Konten unter `/api/users` (`GET/POST /api/users`, `PUT/DELETE /api/users/{id}`): Konten entstehen über Einladungen und die Plattformverwaltung, Mandanten-Admins verwalten Rolle und Zugang unter `/api/users/memberships`. Erhalten bleibt `GET /api/users/assignable` (Auswahl für Aufgaben). Die zugehörigen Methoden in `UserService` sind noch vorhanden und getestet, werden aber nicht mehr aufgerufen.

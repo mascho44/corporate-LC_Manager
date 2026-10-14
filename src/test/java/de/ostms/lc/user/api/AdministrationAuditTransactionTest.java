@@ -25,7 +25,7 @@ class AdministrationAuditTransactionTest {
   @Bean AuditService audit(){return mock(AuditService.class);}
   @Bean PasswordEncoder passwords(){return mock(PasswordEncoder.class);}
  }
- @Autowired RoleController roleController;@Autowired UserController userController;
+ @Autowired RoleController roleController;
  @Autowired AppRoleRepository roles;@Autowired AppUserRepository users;@Autowired AuditService audit;
  @Autowired de.ostms.lc.tenant.repository.TenantRepository tenants;
  @Autowired TenantAdministrationLock administrationLock;
@@ -40,33 +40,14 @@ class AdministrationAuditTransactionTest {
    assertThatThrownBy(()->roleController.create(new RoleRequest("Synthetic unavailable tenant",UserRole.VIEWER,Set.of()),UsernamePasswordAuthenticationToken.authenticated("synthetic-operator",null,List.of()))).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
   }
  }
- @Test void simultaneousAdministratorRemovalsLeaveOneActiveAccount()throws Exception{
-  AuditService target=org.springframework.test.util.AopTestUtils.getUltimateTargetObject(audit);reset(target);
-  var role=new AppRole();role.setName("Synthetic parallel administrator");role.setBaseRole(UserRole.ADMIN);role.setPermissions(Set.of(UserPermission.USER_MANAGE));role=roles.saveAndFlush(role);
-  var roleId=role.getId();var requests=new java.util.ArrayList<Map.Entry<UUID,UserRequest>>();
-  for(int i=0;i<2;i++){var user=new AppUser();user.setUsername("synthetic-parallel-"+i);user.setDisplayName("Synthetic parallel user");user.setEmail("parallel"+i+"@example.invalid");user.setPasswordHash("synthetic-hash");user.setAssignedRole(role);user=users.saveAndFlush(user);requests.add(Map.entry(user.getId(),new UserRequest(user.getUsername(),user.getDisplayName(),user.getEmail(),null,roleId,false)));}
-  var start=new java.util.concurrent.CountDownLatch(1);var pool=java.util.concurrent.Executors.newFixedThreadPool(2);
-  try{
-   var futures=requests.stream().map(entry->pool.submit(()->{start.await();try{userController.update(entry.getKey(),entry.getValue(),UsernamePasswordAuthenticationToken.authenticated("synthetic-operator",null,List.of()));return true;}catch(IllegalArgumentException rejected){return false;}})).toList();start.countDown();
-   int succeeded=0;for(var result:futures)if(result.get(15,java.util.concurrent.TimeUnit.SECONDS))succeeded++;
-   assertThat(succeeded).isEqualTo(1);assertThat(users.countByRoleAndActiveTrue(UserRole.ADMIN)).isEqualTo(1);
-  }finally{pool.shutdownNow();for(var entry:requests)users.deleteById(entry.getKey());roles.deleteById(roleId);}
- }
- @Test void auditFailureRollsBackRoleAndUserMutations(){
+ @Test void auditFailureRollsBackRoleMutations(){
   var role=new AppRole();role.setName("Synthetic audit role");role.setBaseRole(UserRole.EDITOR);role.setPermissions(Set.of(UserPermission.LC_EDIT));role=roles.saveAndFlush(role);
-  var user=new AppUser();user.setUsername("synthetic-audit-user");user.setDisplayName("Synthetic user");user.setEmail("user@example.invalid");user.setPasswordHash("synthetic-secret-hash");user.setAssignedRole(role);user=users.saveAndFlush(user);
-  var auth=UsernamePasswordAuthenticationToken.authenticated("synthetic-admin",null,List.of());var roleId=role.getId();var userId=user.getId();
+  var auth=UsernamePasswordAuthenticationToken.authenticated("synthetic-admin",null,List.of());var roleId=role.getId();
   AuditService target=org.springframework.test.util.AopTestUtils.getUltimateTargetObject(audit);
   doThrow(new IllegalStateException("Synthetic audit failure")).when(target).recordChangeInTransaction(any(),anyString(),anyString(),any(),anyString(),nullable(String.class),nullable(String.class));
   assertThatThrownBy(()->roleController.update(roleId,new RoleRequest("Changed name",UserRole.VIEWER,Set.of()),auth)).isInstanceOf(IllegalStateException.class);
   assertThat(roles.findById(roleId).orElseThrow().getName()).isEqualTo("Synthetic audit role");
-  var request=new UserRequest(user.getUsername(),user.getDisplayName(),user.getEmail(),null,roleId,false);
-  assertThatThrownBy(()->userController.update(userId,request,auth)).isInstanceOf(IllegalStateException.class);
-  assertThat(users.findById(userId).orElseThrow().isActive()).isTrue();
-  assertThatThrownBy(()->userController.delete(userId,auth)).isInstanceOf(IllegalStateException.class);assertThat(users.existsById(userId)).isTrue();
-  reset(target);userController.update(userId,request,auth);
-  verify(target).recordChangeInTransaction(eq(auth),eq("USER_UPDATED"),eq("USER"),eq(userId),anyString(),contains("\"active\":true"),contains("\"active\":false"));
-  assertThat(users.findById(userId).orElseThrow().isActive()).isFalse();
+  reset(target);
  }
  @Test void snapshotsAreAllowlistedAndEscapeNames(){
   var user=new UserView(UUID.randomUUID(),"<script>\"synthetic</script>","Private display",UUID.randomUUID(),"Private role",UserRole.EDITOR,Set.of(),true,null,"private@example.invalid");
