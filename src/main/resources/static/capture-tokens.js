@@ -4,10 +4,32 @@
  const stamp = value => value ? new Date(value).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }) : '–';
  function rowText(token) {
   const state = token.revoked ? 'widerrufen' : token.lastUsedAt ? 'zuletzt benutzt ' + stamp(token.lastUsedAt) : 'noch nie benutzt';
-  return `${token.name} · ${token.prefix}… · angelegt ${stamp(token.createdAt)}${token.createdBy ? ' von ' + token.createdBy : ''} · ${state}`;
+  const quiet = token.quietWorkingDays ? ` · ⚠ ruhig seit ${quietText(token.quietWorkingDays)}` : '';
+  return `${token.name} · ${token.prefix}… · angelegt ${stamp(token.createdAt)}${token.createdBy ? ' von ' + token.createdBy : ''} · ${state}${quiet}`;
  }
- globalThis.LcCaptureTokens = { rowText };
+ const quietText = days => `${days} Arbeitstag${days === 1 ? '' : 'en'}`;
+ /** Warning line for the inbox: stations that delivered nothing for a while (null when all is well). */
+ function silentWarning(silent) {
+  if (!silent?.length) return null;
+  const parts = silent.map(s => `${s.name} (${s.neverUsed ? 'noch nie benutzt, seit ' : 'seit '}${quietText(s.quietWorkingDays)})`);
+  return `Keine Lieferung von: ${parts.join(', ')}. Bitte in der Poststelle nachfragen, ob dort alles läuft.`;
+ }
+ globalThis.LcCaptureTokens = { rowText, silentWarning };
  if (typeof document === 'undefined' || !document.body) return;
+
+ /** Shows the warning at the top of the inbox; checked every few minutes while the inbox is open. */
+ let lastWarning = null;
+ async function checkSilent() {
+  const section = document.querySelector('#inboxSection');
+  if (!section || section.classList.contains('hidden')) return;
+  let text = null;
+  try { text = silentWarning(await json('/api/capture-tokens/silent')); } catch (error) { return; }
+  let note = section.querySelector('.capture-silent');
+  if (!text) { note?.remove(); lastWarning = null; return; }
+  if (!note) { note = node('p', '', 'capture-silent'); note.setAttribute('role', 'status'); section.prepend(note); }
+  if (text !== lastWarning) { note.textContent = '⚠ ' + text; lastWarning = text; }
+ }
+ setInterval(checkSilent, 300000); setTimeout(checkSilent, 3000);
 
  async function build(host) {
   const box = node('section', undefined, 'settings-box'); box.id = 'captureTokenBox';

@@ -183,3 +183,4 @@ form.membership-role-controls>button{justify-self:start}
  html body .membership-row>*{min-width:0}
  html body .membership-row>button{align-self:flex-start}
 }
+.capture-silent{margin:0 0 12px;padding:10px 14px;border:1px solid #d9a441;border-radius:10px;background:#fff6e0;color:#5a3d00}

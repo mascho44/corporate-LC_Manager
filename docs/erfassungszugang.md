@@ -26,3 +26,6 @@ Die Antwort (`202`) ist eine Quittung je Datei: `status` `CREATED` oder `DUPLICA
 
 ## Noch offen
 Die Kundenzuordnung steuert noch nicht die Auswahl der LC-Akte; Benachrichtigung, wenn lange nichts von einem Zugang kommt.
+
+## Stille Zugänge
+Ein aktiver Zugang, der seit mindestens zwei Arbeitstagen (Montag bis Freitag, Wochenenden zählen nicht, Feiertage sind nicht bekannt) nichts geliefert hat, gilt als „ruhig". Als Ausgangspunkt dient die letzte Lieferung, bei noch nie benutzten Zugängen das Anlegedatum. In den Einstellungen steht dann „⚠ ruhig seit N Arbeitstagen"; im Posteingang erscheint für alle, die ihn sehen dürfen, ein Hinweis, damit jemand in der Poststelle nachfragt. Widerrufene Zugänge werden nicht gemeldet. Eine E-Mail dazu gibt es noch nicht.

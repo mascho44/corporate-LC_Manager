@@ -16,7 +16,10 @@ import java.util.*;
 public class CaptureTokenService {
  public static final String PREFIX="lcc_";
  static final int MAX_ACTIVE=20;
- public record View(UUID id,String name,String prefix,String createdBy,LocalDateTime createdAt,LocalDateTime lastUsedAt,boolean revoked){}
+ public record View(UUID id,String name,String prefix,String createdBy,LocalDateTime createdAt,LocalDateTime lastUsedAt,boolean revoked,Integer quietWorkingDays){}
+ /** An active station that has delivered nothing for this many working days is reported as silent (a full working day without delivery plus today). */
+ static final int QUIET_AFTER=2;
+ public record Silent(String name,int quietWorkingDays,boolean neverUsed){}
  public record Created(View token,String secret){}
  public record Identity(UUID tokenId,UUID tenantId,String name){}
 
@@ -27,7 +30,25 @@ public class CaptureTokenService {
   try{return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(secret.getBytes(StandardCharsets.UTF_8)));}
   catch(java.security.NoSuchAlgorithmException impossible){throw new IllegalStateException(impossible);}
  }
- static View view(CaptureToken t){return new View(t.getId(),t.getName(),t.getTokenPrefix(),t.getCreatedBy(),t.getCreatedAt(),t.getLastUsedAt(),t.isRevoked());}
+ /** Working days (Monday to Friday) after the day of the last delivery up to and including today; weekends do not count. Holidays are not known here. */
+ static int workingDaysSince(LocalDateTime last,java.time.LocalDate today){
+  int days=0;
+  for(var day=last.toLocalDate().plusDays(1);!day.isAfter(today);day=day.plusDays(1))
+   if(day.getDayOfWeek()!=java.time.DayOfWeek.SATURDAY&&day.getDayOfWeek()!=java.time.DayOfWeek.SUNDAY)days++;
+  return days;
+ }
+ static Integer quiet(CaptureToken t,java.time.LocalDate today){
+  if(t.isRevoked())return null;
+  int days=workingDaysSince(t.getLastUsedAt()==null?t.getCreatedAt():t.getLastUsedAt(),today);
+  return days>=QUIET_AFTER?days:null;
+ }
+ static View view(CaptureToken t){return new View(t.getId(),t.getName(),t.getTokenPrefix(),t.getCreatedBy(),t.getCreatedAt(),t.getLastUsedAt(),t.isRevoked(),quiet(t,java.time.LocalDate.now()));}
+
+ /** Stations of this tenant that have been silent for a while, longest silence first. */
+ @Transactional(readOnly=true) public List<Silent> silent(java.time.LocalDate today){
+  return tokens.forTenant(TenantContext.currentId()).stream().filter(t->quiet(t,today)!=null)
+   .map(t->new Silent(t.getName(),quiet(t,today),t.getLastUsedAt()==null)).sorted(Comparator.comparingInt(Silent::quietWorkingDays).reversed()).toList();
+ }
 
  @Transactional(readOnly=true) public List<View> list(){return tokens.forTenant(TenantContext.currentId()).stream().map(CaptureTokenService::view).toList();}
 
