@@ -35,20 +35,27 @@
    const message=el('small',{role:'status'});
    const apply=el('button',{type:'button',textContent:'Übernehmen',disabled:!preview.anyApplied});
    apply.addEventListener('click',async()=>{
-    apply.disabled=true;message.textContent='';
+    apply.disabled=true;message.textContent='Wird übernommen …';
+    const busy=el('progress',{className:'re-recognition-progress'});busy.setAttribute('aria-label','Wird übernommen');card.append(busy);
     try{await call(`/api/lcs/${encodeURIComponent(lcId)}/documents/${encodeURIComponent(doc.id)}/re-recognition/apply`,{token:preview.token});apply.textContent='Übernommen';card.dataset.applied='true';
-     if(typeof load==='function'&&typeof show==='function'){await load();await show(lcId);}}
+     if(typeof load==='function'&&typeof show==='function'){await load();await show(lcId);}message.textContent='';}
     catch(error){message.textContent=error.message;apply.disabled=false;}
+    finally{busy.remove();}
    });
    card.append(el('div',{className:'document-quick-actions'},apply),message);section.append(card);return 1;
   }catch(error){status.textContent=`${doc.originalFilename}: ${error.message}`;status.className='error';return 0;}
  }
  async function run(lcId,docs,title){
   const dialog=dialogFor(title);const section=el('div',{className:'re-recognition-body'});
-  dialog.append(el('p',{textContent:'Die aktuelle Erkennung wird erneut ausgeführt. Maschinell erkannte Werte werden bei „Übernehmen“ ersetzt; von Hand gepflegte Werte (Datum, Kennzeichnung, Betrag, Währung) werden nur ergänzt, wenn sie leer sind. Den Dokumenttyp ändert die Neuerkennung nie.'}),section);
+  // Recognition can take a while (OCR per page): show how far it is instead of a silent dialog.
+  const progress=el('progress',{className:'re-recognition-progress',max:docs.length,value:0});progress.setAttribute('aria-label','Fortschritt der Neuerkennung');
+  const label=el('p',{role:'status',className:'re-recognition-label'});
+  const box=el('div',{className:'re-recognition-progress-box'},label,progress);
+  dialog.append(el('p',{textContent:'Die aktuelle Erkennung wird erneut ausgeführt. Maschinell erkannte Werte werden bei „Übernehmen“ ersetzt; von Hand gepflegte Werte (Datum, Kennzeichnung, Betrag, Währung) werden nur ergänzt, wenn sie leer sind. Den Dokumenttyp ändert die Neuerkennung nie.'}),box,section);
   dialog.showModal();
-  let withChanges=0;
-  for(const doc of docs)withChanges+=await recognise(lcId,doc,dialog,section);
+  let withChanges=0,done=0;
+  for(const doc of docs){label.textContent=`Dokument ${done+1} von ${docs.length}: ${doc.originalFilename} wird erkannt …`;withChanges+=await recognise(lcId,doc,dialog,section);done++;progress.value=done;}
+  box.remove();
   section.append(el('p',{role:'status',textContent:withChanges?`${withChanges} von ${docs.length} Dokumenten mit Änderungen.`:'Fertig: keine Änderungen.'}));
  }
  document.addEventListener('click',event=>{
