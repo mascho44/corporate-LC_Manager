@@ -35,4 +35,9 @@ class PdfDocumentSplitterAttachmentTest {
   assertThat(DocumentClassifier.classify(null,"Certificate of origin - Certificat d'origine -\nSample").suggestedType()).isEqualTo(DocumentType.CERTIFICATE_OF_ORIGIN);
   assertThat(DocumentClassifier.classify(null,"PACKING LIST / WEIGHT LIST\nPARTIAL SHIPMENT").suggestedType()).isEqualTo(DocumentType.PACKING_LIST);
  }
+ @Test void proposalShowsWhatWasReadFromEachPage(){
+  var proposal=PdfDocumentSplitter.proposeFromTexts(List.of("","COMMERCIAL   INVOICE\nNo. 1 "+"x".repeat(300)));
+  assertThat(proposal.pages().get(0).textSource()).isEqualTo("UNAVAILABLE");assertThat(proposal.pages().get(0).sample()).isNull();
+  assertThat(proposal.pages().get(1).sample()).startsWith("COMMERCIAL INVOICE No. 1 x").hasSizeLessThanOrEqualTo(161).endsWith("…");
+ }
 }
