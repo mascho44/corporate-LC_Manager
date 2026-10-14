@@ -20,7 +20,8 @@ public class FindingEvidenceController {
     public View evidence(@PathVariable UUID lcId,@RequestParam String code,@RequestParam(required=false) String documentName,@RequestParam(required=false) String reviewFingerprint,@RequestParam(defaultValue="REVIEW") String mode){
         if(!Set.of("REVIEW","PRECHECK").contains(mode))throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Unknown review mode");
         var findings=("PRECHECK".equals(mode)?checks.precheck(lcId):checks.check(lcId)).results().stream().filter(r->Objects.equals(r.code(),code)&&Objects.equals(r.documentName(),documentName)&&(reviewFingerprint==null||reviewFingerprint.equals(r.reviewFingerprint()))).toList();
-        if(findings.size()!=1)throw new ResponseStatusException(HttpStatus.CONFLICT,"Befund nicht eindeutig oder nicht mehr aktuell. Bitte Prüfung neu laden.");
+        // Several identical findings (same fingerprint) are one finding; without a fingerprint more than one match stays ambiguous.
+        if(findings.isEmpty()||(findings.size()>1&&reviewFingerprint==null))throw new ResponseStatusException(HttpStatus.CONFLICT,"Befund nicht eindeutig oder nicht mehr aktuell. Bitte Prüfung neu laden.");
         var finding=findings.get(0);
         var matches=documents.findByLetterOfCreditIdOrderByUploadedAtDesc(lcId).stream().filter(d->finding.documentName()!=null&&Objects.equals(d.getOriginalFilename(),finding.documentName())).toList();
         if(matches.size()!=1)return new View(finding,null,null,new EvidenceLocator.Location(matches.isEmpty()?"NO_DOCUMENT":"AMBIGUOUS_DOCUMENT","NONE",List.of()),mode);

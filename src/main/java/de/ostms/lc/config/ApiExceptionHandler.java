@@ -13,6 +13,12 @@ public class ApiExceptionHandler {
     ResponseEntity<Map<String, String>> badRequest(Exception exception) {
         return ResponseEntity.badRequest().body(Map.of("error", exception.getMessage()));
     }
+    /** The reason of an explicit status (e.g. 409 "Befund nicht mehr aktuell") reaches the screen instead of only the status text "Conflict". */
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    ResponseEntity<Map<String, String>> status(org.springframework.web.server.ResponseStatusException exception) {
+        String reason = exception.getReason() == null || exception.getReason().isBlank() ? exception.getStatusCode().toString() : exception.getReason();
+        return ResponseEntity.status(exception.getStatusCode()).body(Map.of("error", reason));
+    }
     @ExceptionHandler(NoSuchElementException.class)
     ResponseEntity<Map<String, String>> notFound(NoSuchElementException exception) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", exception.getMessage()));
