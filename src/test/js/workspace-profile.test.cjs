@@ -27,3 +27,12 @@ test('read-only quick links do not expose administrative actions and labels are 
 test('profile script loads before tenant refresh and retains i18n profile navigation keys',()=>{
  const root=path.resolve(__dirname,'../../main/resources/static'),html=fs.readFileSync(path.join(root,'index.html'),'utf8');assert.ok(html.indexOf('/workspace-profile.js')<html.indexOf('/tenants.js'));assert.match(fs.readFileSync(path.join(root,'i18n.js'),'utf8'),/dataset.profileI18n\|\|key/);
 });
+test('corporate-only workspaces hide the bank menu entries by profile attribute, other profiles keep them', () => {
+ const fs = require('node:fs');
+ const css = fs.readFileSync('src/main/resources/static/ui-system.css', 'utf8'), script = fs.readFileSync('src/main/resources/static/workspace-profile.js', 'utf8');
+ assert.match(script, /documentElement\.dataset\.profile=mode/);
+ const rule = css.match(/html\[data-profile="corporate"\]\s*:is\(([^)]*)\)\{display:none!important\}/);
+ assert.ok(rule, 'rule present');
+ ['#appNavImport', '[data-app-section="imports"]', '#appNavEbics', '#appNavTraining'].forEach(selector => assert.ok(rule[1].includes(selector), selector));
+ ['#appNavInbox', '#appNavMyWork', '[data-app-section="lcs"]', '#appNavCalendar'].forEach(selector => assert.ok(!rule[1].includes(selector), selector + ' stays'));
+});

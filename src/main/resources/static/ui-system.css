@@ -214,3 +214,6 @@ form.membership-role-controls>button{justify-self:start}
 @media(max-width:760px){.inbox-split-row .split-date,.inbox-split-row .split-signed{grid-column:1/-1}}
 .inbox-split-dialog .inbox-split-row{grid-template-columns:72px 72px minmax(90px,1fr) minmax(130px,150px)}
 .inbox-split-dialog .inbox-split-row>*{min-width:0}
+
+/* Corporate-only workspaces: no bank functions in the menu (SWIFT import and history, EBICS, SWIFT-field training). The server stays authoritative for permissions. */
+html[data-profile="corporate"] :is(#appNavImport,[data-app-section="imports"],#appNavEbics,#appNavTraining){display:none!important}
