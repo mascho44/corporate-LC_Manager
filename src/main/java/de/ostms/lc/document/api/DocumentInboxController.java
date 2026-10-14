@@ -142,11 +142,11 @@ public class DocumentInboxController {
     }
 
     public record SplitRequest(@jakarta.validation.constraints.NotNull @jakarta.validation.constraints.Size(min=1,max=100)
-                               List<de.ostms.lc.document.service.PdfDocumentSplitter.Part> parts) {}
+                               List<de.ostms.lc.document.service.PdfDocumentSplitter.Part> parts,List<de.ostms.lc.document.service.DocumentInboxService.PartDetail> details) {}
 
     @PostMapping("/{id}/split")
     public List<DocumentInboxItemView> split(@PathVariable UUID id,@Valid @RequestBody SplitRequest request,Authentication authentication) throws Exception {
-        var result=service.split(id,request.parts(),authentication.getName());
+        var result=service.split(id,request.parts(),request.details(),authentication.getName());
         audit.record(authentication,"DOCUMENT_INBOX_SPLIT","DOCUMENT_INBOX",id,"Sammel-PDF aufgeteilt · "+result.size()+" Teile · Original erhalten");
         result.forEach(item->audit.record(authentication,"DOCUMENT_INBOX_SPLIT_PART","DOCUMENT_INBOX",item.id(),
             "Original "+id+" · Seiten "+item.sourceFromPage()+"–"+item.sourceToPage()+" · "+item.classification().suggestedType()));

@@ -14,6 +14,12 @@ public class DocumentInboxItem {
     public String getMetadataReviewJson(){return metadataReviewJson;}
     public void setMetadataReviewJson(String value){metadataReviewJson=value;}
     private Integer copyNumber;
+    private java.time.LocalDate manualDocumentDate;
+    public java.time.LocalDate getManualDocumentDate(){return manualDocumentDate;}
+    public void setManualDocumentDate(java.time.LocalDate value){manualDocumentDate=value;}
+    @Column(nullable=false) private boolean signatureConfirmed;
+    public boolean isSignatureConfirmed(){return signatureConfirmed;}
+    public void setSignatureConfirmed(boolean value){signatureConfirmed=value;}
     public Integer getCopyNumber(){return copyNumber;}
     public void setCopyNumber(Integer value){copyNumber=DocumentCopy.validate(value);}
     @Column(nullable=false,updatable=false) @JsonIgnore private UUID tenantId=de.ostms.lc.tenant.domain.TenantContext.currentId();

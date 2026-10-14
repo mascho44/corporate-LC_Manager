@@ -26,3 +26,6 @@ Ereignis `DOCUMENT_INBOX_SPLIT` verbindet Original, Teile, Seitenbereiche und Ty
 Erneutes Aufteilen desselben Originals wird abgewiesen. Die Teile können unabhängig
 zugeordnet werden. Die Speicherung des Originals ist beim künftigen Löschkonzept
 zu berücksichtigen.
+
+## Datum und Unterschrift beim Aufteilen
+Je Bereich gibt es im Aufteilen-Dialog ein Feld „Datum, falls nicht erkannt" und das Kästchen „Unterschrift vorhanden" (nicht beim reinen Training). Die Angaben stehen am entstehenden Posteingangs-Dokument (`manual_document_date`, `signature_confirmed`). Beim Zuordnen zu einer Akte wird das Datum als Dokumentdatum übernommen, wenn im Zuordnungsformular kein anderes steht (das Formular ist damit vorbelegt, „Beim Aufteilen eingetragen"), und die bestätigte Unterschrift wird als Prüfdatum `DOCUMENT_SIGNED = true` am Dokument gespeichert. Das ist eine menschliche Bestätigung; erkannt wird die Unterschrift weiterhin nur aus dem Dokument selbst.

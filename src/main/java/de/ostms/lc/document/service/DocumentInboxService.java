@@ -88,8 +88,12 @@ public class DocumentInboxService {
         return splitTraining==null?baseline:splitTraining.suggest(item.getContent(),item.getOcrEvidenceJson(),baseline);
     }
 
+    /** What a person adds to one split range: the document date (if not recognised) and a confirmed signature. */
+    public record PartDetail(java.time.LocalDate documentDate,boolean signed){}
+    public List<DocumentInboxItemView> split(UUID id,List<PdfDocumentSplitter.Part> parts,String username) throws Exception {return split(id,parts,null,username);}
     @Transactional(rollbackFor=Exception.class)
-    public List<DocumentInboxItemView> split(UUID id,List<PdfDocumentSplitter.Part> parts,String username) throws Exception {
+    public List<DocumentInboxItemView> split(UUID id,List<PdfDocumentSplitter.Part> parts,List<PartDetail> details,String username) throws Exception {
+        if(details!=null&&details.size()!=parts.size())throw new IllegalArgumentException("Angaben zu Datum und Unterschrift passen nicht zu den Bereichen.");
         var original=lockedOpenItem(id);requireProcessed(original);requirePdf(original);
         // Validate and produce all files before persisting any part. Original is never deleted.
         var outputs=PdfDocumentSplitter.split(original.getContent(),original.getOcrEvidenceJson(),parts);
@@ -102,6 +106,7 @@ public class DocumentInboxService {
             item.setContentType("application/pdf");item.setContent(output.content());item.setFileSize(output.content().length);item.setReceivedBy(username);
             item.setSourceInboxId(id);item.setSourceFromPage(part.fromPage());item.setSourceToPage(part.toPage());
             item.setCopyNumber(part.copyNumber());
+            if(details!=null){var detail=details.get(result.size());if(detail!=null){item.setManualDocumentDate(detail.documentDate());item.setSignatureConfirmed(detail.signed());}}
             var document=new LcDocument();document.setOriginalFilename(item.getOriginalFilename());
             extraction.applyRecognizedText(document,output.text(),output.text().isBlank()?"QUEUED":output.evidence()!=null?"OCR_EXTRACTED":"EXTRACTED");
             item.setExtractedText(document.getExtractedText());item.setExtractionStatus(document.getExtractionStatus());
@@ -147,7 +152,8 @@ public class DocumentInboxService {
         document.setContentType(item.getContentType());
         document.setFileSize(item.getFileSize());
         document.setContent(item.getContent());
-        document.setDocumentDate(request.metadata()!=null?request.documentDate():request.documentDate()!=null?request.documentDate():DocumentDateDetector.detect(item.getExtractedText()).date());
+        document.setDocumentDate(request.metadata()!=null?request.documentDate():request.documentDate()!=null?request.documentDate():item.getManualDocumentDate()!=null?item.getManualDocumentDate():DocumentDateDetector.detect(item.getExtractedText()).date());
+        if(item.isSignatureConfirmed())document.setRuleFactsJson(de.ostms.lc.rulepack.RuleFacts.encode(java.util.Map.of(de.ostms.lc.rulepack.PackDefinition.Field.DOCUMENT_SIGNED,"true"),true));
         document.setAmount(item.getExtractedAmount());
         document.setCurrency(item.getExtractedCurrency());
         document.setExtractedReference(item.getExtractedReference());

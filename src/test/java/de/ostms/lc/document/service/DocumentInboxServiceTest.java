@@ -135,6 +135,25 @@ class DocumentInboxServiceTest {
         verify(inbox,never()).delete(any());
     }
 
+    @Test void manualDateAndConfirmedSignatureFromTheSplitAreCarriedIntoTheDocument() throws Exception {
+        UUID id=UUID.randomUUID();var original=item();original.setContent(PdfDocumentSplitterTest.pdf("COMMERCIAL INVOICE","PACKING LIST"));original.setContentType("application/pdf");original.setOriginalFilename("bundle.pdf");
+        when(inbox.findForUpdate(id)).thenReturn(Optional.of(original));when(lcs.findAssignmentTargets()).thenReturn(List.of());
+        var saved=new java.util.ArrayList<DocumentInboxItem>();
+        when(inbox.save(any())).thenAnswer(call->{DocumentInboxItem item=call.getArgument(0);if(item.getId()==null)ReflectionTestUtils.setField(item,"id",UUID.randomUUID());saved.add(item);return item;});
+        var actual=new DocumentInboxService(inbox,lcs,documents,new DocumentExtractionService(),checks);
+        var parts=List.of(new PdfDocumentSplitter.Part(1,1,DocumentType.COMMERCIAL_INVOICE),new PdfDocumentSplitter.Part(2,2,DocumentType.PACKING_LIST));
+        var result=actual.split(id,parts,List.of(new DocumentInboxService.PartDetail(LocalDate.of(2026,10,2),true),new DocumentInboxService.PartDetail(null,false)),"tester");
+        assertThat(result.get(0).manualDocumentDate()).isEqualTo(LocalDate.of(2026,10,2));assertThat(result.get(0).signatureConfirmed()).isTrue();
+        assertThat(result.get(1).manualDocumentDate()).isNull();assertThat(result.get(1).signatureConfirmed()).isFalse();
+        assertThatThrownBy(()->actual.split(id,parts,List.of(new DocumentInboxService.PartDetail(null,false)),"tester")).isInstanceOf(IllegalArgumentException.class);
+        var first=saved.get(0);UUID lcId=UUID.randomUUID();LetterOfCredit lc=new LetterOfCredit();ReflectionTestUtils.setField(lc,"id",lcId);
+        when(inbox.findForUpdate(first.getId())).thenReturn(Optional.of(first));when(lcs.findById(lcId)).thenReturn(Optional.of(lc));
+        when(documents.save(any())).thenAnswer(call->{LcDocument doc=call.getArgument(0);ReflectionTestUtils.setField(doc,"id",UUID.randomUUID());return doc;});
+        actual.attach(first.getId(),new DocumentInboxAttachRequest(lcId,DocumentType.COMMERCIAL_INVOICE,null));
+        var captor=org.mockito.ArgumentCaptor.forClass(LcDocument.class);verify(documents).save(captor.capture());
+        assertThat(captor.getValue().getDocumentDate()).isEqualTo(LocalDate.of(2026,10,2));
+        assertThat(de.ostms.lc.rulepack.RuleFacts.read(captor.getValue().getRuleFactsJson())).containsEntry(de.ostms.lc.rulepack.PackDefinition.Field.DOCUMENT_SIGNED,"true");
+    }
     private DocumentInboxItem item(){DocumentInboxItem item=new DocumentInboxItem();item.setOriginalFilename("packing.txt");item.setContentType("text/plain");item.setFileSize(2);item.setContent(new byte[]{1,2});item.setExtractedText("original text");return item;}
 
     @Test void pendingRecognitionBlocksAttachmentButNotDeletion(){
