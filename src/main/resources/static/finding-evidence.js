@@ -52,6 +52,7 @@ async function renderFindingPdf(dialog,container,documentId,initialPage,markedPa
         if(shown&&shown.page===selectedPage&&!image.hidden){place(shown);box.hidden=false;box.classList.toggle('saved',!current);}else box.hidden=true;
         clearButton.hidden=!current;markButton.textContent=current?'Fundstelle neu markieren':'Fundstelle markieren';
     };
+    dialog.clearEvidenceMark=()=>{current=null;refreshMark();};
     dialog.getEvidenceMark=()=>current?{documentId,page:current.page,x:current.x,y:current.y,w:current.w,h:current.h}:null;
     markButton.onclick=()=>{capture.hidden=!capture.hidden;status.textContent=capture.hidden?'':'Mit gedrückter Maustaste (oder dem Finger) ein Rechteck um die Fundstelle ziehen.';};
     clearButton.onclick=()=>{current=null;refreshMark();};
@@ -74,7 +75,10 @@ async function renderFindingPdf(dialog,container,documentId,initialPage,markedPa
         event.preventDefault();return loadPage(target);
     };
     dialog.addEventListener?.('keydown',keyHandler);
-    const oldClose=dialog.onclose;dialog.onclose=()=>{abort.abort();dialog.removeEventListener?.('keydown',keyHandler);if(imageUrl)URL.revokeObjectURL(imageUrl);oldClose?.();};
+    const dispose=()=>{abort.abort();dialog.removeEventListener?.('keydown',keyHandler);if(imageUrl)URL.revokeObjectURL(imageUrl);};
+    // A caller that replaces the viewer (document-wise review) disposes the old one first; closing the dialog does it too.
+    dialog.disposePdfViewer=dispose;
+    const oldClose=dialog.onclose;dialog.onclose=()=>{dispose();oldClose?.();};
     const marked=new Set(markedPages);
     function buildSidebar(){
         if(!sidebar||sidebarBuilt||!pageCount||pageCount<2||typeof document==='undefined')return;
@@ -112,6 +116,7 @@ async function renderFindingPdf(dialog,container,documentId,initialPage,markedPa
         }catch(error){if(request===version&&!abort.signal.aborted)status.textContent=error.message;}
         finally{if(request===version){loading=false;controls();buildSidebar();markSelected();}}
     }
+    dialog.showPdfPage=number=>(!loading&&Number.isInteger(number)&&number>=1&&number!==selectedPage&&(!pageCount||number<=pageCount))?loadPage(number):undefined;
     previous.onclick=()=>loadPage(selectedPage-1);next.onclick=()=>loadPage(selectedPage+1);retry.onclick=()=>loadPage(selectedPage);
     container.querySelector('[data-zoom]').onclick=event=>{const zoomed=(wrap||image).classList.toggle('zoomed');event.target.textContent=zoomed?'Einpassen':'Vergrößern';};
     await loadPage(selectedPage);
