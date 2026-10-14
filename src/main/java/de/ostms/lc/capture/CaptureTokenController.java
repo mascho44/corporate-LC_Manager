@@ -16,6 +16,9 @@ public class CaptureTokenController {
 
  @GetMapping public List<CaptureTokenService.View> list(){return tokens.list();}
 
+ /** Readable by everyone who may see the inbox: which delivery stations have been silent (the mailroom may have a problem). */
+ @GetMapping("/silent") public List<CaptureTokenService.Silent> silent(){return tokens.silent(java.time.LocalDate.now());}
+
  @PostMapping @ResponseStatus(HttpStatus.CREATED)
  public CaptureTokenService.Created create(@RequestBody CreateRequest request,Authentication authentication){
   var created=tokens.create(request==null?null:request.name(),authentication.getName());

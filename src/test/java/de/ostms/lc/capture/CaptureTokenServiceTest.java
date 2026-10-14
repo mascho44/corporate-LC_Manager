@@ -72,4 +72,17 @@ class CaptureTokenServiceTest {
   assertThatThrownBy(()->service.create("Zu viel","admin")).hasMessageContaining("bereits");
   assertThatThrownBy(()->service.create("  ","admin")).hasMessageContaining("Namen");
  }
+ @Test void stationsAreSilentAfterAFullWorkingDayWithoutDeliveryWeekendsNotCounted(){
+  var friday=java.time.LocalDateTime.of(2026,10,9,16,0);
+  assertThat(CaptureTokenService.workingDaysSince(friday,java.time.LocalDate.of(2026,10,9))).isZero();
+  assertThat(CaptureTokenService.workingDaysSince(friday,java.time.LocalDate.of(2026,10,12))).isEqualTo(1);
+  assertThat(CaptureTokenService.workingDaysSince(friday,java.time.LocalDate.of(2026,10,13))).isEqualTo(2);
+  var created=service.create("Scanner","admin");
+  assertThat(service.silent(java.time.LocalDate.now())).isEmpty();
+  var later=java.time.LocalDate.now().plusDays(10);
+  assertThat(service.silent(later)).extracting(CaptureTokenService.Silent::name).containsExactly("Scanner");
+  assertThat(service.silent(later).get(0).neverUsed()).isTrue();
+  service.revoke(created.token().id());
+  assertThat(service.silent(later)).isEmpty();
+ }
 }
