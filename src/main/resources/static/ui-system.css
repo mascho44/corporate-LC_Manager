@@ -215,5 +215,5 @@ form.membership-role-controls>button{justify-self:start}
 .inbox-split-dialog .inbox-split-row{grid-template-columns:72px 72px minmax(90px,1fr) minmax(130px,150px)}
 .inbox-split-dialog .inbox-split-row>*{min-width:0}
 
-/* Corporate-only workspaces: no bank functions in the menu (SWIFT import and history, EBICS, SWIFT-field training). The server stays authoritative for permissions. */
-html[data-profile="corporate"] :is(#appNavImport,[data-app-section="imports"],#appNavEbics,#appNavTraining){display:none!important}
+/* Corporate-only workspaces: no bank functions in the menu (SWIFT import and history, EBICS, SWIFT-field training, rule packs, operations monitor). The server stays authoritative for permissions. */
+html[data-profile="corporate"] :is(#appNavImport,[data-app-section="imports"],#appNavEbics,#appNavTraining,#appNavRulePacks,#appNavMonitoring){display:none!important}
