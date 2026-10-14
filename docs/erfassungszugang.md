@@ -29,3 +29,6 @@ Die Kundenzuordnung steuert noch nicht die Auswahl der LC-Akte; Benachrichtigung
 
 ## Stille Zugänge
 Ein aktiver Zugang, der seit mindestens zwei Arbeitstagen (Montag bis Freitag, Wochenenden zählen nicht, Feiertage sind nicht bekannt) nichts geliefert hat, gilt als „ruhig". Als Ausgangspunkt dient die letzte Lieferung, bei noch nie benutzten Zugängen das Anlegedatum. In den Einstellungen steht dann „⚠ ruhig seit N Arbeitstagen"; im Posteingang erscheint für alle, die ihn sehen dürfen, ein Hinweis, damit jemand in der Poststelle nachfragt. Widerrufene Zugänge werden nicht gemeldet. Eine E-Mail dazu gibt es noch nicht.
+
+## Poststellen-Seite (`/poststelle.html`)
+Für die Poststelle gibt es eine einfache Seite ohne Anmeldung: `https://<server>/poststelle.html`. Dort trägt man einmal den Erfassungszugang und den Gerätenamen ein (optional „Auf diesem Gerät merken", sonst nur für diesen Besuch), gibt den Stapel an (Vorgabe: heutiges Datum) und zieht Dateien in das Feld oder wählt sie aus. Jede Datei wird einzeln mit Prüfwert an `POST /api/capture/upload` gesendet; die Seite zeigt je Datei „angeliefert", „schon früher angeliefert" oder einen Fehler in Klartext (z. B. Zugang widerrufen). Die Seite selbst enthält keine Geheimnisse; ohne gültigen Zugang kann man nichts anliefern. Sie ist handytauglich.
