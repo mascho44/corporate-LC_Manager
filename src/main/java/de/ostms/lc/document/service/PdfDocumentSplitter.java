@@ -39,6 +39,14 @@ public final class PdfDocumentSplitter {
         }
     }
 
+    /** The text of every page (text layer or recognised text), in page order. */
+    public static List<String> texts(byte[] content,String evidenceJson) throws Exception {
+        try(var slot=PdfProcessingSafety.acquire();var pdf=Loader.loadPDF(content)) {
+            PdfProcessingSafety.validate(pdf);
+            return pageTexts(pdf,DocumentExtractionService.readEvidence(evidenceJson));
+        }
+    }
+
     public static Proposal propose(byte[] content,String evidenceJson) throws Exception {
         try(var slot=PdfProcessingSafety.acquire();var pdf=Loader.loadPDF(content)) {
             PdfProcessingSafety.validate(pdf);

@@ -71,6 +71,7 @@ import de.ostms.lc.user.service.AppUserDetailsService; import jakarta.servlet.ht
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/lcs/*/ai-hints").hasAuthority("PERM_DOCUMENT_UPLOAD")
    .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/ai/settings").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/lcs/*/procurement-status").hasAuthority("PERM_LC_EDIT")
+   .requestMatchers("/api/document-type-training","/api/document-type-training/**").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/capture-tokens/silent").authenticated()
    .requestMatchers("/api/capture-tokens","/api/capture-tokens/**").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/capture/upload").hasAuthority("PERM_DOCUMENT_UPLOAD")

@@ -1,0 +1,8 @@
+# Training der Dokumentart
+
+Die Erkennung der Dokumentart (Wechsel, Rechnung, Packliste …) arbeitet zuerst mit festen Überschriften. Was damit nicht erkannt wird (z. B. ein anders aussehender Wechsel), lernt das System aus **menschlichen Bestätigungen**:
+
+* **Gelernt wird** beim Bestätigen einer Aufteilung („Aufteilung bestätigen", je Bereich mit gewählter Dokumentart) und beim Zuordnen eines Posteingangs-Dokuments zu einer Akte (gewählte Art). Pro Beispiel werden die typischen Wörter (ab drei Buchstaben, ohne Zahlen, höchstens 150) und ein kurzer Textauszug mandantenbezogen gespeichert (Tabelle `document_type_example`). Die Art „Sonstiges" wird nicht gelernt, ebenso keine Texte unter acht Wörtern und keine fast gleichen Beispiele (Überlappung ≥ 95 %). Höchstens 60 Beispiele je Art.
+* **Verwendet wird** beim Vorschlag der Aufteilung: Bereiche, deren Art die festen Überschriften nicht erkannt haben, werden mit den Beispielen verglichen (Überlappung der Wortmengen). Ab 60 % Überlappung und mindestens 8 Prozentpunkten Vorsprung vor jeder anderen Art erscheint die Art als Vorschlag „Aus Training erkannt (Ähnlichkeit … %) – bitte prüfen". Ist es knapp oder widersprüchlich, wird nichts vorgeschlagen. Erkannte Bereiche bleiben unverändert; ein gelerntes Aufteilungsmuster (identische Seiten) hat Vorrang.
+* **Einsehen und Entfernen:** Mandanteneinstellungen → „Gelernte Dokumentarten" (Recht „Einstellungen verwalten"); jedes Beispiel kann einzeln entfernt werden (Audit-Eintrag).
+* **Grenzen:** Wortüberlappung, kein KI-Modell. Ohne lesbaren Text (schlechter Scan) hilft es nicht. Falsch bestätigte Arten würden mitgelernt; deshalb die Entfernen-Funktion.
