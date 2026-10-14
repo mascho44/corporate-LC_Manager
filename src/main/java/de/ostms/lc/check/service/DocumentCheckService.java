@@ -214,7 +214,8 @@ public class DocumentCheckService {
     @Transactional public DocumentCheckDecision decide(UUID lcId,CheckDecisionRequest request,String username){
         lcs.findById(lcId).orElseThrow();
         if(!Set.of("ACCEPTED","CONFIRMED_DISCREPANCY").contains(request.decision()))throw new IllegalArgumentException("Ungültige Prüfentscheidung.");
-        if("ACCEPTED".equals(request.decision())&&(request.comment()==null||request.comment().isBlank()))throw new IllegalArgumentException("Bitte begründen, warum der Befund als erfüllt bestätigt wird.");
+        if("ACCEPTED".equals(request.decision())&&request.mark()==null&&(request.comment()==null||request.comment().isBlank()))throw new IllegalArgumentException("Bitte die Fundstelle im PDF markieren oder begründen, warum der Befund als erfüllt bestätigt wird.");
+        String markJson=evidenceMarkJson(lcId,request.mark());
         if(request.reviewFingerprint()==null)throw new IllegalArgumentException("Bitte den Befund neu laden und erneut bestätigen.");
         String name=request.documentName()==null?"":request.documentName();
         var selected=check(lcId).results().stream().filter(r->Objects.equals(r.code(),request.findingCode())&&Objects.equals(r.documentName()==null?"":r.documentName(),name)&&r.reviewFingerprint().equals(request.reviewFingerprint())).findFirst().orElseThrow(()->new IllegalArgumentException("Der Befund hat sich geändert oder besteht nicht mehr. Bitte neu laden und prüfen."));
@@ -224,8 +225,20 @@ public class DocumentCheckService {
         decision.setLcId(lcId);decision.setFindingCode(request.findingCode());decision.setDocumentName(name);
         decision.setFindingFingerprint(baseline.reviewFingerprint());decision.setRuleCatalogVersion(baseline.ruleCatalogVersion());decision.setRuleId(baseline.rule().id());decision.setRuleVersion(baseline.rule().version());
         try{decision.setFindingSnapshot(new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules().writeValueAsString(baseline));}catch(com.fasterxml.jackson.core.JsonProcessingException e){throw new IllegalStateException("Prüfgrundlage konnte nicht gespeichert werden.",e);}
-        decision.setInvalidatedAt(null);decision.setDecision(request.decision());decision.setComment(request.comment()==null?null:request.comment().strip());decision.setReviewedBy(username);decision.setReviewedAt(java.time.LocalDateTime.now());
+        decision.setEvidenceMark(markJson);decision.setInvalidatedAt(null);decision.setDecision(request.decision());decision.setComment(request.comment()==null?null:request.comment().strip());decision.setReviewedBy(username);decision.setReviewedAt(java.time.LocalDateTime.now());
         return decisions.save(decision);
+    }
+    /** The mark as stored JSON; the document must belong to this LC file. */
+    private String evidenceMarkJson(UUID lcId,CheckDecisionRequest.EvidenceMark mark){
+        if(mark==null)return null;
+        var document=documents.findById(mark.documentId()).filter(d->d.getLetterOfCredit()!=null&&lcId.equals(d.getLetterOfCredit().getId())).orElseThrow(()->new IllegalArgumentException("Das markierte Dokument gehört nicht zu dieser LC-Akte."));
+        try{return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(java.util.Map.of("documentId",document.getId().toString(),"page",mark.page(),"x",mark.x(),"y",mark.y(),"w",mark.w(),"h",mark.h()));}
+        catch(com.fasterxml.jackson.core.JsonProcessingException e){throw new IllegalStateException("Markierung konnte nicht gespeichert werden.",e);}
+    }
+    /** The stored mark (JSON) of the decision on exactly this finding, if one was made with a mark. */
+    @Transactional(readOnly=true) public Optional<String> decisionMark(UUID lcId,CheckResult finding){
+        String name=finding.documentName()==null?"":finding.documentName();
+        return decisions.findByLcIdAndFindingCodeAndDocumentNameAndFindingFingerprint(lcId,finding.code(),name,finding.reviewFingerprint()).filter(d->d.getInvalidatedAt()==null).map(DocumentCheckDecision::getEvidenceMark);
     }
     @Transactional public void mapRequirement(UUID lcId,String requirement,DocumentType type,String username){LetterOfCredit lc=lcs.findById(lcId).orElseThrow();if(!lc.getRequiredDocuments().contains(requirement))throw new IllegalArgumentException("Dokumentenanforderung gehört nicht zu dieser LC-Akte.");if(mappings==null)throw new IllegalStateException("Zuordnung ist nicht verfügbar.");LcRequirementMapping mapping=mappings.findByLcIdAndRequirement(lcId,requirement).orElseGet(LcRequirementMapping::new);mapping.setLcId(lcId);mapping.setRequirement(requirement);mapping.setDocumentType(type);mapping.setMappedBy(username);mapping.setMappedAt(java.time.LocalDateTime.now());mappings.save(mapping);}
     @Transactional(readOnly=true)public List<LcRequirementMapping> requirementMappings(UUID lcId){lcs.findById(lcId).orElseThrow();return mappings==null?List.of():mappings.findByLcIdOrderByMappedAtDesc(lcId);}
