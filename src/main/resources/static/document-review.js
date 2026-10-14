@@ -2,7 +2,8 @@
    confirmed one after the other (with a marked evidence instead of a comment); after the last open finding the dialog moves on to the next document. */
 (() => {
  const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
- const isOpen = finding => !finding.reviewDecision && finding.severity !== 'OK';
+ // REVIEW_STALE only says that an earlier decision no longer applies; it cannot be decided itself (the original finding next to it is the one to confirm again).
+ const isOpen = finding => !finding.reviewDecision && finding.severity !== 'OK' && finding.code !== 'REVIEW_STALE';
  const SEVERITY = { DISCREPANCY: 'Abweichung', WARNING: 'Hinweis', OK: 'in Ordnung' };
 
  /** Findings grouped by document in the order of the document list (findings without a single document last); open ones first, discrepancies before warnings. Documents with nothing to look at are left out. */
@@ -73,6 +74,8 @@
       button.onclick = event => { event.stopPropagation(); decide(index, decision); }; actions.append(button);
      });
      const hint = document.createElement('small'); hint.textContent = 'Fundstelle rechts im PDF markieren statt Kommentar schreiben.'; card.append(actions, hint);
+    } else if (finding.code === 'REVIEW_STALE') {
+     const note = document.createElement('small'); note.textContent = 'Eine frühere Entscheidung gilt nicht mehr (Regel oder Vergleichsgrundlage haben sich geändert). Bitte den ursprünglichen Befund dieses Dokuments erneut bestätigen; dieser Hinweis verschwindet dann von selbst.'; card.append(note);
     } else {
      const done = document.createElement('small'); done.className = 'doc-review-doneline';
      done.textContent = `✓ ${finding.reviewDecision === 'ACCEPTED' ? 'als erfüllt bestätigt' : finding.reviewDecision === 'CONFIRMED_DISCREPANCY' ? 'Abweichung bestätigt' : 'in Ordnung'}${finding.reviewedBy ? ' · ' + finding.reviewedBy : ''}`; card.append(done);
