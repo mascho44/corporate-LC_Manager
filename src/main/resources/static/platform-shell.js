@@ -15,25 +15,15 @@ document.addEventListener('DOMContentLoaded',async()=>{
   // A platform administrator without any tenant has no workspace to open: the link would only end the session.
   try{const access=await json('/api/platform/access');if(access.tenantless)document.querySelector('.header-actions a.button-link')?.remove();}catch{}
   document.getElementById('platformIdentity').textContent=currentUser.username;
-  await globalThis.LcI18n?.setLanguage('en');
+  await globalThis.LcI18n?.setLanguage('de');
   await setupPlatformAdministration(true);
-  const nav=document.getElementById('appNavPlatform');if(!nav)throw new Error('Platform access is unavailable.');await nav.onclick();await globalThis.LcPlatformUsers?.setup?.(document.getElementById('platformSection'));buildSubnav();
+  const nav=document.getElementById('appNavPlatform');if(!nav)throw new Error('Platform access is unavailable.');await nav.onclick();await globalThis.LcPlatformUsers?.setup?.(document.getElementById('platformSection'));
   buildPasswordSection();
   buildDenialsSection();
+  globalThis.LcPlatformTabs.build(document.getElementById('platformSection'));
   document.getElementById('platformLogout').onclick=async event=>{const button=event.currentTarget;button.disabled=true;try{await json('/api/platform/logout',{method:'POST'});location.replace('/platform-login.html');}catch(failure){error.textContent=failure.message;button.disabled=false;}};
  }catch(failure){error.textContent=failure.message;}
 });
-
-/* Quick links to the sections of the console; built from the rendered headings. */
-function buildSubnav(){
- const section=document.getElementById('platformSection');if(!section)return;
- const nav=document.createElement('nav');nav.className='platform-subnav';nav.setAttribute('aria-label','Bereiche');
- section.querySelectorAll('h3').forEach((heading,index)=>{
-  heading.id=heading.id||'platform-part-'+index;
-  const link=document.createElement('a');link.href='#'+heading.id;link.textContent=heading.textContent;nav.append(link);
- });
- if(nav.children.length)section.before(nav);
-}
 
 /* Own password: platform accounts belong to no tenant, so they change it here. The change ends the session. */
 function buildPasswordSection(){
