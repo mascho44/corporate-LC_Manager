@@ -30,8 +30,10 @@ Speichern-Knopf der Gruppeninbox. Außerdem: Knöpfe und Eingabefelder wurden in
 Inhaltlicher Fund: Anforderungen im Plural („bills of lading", „certificates of origin") wurden nicht als Dokumenttyp erkannt.
 
 ## Handy-Breite (390 px)
-Die Ansichten einer Akte, die LC-Liste und der Beschaffungsplan sind in schmaler Breite ohne Befund. **Nicht behoben:** Kopfzeile und Seitenmenü liegen auf dem Handy übereinander (die Menüleiste wird von der Kopfzeile überdeckt).
-Die Anwendung ist für den Desktop gebaut; ob eine vollständige Handy-Ansicht gewünscht ist, ist eine eigene Entscheidung.
+Bis 900 px Breite ist das Seitenmenü eine **Schublade**: Ein Menü-Symbol in der Kopfzeile öffnet sie von links, sie schließt nach der Auswahl, mit Escape und bei einem Tipp daneben (`mobile-nav.js`).
+Die Kopfzeile liegt auf dem Handy in einer Zeile (Menü, Logo, Mandant, Verbindungsstatus, Benutzer). Die LC-Liste zeigt jede Akte als gestapelte Karte mit Knopf über die ganze Breite,
+die Reiter einer Akte umbrechen, der Beschaffungsplan wird zu Karten, Filter stehen untereinander. Die Seite scrollt nicht seitlich.
+Geprüft in der Testinstallation bei 390 px: LC-Liste, Akte (alle Reiter), Posteingang, Einstellungen.
 
 ## Noch offen
 Automatischer Durchlauf aller Schlüsselansichten in drei Breiten als Browser-Test in der CI, danach Bildvergleich gegen freigegebene Referenzbilder.
