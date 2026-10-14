@@ -3,7 +3,7 @@
 .tenant-workspace-selector select{width:168px;min-width:0;max-width:100%;height:var(--control-height,44px);border:1px solid #d8dee8;border-radius:10px;background:#f8fafc;color:#14213d;padding:6px 26px 6px 10px;font:inherit;text-overflow:ellipsis}
 #tenantSection{padding:22px}#tenantSection>p{margin:12px 0;line-height:1.5}
 #tenantSection form{margin-top:22px;padding-top:18px;border-top:1px solid #e5e9ef}
-#tenantSection form[hidden],#userForm.hidden,#newUser.hidden{display:none!important}
+#tenantSection form[hidden]{display:none!important}
 #tenantSection input{width:100%}#tenantSection label{display:grid;gap:6px}#tenantSection button[type=submit]{align-self:end}
 #tenantProfileNotice{grid-column:1/-1;margin:0;color:#475467;font-size:13px;line-height:1.5}
 #platformSection{padding:22px}#platformSection>p{line-height:1.5}#platformSection .membership-row{flex-wrap:wrap}#platformSection .membership-row>small{flex-basis:100%}
