@@ -27,7 +27,7 @@ html body :is(.membership-row,.queue-row,.user-row,.pu-row,.pu-table,.document-i
 .split-clarity{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:8px 0}
 .split-clarity p{margin:0}
 .inbox-split-row.split-uncertain{border-left:3px solid #b45309}
-.split-uncertain-note{margin:0;color:#b45309;font-weight:600;flex-basis:100%}
+.split-uncertain-note{margin:0;color:#b45309;font-weight:600;flex-basis:100%;grid-column:1/-1}
 
 .finding-filters{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
 .finding-select{display:flex;align-items:center;gap:6px;min-width:0;flex:1 1 220px;max-width:420px}
