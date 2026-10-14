@@ -35,4 +35,6 @@ test('corporate-only workspaces hide the bank menu entries by profile attribute,
  assert.ok(rule, 'rule present');
  ['#appNavRulePacks', '#appNavMonitoring'].forEach(selector => assert.ok(rule[1].includes(selector), selector));
  ['#appNavInbox', '#appNavMyWork', '[data-app-section="lcs"]', '#appNavCalendar', '#appNavImport', '[data-app-section="imports"]', '#appNavEbics', '#appNavTraining'].forEach(selector => assert.ok(!rule[1].includes(selector), selector + ' stays'));
+ assert.match(css, /html\[data-profile="bank"\]\s*#appNavEbics\{display:none!important\}/);
+ assert.doesNotMatch(css, /html\[data-profile="(?:corporate|combined)"\][^{]*#appNavEbics/);
 });
