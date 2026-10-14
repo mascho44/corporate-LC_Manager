@@ -24,3 +24,11 @@ test('the letter facts of a bank form are listed, an unverified IBAN is marked a
  assert.match(html, /<dt>Auftraggeber \(Akkreditiv\)<\/dt><dd>EXAMPLE VISION LTD<\/dd>/); assert.match(html, /IBAN \(nicht prüfbar/);
  assert.doesNotMatch(html, /<dt>Kunde<\/dt>/);
 });
+test('the LC files of the customer are offered, the one named by the letter marked; documents of the same batch get a batch hint', () => {
+ const lcs = [{ id: 'l1', reference: 'LCB-1', byLetter: true }, { id: 'l2', reference: 'LCB-2', byLetter: false }];
+ const html = api.blockHtml({ fields: { lcReference: 'LCB-1' }, candidates: [{ customerId: 'c1', name: 'A', reason: 'IBAN' }], clear: true, assigned: null, lcs, via: 'LETTER' }, customers);
+ assert.match(html, /Akten dieses Kunden:/); assert.match(html, /data-pick-lc="l1"[^>]*>LCB-1 · laut Schreiben</); assert.match(html, /data-pick-lc="l2"[^>]*>LCB-2</);
+ const batch = api.blockHtml({ fields: {}, candidates: [{ customerId: 'c1', name: 'Beispiel <X>', reason: 'Stapel 17' }], clear: true, assigned: null, lcs: [], via: 'BATCH' }, customers);
+ assert.match(batch, /Kunde dieser Lieferung/); assert.match(batch, /Aus dem Einreichungsschreiben dieser Lieferung \(Stapel 17\): <b>Beispiel &lt;X&gt;<\/b>/); assert.match(batch, /data-customer-confirm="c1"/);
+ assert.doesNotMatch(batch, /keine Kundenangaben erkannt/); assert.doesNotMatch(batch, /Akten dieses Kunden/);
+});

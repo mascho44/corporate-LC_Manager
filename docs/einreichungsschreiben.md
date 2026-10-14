@@ -23,5 +23,12 @@ Zusätzlich werden gelesen: *Akkreditivnummer*, *Ihre Referenz*, *Eröffnende Ba
 Die Tabelle mit Original- und Kopienzahlen und die Ankreuzfelder (Teillieferung, Kopien beigefügt) werden noch nicht ausgewertet.
 Handschriftliche Einträge liest die Texterkennung oft mit Fehlern. Besteht eine so gelesene IBAN die Prüfziffer nicht, wird sie als *IBAN (nicht prüfbar – bitte am Original prüfen)* angezeigt und **nicht** für den Abgleich verwendet.
 
+## Kundensteuerung der LC-Akte
+Steht der Kunde fest (bestätigt oder als klarer Vorschlag), zeigt der Block die **LC-Akten dieses Kunden**: aktive Akten, bei denen der Kundenname im Begünstigten oder Antragsteller steht (Namen zählen ab fünf Buchstaben,
+Groß-/Kleinschreibung und Satzzeichen egal), dazu die Akte, die das Schreiben mit der Akkreditivnummer selbst nennt („laut Schreiben", immer zuerst, auch wenn der Name nicht passt). Ein Klick auf die Akte wählt sie im
+Zuordnungsformular des Dokuments aus; gespeichert wird erst mit „Zuordnung bestätigen". Bei nur möglichen oder fehlenden Kunden wird keine Akte vorgeschlagen.
+**Lieferungen:** Die übrigen Dokumente derselben Erfassungslieferung (gleiche `batchId`) bekommen den Kunden des bestätigten Einreichungsschreibens als Vorschlag („Aus dem Einreichungsschreiben dieser Lieferung"),
+ebenfalls mit Bestätigen und denselben Aktenvorschlägen. Es wird nichts ohne Bestätigung zugeordnet.
+
 ## Offen
-Die Zuordnung zum Kunden steuert noch nicht die Auswahl der LC-Akte; Konnektoren zu weiteren Quellen; Feintuning der Beschriftungen an echten Einreichungsschreiben.
+Konnektoren zu weiteren Quellen; Feintuning der Beschriftungen an echten Einreichungsschreiben.
