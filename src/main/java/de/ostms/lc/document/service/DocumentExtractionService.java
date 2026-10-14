@@ -115,12 +115,20 @@ public class DocumentExtractionService {
             match(DOCUMENT_NUMBER, text, 1).ifPresent(document::setExtractedDocumentNumber);
             if(match(DOCUMENT_NUMBER, text, 1).isEmpty())InsuranceNumberDetector.detect(text).ifPresent(document::setExtractedDocumentNumber);
             document.setExtractedReference(DocumentReferenceDetector.detect(text));
+            // A "Total" line with a currency is the amount; "Total 4.815 Pcs" (a quantity) is not. The item table's total is the fallback, the first bare match the last resort.
             var amountMatcher = AMOUNT.matcher(text);
-            if (amountMatcher.find()) {
+            String firstBareAmount = null;boolean amountSet = false;
+            while (amountMatcher.find()) {
                 String currency = amountMatcher.group(1) != null ? amountMatcher.group(1) : amountMatcher.group(3);
-                document.setExtractedCurrency(currency == null ? null : currency.toUpperCase(Locale.ROOT));
-                parseAmount(amountMatcher.group(2)).ifPresent(document::setExtractedAmount);
+                if (currency == null) { if (firstBareAmount == null) firstBareAmount = amountMatcher.group(2); continue; }
+                var parsed = parseAmount(amountMatcher.group(2));
+                if (parsed.isPresent()) { document.setExtractedCurrency(currency.toUpperCase(Locale.ROOT)); document.setExtractedAmount(parsed.get()); amountSet = true; break; }
             }
+            if (!amountSet) {
+                var table = de.ostms.lc.rulepack.ItemTableFacts.detect(text).filter(row -> row.total() != null && row.currency() != null);
+                if (table.isPresent()) { document.setExtractedCurrency(table.get().currency()); document.setExtractedAmount(new java.math.BigDecimal(table.get().total())); amountSet = true; }
+            }
+            if (!amountSet && firstBareAmount != null) parseAmount(firstBareAmount).ifPresent(document::setExtractedAmount);
             document.setExtractionStatus(status);
             document.setClassificationHistoryJson(ClassificationHistory.automatic(document.getOriginalFilename(),document.getExtractedText()));
     }
