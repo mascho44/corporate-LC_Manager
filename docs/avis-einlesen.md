@@ -12,3 +12,6 @@ Ein Avis besteht aus dem **Anschreiben der Bank** und dem **Akkreditivtext**. Im
 
 Die Funktion steht Bank- und Corporate-Mandanten zur Verfügung (Recht „LC bearbeiten" und „Dokumente hochladen"). Erkannte Angaben sind Vorschläge; bitte mit
 dem Original vergleichen. Enthält ein Avis den Akkreditivtext nicht in dieser Form, meldet die Vorschau das, und die Akte wird manuell angelegt.
+
+## Avis ohne Akkreditivtext (nur Anschreiben)
+Steht im Avis nur das Anschreiben („Den Inhalt entnehmen Sie bitte der beigefügten Kopie"), zeigt „Als Avis einlesen" die erkannten Angaben des Anschreibens (Akkreditivnummer, Betrag, Währung, Gültig bis und Ort, eröffnende Bank, Auftraggeber, Begünstigter aus der Anschrift) als änderbares Formular und legt daraus die LC-Akte an („LC-Akte aus Anschreiben anlegen"); das Anschreiben wird als Avisierungsschreiben in der Akte abgelegt. Geforderte Dokumente fehlen dann und sind später nachzutragen (oder die Kopie des Akkreditivtextes einzuspielen).

@@ -20,7 +20,8 @@ import java.util.regex.Pattern;
  */
 @Service
 public class InboxAvisService {
-    public record Preview(SwiftImportPreview credit, boolean creditTextFound) {}
+    /** `cover` carries what the letter itself says (reference, amount, expiry, banks, applicant) when the advice has no credit text of its own. */
+    public record Preview(SwiftImportPreview credit, boolean creditTextFound, AdvisingLetterExtractor.Proposal cover) {}
     public record Created(UUID lcId, String reference) {}
 
     private static final Pattern CLOSING = Pattern.compile("(?im)^\\s*(mit freundlichen gr(?:ü|ue)(?:ß|ss)en|freundliche gr(?:ü|ue)(?:ß|ss)e|hochachtungsvoll|best regards|kind regards|yours faithfully|yours sincerely|sincerely|with kind regards)\\b.*$");
@@ -53,8 +54,8 @@ public class InboxAvisService {
     public Preview preview(UUID inboxId) {
         var item = inbox.openItem(inboxId);
         String raw = creditText(normalizer, item.getExtractedText());
-        if (raw.isEmpty()) return new Preview(null, false);
-        return new Preview(swift.preview(new SwiftImportRequest(item.getOriginalFilename(), raw)), true);
+        if (raw.isEmpty()) return new Preview(null, false, AdvisingLetterExtractor.extract(item.getExtractedText()));
+        return new Preview(swift.preview(new SwiftImportRequest(item.getOriginalFilename(), raw)), true, null);
     }
 
     @Transactional
