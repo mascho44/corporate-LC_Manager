@@ -353,7 +353,7 @@ async function openInboxSplit(item){
         }
         const preview=document.createElement('section');preview.className='split-page-preview';preview.hidden=true;preview.innerHTML='<div class="split-preview-head"><h3>Seitenbild vergrößert</h3><button type="button">Vorschau schließen</button></div><p role="status"></p><img alt="Vergrößerte PDF-Seite">';
         let previewOrigin=null,previewScroll=0;
-        preview.querySelector('button').onclick=()=>{zoomVersion++;preview.hidden=true;dialog.scrollTop=previewScroll;previewOrigin?.focus({preventScroll:true});};
+        preview.querySelector('button').onclick=()=>{zoomVersion++;preview.hidden=true;previewOrigin?.focus({preventScroll:true});};
         const images=new Map(),imageUrls=[],abort=new AbortController();let rendering=Promise.resolve(),zoomVersion=0;
         const oldClose=dialog.onclose;dialog.onclose=()=>{abort.abort();observer?.disconnect();imageUrls.forEach(url=>URL.revokeObjectURL(url));oldClose();};
         function pageImage(page,enlarged=false){
@@ -367,7 +367,7 @@ async function openInboxSplit(item){
                 const imageUrl=URL.createObjectURL(await response.blob());if(!dialog.isConnected){URL.revokeObjectURL(imageUrl);throw new Error('Vorschau geschlossen.');}imageUrls.push(imageUrl);return imageUrl;
             });images.set(key,promise);rendering=promise;promise.catch(()=>images.delete(key));return promise;
         }
-        async function enlargePage(page,row,origin){const version=++zoomVersion;previewOrigin=origin;previewScroll=dialog.scrollTop;row.querySelector('.split-row-actions').before(preview);preview.hidden=false;preview.querySelector('p').textContent=`Seite ${page} wird geladen …`;preview.querySelector('img').removeAttribute('src');preview.scrollIntoView({behavior:'smooth',block:'start'});try{const url=await pageImage(page,true);if(version!==zoomVersion||!dialog.isConnected)return;preview.querySelector('img').src=url;preview.querySelector('img').alt=`PDF-Seite ${page}`;preview.querySelector('p').textContent=`Seite ${page}`;}catch(error){if(version===zoomVersion&&dialog.isConnected)preview.querySelector('p').textContent=error.message;}}
+        async function enlargePage(page,row,origin){const version=++zoomVersion;previewOrigin=origin;previewScroll=dialog.scrollTop;if(!preview.isConnected)dialog.append(preview);preview.hidden=false;preview.querySelector('p').textContent=`Seite ${page} wird geladen …`;preview.querySelector('img').removeAttribute('src');try{const url=await pageImage(page,true);if(version!==zoomVersion||!dialog.isConnected)return;preview.querySelector('img').src=url;preview.querySelector('img').alt=`PDF-Seite ${page}`;preview.querySelector('p').textContent=`Seite ${page}`;}catch(error){if(version===zoomVersion&&dialog.isConnected)preview.querySelector('p').textContent=error.message;}}
         function loadThumb(button){if(button.dataset.loaded)return;button.dataset.loaded='true';pageImage(Number(button.dataset.page)).then(url=>{if(button.isConnected){button.querySelector('img').src=url;button.querySelector('small').textContent='Klicken zum Vergrößern';}}).catch(()=>{if(button.isConnected){delete button.dataset.loaded;button.querySelector('small').textContent='Nicht geladen · klicken zum Wiederholen';}});}
         const observer=typeof IntersectionObserver==='function'?new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){observer.unobserve(entry.target);loadThumb(entry.target);}}),{root:dialog,rootMargin:'100px'}):null;
         function renderThumbs(row){
@@ -401,7 +401,7 @@ async function openInboxSplit(item){
                 confirmation.querySelector('[data-confirm]').onclick=()=>{
                     try{
                         const all=[...rows.children],index=all.indexOf(row),exploded=explodeInboxSplitRange(all.map(readRange),index);
-                        if(row.contains(preview))preview.hidden=true;
+                        preview.hidden=true;
                         rows.replaceChildren();exploded.forEach(add);
                         refreshMergeButtons();
                         const first=rows.children[index];first?.querySelector('[name=fromPage]').focus({preventScroll:true});submitStatus.textContent='Bereich in Einzelseiten zerlegt. Bitte Dokumenttypen prüfen.';
