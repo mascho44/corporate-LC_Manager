@@ -85,7 +85,7 @@ function swift(reference){return `:20:${reference}\n:31C:261001\n:31D:271231SYNT
  await call('/api/companies/'+localCompany.id,'GET',undefined,400);
  await call('/api/companies/'+localCompany.id,'PUT',{legalName:'FORBIDDEN HOME OVERWRITE'},400);
  const homeViewer=(await call('/api/roles')).find(r=>r.baseRole==='VIEWER');assert.ok(homeViewer);
- await call('/api/users','POST',{username:'synthetic-retired',displayName:'Synthetic retired',email:'retired@example.invalid',password:'SyntheticOnly456!',roleId:homeViewer.id,active:true},403);
+ await call('/api/users','POST',{username:'synthetic-retired',displayName:'Synthetic retired',email:'retired@example.invalid',password:'SyntheticOnly456!',roleId:homeViewer.id,active:true},404); // account creation endpoint no longer exists (accounts come from invitations and the platform administration)
  const isolated=await call('/api/platform/users','POST',{username:'synthetic-local-only',displayName:'Synthetic local identity',email:'synthetic-local-only@example.invalid',password:'SyntheticOnly456!'},201);
  await call('/api/tenants/'+created.id+'/select','POST');csrf=(await call('/api/auth/me')).csrfToken;
  const viewer=await call('/api/roles','POST',{name:'Synthetic local viewer',baseRole:'VIEWER',permissions:[]});await call('/api/users/memberships/shared','POST',{username:isolated.username,roleId:viewer.id});
