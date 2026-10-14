@@ -184,3 +184,26 @@ form.membership-role-controls>button{justify-self:start}
  html body .membership-row>button{align-self:flex-start}
 }
 .capture-silent{margin:0 0 12px;padding:10px 14px;border:1px solid #d9a441;border-radius:10px;background:#fff6e0;color:#5a3d00}
+
+/* Split dialog (Sammel-PDF aufteilen): laid out like the finding review — header on top, ranges on the left, the enlarged page stays beside them. */
+.inbox-split-dialog{width:min(1280px,94vw);max-width:94vw;max-height:90vh;padding:0;background:#f6f8fc}
+.inbox-split-dialog[open]{display:grid;grid-template-columns:minmax(0,1fr);align-content:start}
+.inbox-split-dialog>.dialoghead{grid-column:1/-1;padding:20px 24px;border-bottom:1px solid #dbe2ec;background:#fff;gap:20px;position:sticky;top:0;z-index:3}
+.inbox-split-dialog>.dialoghead h2{margin:0}
+.inbox-split-dialog>p,.inbox-split-dialog>a,.inbox-split-dialog>details,.inbox-split-dialog>form,.inbox-split-dialog>.split-clarity{margin:12px 24px;min-width:0}
+.inbox-split-dialog>form{background:#fff;border:1px solid #dbe2ec;border-radius:12px;padding:8px 16px 0;overflow:clip}
+.inbox-split-dialog:has(>.split-page-preview:not([hidden])){grid-template-columns:minmax(0,1.15fr) minmax(320px,1fr)}
+.inbox-split-dialog:has(>.split-page-preview:not([hidden]))>:not(.dialoghead):not(.split-page-preview){grid-column:1}
+.inbox-split-dialog>.split-page-preview{grid-column:2;grid-row:2/span 12;align-self:start;position:sticky;top:96px;margin:12px 24px 12px 0;padding:16px;background:#fff;border:1px solid #dbe2ec;border-radius:12px;min-width:0}
+.inbox-split-dialog>.split-page-preview>img{max-height:68vh;width:auto;max-width:100%}
+.inbox-split-row{padding:14px 0}
+.inbox-split-row .split-thumbnails{gap:8px}
+.inbox-split-row .split-thumbnail{flex:0 0 108px;padding:6px;gap:4px}
+.inbox-split-row .split-thumbnail img{width:92px;height:124px}
+.inbox-split-row .split-thumbnail small{font-size:10px}
+@media(max-width:900px){.inbox-split-dialog:has(>.split-page-preview:not([hidden])){grid-template-columns:minmax(0,1fr)}.inbox-split-dialog>.split-page-preview{grid-column:1!important;grid-row:auto;position:static;margin:12px 24px}}
+.inbox-split-row .split-date{grid-column:1/4}
+.inbox-split-row .split-signed{grid-column:4/-1;display:flex;flex-direction:row;align-items:center;gap:8px;min-height:36px}
+.inbox-split-row .split-signed input{width:auto;min-width:0}
+.inbox-signature-note{margin:6px 0;color:#0f6b3a;font-weight:600}
+@media(max-width:760px){.inbox-split-row .split-date,.inbox-split-row .split-signed{grid-column:1/-1}}
