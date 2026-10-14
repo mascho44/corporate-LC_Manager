@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: de.ostms.lc.document.service.DocumentCopyDetectorTest
+-------------------------------------------------------------------------------
+Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 11.44 s -- in de.ostms.lc.document.service.DocumentCopyDetectorTest

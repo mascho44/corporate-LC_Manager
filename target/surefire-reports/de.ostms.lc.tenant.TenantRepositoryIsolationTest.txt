@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: de.ostms.lc.tenant.TenantRepositoryIsolationTest
+-------------------------------------------------------------------------------
+Tests run: 47, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 5.096 s -- in de.ostms.lc.tenant.TenantRepositoryIsolationTest

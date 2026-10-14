@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: de.ostms.lc.user.api.AdministrationAuditTransactionTest
+-------------------------------------------------------------------------------
+Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.588 s -- in de.ostms.lc.user.api.AdministrationAuditTransactionTest

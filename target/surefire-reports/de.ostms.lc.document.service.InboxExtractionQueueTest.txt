@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: de.ostms.lc.document.service.InboxExtractionQueueTest
+-------------------------------------------------------------------------------
+Tests run: 12, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.902 s -- in de.ostms.lc.document.service.InboxExtractionQueueTest

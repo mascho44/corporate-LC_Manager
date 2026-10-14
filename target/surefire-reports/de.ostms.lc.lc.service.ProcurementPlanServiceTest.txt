@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: de.ostms.lc.lc.service.ProcurementPlanServiceTest
+-------------------------------------------------------------------------------
+Tests run: 7, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.014 s -- in de.ostms.lc.lc.service.ProcurementPlanServiceTest
