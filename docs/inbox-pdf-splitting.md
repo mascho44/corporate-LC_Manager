@@ -29,3 +29,8 @@ zu berücksichtigen.
 
 ## Datum und Unterschrift beim Aufteilen
 Je Bereich gibt es im Aufteilen-Dialog ein Feld „Datum, falls nicht erkannt" und das Kästchen „Unterschrift vorhanden" (nicht beim reinen Training). Die Angaben stehen am entstehenden Posteingangs-Dokument (`manual_document_date`, `signature_confirmed`). Beim Zuordnen zu einer Akte wird das Datum als Dokumentdatum übernommen, wenn im Zuordnungsformular kein anderes steht (das Formular ist damit vorbelegt, „Beim Aufteilen eingetragen"), und die bestätigte Unterschrift wird als Prüfdatum `DOCUMENT_SIGNED = true` am Dokument gespeichert. Das ist eine menschliche Bestätigung; erkannt wird die Unterschrift weiterhin nur aus dem Dokument selbst.
+
+## Sicherheit je Seite und unsichere Bereiche (Stand 15.10.2026)
+* Jede Seite zeigt **„sicher"** oder **„prüfen"** mit Grund: Überschrift (mit Text), vom LC gefordert, Seitenzählung, Seitenanzahl der Vorseite, gleiche Dokumentnummer, Leer- oder Rückseite, typische Felder, bekanntes Layout, ähnlich bestätigten Beispielen, bestätigtes Training, nur Dateiname, mehrere Dokumentarten möglich. Der Grund steht als Tooltip an der Seitenvorschau (unsichere Seiten orange umrandet) und je Bereich als Zeile.
+* Bei gemischten Vorschlägen: „X von Y Bereichen sind sicher erkannt und werden so übernommen" und der Schalter **„Nur unsichere Bereiche zeigen"**. Bestätigt wird weiterhin die ganze Aufteilung.
+* Seitenzählung wird erkannt als „Page 1 of 3", „Seite 2 von 3", „Blatt 2 von 3", „Page No. 1/2".
