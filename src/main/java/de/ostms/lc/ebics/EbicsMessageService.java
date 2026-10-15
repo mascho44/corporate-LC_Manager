@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
 public class EbicsMessageService {
  /** Message types the bank can deliver; which of them are fetched is configured in app.ebics.message-types. */
  public static final List<String> TYPES=List.of("MT700","MT707","MT710","MT760");
- public static final List<String> SUPPORTED=List.of("MT199","MT700","MT707","MT710","MT760","MT799");
+ public static final List<String> SUPPORTED=List.of("MT199","MT700","MT707","MT710","MT720","MT760","MT799");
  @org.springframework.beans.factory.annotation.Value("${app.ebics.message-types:MT700,MT707,MT710,MT760}") private String configuredTypes="MT700,MT707,MT710,MT760";
  List<String> fetchTypes(){
   var types=new ArrayList<String>();
@@ -103,7 +103,7 @@ public class EbicsMessageService {
  static String reference(String text){
   String r20=null,r21=null;var m=REFERENCE.matcher(text);
   while(m.find()){if(m.group(1).equals("20")&&r20==null)r20=m.group(2).trim();if(m.group(1).equals("21")&&r21==null)r21=m.group(2).trim();}
-  String r=r21!=null&&!r21.isEmpty()&&text.toUpperCase(Locale.ROOT).matches("(?s).*\\{2:[IO]710.*|(?ms).*^:52[AD]:.*")?r21:r20;
+  String r=r21!=null&&!r21.isEmpty()&&text.toUpperCase(Locale.ROOT).matches("(?s).*\\{2:[IO]7[12]0.*|(?ms).*^:52[AD]:.*|(?ms).*^:40B:.*")?r21:r20;
   r=r==null?"":r;return r.length()>35?r.substring(0,35):r;
  }
  static String decode(byte[] data)throws CharacterCodingException{
