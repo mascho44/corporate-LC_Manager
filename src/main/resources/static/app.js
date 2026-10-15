@@ -319,6 +319,15 @@ async function openSplitPretraining(){
         finally{button.disabled=false;}
     };picker.click();
 }
+/** Why a page of a split proposal was recognised, and whether it is safe: {sure, text}. */
+function inboxSplitPageReason(classification){
+    const c=classification||{},method=String(c.method||'');
+    const how=[[/^DOCUMENT_HEADINGS|^SWIFT_MT700|^LC_CORRESPONDENCE/,'Überschrift'],[/^LC_EXPECTED/,'vom LC gefordert'],[/^PAGE_SEQUENCE/,'Seitenzählung'],[/^PAGE_TOTAL/,'Seitenanzahl der Vorseite'],[/^DOCUMENT_REFERENCE/,'gleiche Dokumentnummer'],[/^BLANK_PAGE/,'Leer- oder Rückseite'],[/^KEYWORD_PROFILE/,'typische Felder'],[/^CONFIRMED_SPLIT_PATTERN/,'bestätigtes Training'],[/^FILENAME_HINT/,'nur Dateiname']].find(([re])=>re.test(method));
+    const evidence=Array.isArray(c.evidence)&&c.evidence.length?String(c.evidence[0]).replace(/\s+/g,' ').slice(0,60):'';
+    const sure=!!c.suggestedType&&c.status!=='REVIEW'&&c.status!=='AMBIGUOUS'&&c.status!=='UNKNOWN';
+    const reason=c.status==='AMBIGUOUS'?'mehrere Dokumentarten möglich':!c.suggestedType?'nicht erkannt':how?how[1]+(evidence&&/Überschrift|gefordert/.test(how[1])?` „${evidence}“`:''):'erkannt';
+    return {sure,text:(sure?'sicher: ':'prüfen: ')+reason};
+}
 async function openInboxSplit(item){
     const originalUrl=item.pretraining?URL.createObjectURL(item.file):`/api/inbox/${item.id}/content`;
     const dialog=document.createElement('dialog');dialog.className='wide-dialog inbox-split-dialog';
@@ -338,6 +347,7 @@ async function openInboxSplit(item){
             const learned=document.createElement('p');learned.setAttribute('role','status');
             learned.textContent='Vorschlag aus bestätigtem Training. Bitte Seitenbereiche und Dokumenttypen erneut prüfen.';form.before(learned);
         }
+        const pageInfo=new Map(proposal.pages.map(page=>[page.number,inboxSplitPageReason(page.classification)]));
         const uncertainPages=new Set(proposal.pages.filter(page=>page.classification.status==='REVIEW'||!page.classification.suggestedType).map(page=>page.number));
         if(!item.pretraining&&!item.sourceInboxId&&proposal.pages.length>0){
             const clarity=document.createElement('div');clarity.className='split-clarity';clarity.setAttribute('role','status');
@@ -378,13 +388,14 @@ async function openInboxSplit(item){
         function loadThumb(button){if(button.dataset.loaded)return;button.dataset.loaded='true';pageImage(Number(button.dataset.page)).then(url=>{if(button.isConnected)button.querySelector('img').src=url;}).catch(()=>{if(button.isConnected)delete button.dataset.loaded;});}
         const observer=typeof IntersectionObserver==='function'?new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){observer.unobserve(entry.target);loadThumb(entry.target);}}),{root:dialog,rootMargin:'100px'}):null;
         for(let page=1;page<=proposal.pageCount;page++){const thumb=document.createElement('button');thumb.type='button';thumb.className='evidence-page-thumb';thumb.dataset.page=page;thumb.setAttribute('aria-label',`Seite ${page}`);thumb.innerHTML=`<img alt="" decoding="async"><span>${page}</span><small></small>`;thumb.onclick=()=>{loadThumb(thumb);showPage(page);};pagesNav.append(thumb);if(observer)observer.observe(thumb);else loadThumb(thumb);}
+        pagesNav.querySelectorAll('.evidence-page-thumb').forEach(thumb=>{const info=pageInfo.get(Number(thumb.dataset.page));if(info){thumb.classList.add(info.sure?'split-sure':'split-unsure');thumb.title=`Seite ${thumb.dataset.page} – ${info.text}`;}});
         prevButton.onclick=()=>showPage(selectedPage-1);nextButton.onclick=()=>showPage(selectedPage+1);
         dialog.querySelector('[data-zoom]').onclick=event=>{const zoomed=image.classList.toggle('zoomed');event.currentTarget.textContent=zoomed?'Verkleinern':'Vergrößern';};
         dialog.querySelector('[data-retry]').onclick=()=>showPage(selectedPage);
         /** Each page thumbnail says which range it currently belongs to. */
         function markRanges(){
             const marks=new Map();[...rows.children].forEach((row,index)=>{const part=readRange(row);for(let page=part.fromPage;page<=part.toPage;page++)marks.set(page,index+1);});
-            pagesNav.querySelectorAll('.evidence-page-thumb').forEach(thumb=>{const range=marks.get(Number(thumb.dataset.page));thumb.querySelector('small').textContent=range?`Bereich ${range}`:'–';thumb.classList.toggle('has-other',!range);});
+            pagesNav.querySelectorAll('.evidence-page-thumb').forEach(thumb=>{const range=marks.get(Number(thumb.dataset.page));thumb.querySelector('small').textContent=(range?`Bereich ${range}`:'–')+(pageInfo.get(Number(thumb.dataset.page))?.sure===false?' · prüfen':'');thumb.classList.toggle('has-other',!range);});
             [...rows.children].forEach((row,index)=>{const part=readRange(row),title=row.querySelector('.split-range-title');if(title)title.textContent=`Bereich ${index+1} · ${part.fromPage===part.toPage?`Seite ${part.fromPage}`:`Seiten ${part.fromPage}–${part.toPage}`}`;});
         }
         /** The pages of one range as small previews inside its card; a click shows the page large on the right. */
@@ -436,6 +447,21 @@ async function openInboxSplit(item){
         proposal.parts.forEach(add);
         markRanges();showPage(1);
         [...rows.children].forEach(row=>{const range=readRange(row);for(let page=range.fromPage;page<=range.toPage;page++)if(uncertainPages.has(page)){row.classList.add('split-uncertain');const mark=document.createElement('p');mark.className='split-uncertain-note';mark.textContent=inboxAutoText('uncertainRow','Uncertain – please review');row.querySelector('.split-range-title').after(mark);break;}});
+        // Why each range was proposed; ranges made only of safe pages count as accepted and can be hidden to focus on the uncertain ones.
+        let safeRanges=0;
+        [...rows.children].forEach(row=>{
+            const range=readRange(row),lines=[];let safe=true;
+            for(let page=range.fromPage;page<=range.toPage;page++){const info=pageInfo.get(page);if(!info)continue;if(!info.sure)safe=false;lines.push(`S. ${page} ${info.text}`);}
+            if(lines.length){const note=document.createElement('p');note.className='split-reason';note.textContent=lines.join(' · ');(row.querySelector('.split-row-actions')||row.lastChild).before(note);}
+            if(safe&&!row.classList.contains('split-uncertain')){row.classList.add('split-safe');safeRanges++;}
+        });
+        const clarityBox=dialog.querySelector('.split-clarity');
+        if(clarityBox&&uncertainPages.size&&safeRanges){
+            const summary=document.createElement('p');summary.textContent=`${safeRanges} von ${rows.children.length} Bereichen sind sicher erkannt und werden so übernommen.`;
+            const toggle=document.createElement('button');toggle.type='button';toggle.className='secondary';toggle.textContent='Nur unsichere Bereiche zeigen';
+            toggle.onclick=()=>{const only=rows.classList.toggle('only-uncertain');toggle.textContent=only?'Alle Bereiche zeigen':'Nur unsichere Bereiche zeigen';};
+            clarityBox.append(summary,toggle);
+        }
         dialog.querySelector('[data-add]').onclick=()=>{
             const error=dialog.querySelector('[data-error]');error.textContent='';
             const row=[...rows.children].reverse().find(row=>readRange(row).toPage>readRange(row).fromPage);
