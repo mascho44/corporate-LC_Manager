@@ -1,5 +1,5 @@
 /* Read-only cross-tenant overview: memberships and audit metadata. No business data, audit details or values are shown. */
-async function setupPlatformOverview(section){
+async function setupPlatformOverview(section,options={}){
  const t=(key,fallback)=>{const value=globalThis.LcI18n?.t(key);return value&&value!==key?value:fallback;};
  const node=(tag,value,className)=>{const n=document.createElement(tag);n.textContent=value;if(className)n.className=className;return n;};
  const membershipsBox=document.createElement('section'),auditBox=document.createElement('section');
@@ -13,7 +13,7 @@ async function setupPlatformOverview(section){
  auditBox.append(node('h3',t('platformOverview.audit','Platform audit (metadata only)')),node('p',t('platformOverview.auditNote','Time, tenant, user and action only. Details and values stay in the tenant audit log.')),tenantFilter,auditReload,auditStatus,auditList,chainButton,chainOutput);
  // Assign an existing identity (exact username) to a tenant role.
  membershipsBox.insertBefore?membershipsBox.insertBefore(node('small','Zuweisungen per Liste: siehe „Benutzer & Mandanten“ oben.'),membershipsBox.children[2]):membershipsBox.append(node('small','Zuweisungen per Liste: siehe „Benutzer & Mandanten“ oben.'));
- section.append(membershipsBox,auditBox);
+ section.append(...(options.memberships===false?[auditBox]:[membershipsBox,auditBox]));
  let rows=[],choices=[],generation=0;
  const yesNo=value=>value?t('platformOverview.yes','yes'):t('platformOverview.no','no');
  function renderMemberships(){
@@ -65,5 +65,5 @@ async function setupPlatformOverview(section){
   catch(failure){chainOutput.replaceChildren(node('p',failure.message));}finally{chainButton.disabled=false;}
  };
  auditReload.onclick=refreshAudit;
- return async()=>{await refreshMemberships();await refreshAudit();};
+ return async()=>{if(options.memberships!==false)await refreshMemberships();await refreshAudit();};
 }
