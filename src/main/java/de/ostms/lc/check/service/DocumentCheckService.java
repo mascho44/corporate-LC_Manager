@@ -48,6 +48,11 @@ public class DocumentCheckService {
         return evaluate(lcId,lc,documents.findByLetterOfCreditIdOrderByUploadedAtDesc(lcId),false,true);
     }
 
+    /** Goods description of the LC for the HS code comparison: the reviewed fact and the original message (field 45A). */
+    private static String lcGoodsText(LetterOfCredit lc){
+        String fact;try{fact=de.ostms.lc.rulepack.RuleFacts.read(lc.getRuleFactsJson()).get(de.ostms.lc.rulepack.PackDefinition.Field.LC_GOODS_DESCRIPTION);}catch(RuntimeException e){fact=null;}
+        return (fact==null?"":fact)+"\n"+(lc.getRawMessage()==null?"":lc.getRawMessage());
+    }
     private ReviewSummary evaluate(UUID lcId,LetterOfCredit lc,List<de.ostms.lc.document.domain.LcDocument> uploaded,boolean simulation){
         return evaluate(lcId,lc,uploaded,simulation,false);
     }
@@ -193,6 +198,7 @@ public class DocumentCheckService {
             results.add(new CheckResult(WARNING, "LC_EXPIRED", "The LC has expired."));
         addImportedRules(lc,uploaded,results);
         if(sanctions!=null)results.addAll(sanctions.screen(lc,uploaded));
+        results.addAll(HsCodeCheck.evaluate(lcGoodsText(lc),uploaded));
         if (results.isEmpty()) results.add(new CheckResult(WARNING, "NO_RULES_APPLIED", "No automated rule could be applied."));
         String inputFingerprint=ReviewInputFingerprint.of(lc,uploaded);
         List<DocumentCheckDecision> reviewed=simulation||precheck?List.of():decisions.findByLcId(lcId);
