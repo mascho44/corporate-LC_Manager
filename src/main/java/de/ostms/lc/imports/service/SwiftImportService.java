@@ -75,6 +75,12 @@ public class SwiftImportService {
     private static final Map<String,String> MT710_LABELS = Map.ofEntries(
             Map.entry("20", "Referenz der avisierenden Bank (Sender's Reference)"),
             Map.entry("21", "Dokumentenakkreditivnummer (Documentary Credit Number)"));
+    private static final Map<String,String> MT720_LABELS = Map.ofEntries(
+            Map.entry("20", "Referenz der übertragenden Bank (Transferring Bank's Reference)"),
+            Map.entry("21", "Dokumentenakkreditivnummer (Documentary Credit Number)"),
+            Map.entry("40B", "Form des übertragenen Akkreditivs (Form of Documentary Credit)"),
+            Map.entry("50", "Erster Begünstigter (First Beneficiary)"),
+            Map.entry("59", "Zweiter Begünstigter (Second Beneficiary)"));
     private static final Map<String,String> MT710_TARGETS = Map.ofEntries(
             Map.entry("21", "reference"), Map.entry("27", "sequence"), Map.entry("31C", "issueDate"),
             Map.entry("31D", "expiryDateAndPlace"), Map.entry("32B", "amountAndCurrency"),
@@ -277,6 +283,8 @@ public class SwiftImportService {
         if(upper.matches("(?ms).*^:79:.*")&&!upper.matches("(?ms).*^:(32B|31D|31E|40C|77C|77U|26E|45A|46A):.*")) return "MT799";
         if(upper.matches("(?s).*\\{2:[IO]760.*")||upper.matches("(?s).*\\bMT\\s*760\\b.*")||upper.matches("(?ms).*^:(40C|77C|77U|22D|23H|45L):.*")) return "MT760";
         if(upper.matches("(?s).*\\{2:[IO]707.*")||upper.matches("(?s).*\\bMT\\s*707\\b.*")||upper.matches("(?ms).*^:(26E|31E|45B|46B|47B):.*")) return "MT707";
+        // MT720 (transfer of a documentary credit): like MT710 the credit number is :21:, the form of the transfer is :40B:.
+        if(upper.matches("(?s).*\\{2:[IO]720.*")||upper.matches("(?s).*\\bMT\\s*720\\b.*")||upper.matches("(?ms).*^:40B:.*"))return "MT720";
         if(upper.matches("(?s).*\\{2:[IO]710.*")||upper.matches("(?s).*\\bMT\\s*710\\b.*")||(upper.matches("(?ms).*^:21:.*")&&upper.matches("(?ms).*^:52[AD]:.*")))return "MT710";
         return "MT700";
     }
@@ -295,7 +303,7 @@ public class SwiftImportService {
             boolean unusual=value.isBlank()||duplicate||misplaced;
             String notice=value.isBlank()?"Das Feld ist leer.":duplicate?"Dieses Kernfeld kommt mehrfach vor und muss geprüft werden.":misplaced?"Der Inhalt deutet eher auf „"+TARGET_LABELS.get(inferred)+"“ hin.":target==null&&inferred!=null?"Der Inhalt könnte zu „"+TARGET_LABELS.get(inferred)+"“ gehören.":null;
             if(target==null&&inferred!=null){target=inferred;unusual=true;}
-            if(code.equals("50")&&(type.equals("MT700")||type.equals("MT710"))) {
+            if(code.equals("50")&&(type.equals("MT700")||type.equals("MT710")||type.equals("MT720"))) {
                 var reference=de.ostms.lc.swift.BeneficiaryReferenceResolver.resolveApplicant(parseFields(raw));
                 if(reference.source()!=null) {
                     unusual=true;
@@ -304,7 +312,7 @@ public class SwiftImportService {
                             : "Verweis auf :"+reference.source()+": nicht eindeutig auflösbar. In :"+reference.source()+": wurde kein eindeutig beschrifteter Auftraggeber-Block gefunden (z. B. „APPLICANT: …“). Bitte Adresse ergänzen.";
                 }
             }
-            if(code.equals("59")&&(type.equals("MT700")||type.equals("MT710"))) {
+            if(code.equals("59")&&(type.equals("MT700")||type.equals("MT710")||type.equals("MT720"))) {
                 var reference=de.ostms.lc.swift.BeneficiaryReferenceResolver.resolve(parseFields(raw));
                 if(reference.source()!=null) {
                     unusual=true;
@@ -313,7 +321,7 @@ public class SwiftImportService {
                             : "Verweis auf :"+reference.source()+": nicht eindeutig auflösbar. In :"+reference.source()+": wurde kein eindeutig beschrifteter Begünstigten-Block gefunden (z. B. „BENEFICIARY: …“). Bitte Adresse ergänzen.";
                 }
             }
-            boolean kept=(type.equals("MT700")||type.equals("MT710"))&&target==null&&!value.isBlank();
+            boolean kept=(type.equals("MT700")||type.equals("MT710")||type.equals("MT720"))&&target==null&&!value.isBlank();
             double confidenceScore=unusual||(target==null&&!kept)?0.45:0.95;
             String confidence=confidencePolicy.uncertain(confidenceScore)?"LOW":"HIGH";
             String reason=kept?"Standardfeld ohne eigene Spalte in der Akte: wird mit Feldnummer und Standardnamen als Zusatzangabe gespeichert und geht nicht verloren.":target==null?"Für dieses SWIFT-Feld gibt es in diesem Profil noch kein festes Zielfeld.":unusual?"Inhaltsbasierter Prüfhinweis – manuelle Bestätigung erforderlich.":"Standardzuordnung für "+type+"-Feld :"+code+":";
@@ -323,11 +331,11 @@ public class SwiftImportService {
     }
 
     private Map<String,String> parseFields(String raw){Map<String,String> values=new LinkedHashMap<>();var m=FIELD.matcher(raw.strip());while(m.find())values.put(m.group(1),m.group(2).trim());return values;}
-    private Map<String,String> targets(String type){return freeFormat(type)?MT79X_TARGETS:type.equals("MT710")?MT710_TARGETS:type.equals("MT760")?MT760_TARGETS:type.equals("MT707")?MT707_TARGETS:MT700_TARGETS;}
-    private String label(String type,String code){String special=freeFormat(type)&&MT79X_LABELS.containsKey(code)?MT79X_LABELS.get(code):type.equals("MT710")&&MT710_LABELS.containsKey(code)?MT710_LABELS.get(code):type.equals("MT760")?MT760_LABELS.get(code):type.equals("MT707")?MT707_LABELS.get(code):MT700_LABELS.get(code);return special!=null?special:COMMON_LABELS.getOrDefault(code,"Weiteres SWIFT-Feld");}
+    private Map<String,String> targets(String type){return freeFormat(type)?MT79X_TARGETS:(type.equals("MT710")||type.equals("MT720"))?MT710_TARGETS:type.equals("MT760")?MT760_TARGETS:type.equals("MT707")?MT707_TARGETS:MT700_TARGETS;}
+    private String label(String type,String code){if(type.equals("MT720")&&MT720_LABELS.containsKey(code))return MT720_LABELS.get(code);String special=freeFormat(type)&&MT79X_LABELS.containsKey(code)?MT79X_LABELS.get(code):(type.equals("MT710")||type.equals("MT720"))&&MT710_LABELS.containsKey(code)?MT710_LABELS.get(code):type.equals("MT760")?MT760_LABELS.get(code):type.equals("MT707")?MT707_LABELS.get(code):MT700_LABELS.get(code);return special!=null?special:COMMON_LABELS.getOrDefault(code,"Weiteres SWIFT-Feld");}
     private void require(Map<String,String> values,String code,String name,List<String> errors){if(blank(values.get(code)))errors.add("Pflichtfeld :"+code+": ("+name+") fehlt.");}
     private boolean blank(String value){return value==null||value.isBlank();}
-    private boolean standardField(String type,String code){return MT700_LABELS.containsKey(code)||COMMON_LABELS.containsKey(code)||(type.equals("MT707")&&MT707_LABELS.containsKey(code))||(type.equals("MT760")&&MT760_LABELS.containsKey(code))||(type.equals("MT710")&&MT710_LABELS.containsKey(code))||(freeFormat(type)&&MT79X_LABELS.containsKey(code));}
+    private boolean standardField(String type,String code){return MT700_LABELS.containsKey(code)||COMMON_LABELS.containsKey(code)||(type.equals("MT707")&&MT707_LABELS.containsKey(code))||(type.equals("MT760")&&MT760_LABELS.containsKey(code))||((type.equals("MT710")||type.equals("MT720"))&&MT710_LABELS.containsKey(code))||(freeFormat(type)&&MT79X_LABELS.containsKey(code));}
     private String inferTarget(String value){String text=value==null?"":value.toLowerCase(Locale.ROOT);if(text.matches("(?s).*\\b(applicant|auftraggeber|antragsteller)\\b.*"))return "applicant";if(text.matches("(?s).*\\b(beneficiary|begünstigte[rrn]?)\\b.*"))return "beneficiary";if(text.matches("(?s).*\\b(expiry|expiration|ablaufdatum|valid until)\\b.*"))return "expiryDateAndPlace";if(text.matches("(?s).*\\b(latest shipment|späteste[rn]? versand)\\b.*"))return "latestShipmentDate";if(text.matches("(?s).*\\b(documents required|required documents|vorzulegende dokumente)\\b.*"))return "requiredDocuments";if(text.matches("(?s).*\\b(amount|betrag|total)\\b.*\\b(eur|usd|gbp|chf|jpy)\\b.*"))return "amountAndCurrency";return null;}
     private String requireRaw(SwiftImportRequest r){if(r==null||r.rawMessage()==null||r.rawMessage().isBlank())throw new IllegalArgumentException("Bitte eine SWIFT-Nachricht auswählen oder einfügen.");return r.rawMessage();}
     private String readable(RuntimeException ex){return ex.getMessage()==null?"SWIFT-Nachricht konnte nicht gelesen werden.":ex.getMessage();}

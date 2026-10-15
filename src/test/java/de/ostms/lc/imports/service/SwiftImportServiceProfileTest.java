@@ -52,6 +52,18 @@ class SwiftImportServiceProfileTest {
         assertThat(preview.beneficiary()).isEqualTo("SELLER GMBH\nSTUTTGART");
     }
 
+    @Test void transferredCreditMt720UsesTheCreditNumberAndNamesBothBeneficiaries() {
+        String raw=":27:1/1\n:40B:IRREVOCABLE\nWITHOUT OUR CONFIRMATION\n:20:TRF-0001\n:21:ILC250B000001\n:31C:261001\n:40E:UCP LATEST VERSION\n:31D:270131BERLIN\n:52A:NBFUAEAF\n:50:FIRST BENEFICIARY GMBH\nSTUTTGART\n:59:SECOND BENEFICIARY LTD\nLONDON\n:32B:EUR50000,\n:46A:1.INVOICE";
+        assertThat(service.detect(raw)).isEqualTo("MT720");
+        var preview=service.preview(new SwiftImportRequest("transfer.swift",raw));
+        assertThat(preview.messageType()).isEqualTo("MT720");
+        assertThat(preview.reference()).isEqualTo("ILC250B000001");
+        assertThat(preview.rawFields()).anySatisfy(f->{assertThat(f.code()).isEqualTo("59");assertThat(f.label()).contains("Zweiter Begünstigter");});
+        var lc=new de.ostms.lc.swift.Mt700Parser().parse(raw);
+        assertThat(lc.getReference()).isEqualTo("ILC250B000001");assertThat(lc.getFormOfCredit()).startsWith("IRREVOCABLE");
+        assertThat(lc.getAdditionalFields()).containsKey("MT720 - Nachrichtenart").containsEntry("20 - Referenz der übertragenden Bank","TRF-0001");
+    }
+
     @Test void detectsMt707ByProfileFields() {
         assertThat(service.detect(":20:LC-1\n:26E:2\n:30:260922\n:46B:NEW DOCUMENTS"))
                 .isEqualTo("MT707");
