@@ -7,7 +7,7 @@ import java.util.regex.Pattern;
 
 /** Review state of an LC file for the list; open and blocking count findings still to be decided (same rule as the document-wise review in the browser). */
 public record LcDossierStatus(UUID lcId,String status,long documents,long discrepancies,long warnings,long passed,long open,long blocking) {
-    private static final Pattern BLOCKING=Pattern.compile("SANCTION|AMOUNT|EXPIR|PRESENTATION_PERIOD|PRESENTATION_BEFORE|SHIPMENT_DATE|LATEST_SHIPMENT|MISSING_DOCUMENT|SIGNATURE");
+    private static final Pattern BLOCKING=Pattern.compile("SANCTION|EMBARGO|AMOUNT|EXPIR|PRESENTATION_PERIOD|PRESENTATION_BEFORE|SHIPMENT_DATE|LATEST_SHIPMENT|MISSING_DOCUMENT|SIGNATURE");
 
     public LcDossierStatus(UUID lcId,String status,long documents,long discrepancies,long warnings,long passed){this(lcId,status,documents,discrepancies,warnings,passed,0,0);}
 

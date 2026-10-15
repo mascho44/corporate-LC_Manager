@@ -192,7 +192,7 @@ public class DocumentCheckService {
         if (lc.getExpiryDate() != null && lc.getExpiryDate().isBefore(LocalDate.now()))
             results.add(new CheckResult(WARNING, "LC_EXPIRED", "The LC has expired."));
         addImportedRules(lc,uploaded,results);
-        if(sanctions!=null)results.addAll(sanctions.screen(lc));
+        if(sanctions!=null)results.addAll(sanctions.screen(lc,uploaded));
         if (results.isEmpty()) results.add(new CheckResult(WARNING, "NO_RULES_APPLIED", "No automated rule could be applied."));
         String inputFingerprint=ReviewInputFingerprint.of(lc,uploaded);
         List<DocumentCheckDecision> reviewed=simulation||precheck?List.of():decisions.findByLcId(lcId);

@@ -1,4 +1,4 @@
-# Sanktionsprüfung (Schritt 1)
+# Sanktionsprüfung
 
 Die Parteien jeder LC-Akte werden gegen die öffentlichen Sanktionslisten geprüft. Die Prüfung unterstützt die Sachbearbeitung; sie ersetzt kein zertifiziertes Screening-System.
 
@@ -21,5 +21,10 @@ Namen werden normalisiert (Akzente, Groß-/Kleinschreibung, Satzzeichen, Rechtsf
 
 Die Befunde erscheinen im Prüfmodus unter „Blockierend“ und werden wie andere Befunde entschieden.
 
+## Schiffe, Dokument-Parteien, Embargoländer (Schritt 2)
+- **Schiffe** (erkanntes Feld „Genanntes Schiff“ im Transportdokument): zuerst über eine IMO-Nummer im Text (`SANCTIONS_VESSEL_MATCH`, OFAC führt rund 1.500 Schiffe mit IMO), sonst über den Namen gegen gelistete Schiffe (`SANCTIONS_VESSEL_POSSIBLE_MATCH` ab 0,95). Reisenummern („V.0123“) und Vorsätze („MV“) werden vor dem Vergleich entfernt.
+- **Parteien aus den Dokumenten**: Empfänger (Consignee), Notify Party, Frachtführer; dazu Empfänger und Notify Party der Akte.
+- **Embargoländer** (`EMBARGO_COUNTRY`, Hinweis, blockierend): Iran, Nordkorea, Syrien, Kuba, Russland, Belarus, Krim und besetzte Gebiete der Ukraine, jeweils mit üblichen Schreibweisen und wichtigen Häfen. Geprüft werden Ursprungsland, Lade-/Löschhafen, Flughäfen und Adressländer aus Akte und Dokumenten sowie die Parteienfelder der Akte. Ein reiner ISO-Code („RU“) zählt nur, wenn das Feld nur aus dem Code besteht. Erweiterbar über `app.sanctions.embargo-extra`, z. B. `Venezuela:VENEZUELA|CARACAS`. Die Länderprüfung braucht keine geladenen Listen.
+
 ## Noch nicht enthalten (folgende Schritte)
-Schiffe, Häfen und Embargoländer; Neuprüfung offener Akten bei neuem Listenstand mit Hinweis; Gedächtnis für bestätigte Falsch-Positive; eigenes Recht für die Vier-Augen-Freigabe von Treffern.
+Neuprüfung offener Akten bei neuem Listenstand mit Hinweis; Gedächtnis für bestätigte Falsch-Positive; eigenes Recht für die Vier-Augen-Freigabe von Treffern.
