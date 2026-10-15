@@ -64,8 +64,27 @@ let inboxRefreshTimer=null;
 function inboxAutoText(key,fallback){const value=globalThis.LcI18n?.t('inbox.autoSplit.'+key);return value&&value!=='inbox.autoSplit.'+key?value:fallback;}
 let inboxLoadVersion=0,inboxBulkDeleting=false;
 const inboxEditedItems=new Set();
-function inboxBulkToolbar(){if(!can('DOCUMENT_DELETE')&&!can('DOCUMENT_UPLOAD'))return '';return '<div class="document-bulk-actions"><label><input type="checkbox" data-inbox-select-all> Alle angezeigten auswählen</label>'+(can('DOCUMENT_DELETE')?'<button type="button" class="danger" data-inbox-delete-selected disabled>Ausgewählte löschen</button>':'')+(can('DOCUMENT_UPLOAD')?'<button type="button" class="secondary" data-inbox-attach-selected>Ausgewählte zuordnen</button>':'')+'</div>';}
+function inboxBulkToolbar(){if(!can('DOCUMENT_DELETE')&&!can('DOCUMENT_UPLOAD'))return '';return '<div class="document-bulk-actions"><label><input type="checkbox" data-inbox-select-all> Alle angezeigten auswählen</label>'+(can('DOCUMENT_DELETE')?'<button type="button" class="danger" data-inbox-delete-selected disabled>Ausgewählte löschen</button>':'')+(can('DOCUMENT_UPLOAD')?'<button type="button" class="secondary" data-inbox-attach-selected>Ausgewählte zuordnen</button><button type="button" data-inbox-attach-ready title="Alle Dateien, bei denen LC-Akte und Dokumenttyp gefüllt sind, jeweils ihrer Akte zuordnen">Eindeutige zuordnen</button>':'')+'</div>';}
+/** Inbox forms that are ready: LC file and document type filled and the metadata valid. */
+function inboxReadyForms(list){return [...list.querySelectorAll('[data-inbox-attach]')].filter(form=>form.elements.lcId.value&&form.elements.documentType.value&&!form.elements.documentType.disabled&&form.checkValidity());}
 document.addEventListener('click',async event=>{
+ const ready=event.target.closest('[data-inbox-attach-ready]');
+ if(ready){
+  if(inboxBulkDeleting||!can('DOCUMENT_UPLOAD'))return;
+  const list=$('#inboxList'),forms=inboxReadyForms(list);
+  if(!forms.length){$('#inboxMessage').textContent='Keine Datei mit eindeutig gefüllter LC-Akte und Dokumenttyp.';return;}
+  const rows=forms.map(form=>{const id=form.dataset.inboxAttach,name=list.querySelector(`[data-inbox-id="${id}"] .inbox-item-head b`)?.textContent||id;return {id,form,name,lc:form.elements.lcId.selectedOptions[0]?.textContent||'',type:form.elements.documentType.selectedOptions[0]?.textContent||''};});
+  const dialog=document.createElement('dialog');dialog.className='wide-dialog inbox-ready-dialog';
+  dialog.innerHTML=`<div class="dialoghead"><h2>Eindeutige Dokumente zuordnen</h2><button type="button" data-close>Schließen</button></div><p>${rows.length} Datei${rows.length===1?'':'en'} mit gefüllter LC-Akte und Dokumenttyp. Bitte prüfen; jede Datei geht in ihre eigene Akte.</p><table class="pu-table"><tr><th>Datei</th><th>LC-Akte</th><th>Dokumenttyp</th></tr>${rows.map(r=>`<tr><td>${esc(r.name)}</td><td>${esc(r.lc)}</td><td>${esc(r.type)}</td></tr>`).join('')}</table><p data-ready-status role="status"></p><div class="actions"><button type="button" data-ready-confirm>${rows.length} zuordnen</button></div>`;
+  document.body.append(dialog);dialog.querySelector('[data-close]').onclick=()=>dialog.close();dialog.addEventListener('close',()=>dialog.remove());dialog.showModal();
+  dialog.querySelector('[data-ready-confirm]').onclick=async event=>{
+   const button=event.currentTarget;button.disabled=true;const status=dialog.querySelector('[data-ready-status]');let done=0;const failures=[];
+   for(const r of rows){try{await json(`/api/inbox/${r.id}/attach`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(inboxAttachment(r.form,r.form.elements.lcId.value))});done++;inboxEditedItems.delete(r.id);}catch(error){failures.push(r.name+': '+error.message);}status.textContent=`${done} von ${rows.length} zugeordnet`;}
+   $('#inboxMessage').textContent=`${done} von ${rows.length} Dateien zugeordnet`+(failures.length?' · Fehler: '+failures.join(' · '):'');
+   dialog.close();await loadInbox();
+  };
+  return;
+ }
  const evidence=event.target.closest('[data-inbox-evidence]');if(evidence){evidence.disabled=true;const target=evidence.parentElement.querySelector('[data-metadata-evidence]');try{const facts=await json(`/api/inbox/${evidence.dataset.inboxEvidence}/metadata-evidence`);target.innerHTML='<p>Textfundstellen aus der Erkennung; keine verifizierte Seitenposition. Bitte am Original prüfen.</p>'+Object.entries(facts).map(([key,value])=>`<p><b>${esc(key)}</b></p><pre>${esc(value)}</pre>`).join('');if(!Object.keys(facts).length)target.textContent='Keine eindeutige Textfundstelle verfügbar.';}catch(error){target.textContent=error.message;}finally{evidence.disabled=false;}return;}
  const button=event.target.closest('[data-inbox-attach-selected]');if(!button||inboxBulkDeleting||!can('DOCUMENT_UPLOAD'))return;
  const list=$('#inboxList'),ids=[...list.querySelectorAll('[data-inbox-select]:checked')].map(box=>box.dataset.inboxSelect);
@@ -232,7 +251,7 @@ async function loadInbox(silent=false){
             if(!lc){$('#inboxMessage').textContent='Bitte eine gültige LC-Akte auswählen.';return;}
             if(!await confirmAction(`„${item.originalFilename}“ der LC-Akte „${lc.reference}“ als ${form.elements.documentType.selectedOptions[0].textContent} zuordnen?`))return;
             button.disabled=true;
-            try{await json(`/api/inbox/${item.id}/attach`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(inboxAttachment(form,lcId))});$('#inboxMessage').textContent='Dokument in LC-Akte '+lc.reference+' gespeichert.';await loadInbox();}
+            try{await json(`/api/inbox/${item.id}/attach`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(inboxAttachment(form,lcId))});const siblings=item.sourceInboxId?items.filter(other=>other.id!==item.id&&other.sourceInboxId===item.sourceInboxId).length:0;await loadInbox();$('#inboxMessage').textContent='Dokument in LC-Akte '+lc.reference+' gespeichert.'+(siblings?` ${siblings} weitere Teile derselben Sammel-PDF sind jetzt mit dieser Akte vorbelegt – „Eindeutige zuordnen“ ordnet sie gemeinsam zu.`:'');}
             catch(error){$('#inboxMessage').textContent='Zuordnung fehlgeschlagen: '+error.message;button.disabled=false;}
         });
         list.querySelectorAll('[data-inbox-delete]').forEach(button=>button.onclick=async()=>{

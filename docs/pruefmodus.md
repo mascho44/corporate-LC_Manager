@@ -21,3 +21,6 @@ Begründungen werden in einem eigenen Dialog erfasst (auch bei Sammelbestätigun
 Bei Entscheidungen mit markierter Fundstelle steht „Marked evidence: <Dokument>, page N" und darunter ein Bildausschnitt der markierten Stelle; ohne Markierung „not marked".
 
 Siehe auch [Sanktionsprüfung](sanktionspruefung.md) (Vier-Augen-Freigabe von Sanktionstreffern) und [HS-Code-Erkennung](hs-codes.md).
+
+## Unstimmigkeitsmeldung (Entwurf)
+Im Prüfmodus erzeugt **„Unstimmigkeitsmeldung (Entwurf)“** aus allen *bestätigten* Abweichungen der Akte zwei Entwürfe: eine **SWIFT MT734** (Advice of Refusal: :20: eigene Referenz, :21: Referenz der Gegenbank oder NONREF, :32A: Datum/Währung/Betrag, :77J: die Unstimmigkeiten nummeriert, im SWIFT-Zeichensatz, Zeilen höchstens 65 Zeichen, höchstens 70 Zeilen, :77B: Dokumente zur Verfügung) und ein **Schreiben an die Bank** (mit Prüfvermerken). Beide sind im Dialog änderbar und kopierbar; versendet wird nichts. Betrag und :21: bitte ergänzen bzw. prüfen.

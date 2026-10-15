@@ -289,3 +289,4 @@ html[data-profile="bank"] #appNavEbics{display:none!important}
 .party-correction textarea{width:100%;box-sizing:border-box;margin-top:4px;font:inherit}
 .party-correction pre{white-space:pre-wrap;max-height:180px;overflow:auto;font-size:12px;background:#fff;padding:8px;border-radius:6px}
 .party-correction small{color:#5c4a1a}
+.inbox-ready-dialog>p,.inbox-ready-dialog>table,.inbox-ready-dialog>.actions{margin:12px 24px}.inbox-ready-dialog>table{width:calc(100% - 48px)}.inbox-ready-dialog>.actions{display:flex;justify-content:flex-end;margin-bottom:20px}
