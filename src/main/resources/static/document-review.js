@@ -171,7 +171,7 @@
   /** One decision for the finding and the same open finding in the other documents. The marked evidence belongs to the current document only, so the others need a written reason. */
   async function decideAll(index, decision) {
    if (busy) return; const finding = groups[gi].items[index], siblings = siblingsOf(groups, finding); if (!siblings.length) return decide(index, decision);
-   const comment = prompt(decision === 'ACCEPTED' ? `Begründung für alle ${siblings.length + 1} Dokumente (Pflicht; eine markierte Fundstelle gilt nur für dieses Dokument):` : `Optionaler Prüfvermerk für alle ${siblings.length + 1} Dokumente:`);
+   const comment = await globalThis.LcReviewNote.ask({ decision, required: decision === 'ACCEPTED', title: `Für alle ${siblings.length + 1} Dokumente`, text: decision === 'ACCEPTED' ? 'Begründung für alle Dokumente (Pflicht; eine markierte Fundstelle gilt nur für dieses Dokument).' : 'Optionaler Prüfvermerk für alle Dokumente.' });
    if (comment === null) return;
    if (decision === 'ACCEPTED' && !comment.trim()) { alert('Bitte eine Begründung eingeben. Die Entscheidung wurde nicht gespeichert.'); return; }
    if (comment.length > 1000) { alert('Die Begründung darf maximal 1000 Zeichen enthalten.'); return; }

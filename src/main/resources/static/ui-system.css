@@ -272,3 +272,10 @@ html[data-profile="bank"] #appNavEbics{display:none!important}
 
 .dossier-blocking{color:#b42318;font-weight:700}
 .dossier-numbers .dossier-review-start{margin-top:4px;min-height:30px;padding:4px 12px}
+.review-note-dialog{width:min(560px,calc(100vw - 32px));padding:22px 24px;border:0;border-radius:14px}
+.review-note-dialog h2{margin:0 0 6px;font-size:18px}.review-note-dialog p{margin:0 0 12px;color:#475467}
+.review-note-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+.review-note-dialog .review-note-chip{min-height:30px;padding:4px 10px;border-radius:99px;font-size:13px;font-weight:500;text-align:left;white-space:normal}
+.review-note-dialog textarea{display:block;width:100%;height:110px;min-height:80px;margin:0;box-sizing:border-box;resize:vertical}
+.review-note-keep{display:flex;align-items:center;gap:6px;margin:8px 0;font-size:14px}
+.review-note-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
