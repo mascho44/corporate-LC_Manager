@@ -200,13 +200,17 @@ public class DocumentCheckService {
         if(sanctions!=null)results.addAll(sanctions.screen(lc,uploaded));
         results.addAll(HsCodeCheck.evaluate(lcGoodsText(lc),uploaded));
         if (results.isEmpty()) results.add(new CheckResult(WARNING, "NO_RULES_APPLIED", "No automated rule could be applied."));
-        String inputFingerprint=ReviewInputFingerprint.of(lc,uploaded);
+        // Decisions are bound to the finding, its document and the credit terms; decisions made under the former whole-file binding stay valid until their inputs change.
+        String legacyFingerprint=ReviewInputFingerprint.of(lc,uploaded);
+        var scopedFingerprints=new HashMap<String,String>();
         List<DocumentCheckDecision> reviewed=simulation||precheck?List.of():decisions.findByLcId(lcId);
         List<CheckResult> reviewedResults=new ArrayList<>();
         for(CheckResult rawResult:results){
+            String inputFingerprint=scopedFingerprints.computeIfAbsent(Objects.toString(rawResult.documentName(),""),name->ReviewInputFingerprint.scoped(lc,uploaded,name));
             CheckResult result=rawResult.withInputFingerprint(inputFingerprint);
+            String legacyReview=rawResult.withInputFingerprint(legacyFingerprint).reviewFingerprint();
             var matching=reviewed.stream().filter(d->decisionKey(d.getFindingCode(),d.getDocumentName()).equals(decisionKey(result.code(),result.documentName()))).toList();
-            var current=matching.stream().filter(d->d.getInvalidatedAt()==null&&result.reviewFingerprint().equals(d.getFindingFingerprint())).findFirst();
+            var current=matching.stream().filter(d->d.getInvalidatedAt()==null&&(result.reviewFingerprint().equals(d.getFindingFingerprint())||legacyReview.equals(d.getFindingFingerprint()))).findFirst();
             if(current.isPresent()&&"ACCEPTED".equals(current.get().getDecision())&&de.ostms.lc.sanctions.SanctionsService.isHit(result.code())&&current.get().getSecondReviewedBy()==null){
                 // Four-eyes: a false-positive note on a sanctions hit stays open until a second person approves it.
                 var d=current.get();
