@@ -49,6 +49,10 @@ public class SanctionsService {
     private final Map<String,List<Hit>> cache=new ConcurrentHashMap<>();
     private final Map<String,String> errors=new ConcurrentHashMap<>();
     private final AtomicBoolean refreshing=new AtomicBoolean();
+    private volatile List<Indexed> vessels=List.of();
+    private volatile Map<String,SanctionsListParser.Entry> vesselsByImo=Map.of();
+    private volatile List<EmbargoCountries.Country> embargo=EmbargoCountries.list(null);
+    @Value("${app.sanctions.embargo-extra:}") void setEmbargoExtra(String extra){embargo=EmbargoCountries.list(extra);}
 
     public SanctionsService(SanctionsListRepository lists,
                             @Value("${app.sanctions.fetch-enabled:true}") boolean fetchEnabled,
@@ -150,6 +154,12 @@ public class SanctionsService {
             var item=new Indexed(e,n,t);
             new HashSet<>(t.stream().map(SanctionsService::key).toList()).forEach(k->idx.computeIfAbsent(k,x->new ArrayList<>()).add(item));
         })));
+        var ships=new ArrayList<Indexed>();var imo=new HashMap<String,SanctionsListParser.Entry>();
+        next.values().forEach(l->l.entries().stream().filter(e->e.kind()==SanctionsListParser.Kind.VESSEL).forEach(e->{
+            e.names().forEach(n->{var t=NameMatcher.tokens(n);if(!t.isEmpty())ships.add(new Indexed(e,n,t));});
+            e.imo().forEach(i->imo.put(i,e));
+        }));
+        vessels=ships;vesselsByImo=imo;
         index=idx;loaded=Collections.unmodifiableMap(new LinkedHashMap<>(next));cache.clear();
     }
     void useEntries(String source,List<SanctionsListParser.Entry> entries){var m=new LinkedHashMap<>(loaded);m.put(source,new Loaded(source,LocalDateTime.now(),"test","test",entries));use(m);}
@@ -182,24 +192,83 @@ public class SanctionsService {
     }
 
     /** Findings for the review. Without loaded lists one neutral note says that no screening took place. */
-    public List<CheckResult> screen(LetterOfCredit lc){
-        if(loaded.isEmpty())return List.of(new CheckResult(CheckResult.Severity.OK,"SANCTIONS_NOT_SCREENED","Sanktionsprüfung nicht durchgeführt: noch keine Sanktionslisten geladen."));
+    public List<CheckResult> screen(LetterOfCredit lc){return screen(lc,List.of());}
+    public List<CheckResult> screen(LetterOfCredit lc,List<de.ostms.lc.document.domain.LcDocument> documents){
+        var results=new ArrayList<CheckResult>();
+        var lcFacts=facts(lc.getRuleFactsJson());
+        embargoFindings(lc,lcFacts,documents,results);
+        if(loaded.isEmpty()){results.add(new CheckResult(CheckResult.Severity.OK,"SANCTIONS_NOT_SCREENED","Sanktionsprüfung nicht durchgeführt: noch keine Sanktionslisten geladen."));return results;}
+        int before=results.size();
         var parties=new LinkedHashMap<String,String>();
         parties.put("Auftraggeber",lc.getApplicant());parties.put("Begünstigter",lc.getBeneficiary());
         parties.put("Eröffnende Bank",lc.getIssuingBank());parties.put("Avisierende Bank",lc.getAdvisingBank());
         parties.put("Bestätigende Partei",lc.getConfirmationParty());parties.put("Remboursbank",lc.getReimbursingBank());
         parties.put("Bezogene Bank",lc.getDraweeBank());parties.put("Benutzbar bei",lc.getAvailableWith());
-        var results=new ArrayList<CheckResult>();
-        parties.forEach((party,value)->match(party,value).forEach(h->{
-            boolean sure=h.score()>=MATCH;
-            var e=h.entry();var version=loaded.get(e.source());
-            String evidence=String.format(Locale.GERMANY,"%s · %s %s%s · Übereinstimmung %.2f · Liste vom %s",h.listedName(),e.source(),e.reference()==null?"":e.reference(),e.programme()==null||e.programme().isBlank()?"":" ("+e.programme()+")",h.score(),version==null?"?":version.fetchedAt().format(DateTimeFormatter.ofPattern("dd.MM.yyyy")));
-            results.add(new CheckResult(sure?CheckResult.Severity.DISCREPANCY:CheckResult.Severity.WARNING,sure?"SANCTIONS_MATCH":"SANCTIONS_POSSIBLE_MATCH",
-                (sure?"Sanktionslisten-Treffer: ":"Möglicher Sanktionslisten-Treffer: ")+party+" „"+h.partyValue()+"“ ähnelt „"+h.listedName()+"“ ("+e.source()+"). Vor weiterer Bearbeitung prüfen.",
-                party+": "+h.partyValue(),null,evidence));
-        }));
-        if(results.isEmpty())results.add(new CheckResult(CheckResult.Severity.OK,"SANCTIONS_SCREENED","Keine Treffer in den Sanktionslisten ("+String.join(", ",loaded.keySet())+")."));
+        parties.put("Empfänger (Consignee)",lcFacts.get("LC_CONSIGNEE"));parties.put("Notify Party",lcFacts.get("LC_NOTIFY_PARTY"));
+        parties.forEach((party,value)->match(party,value).forEach(h->results.add(finding(h,null))));
+        for(var doc:documents){
+            var f=facts(doc.getRuleFactsJson());String name=doc.getOriginalFilename();
+            Map.of("Empfänger (Consignee)","DOCUMENT_CONSIGNEE","Notify Party","DOCUMENT_NOTIFY_PARTY","Frachtführer","DOCUMENT_CARRIER").forEach((party,key)->match(party,f.get(key)).forEach(h->results.add(finding(h,name))));
+            vesselFindings(f.get("DOCUMENT_VESSEL"),name,results);
+        }
+        if(results.size()==before)results.add(new CheckResult(CheckResult.Severity.OK,"SANCTIONS_SCREENED","Keine Treffer in den Sanktionslisten ("+String.join(", ",loaded.keySet())+")."));
         return results;
+    }
+    private CheckResult finding(Hit h,String documentName){
+        boolean sure=h.score()>=MATCH;
+        var e=h.entry();
+        return new CheckResult(sure?CheckResult.Severity.DISCREPANCY:CheckResult.Severity.WARNING,sure?"SANCTIONS_MATCH":"SANCTIONS_POSSIBLE_MATCH",
+            (sure?"Sanktionslisten-Treffer: ":"Möglicher Sanktionslisten-Treffer: ")+h.party()+" „"+h.partyValue()+"“ ähnelt „"+h.listedName()+"“ ("+e.source()+"). Vor weiterer Bearbeitung prüfen.",
+            h.party()+": "+h.partyValue(),documentName,evidence(e,h.listedName(),String.format(Locale.GERMANY,"Übereinstimmung %.2f",h.score())));
+    }
+    private String evidence(SanctionsListParser.Entry e,String listedName,String how){
+        var version=loaded.get(e.source());
+        return listedName+" · "+e.source()+" "+(e.reference()==null?"":e.reference())+(e.programme()==null||e.programme().isBlank()?"":" ("+e.programme()+")")+" · "+how+" · Liste vom "+(version==null?"?":version.fetchedAt().format(DateTimeFormatter.ofPattern("dd.MM.yyyy")));
+    }
+
+    /** Vessel named in a transport document: by IMO number first, otherwise by name against listed vessels only. */
+    void vesselFindings(String vessel,String documentName,List<CheckResult> results){
+        if(vessel==null||vessel.isBlank())return;
+        for(String imo:SanctionsListParser.imoNumbers(vessel)){
+            var e=vesselsByImo.get(imo);
+            if(e!=null){results.add(new CheckResult(CheckResult.Severity.DISCREPANCY,"SANCTIONS_VESSEL_MATCH","Gelistetes Schiff: IMO "+imo+" („"+e.name()+"“, "+e.source()+"). Vor weiterer Bearbeitung prüfen.","Schiff: "+vessel.trim(),documentName,evidence(e,e.name(),"IMO "+imo)));return;}
+        }
+        // Voyage numbers and the IMO note are not part of the name.
+        String name=vessel.replaceAll("(?i)\\bIMO\\s*\\d{7}\\b","").replaceAll("(?i)\\b(V(OY(AGE)?)?\\.?\\s*(NO\\.?)?\\s*[A-Z0-9-]*\\d[A-Z0-9-]*)\\b","").replaceAll("(?i)\\b(M/?V|MS|MT|MV)\\b\\.?","");
+        var tokens=NameMatcher.tokens(name);if(tokens.isEmpty()||String.join("",tokens).length()<4)return;
+        Hit best=null;
+        for(var v:vessels){double sc=NameMatcher.score(tokens,v.tokens());if(sc>=0.95&&(best==null||sc>best.score()))best=new Hit("Schiff",name.trim(),v.entry(),v.name(),sc);}
+        if(best!=null)results.add(new CheckResult(CheckResult.Severity.WARNING,"SANCTIONS_VESSEL_POSSIBLE_MATCH","Möglicherweise gelistetes Schiff: „"+best.partyValue()+"“ ähnelt „"+best.listedName()+"“ ("+best.entry().source()+"). IMO-Nummer prüfen.","Schiff: "+vessel.trim(),documentName,evidence(best.entry(),best.listedName(),String.format(Locale.GERMANY,"Übereinstimmung %.2f",best.score()))));
+    }
+
+    private static final Map<String,String> LC_PLACES=new LinkedHashMap<>();
+    private static final Map<String,String> DOC_PLACES=new LinkedHashMap<>();
+    static{
+        LC_PLACES.put("LC_ORIGIN_COUNTRY","Ursprungsland");LC_PLACES.put("LC_LOADING_PORT","Ladehafen");LC_PLACES.put("LC_DISCHARGE_PORT","Löschhafen");
+        LC_PLACES.put("LC_DEPARTURE_AIRPORT","Abflughafen");LC_PLACES.put("LC_DESTINATION_AIRPORT","Zielflughafen");
+        LC_PLACES.put("LC_APPLICANT_ADDRESS_COUNTRY","Land des Auftraggebers");LC_PLACES.put("LC_BENEFICIARY_ADDRESS_COUNTRY","Land des Begünstigten");
+        LC_PLACES.put("LC_CONSIGNEE_ADDRESS_COUNTRY","Land des Empfängers");LC_PLACES.put("LC_NOTIFY_ADDRESS_COUNTRY","Land der Notify Party");
+        DOC_PLACES.put("DOCUMENT_ORIGIN_COUNTRY","Ursprungsland");DOC_PLACES.put("DOCUMENT_LOADING_PORT","Ladehafen");DOC_PLACES.put("DOCUMENT_DISCHARGE_PORT","Löschhafen");
+        DOC_PLACES.put("DOCUMENT_DEPARTURE_AIRPORT","Abflughafen");DOC_PLACES.put("DOCUMENT_DESTINATION_AIRPORT","Zielflughafen");
+        DOC_PLACES.put("DOCUMENT_APPLICANT_ADDRESS_COUNTRY","Land des Auftraggebers");DOC_PLACES.put("DOCUMENT_BENEFICIARY_ADDRESS_COUNTRY","Land des Begünstigten");
+        DOC_PLACES.put("DOCUMENT_CONSIGNEE_ADDRESS_COUNTRY","Land des Empfängers");DOC_PLACES.put("DOCUMENT_NOTIFY_ADDRESS_COUNTRY","Land der Notify Party");
+    }
+    /** Countries and places of the file and its documents that lie in an embargo country (independent of the downloaded lists). */
+    void embargoFindings(LetterOfCredit lc,Map<String,String> lcFacts,List<de.ostms.lc.document.domain.LcDocument> documents,List<CheckResult> results){
+        var seen=new HashSet<String>();
+        java.util.function.BiConsumer<String[],String> check=(what,documentName)->EmbargoCountries.find(what[1],embargo).ifPresent(c->{
+            if(seen.add(c.name()+"|"+what[0]+"|"+documentName))
+                results.add(new CheckResult(CheckResult.Severity.WARNING,"EMBARGO_COUNTRY","Embargo-/Sanktionsland "+c.name()+": "+what[0]+" „"+what[1].trim().replaceAll("\\s+"," ")+"“. Genehmigungspflicht und Sanktionsrecht prüfen.",what[0]+": "+what[1].trim().replaceAll("\\s+"," "),documentName,"Länderliste Embargo/Sanktionen ("+c.name()+")"));
+        });
+        Map<String,String> parties=new LinkedHashMap<>();
+        parties.put("Auftraggeber",lc.getApplicant());parties.put("Begünstigter",lc.getBeneficiary());parties.put("Eröffnende Bank",lc.getIssuingBank());parties.put("Avisierende Bank",lc.getAdvisingBank());
+        parties.forEach((label,value)->{if(value!=null)check.accept(new String[]{label,value},null);});
+        LC_PLACES.forEach((key,label)->{String v=lcFacts.get(key);if(v!=null)check.accept(new String[]{label,v},null);});
+        for(var doc:documents){var f=facts(doc.getRuleFactsJson());DOC_PLACES.forEach((key,label)->{String v=f.get(key);if(v!=null)check.accept(new String[]{label,v},doc.getOriginalFilename());});}
+    }
+    /** Reviewed facts of the file or a document by field name; unreadable facts count as none. */
+    static Map<String,String> facts(String json){
+        try{var out=new HashMap<String,String>();de.ostms.lc.rulepack.RuleFacts.read(json).forEach((k,v)->out.put(k.name(),v));return out;}catch(RuntimeException e){return Map.of();}
     }
 
     public Status status(){

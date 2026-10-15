@@ -10,9 +10,13 @@ import java.util.*;
 /** Reads the public lists into a common form: one entry per listed person, entity or vessel with all its names. */
 public final class SanctionsListParser {
     public enum Kind { PERSON, ENTITY, VESSEL }
-    public record Entry(String source,String reference,Kind kind,String name,List<String> aliases,String programme){
+    public record Entry(String source,String reference,Kind kind,String name,List<String> aliases,String programme,List<String> imo){
+        public Entry(String source,String reference,Kind kind,String name,List<String> aliases,String programme){this(source,reference,kind,name,aliases,programme,List.of());}
         public List<String> names(){var all=new ArrayList<String>();all.add(name);all.addAll(aliases);return all;}
     }
+    private static final java.util.regex.Pattern IMO=java.util.regex.Pattern.compile("IMO\\s*(\\d{7})");
+    /** IMO numbers mentioned in a text ("Vessel Registration Identification IMO 7406784"). */
+    public static List<String> imoNumbers(String text){var out=new ArrayList<String>();if(text==null)return out;var m=IMO.matcher(text.toUpperCase(Locale.ROOT));while(m.find())out.add(m.group(1));return out;}
     public record Parsed(List<Entry> entries,String published){}
 
     private SanctionsListParser(){}
@@ -90,7 +94,7 @@ public final class SanctionsListParser {
             Kind kind="individual".equals(type)?Kind.PERSON:"vessel".equals(type)?Kind.VESSEL:Kind.ENTITY;
             // SDN names of persons are "LAST, First"; the matcher compares word sets, so the order does not matter.
             var alias=aliases.getOrDefault(row.get(0),List.of()).stream().filter(a->!a.isEmpty()).toList();
-            out.add(new Entry("OFAC",row.get(0),kind,name,alias,nullable(row.get(3)).replace("] [",", ").replace("[","").replace("]","").trim()));
+            out.add(new Entry("OFAC",row.get(0),kind,name,alias,nullable(row.get(3)).replace("] [",", ").replace("[","").replace("]","").trim(),row.size()>11?imoNumbers(row.get(11)):List.of()));
         }
         return new Parsed(out,null);
     }
