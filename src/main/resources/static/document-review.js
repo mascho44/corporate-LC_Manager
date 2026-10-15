@@ -144,6 +144,8 @@
       const button = document.createElement('button'); button.type = 'button'; button.className = decision === 'ACCEPTED' ? '' : 'secondary'; button.textContent = text; button.disabled = busy;
       button.onclick = event => { event.stopPropagation(); decide(index, decision); }; actions.append(button);
      });
+     const missingLc = /\b(LC_[A-Z_]+) = nicht erfasst/.exec(finding.lcCondition || '');
+     if (missingLc) { const facts = document.createElement('button'); facts.type = 'button'; facts.className = 'secondary'; facts.dataset.ruleFacts = ''; facts.textContent = missingLc[1] === 'LC_PRESENTATION_DATE' ? 'Vorlagedatum erfassen' : 'Fehlende LC-Prüfdaten erfassen'; actions.append(facts); }
      const hint = document.createElement('small'); hint.textContent = 'Fundstelle rechts im PDF markieren statt Kommentar schreiben.'; card.append(actions, hint);
      const siblings = siblingsOf(groups, finding);
      if (siblings.length) {
