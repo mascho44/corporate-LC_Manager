@@ -1053,7 +1053,8 @@ openEdit=function(){
     $('#lcCompanySelect').innerHTML='<option value="">Standardfirma (bisherige Zuordnung)</option>'+(selectedId?'<option value="'+selectedId+'" selected>Firma #'+selectedId+'</option>':'');
     json('/api/companies/choices').then(choices=>{$('#lcCompanySelect').innerHTML='<option value="">Standardfirma (bisherige Zuordnung)</option>'+choices.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');$('#lcCompanySelect').value=selectedId||''}).catch(()=>{});
     $('#templateCompanyInput').value=activeLc.templateCompany||'';
-    json('/api/document-templates/companies').then(names=>{$('#templateCompanyOptions').innerHTML=names.map(name=>`<option value="${esc(name)}"></option>`).join('')}).catch(()=>{});
+    // Template companies belong to the corporate module; a tenant without it would only get a 403 here.
+    if(globalThis.LcWorkspaceModules?.corporate!==false)json('/api/document-templates/companies').then(names=>{$('#templateCompanyOptions').innerHTML=names.map(name=>`<option value="${esc(name)}"></option>`).join('')}).catch(()=>{});
 };
 function refreshCompanyFilter(){
     let select=$('#lcCompanyFilter');
