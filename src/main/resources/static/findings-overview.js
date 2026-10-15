@@ -137,7 +137,7 @@
   const confirmTargets = async (targets, button) => {
    if (targets.length < 1 || typeof activeLc === 'undefined' || !activeLc) return;
    const kinds = [...new Set(targets.map(t => t.kind))].join(', ');
-   const comment = prompt(`Pflichtbegründung für ${targets.length} Hinweise (${kinds}). Sie gilt für alle und wird je Befund protokolliert:`);
+   const comment = await globalThis.LcReviewNote.ask({ decision: 'ACCEPTED', required: true, title: `${targets.length} Hinweise bestätigen`, text: `Pflichtbegründung für ${targets.length} Hinweise (${kinds}). Sie gilt für alle und wird je Befund protokolliert.` });
    if (comment === null) return;
    if (!comment.trim()) { alert('Bitte eine Begründung eingeben. Es wurde nichts gespeichert.'); return; }
    if (comment.length > 1000) { alert('Die Begründung darf maximal 1000 Zeichen enthalten.'); return; }
