@@ -68,15 +68,29 @@ class VersionedReviewTest {
             .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("nicht zu dieser LC-Akte");
         assertThat(fixture.service.decisionMark(fixture.id,finding)).isEmpty();
     }
+    @Test void aDecisionSurvivesAnotherDocumentAndWorkflowChangesButNotAChangeOfItsOwnDocument() {
+        var fixture=new Fixture();var finding=fixture.amountFinding();
+        when(fixture.decisions.save(any())).thenAnswer(call->call.getArgument(0));
+        var saved=fixture.service.decide(fixture.id,new CheckDecisionRequest(finding.code(),finding.documentName(),"ACCEPTED","Original geprüft",finding.reviewFingerprint()),"checker");
+        when(fixture.decisions.findByLcId(fixture.id)).thenReturn(List.of(saved));
+        fixture.lc.setAssignedTo("someone");fixture.lc.setFollowUpDate(java.time.LocalDate.now().plusDays(3));
+        var other=new LcDocument();other.setOriginalFilename("packing.pdf");other.setDocumentType(DocumentType.PACKING_LIST);other.setLetterOfCredit(fixture.lc);
+        org.springframework.test.util.ReflectionTestUtils.setField(other,"id",UUID.randomUUID());
+        when(fixture.docs.findByLetterOfCreditIdOrderByUploadedAtDesc(fixture.id)).thenReturn(List.of(fixture.invoice,other));
+        assertThat(fixture.amountFinding().reviewDecision()).isEqualTo("ACCEPTED");
+        fixture.invoice.setExtractedText("changed text");
+        assertThat(fixture.amountFinding().reviewDecision()).isNull();
+    }
     private static class Fixture {
         final UUID id=UUID.randomUUID();final LetterOfCredit lc=new LetterOfCredit();
         final LcDocument invoice=new LcDocument();
         final DocumentCheckDecisionRepository decisions=mock(DocumentCheckDecisionRepository.class);
+        final LcDocumentRepository docs=mock(LcDocumentRepository.class);
         final DocumentCheckService service;
         Fixture(){
             lc.setAmount(new BigDecimal("1000"));lc.setCurrency("EUR");lc.setRequiredDocuments(List.of());
             invoice.setOriginalFilename("invoice.pdf");invoice.setLetterOfCredit(lc);org.springframework.test.util.ReflectionTestUtils.setField(invoice,"id",UUID.randomUUID());org.springframework.test.util.ReflectionTestUtils.setField(lc,"id",id);invoice.setDocumentType(DocumentType.COMMERCIAL_INVOICE);invoice.setAmount(new BigDecimal("1200"));invoice.setCurrency("EUR");
-            var lcs=mock(LetterOfCreditRepository.class);var docs=mock(LcDocumentRepository.class);
+            var lcs=mock(LetterOfCreditRepository.class);
             when(lcs.findById(id)).thenReturn(Optional.of(lc));when(docs.findById(invoice.getId())).thenReturn(Optional.of(invoice));when(docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id)).thenReturn(List.of(invoice));when(decisions.findByLcId(id)).thenReturn(List.of());
             service=new DocumentCheckService(lcs,docs,decisions);
         }

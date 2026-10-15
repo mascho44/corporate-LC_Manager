@@ -65,7 +65,7 @@ public class DocumentController {
         List<DocumentView> imported=service.uploadBatch(lcId,files,types,copies);resetChecks(lcId,authentication,"Dokumenten-Batch hochgeladen");
         audit.record(authentication,"DOCUMENT_BATCH_UPLOADED","LETTER_OF_CREDIT",lcId,files.size()+" Quelldateien · "+imported.size()+" Dokumente importiert");return imported;
     }
-    private void resetChecks(UUID lcId,Authentication authentication,String reason){long reset=checks.invalidateDecisions(lcId);if(reset>0)audit.record(authentication,"DOCUMENT_CHECK_DECISIONS_RESET","LETTER_OF_CREDIT",lcId,reset+" Entscheidungen zurückgesetzt · "+reason);}
+    private void resetChecks(UUID lcId,Authentication authentication,String reason){/* Decisions are bound to their own document and the credit terms; changing or adding a document only affects the findings it touches. */long reset=0;if(reset>0)audit.record(authentication,"DOCUMENT_CHECK_DECISIONS_RESET","LETTER_OF_CREDIT",lcId,reset+" Entscheidungen zurückgesetzt · "+reason);}
 
     @GetMapping("/lcs/{lcId}/documents")
     public List<DocumentView> list(@PathVariable UUID lcId) { return service.forLc(lcId); }

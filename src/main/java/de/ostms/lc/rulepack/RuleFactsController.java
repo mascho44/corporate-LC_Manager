@@ -42,7 +42,7 @@ public class RuleFactsController {
  public Map<Field,String> updateRequirements(UUID lcId,de.ostms.lc.document.domain.DocumentType type,Map<Field,String> facts,Authentication auth){
   var lc=lcs.findById(lcId).orElseThrow();String before=lc.getRuleRequirementsJson();
   String after=RuleRequirements.update(before,type,facts);lc.setRuleRequirementsJson(after);lcs.save(lc);
-  long reset=checks.invalidateDecisions(lcId);
+  long reset=0;/* findings that depend on the changed data become stale on their own */
   audit.recordInTransaction(auth,"LC_RULE_REQUIREMENTS_UPDATED","LETTER_OF_CREDIT",lcId,"Typ "+type+" · SHA-256 vorher="+RuleFacts.fingerprint(before)+" nachher="+RuleFacts.fingerprint(after)+" · "+reset+" Prüfentscheidungen zurückgesetzt");
   return RuleRequirements.read(after).get(type);
  }
@@ -56,7 +56,7 @@ public class RuleFactsController {
  @Transactional
  public Map<Field,String> updateLc(UUID lcId,Map<Field,String> facts,Authentication auth){
   var lc=lcs.findById(lcId).orElseThrow();var before=lc.getRuleFactsJson();String after=RuleFacts.encode(facts,false);
-  lc.setRuleFactsJson(after);lcs.save(lc);long reset=checks.invalidateDecisions(lcId);
+  lc.setRuleFactsJson(after);lcs.save(lc);long reset=0;/* findings that depend on the changed data become stale on their own */
   audit.recordInTransaction(auth,"LC_RULE_FACTS_UPDATED","LETTER_OF_CREDIT",lcId,"LC-Prüfdaten SHA-256 vorher="+RuleFacts.fingerprint(before)+" nachher="+RuleFacts.fingerprint(after)+" · Felder "+facts.keySet()+" · "+reset+" Prüfentscheidungen zurückgesetzt");
   return RuleFacts.read(after);
  }
@@ -120,7 +120,7 @@ public class RuleFactsController {
  @Transactional
  public Map<Field,String> updateDocument(UUID lcId,UUID id,Map<Field,String> facts,Authentication auth){
   var doc=documentInLc(lcId,id);var before=doc.getRuleFactsJson();String after=RuleFacts.encode(facts,true);
-  doc.setRuleFactsJson(after);documents.save(doc);long reset=checks.invalidateDecisions(lcId);
+  doc.setRuleFactsJson(after);documents.save(doc);long reset=0;/* findings that depend on the changed data become stale on their own */
   audit.recordInTransaction(auth,"DOCUMENT_RULE_FACTS_UPDATED","DOCUMENT",id,"LC "+lcId+" · Dokument-Prüfdaten SHA-256 vorher="+RuleFacts.fingerprint(before)+" nachher="+RuleFacts.fingerprint(after)+" · Felder "+facts.keySet()+" · "+reset+" Prüfentscheidungen zurückgesetzt");
   return RuleFacts.read(after);
  }

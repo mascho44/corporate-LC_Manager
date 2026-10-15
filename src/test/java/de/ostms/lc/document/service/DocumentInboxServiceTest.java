@@ -93,7 +93,7 @@ class DocumentInboxServiceTest {
         var result=service.attach(id,new DocumentInboxAttachRequest(lcId,DocumentType.PACKING_LIST,LocalDate.of(2026,10,4)));
         assertThat(result.document().documentType()).isEqualTo(DocumentType.PACKING_LIST);
         assertThat(item.getStatus()).isEqualTo("ATTACHED");assertThat(item.getContent()).isNull();
-        assertThat(item.getAttachedDocumentId()).isEqualTo(documentId);verify(checks).invalidateDecisions(lcId);
+        assertThat(item.getAttachedDocumentId()).isEqualTo(documentId);verify(checks,never()).invalidateDecisions(lcId);
         assertThatThrownBy(()->service.attach(id,new DocumentInboxAttachRequest(lcId,DocumentType.ANNEX,null))).isInstanceOf(IllegalStateException.class);
         verify(documents,times(1)).save(any());
     }
