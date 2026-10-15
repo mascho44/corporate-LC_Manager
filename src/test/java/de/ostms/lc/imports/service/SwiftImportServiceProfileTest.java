@@ -33,6 +33,18 @@ class SwiftImportServiceProfileTest {
         });
     }
 
+    @Test void standardFieldsMentioningApplicantOrBeneficiaryKeepTheirMeaning() {
+        String raw=":20:REF\n:31D:271231BERLIN\n:32B:EUR100,\n:50:BUYER LLC\nDUBAI\n:59:SELLER GMBH\nSTUTTGART\n"
+            +":46A:1.SIGNED COMMERCIAL INVOICE SHOWING FULL NAME AND ADDRESS OF THE APPLICANT\n"
+            +":47A:1.ALL DOCUMENTS MUST BE ISSUED IN ENGLISH\n2.BENEFICIARY'S CERTIFICATE REQUIRED";
+        var preview=service.preview(new SwiftImportRequest("lc.swift",raw));
+        assertThat(preview.applicant()).isEqualTo("BUYER LLC\nDUBAI");assertThat(preview.beneficiary()).isEqualTo("SELLER GMBH\nSTUTTGART");
+        assertThat(preview.rawFields()).filteredOn(f->f.code().equals("46A")||f.code().equals("47A")).allSatisfy(f->{
+            assertThat(f.notice()).isNull();
+            assertThat(f.targetLabel()).doesNotContain("Applicant","Beneficiary","Auftraggeber","Begünstigt");
+        });
+    }
+
     @Test void detectsMt707ByProfileFields() {
         assertThat(service.detect(":20:LC-1\n:26E:2\n:30:260922\n:46B:NEW DOCUMENTS"))
                 .isEqualTo("MT707");

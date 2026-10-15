@@ -30,10 +30,12 @@
   return { reference: (values.reference || '').trim(), ownBankReference: clean('ownBankReference'), foreignBankReference: clean('foreignBankReference'), applicant: clean('applicant'), beneficiary: clean('beneficiary'),
    amount: amount ? Number(amount.replace(',', '.')) : null, currency: clean('currency'), expiryDate: clean('expiryDate'), documentType: 'ADVISING_LETTER', documentDate: null, issuingBank: clean('issuingBank'), expiryPlace: clean('expiryPlace'), copyNumber: null };
  }
- globalThis.LcAvisCase = { previewHtml, coverFormHtml, coverRequest };
+ /** Inbox suggestion that means a SWIFT message (MT700 and related). */
+ const isSwift = type => /^SWIFT_/.test(String(type || ''));
+ globalThis.LcAvisCase = { previewHtml, coverFormHtml, coverRequest, isSwift };
  if (typeof document === 'undefined' || !document.body) return;
 
- async function open(id, name) {
+ async function open(id, name, swift = false) {
   const dialog = document.createElement('dialog'); dialog.className = 'wide-dialog avis-dialog'; document.body.append(dialog); dialog.onclose = () => dialog.remove();
   dialog.innerHTML = `<div class="dialoghead"><h2>Avis einlesen</h2><button type="button" data-close>Schließen</button></div><p role="status">${esc(name)} wird gelesen …</p>`;
   dialog.querySelector('[data-close]').onclick = () => dialog.close(); dialog.showModal();
@@ -41,8 +43,11 @@
    const result = await json(`/api/inbox/${encodeURIComponent(id)}/avis-preview`);
    const cover = !result.creditTextFound && result.cover?.fields?.reference ? result.cover : null;
    const ok = result.creditTextFound && result.credit?.valid;
-   dialog.innerHTML = `<div class="dialoghead"><h2>Avis einlesen</h2><button type="button" data-close>Schließen</button></div><p>${esc(name)}</p>${cover ? coverFormHtml(cover) : previewHtml(result)}` +
-    `<p data-error role="alert"></p><div class="dialog-actions"><button type="button" data-create${ok || cover ? '' : ' disabled'}>${cover ? 'LC-Akte aus Anschreiben anlegen' : 'LC-Akte aus Avis anlegen'}</button></div>`;
+   const amendment = result.credit?.messageType === 'MT707';
+   const title = swift ? 'SWIFT-Nachricht importieren' : 'Avis einlesen';
+   const action = cover ? 'LC-Akte aus Anschreiben anlegen' : amendment ? 'Änderung (MT707) zur Akte übernehmen' : swift ? 'LC-Akte aus SWIFT-Nachricht anlegen' : 'LC-Akte aus Avis anlegen';
+   dialog.innerHTML = `<div class="dialoghead"><h2>${title}</h2><button type="button" data-close>Schließen</button></div><p>${esc(name)}${result.credit?.messageType ? ' · ' + esc(result.credit.messageType) : ''}</p>${cover ? coverFormHtml(cover) : previewHtml(result)}` +
+    `<p data-error role="alert"></p><div class="dialog-actions"><button type="button" data-create${ok || cover ? '' : ' disabled'}>${action}</button></div>`;
    dialog.querySelector('[data-close]').onclick = () => dialog.close();
    dialog.querySelector('[data-create]').onclick = async event => {
     const button = event.currentTarget; button.disabled = true;
@@ -55,7 +60,8 @@
       created = { reference: body.reference };
     } else created = await json(`/api/inbox/${encodeURIComponent(id)}/avis-case`, { method: 'POST' });
      dialog.close();
-     const message = document.querySelector('#inboxMessage'); if (message) message.textContent = `LC-Akte „${created.reference}" aus dem Avis angelegt; der Avis ist als Dokument abgelegt.`;
+     const message = document.querySelector('#inboxMessage');
+     if (message) message.textContent = created.kind === 'MT707' ? `Änderung zur LC-Akte „${created.reference}" übernommen (bitte in der Akte annehmen oder ablehnen); die Nachricht ist als Dokument abgelegt.` : `LC-Akte „${created.reference}" angelegt; ${swift ? 'die SWIFT-Nachricht' : 'der Avis'} ist als Dokument abgelegt.`;
      if (typeof load === 'function') await load(); if (typeof loadInbox === 'function') await loadInbox();
     } catch (error) { dialog.querySelector('[data-error]').textContent = error.message; button.disabled = false; }
    };
@@ -68,10 +74,13 @@
    if (article.dataset.pending === 'true') return;
    article.dataset.avis = '1';
    const name = article.querySelector('.inbox-item-head b')?.textContent || '';
-   if (!/\.pdf$/i.test(name) || article.dataset.inboxSource) return;
-   const button = document.createElement('button'); button.type = 'button'; button.className = 'secondary avis-open'; button.textContent = 'Als Avis einlesen …';
-   button.title = 'Akkreditivtext des Avis lesen und daraus eine LC-Akte anlegen';
-   button.onclick = () => open(article.dataset.inboxId, name);
+   // A file the inbox recognised as SWIFT message goes through the SWIFT import directly (also TXT/FIN files); other PDFs can be read as advice.
+   const swift = isSwift(article.dataset.suggestedType);
+   if ((!swift && !/\.pdf$/i.test(name)) || article.dataset.inboxSource) return;
+   const button = document.createElement('button'); button.type = 'button'; button.className = (swift ? '' : 'secondary ') + 'avis-open';
+   button.textContent = swift ? 'Als SWIFT-Nachricht importieren …' : 'Als Avis einlesen …';
+   button.title = swift ? 'SWIFT-Nachricht (MT700/MT707/MT760) wie im SWIFT-Import einlesen und daraus die LC-Akte anlegen oder die Änderung übernehmen' : 'Akkreditivtext des Avis lesen und daraus eine LC-Akte anlegen';
+   button.onclick = () => open(article.dataset.inboxId, name, swift);
    (article.querySelector('.inbox-split-action') || article.querySelector('.inbox-item-head'))?.after(button);
   });
  }

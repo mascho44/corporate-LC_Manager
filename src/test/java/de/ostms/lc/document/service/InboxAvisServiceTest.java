@@ -59,4 +59,24 @@ class InboxAvisServiceTest {
         assertThat(preview.creditTextFound()).isFalse();assertThat(preview.credit()).isNull();
         assertThat(preview.cover().fields()).containsEntry("reference", "ABC123456").containsEntry("amount", "1000.00").containsEntry("expiryDate", "2026-11-30");
     }
+
+    @Test void bankPrintFormatIsFoundAfterACoverLetterWithClosing() {
+        String advice = """
+                Dear Sirs,
+                please find below the documentary credit.
+                Best regards
+                Sample Bank
+                MESSAGE TYPE: 700
+                27: SEQUENCE OF TOTAL
+                1/1
+                20: DOCUMENTARY CREDIT NUMBER
+                ILC250B000001
+                31D: DATE AND PLACE OF EXPIRY
+                260222GERMANY
+                32B: CURRENCY CODE, AMOUNT
+                EUR1000,00
+                """;
+        String raw = InboxAvisService.creditText(normalizer, advice);
+        assertThat(raw).contains(":20:ILC250B000001", ":31D:260222GERMANY", ":32B:EUR1000,00");
+    }
 }
