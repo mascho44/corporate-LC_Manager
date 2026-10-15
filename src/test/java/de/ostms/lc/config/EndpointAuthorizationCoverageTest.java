@@ -38,6 +38,7 @@ class EndpointAuthorizationCoverageTest {
         Map.entry("POST /api/platform/tenants", "Dienst verlangt Plattformadministration mit Zwei-Faktor (PlatformTenantService.require)"),
         Map.entry("PUT /api/platform/tenants/*", "Dienst verlangt Plattformadministration mit Zwei-Faktor (PlatformTenantService.require)"),
         Map.entry("POST /api/platform/users", "Plattformadministration, Prüfung im Dienst"),
+        Map.entry("POST /api/platform/sanctions/refresh", "Plattformadministration mit Zwei-Faktor (PlatformSanctionsController.require)"),
         Map.entry("POST /api/platform/invitations", "Plattformadministration, Prüfung im Dienst (PlatformInvitationService.authorize)"),
         Map.entry("POST /api/platform/invitations/*/resend", "Plattformadministration, Prüfung im Dienst (PlatformInvitationService.authorize)"),
         Map.entry("DELETE /api/platform/invitations/*", "Plattformadministration, Prüfung im Dienst (PlatformInvitationService.authorize)"),

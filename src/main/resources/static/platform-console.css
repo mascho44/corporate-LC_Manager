@@ -62,3 +62,4 @@ body.platform-shell>.platform-header{position:static;display:flex;align-items:ce
 .platform-shell .platform-tile:hover{border-color:#6d5dfc;background:#f5f4ff}
 .platform-tile b{font-size:30px;line-height:1.1}.platform-tile span{font-weight:600}.platform-tile small{color:#52607a}
 .platform-ok{color:#166534;margin:0}
+.platform-sanctions table{margin-bottom:10px}.platform-sanctions small{display:block;margin-top:8px;color:#52607a}

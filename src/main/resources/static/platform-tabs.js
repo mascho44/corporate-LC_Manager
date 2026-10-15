@@ -81,8 +81,28 @@
     const list = node('div', undefined, 'platform-hints');
     if (!hints.length) list.append(node('p', 'Keine Auffälligkeiten.', 'platform-ok'));
     hints.forEach(h => { const row = node('article', undefined, 'membership-row'); row.append(node('div', h.text)); const go = node('button', 'Öffnen', 'secondary'); go.type = 'button'; go.onclick = () => show(h.tab); row.append(go); list.append(row); });
-    overview.replaceChildren(node('h3', 'Überblick'), grid, node('h3', 'Hinweise'), list);
+    const sanctions = node('div', undefined, 'platform-sanctions');
+    overview.replaceChildren(node('h3', 'Überblick'), grid, node('h3', 'Hinweise'), list, node('h3', 'Sanktionslisten'), sanctions);
+    renderSanctions(sanctions, list);
    } catch (error) { if (generation === overviewGeneration) overview.replaceChildren(node('p', error.message)); }
+  }
+  /** Status of the public sanctions lists (EU, UN, OFAC) with a manual refresh; a missing or stale list also shows up as a hint. */
+  async function renderSanctions(box, hints) {
+   let status;
+   try { status = await json('/api/platform/sanctions'); } catch (error) { box.replaceChildren(node('p', 'Status nicht verfügbar: ' + error.message)); return; }
+   const table = node('table', undefined, 'pu-table'); const head = node('tr'); ['Liste', 'Stand', 'Einträge', 'Hinweis'].forEach(h => head.append(node('th', h))); table.append(head);
+   const stale = [];
+   status.sources.forEach(s => {
+    const tr = node('tr'); const age = s.fetchedAt ? (Date.now() - new Date(s.fetchedAt).getTime()) / 36e5 : Infinity;
+    if (s.fetchedAt && age > 48) stale.push(s.source);
+    [s.source, s.fetchedAt ? new Date(s.fetchedAt).toLocaleString('de-DE') : 'noch nicht geladen', s.entries ? s.entries.toLocaleString('de-DE') : '–', s.error || (!s.fetchedAt ? 'wird nach dem Start automatisch geladen' : age > 48 ? 'älter als 48 Stunden' : 'aktuell')].forEach(v => tr.append(node('td', v)));
+    table.append(tr);
+   });
+   const refresh = node('button', status.refreshing ? 'Aktualisierung läuft …' : 'Jetzt aktualisieren', 'secondary'); refresh.type = 'button'; refresh.disabled = status.refreshing;
+   const note = node('small', 'Öffentliche Listen von EU, UN und OFAC; automatischer Abruf täglich. Die Prüfung unterstützt die Sachbearbeitung und ersetzt kein zertifiziertes Screening-System.');
+   refresh.onclick = async () => { refresh.disabled = true; refresh.textContent = 'Aktualisierung läuft …'; try { await json('/api/platform/sanctions/refresh', { method: 'POST' }); setTimeout(() => renderSanctions(box, hints), 15000); } catch (error) { refresh.textContent = 'Fehler: ' + error.message; } };
+   box.replaceChildren(table, refresh, note);
+   if (stale.length && hints) { hints.querySelector('.platform-ok')?.remove(); const row = node('article', undefined, 'membership-row'); row.append(node('div', `Sanktionslisten nicht aktuell: ${stale.join(', ')}`)); hints.append(row); }
   }
   paint(); renderOverview();
   globalThis.LcPlatformTabs.show = show; globalThis.LcPlatformTabs.refresh = renderOverview;
