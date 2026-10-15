@@ -52,3 +52,12 @@ test('blocking findings come first and progress counts decidable findings over a
  const p = progress(groups);
  assert.equal(p.total, 3); assert.equal(p.open, 2); assert.equal(p.done, 1);
 });
+
+test('the same open finding in other documents is offered for one decision', () => {
+ const { siblingsOf } = api;
+ const a = f('GOODS_DESCRIPTION', 'a.pdf', 'DISCREPANCY'), b = f('GOODS_DESCRIPTION', 'b.pdf', 'DISCREPANCY'), done = f('GOODS_DESCRIPTION', 'c.pdf', 'DISCREPANCY', 'ACCEPTED'), other = f('PORT', 'b.pdf', 'DISCREPANCY'), set = f('GOODS_DESCRIPTION', '', 'DISCREPANCY');
+ const groups = [{ items: [a] }, { items: [b, other] }, { items: [done] }, { items: [set] }];
+ assert.deepEqual(Array.from(siblingsOf(groups, a), x => x.documentName), ['b.pdf']);
+ assert.equal(siblingsOf(groups, set).length, 0);
+ assert.equal(siblingsOf(groups, other).length, 0);
+});
