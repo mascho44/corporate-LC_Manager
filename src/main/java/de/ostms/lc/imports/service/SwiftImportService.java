@@ -229,7 +229,7 @@ public class SwiftImportService {
 
     public Object execute(SwiftImportRequest request) {
         String type=detect(request.rawMessage());
-        SwiftImportRequest adapted=new SwiftImportRequest(request.filename(),learning.apply(type,request.rawMessage()));
+        SwiftImportRequest adapted=new SwiftImportRequest(request.filename(),learning.apply(type,request.rawMessage()),request.applicant(),request.beneficiary());
         return executeAdapted(adapted);
     }
 
@@ -238,6 +238,17 @@ public class SwiftImportService {
     }
 
     private Object executeAdapted(SwiftImportRequest adapted) {
+        Object result=executeMessage(adapted);
+        // Corrections of applicant/beneficiary entered because :50:/:59: only referred to another field; the original message text stays unchanged.
+        if(result instanceof LetterOfCredit lc&&(!blank(adapted.applicant())||!blank(adapted.beneficiary()))){
+            if(!blank(adapted.applicant()))lc.setApplicant(adapted.applicant().strip());
+            if(!blank(adapted.beneficiary()))lc.setBeneficiary(adapted.beneficiary().strip());
+            return lcs.save(lc);
+        }
+        return result;
+    }
+
+    private Object executeMessage(SwiftImportRequest adapted) {
         SwiftImportPreview p=previewCorrected(adapted);
         if(!p.valid()) { String msg=String.join(" ",p.errors()); history.record(adapted.filename(),p.messageType(),p.reference(),"REJECTED",msg); throw new IllegalArgumentException(msg); }
         try {
