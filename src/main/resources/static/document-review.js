@@ -7,6 +7,9 @@
  const SEVERITY = { DISCREPANCY: 'Abweichung', WARNING: 'Hinweis', OK: 'in Ordnung' };
  // Amount, expiry and presentation period, shipment date, missing document and signature stop a presentation; they are reviewed first.
  const BLOCKING = /SANCTION|EMBARGO|EXPORT_CONTROL|AMOUNT|EXPIR|PRESENTATION_PERIOD|PRESENTATION_BEFORE|SHIPMENT_DATE|LATEST_SHIPMENT|MISSING_DOCUMENT|SIGNATURE/;
+ const SANCTIONS = /^SANCTIONS_(?!SCREENED|NOT_SCREENED|CLEARED)/;
+ /** A sanctions hit noted as false positive by one person and waiting for the approval of a second one. */
+ const isPendingApproval = finding => isOpen(finding) && SANCTIONS.test(finding.code || '') && !!finding.reviewedBy;
  const TIERS = [['blocking', 'Blockierend'], ['check', 'Prüfen'], ['hint', 'Hinweise'], ['done', 'Erledigt & in Ordnung']];
  /** Tier of a finding: blocking, check (other discrepancies), hint (warnings) or done (decided or OK). */
  function tierOf(finding) {
@@ -44,7 +47,7 @@
   (groups || []).forEach(g => g.items.forEach(f => { if (f !== finding && f.code === finding.code && f.documentName && f.documentName !== finding.documentName && isOpen(f)) out.push(f); }));
   return out;
  }
- globalThis.LcDocumentReview = { groupFindings, nextOpen, nextGroupWithOpen, isOpen, tierOf, progress, siblingsOf };
+ globalThis.LcDocumentReview = { isPendingApproval, groupFindings, nextOpen, nextGroupWithOpen, isOpen, tierOf, progress, siblingsOf };
  if (typeof document === 'undefined' || !document.body) return;
 
  async function open() {
@@ -116,7 +119,9 @@
     if (finding.documentEvidence) { const q = document.createElement('blockquote'); q.textContent = finding.documentEvidence; card.append(q); }
     if (isOpen(finding)) {
      const actions = document.createElement('div'); actions.className = 'doc-review-actions';
-     [['ACCEPTED', 'Als erfüllt bestätigen'], ['CONFIRMED_DISCREPANCY', 'Abweichung bestätigen']].forEach(([decision, text]) => {
+     const pending = isPendingApproval(finding);
+     if (pending) { const note = document.createElement('small'); note.className = 'doc-review-pending'; note.textContent = `${finding.reviewComment} (vorgemerkt von ${finding.reviewedBy})`; card.append(note); }
+     [['ACCEPTED', pending ? 'Falsch-positiv freigeben (Vier-Augen)' : SANCTIONS.test(finding.code || '') ? 'Als Falsch-positiv vormerken' : 'Als erfüllt bestätigen'], ['CONFIRMED_DISCREPANCY', SANCTIONS.test(finding.code || '') ? 'Treffer bestätigen' : 'Abweichung bestätigen']].forEach(([decision, text]) => {
       const button = document.createElement('button'); button.type = 'button'; button.className = decision === 'ACCEPTED' ? '' : 'secondary'; button.textContent = text; button.disabled = busy;
       button.onclick = event => { event.stopPropagation(); decide(index, decision); }; actions.append(button);
      });

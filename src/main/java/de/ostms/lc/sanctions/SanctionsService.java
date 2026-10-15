@@ -53,6 +53,9 @@ public class SanctionsService {
     private volatile Map<String,SanctionsListParser.Entry> vesselsByImo=Map.of();
     private volatile List<EmbargoCountries.Country> embargo=EmbargoCountries.list(null);
     @Value("${app.sanctions.embargo-extra:}") void setEmbargoExtra(String extra){embargo=EmbargoCountries.list(extra);}
+    private SanctionsClearanceRepository clearances;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) void setClearances(SanctionsClearanceRepository repository){clearances=repository;}
+    private volatile Map<String,SanctionsListParser.Entry> byReference=Map.of();
 
     public SanctionsService(SanctionsListRepository lists,
                             @Value("${app.sanctions.fetch-enabled:true}") boolean fetchEnabled,
@@ -160,6 +163,7 @@ public class SanctionsService {
             e.imo().forEach(i->imo.put(i,e));
         }));
         vessels=ships;vesselsByImo=imo;
+        var refs=new HashMap<String,SanctionsListParser.Entry>();next.values().forEach(l->l.entries().forEach(e->refs.putIfAbsent(e.source()+"|"+e.reference(),e)));byReference=refs;
         index=idx;loaded=Collections.unmodifiableMap(new LinkedHashMap<>(next));cache.clear();
     }
     void useEntries(String source,List<SanctionsListParser.Entry> entries){var m=new LinkedHashMap<>(loaded);m.put(source,new Loaded(source,LocalDateTime.now(),"test","test",entries));use(m);}
@@ -211,7 +215,8 @@ public class SanctionsService {
             Map.of("Empfänger (Consignee)","DOCUMENT_CONSIGNEE","Notify Party","DOCUMENT_NOTIFY_PARTY","Frachtführer","DOCUMENT_CARRIER").forEach((party,key)->match(party,f.get(key)).forEach(h->results.add(finding(h,name))));
             vesselFindings(f.get("DOCUMENT_VESSEL"),name,results);
         }
-        if(results.size()==before)results.add(new CheckResult(CheckResult.Severity.OK,"SANCTIONS_SCREENED","Keine Treffer in den Sanktionslisten ("+String.join(", ",loaded.keySet())+")."));
+        applyClearances(results);
+        if(results.stream().skip(before).noneMatch(r->isHit(r.code())))results.add(new CheckResult(CheckResult.Severity.OK,"SANCTIONS_SCREENED","Keine offenen Treffer in den Sanktionslisten ("+String.join(", ",loaded.keySet())+")."));
         return results;
     }
     private CheckResult finding(Hit h,String documentName){
@@ -269,6 +274,47 @@ public class SanctionsService {
     /** Reviewed facts of the file or a document by field name; unreadable facts count as none. */
     static Map<String,String> facts(String json){
         try{var out=new HashMap<String,String>();de.ostms.lc.rulepack.RuleFacts.read(json).forEach((k,v)->out.put(k.name(),v));return out;}catch(RuntimeException e){return Map.of();}
+    }
+
+    /** Hits that need a decision (not the neutral notes). */
+    public static boolean isHit(String code){return code!=null&&code.startsWith("SANCTIONS_")&&!Set.of("SANCTIONS_SCREENED","SANCTIONS_NOT_SCREENED","SANCTIONS_CLEARED").contains(code);}
+
+    /** What identifies a hit for the false-positive memory: the party value, the list entry and its content. */
+    public record ClearanceKey(String partyKey,String partyValue,String source,String reference,String listedName,String entryHash){}
+    private static final java.util.regex.Pattern EVIDENCE=java.util.regex.Pattern.compile("^(.*?) · (EU|UN|OFAC) (\\S*)");
+    public Optional<ClearanceKey> clearanceKey(CheckResult hit){
+        if(!isHit(hit.code())||hit.lcCondition()==null||hit.documentEvidence()==null)return Optional.empty();
+        int colon=hit.lcCondition().indexOf(": ");String value=colon<0?hit.lcCondition():hit.lcCondition().substring(colon+2);
+        var m=EVIDENCE.matcher(hit.documentEvidence());if(!m.find())return Optional.empty();
+        var entry=byReference.get(m.group(2)+"|"+m.group(3));if(entry==null)return Optional.empty();
+        String key=String.join(" ",NameMatcher.tokens(value));if(key.isEmpty())return Optional.empty();
+        return Optional.of(new ClearanceKey(key.length()>500?key.substring(0,500):key,value.length()>500?value.substring(0,500):value,entry.source(),entry.reference(),entry.name().length()>500?entry.name().substring(0,500):entry.name(),entryHash(entry)));
+    }
+    static String entryHash(SanctionsListParser.Entry e){
+        try{var md=MessageDigest.getInstance("SHA-256");for(String v:List.of(e.source(),String.valueOf(e.reference()),e.name(),String.join("|",e.aliases()),String.valueOf(e.programme()),String.join("|",e.imo())))md.update((v.length()+":"+v).getBytes(java.nio.charset.StandardCharsets.UTF_8));return HexFormat.of().formatHex(md.digest());}
+        catch(Exception ex){throw new IllegalStateException(ex);}
+    }
+    /** Replaces hits that were approved as false positives in this tenant by a neutral note; a changed list entry is reported again. */
+    void applyClearances(List<CheckResult> results){
+        if(clearances==null)return;
+        List<SanctionsClearance> known;try{known=clearances.findAll();}catch(RuntimeException e){return;}
+        if(known.isEmpty())return;
+        for(int i=0;i<results.size();i++){
+            var r=results.get(i);var key=clearanceKey(r);if(key.isEmpty())continue;
+            var k=key.get();
+            known.stream().filter(c->c.getPartyKey().equals(k.partyKey())&&c.getSource().equals(k.source())&&c.getReference().equals(k.reference())&&c.getEntryHash().equals(k.entryHash())).findFirst().ifPresent(c->
+                results.set(results.indexOf(r),new CheckResult(CheckResult.Severity.OK,"SANCTIONS_CLEARED","Bekannter Falsch-positiv-Treffer: „"+k.partyValue()+"“ gegen „"+k.listedName()+"“ ("+k.source()+" "+k.reference()+"), freigegeben von "+c.getClearedBy()+" und "+c.getApprovedBy()+" am "+c.getClearedAt().format(DateTimeFormatter.ofPattern("dd.MM.yyyy"))+".",r.lcCondition(),r.documentName(),r.documentEvidence())));
+        }
+    }
+    /** Stores an approved false positive (called after the second approval). */
+    public void remember(UUID lcId,CheckResult hit,String firstReviewer,String approver){
+        if(clearances==null)return;
+        clearanceKey(hit).ifPresent(k->{
+            boolean exists=clearances.findAll().stream().anyMatch(c->c.getPartyKey().equals(k.partyKey())&&c.getSource().equals(k.source())&&c.getReference().equals(k.reference())&&c.getEntryHash().equals(k.entryHash()));
+            if(exists)return;
+            var c=new SanctionsClearance();c.setPartyKey(k.partyKey());c.setPartyValue(k.partyValue());c.setSource(k.source());c.setReference(k.reference());c.setEntryHash(k.entryHash());c.setListedName(k.listedName());c.setLcId(lcId);c.setClearedBy(firstReviewer);c.setApprovedBy(approver);
+            clearances.save(c);
+        });
     }
 
     public Status status(){
