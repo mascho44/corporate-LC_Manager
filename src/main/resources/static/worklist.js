@@ -4,6 +4,7 @@
  function tiles(m) {
   const list = [];
   const add = (key, label, count, hint, tone) => { if (count === null || count === undefined) return; list.push({ key, label, count, hint, tone: count > 0 ? tone : 'ok' }); };
+  add('sanctions', 'Sanktionstreffer offen', m.sanctions, 'Prüfen und freigeben', 'bad');
   add('urgent', 'Frist knapp, blockiert', m.urgent, 'Zuerst prüfen', 'bad');
   add('overdue', 'Überfällige Fristen', m.overdue, 'Fristen prüfen', 'bad');
   add('ebics', 'Neue EBICS-Nachrichten', m.ebics, 'Ansehen und importieren', 'info');
@@ -35,6 +36,7 @@
   const lcs = typeof data !== 'undefined' && Array.isArray(data) ? data : [];
   return {
    urgent: urgentFiles(lcs).length,
+   sanctions: lcs.filter(lc => (lc.dossierStatus?.sanctions || 0) > 0).length || null,
    overdue: num('#queueOverdue'),
    upcoming: num('#queueUpcoming'),
    unassigned: num('#queueUnassigned'),
@@ -46,6 +48,11 @@
  }
  function open(key) {
   const click = id => document.querySelector(id)?.click();
+  if (key === 'sanctions') {
+   const list = (typeof data !== 'undefined' ? data : []).filter(lc => (lc.dossierStatus?.sanctions || 0) > 0);
+   if (list.length === 1) { const start = document.querySelector(`[data-review-lc="${list[0].id}"]`); if (start) start.click(); else globalThis.show?.(list[0].id); return; }
+   document.querySelector('[data-app-section="lcs"]')?.click(); return;
+  }
   if (key === 'urgent') {
    const list = urgentFiles(typeof data !== 'undefined' ? data : []);
    if (list.length === 1) { const start = document.querySelector(`[data-review-lc="${list[0].id}"]`); if (start) start.click(); else globalThis.show?.(list[0].id); return; }
