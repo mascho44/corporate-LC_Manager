@@ -15,6 +15,12 @@ public class DocumentCheckController {
     private final DocumentCheckService service;private final AuditService audit;private final DocumentCheckReportService reports;
     public DocumentCheckController(DocumentCheckService service,AuditService audit,DocumentCheckReportService reports) { this.service = service;this.audit=audit;this.reports=reports; }
     @GetMapping public ReviewSummary check(@PathVariable UUID lcId) { return service.check(lcId); }
+    @org.springframework.beans.factory.annotation.Autowired private de.ostms.lc.lc.repository.LetterOfCreditRepository letters;
+    /** Draft notice of the confirmed discrepancies (MT734 and letter); nothing is sent. */
+    @GetMapping("/discrepancy-notice") public de.ostms.lc.check.service.DiscrepancyNotice.Draft discrepancyNotice(@PathVariable UUID lcId){
+        var lc=letters.findById(lcId).orElseThrow();
+        return de.ostms.lc.check.service.DiscrepancyNotice.create(lc,service.check(lcId).results(),java.time.LocalDate.now());
+    }
     public record PreliminaryReview(String mode,boolean finalReview,java.time.Instant checkedAt,ReviewSummary summary){}
     @GetMapping("/precheck") public PreliminaryReview precheck(@PathVariable UUID lcId){return new PreliminaryReview("PRECHECK",false,java.time.Instant.now(),service.precheck(lcId));}
     @GetMapping("/decisions/history") public java.util.List<de.ostms.lc.check.domain.DocumentCheckDecision> decisionHistory(@PathVariable UUID lcId){return service.decisionHistory(lcId);}
