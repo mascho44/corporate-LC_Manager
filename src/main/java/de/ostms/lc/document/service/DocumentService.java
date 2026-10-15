@@ -27,6 +27,7 @@ public class DocumentService {
     private final LetterOfCreditRepository lcs;
     private final DocumentExtractionService extraction;
     @org.springframework.beans.factory.annotation.Autowired(required=false) private PdfPagePreviewService previews;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private DocumentTypeTrainingService typeTraining;
 
     public DocumentService(LcDocumentRepository documents, LetterOfCreditRepository lcs,
             DocumentExtractionService extraction) {
@@ -137,6 +138,8 @@ public class DocumentService {
         if(document.getDocumentType()!=request.type()){
             var auth=org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
             document.setClassificationHistoryJson(ClassificationHistory.manual(document.getClassificationHistoryJson(),request.type(),auth==null?"unknown":auth.getName()));
+            // A corrected type in the file is a confirmed example too.
+            if(typeTraining!=null&&request.type()!=null)try{typeTraining.learn(document.getExtractedText(),request.type(),auth==null?"unknown":auth.getName());}catch(RuntimeException ignored){/* learning is a convenience */}
         }
         document.setDocumentType(request.type());document.setDocumentDate(request.documentDate());document.setAmount(request.amount());
         document.setCopyNumber(request.copyNumber());

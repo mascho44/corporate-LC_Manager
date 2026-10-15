@@ -20,7 +20,7 @@ class DocumentTypeTrainingServiceTest {
  @BeforeEach void setUp(){
   var source=new DriverManagerDataSource("jdbc:h2:mem:doctypetraining"+UUID.randomUUID()+";DB_CLOSE_DELAY=-1","sa","");
   jdbc=new JdbcTemplate(source);
-  jdbc.execute("create table document_type_example(id uuid primary key,tenant_id uuid not null,document_type varchar(60) not null,terms text not null,sample varchar(200),confirmed_by varchar(255) not null,confirmed_at timestamp with time zone default current_timestamp)");
+  jdbc.execute("create table document_type_example(id uuid primary key,tenant_id uuid not null,document_type varchar(60) not null,terms text not null,sample varchar(200),confirmed_by varchar(255) not null,header_terms text,confirmed_at timestamp with time zone default current_timestamp)");
   service=new DocumentTypeTrainingService(jdbc);
  }
 
@@ -65,5 +65,25 @@ class DocumentTypeTrainingServiceTest {
   service.learn(DRAFT_ONE,DocumentType.BILL_OF_EXCHANGE,"anna");
   var id=service.examples().get(0).id();
   assertThat(service.delete(id)).isTrue();assertThat(service.delete(id)).isFalse();assertThat(service.match(DRAFT_TWO)).isEmpty();
+ }
+
+ static final String LETTERHEAD="Nordwind Maschinenbau GmbH\nIndustriestrasse Bremen Germany\nTelefon Telefax Handelsregister\nAmtsgericht Steuernummer\nBankverbindung Sparkasse\n";
+ @Test void aKnownLetterheadIsASafeLayoutMatchAndImprovesAWeakSuggestion(){
+  assertThat(service.learn(LETTERHEAD+"Rechnung\nLieferung\nErsatzteile\nPumpengehaeuse\nDichtungen\nMontagematerial\nPositionen Mengen\nEinzelpreise\nGesamtbetrag\nZahlungsbedingungen",DocumentType.COMMERCIAL_INVOICE,"anna")).isTrue();
+  // Same issuer, a different order with entirely other positions.
+  String next=LETTERHEAD+"Rechnung\nWerkzeugsatz\nSchraubenschluessel\nKalibrierung\nPruefprotokoll\nVerpackung\nSeefracht\nHamburg Shanghai\nKonnossement\nZahlungsziel";
+  var match=service.match(next).orElseThrow();
+  assertThat(match.layout()).isTrue();assertThat(match.type()).isEqualTo(DocumentType.COMMERCIAL_INVOICE);assertThat(match.confirmedBy()).isEqualTo("anna");assertThat(match.examples()).isEqualTo(1);
+  assertThat(ClassificationHistory.suggestion(service.improve(ClassificationHistory.automatic(null,next),next)).status()).isEqualTo("REVIEW");
+  // A second confirmed invoice of this issuer makes the layout a safe suggestion.
+  assertThat(service.learn(LETTERHEAD+"Rechnung\nWartungsvertrag\nServicetechniker\nAnfahrt\nArbeitsstunden\nVerschleissteile\nSchmierstoffe\nPruefung\nAbnahme\nSkonto",DocumentType.COMMERCIAL_INVOICE,"bob")).isTrue();
+  String weak=ClassificationHistory.automatic(null,next);
+  String improved=service.improve(weak,next);
+  var suggestion=ClassificationHistory.suggestion(improved);
+  assertThat(suggestion.suggestedType()).isEqualTo(DocumentType.COMMERCIAL_INVOICE);assertThat(suggestion.method()).isEqualTo("TRAINED_LAYOUT_V1");assertThat(suggestion.status()).isEqualTo("SUGGESTED");
+  assertThat(suggestion.evidence().get(0)).contains("Briefkopf","2 bestätigte Beispiele");
+  // A confirmed type is never replaced.
+  String manual=ClassificationHistory.manual(weak,DocumentType.PACKING_LIST,"bob");
+  assertThat(service.improve(manual,next)).isEqualTo(manual);
  }
 }
