@@ -6,7 +6,7 @@
  const isOpen = finding => !finding.reviewDecision && finding.severity !== 'OK' && finding.code !== 'REVIEW_STALE';
  const SEVERITY = { DISCREPANCY: 'Abweichung', WARNING: 'Hinweis', OK: 'in Ordnung' };
  // Amount, expiry and presentation period, shipment date, missing document and signature stop a presentation; they are reviewed first.
- const BLOCKING = /AMOUNT|EXPIR|PRESENTATION_PERIOD|PRESENTATION_BEFORE|SHIPMENT_DATE|LATEST_SHIPMENT|MISSING_DOCUMENT|SIGNATURE/;
+ const BLOCKING = /SANCTION|AMOUNT|EXPIR|PRESENTATION_PERIOD|PRESENTATION_BEFORE|SHIPMENT_DATE|LATEST_SHIPMENT|MISSING_DOCUMENT|SIGNATURE/;
  const TIERS = [['blocking', 'Blockierend'], ['check', 'Prüfen'], ['hint', 'Hinweise'], ['done', 'Erledigt & in Ordnung']];
  /** Tier of a finding: blocking, check (other discrepancies), hint (warnings) or done (decided or OK). */
  function tierOf(finding) {

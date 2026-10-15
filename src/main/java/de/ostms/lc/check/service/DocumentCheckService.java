@@ -21,6 +21,7 @@ public class DocumentCheckService {
     @Autowired(required=false) private de.ostms.lc.rulepack.InternalPackService internalPacks;
     @Autowired(required=false) private de.ostms.lc.document.service.SignatureEvidenceService signatures;
     @Autowired(required=false) private de.ostms.lc.rulepack.RuleSourceService ruleSource;
+    @Autowired(required=false) private de.ostms.lc.sanctions.SanctionsService sanctions;
     private final LetterOfCreditRepository lcs;
     private final LcDocumentRepository documents;private final DocumentCheckDecisionRepository decisions;private final LcRequirementMappingRepository mappings;private final AmendmentRepository amendments;
 
@@ -191,6 +192,7 @@ public class DocumentCheckService {
         if (lc.getExpiryDate() != null && lc.getExpiryDate().isBefore(LocalDate.now()))
             results.add(new CheckResult(WARNING, "LC_EXPIRED", "The LC has expired."));
         addImportedRules(lc,uploaded,results);
+        if(sanctions!=null)results.addAll(sanctions.screen(lc));
         if (results.isEmpty()) results.add(new CheckResult(WARNING, "NO_RULES_APPLIED", "No automated rule could be applied."));
         String inputFingerprint=ReviewInputFingerprint.of(lc,uploaded);
         List<DocumentCheckDecision> reviewed=simulation||precheck?List.of():decisions.findByLcId(lcId);
