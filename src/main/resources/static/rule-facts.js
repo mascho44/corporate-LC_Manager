@@ -34,6 +34,15 @@
    const title=requirements?'LC-Anforderungen · '+documentType:documentId?'Dokument-Prüfdaten':'LC-Prüfkontext';
    dialog.innerHTML='<form><div class="dialoghead"><h2>'+esc(title)+'</h2><button type="button" data-close class="ghost">×</button></div><p>Nur fachlich geprüfte Angaben erfassen. Leer bedeutet unbekannt, nicht „nein“. Änderungen setzen bisherige Prüfentscheidungen zurück. Die Dokumentensatzkennung muss bei zusammengehörigen Dokumenten übereinstimmen.</p>'+Array.from(groups,([name,items])=>'<details class="rule-facts-section" open><summary>'+esc(name)+'</summary><div class="form-grid">'+items.map(d=>'<label class="'+(d.field.includes('GOODS_DESCRIPTION')||d.field.endsWith('RISKS')?'wide':'')+'">'+esc(d.label)+widget(d,values[d.field])+'</label>').join('')+'</div></details>').join('')+'<p class="error" data-message role="alert"></p><div class="actions">'+(documentId||requirements?'<button type="button" class="secondary" data-context>LC-Prüfkontext</button>':'')+(documentType&&!requirements?'<button type="button" class="secondary" data-requirements>LC-Anforderungen für diesen Dokumenttyp</button>':'')+'<button type="button" class="secondary" data-close>Schließen</button>'+(allowed?'<button type="submit">Prüfdaten speichern</button>':'')+'</div></form>';
    const form=dialog.querySelector('form');
+   // Values filled automatically from the recognised text: marked until a person saves (which confirms them).
+   if(!requirements){
+    const autoList=await json(url+'/auto').catch(()=>[]),auto=new Set(Array.isArray(autoList)?autoList:[]);
+    if(auto.size){
+     const note=document.createElement('p');note.className='auto-fact-note';note.textContent=auto.size+' Angabe'+(auto.size===1?'':'n')+' automatisch aus dem erkannten Text übernommen (markiert „aus OCR“). Bitte prüfen; Speichern bestätigt sie.';
+     form.querySelector('p')?.after(note);
+     auto.forEach(name=>{const control=form.elements[name];if(!control||!control.closest)return;control.classList.add('auto-fact');const label=control.closest('label');if(label&&!label.querySelector('.auto-fact-badge')){const badge=document.createElement('small');badge.className='auto-fact-badge';badge.textContent='aus OCR, unbestätigt';label.append(badge);}});
+    }
+   }
    if(missing){
     const box=document.createElement('div'),note=document.createElement('p'),button=document.createElement('button');
     note.textContent=missing.size+' noch fehlende Dokumentangaben für aktive Rule Packs. Dies sind mögliche Prüfeingaben, keine pauschalen Pflichtangaben; die fachliche Anwendbarkeit muss geprüft werden.';

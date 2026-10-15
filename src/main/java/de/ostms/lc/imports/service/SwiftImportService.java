@@ -13,6 +13,7 @@ import java.util.regex.Pattern;
 
 @Service
 public class SwiftImportService {
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private de.ostms.lc.rulepack.AutoRuleFacts autoFacts;
     private static final Pattern FIELD = Pattern.compile("(?m)^:(\\d{2}[A-Z]?):(.*?)(?=^:\\d{2}[A-Z]?:|\\z)", Pattern.DOTALL);
     private static final Map<String,String> COMMON_LABELS = Map.ofEntries(
             Map.entry("20", "Transaction Reference Number"), Map.entry("21", "Related Reference"),
@@ -239,6 +240,8 @@ public class SwiftImportService {
 
     private Object executeAdapted(SwiftImportRequest adapted) {
         Object result=executeMessage(adapted);
+        // Check data of the new file from the message (parties, ports, goods) into empty fields.
+        if(result instanceof LetterOfCredit created&&autoFacts!=null&&autoFacts.apply(created)>0)result=lcs.save(created);
         // Corrections of applicant/beneficiary entered because :50:/:59: only referred to another field; the original message text stays unchanged.
         if(result instanceof LetterOfCredit lc&&(!blank(adapted.applicant())||!blank(adapted.beneficiary()))){
             if(!blank(adapted.applicant()))lc.setApplicant(adapted.applicant().strip());
