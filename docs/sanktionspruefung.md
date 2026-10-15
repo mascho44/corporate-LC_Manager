@@ -33,3 +33,6 @@ Die Befunde erscheinen im Prüfmodus unter „Blockierend“ und werden wie ande
 - Nach der Freigabe merkt sich der Mandant die Kombination aus Partei und Listeneintrag (Tabelle `sanctions_clearance`). In späteren Prüfungen – auch in anderen Akten – erscheint statt des Treffers der Vermerk `SANCTIONS_CLEARED` mit den beiden Namen und dem Datum. Ändert sich der Listeneintrag (Namen, Aliase, Programm, IMO), wird wieder gemeldet.
 - **Neue Listenstände** wirken sofort: jede Prüfung läuft gegen den aktuellen Stand. Das Cockpit zeigt die Kachel **„Sanktionstreffer offen“**, sobald eine Akte offene Treffer hat.
 - Gelöschte Mandanten: das Gedächtnis wird mit gelöscht.
+
+## Benachrichtigung bei veralteten Listen
+Ist eine Liste noch nicht geladen, älter als 48 Stunden oder ist der letzte Abruf fehlgeschlagen, bekommen die aktiven Plattformadministratoren ab 7 Uhr **höchstens einmal täglich** eine E-Mail mit den betroffenen Listen. Zusätzlich steht der Hinweis in der Plattformadministration (Übersicht). Voraussetzung: E-Mail-Versand eingerichtet.
