@@ -22,7 +22,9 @@ import java.util.regex.Pattern;
 public class InboxAvisService {
     /** `cover` carries what the letter itself says (reference, amount, expiry, banks, applicant) when the advice has no credit text of its own. */
     public record Preview(SwiftImportPreview credit, boolean creditTextFound, AdvisingLetterExtractor.Proposal cover) {}
-    public record Created(UUID lcId, String reference) {}
+    public record Created(UUID lcId, String reference, String kind) {
+        public Created(UUID lcId, String reference) { this(lcId, reference, "MT700"); }
+    }
 
     private static final Pattern CLOSING = Pattern.compile("(?im)^\\s*(mit freundlichen gr(?:ü|ue)(?:ß|ss)en|freundliche gr(?:ü|ue)(?:ß|ss)e|hochachtungsvoll|best regards|kind regards|yours faithfully|yours sincerely|sincerely|with kind regards)\\b.*$");
     private static final Pattern HAS_CREDIT_FIELDS = Pattern.compile("(?m)^:(?:20|32B|31D):");
@@ -45,9 +47,24 @@ public class InboxAvisService {
         String raw = normalizer.normalize(text);
         return HAS_CREDIT_FIELDS.matcher(raw).find() ? raw : "";
     }
-    private static int firstFieldOffset(String text) {
-        var m = Pattern.compile("(?m)^.*?:\\d{2}[A-Z]?:|^\\s*\\d{2}[A-Z]?\\s+\\S").matcher(text);
-        return m.find() ? m.start() : 0;
+    /** Offset of the first line that opens a SWIFT field in any printed form the normalizer understands (":20:", "20 Label", "27: LABEL", OCR variants). */
+    static int firstFieldOffset(String text) {
+        int offset = 0;
+        for (String line : text.split("\\n", -1)) {
+            if (PrintedSwiftNormalizer.field(line) != null) return offset;
+            offset += line.length() + 1;
+        }
+        return 0;
+    }
+
+    /** The inbox recognised or a person confirmed the file as SWIFT MT700 (not an advice with cover letter). */
+    static boolean swiftMessage(de.ostms.lc.document.domain.DocumentInboxItem item) {
+        try {
+            var selected = ClassificationHistory.selectedType(item.getClassificationHistoryJson());
+            if (selected != null) return selected == DocumentType.SWIFT_MT700;
+            var suggestion = ClassificationHistory.suggestion(item.getClassificationHistoryJson());
+            return suggestion != null && suggestion.suggestedType() == DocumentType.SWIFT_MT700;
+        } catch (RuntimeException unreadable) { return false; }
     }
 
     @Transactional(readOnly = true)
@@ -64,8 +81,15 @@ public class InboxAvisService {
         String raw = creditText(normalizer, item.getExtractedText());
         if (raw.isEmpty()) throw new IllegalArgumentException("Im Avis wurde kein Akkreditivtext erkannt (Felder wie :20:, :32B:, :31D:).");
         Object imported = swift.execute(new SwiftImportRequest(item.getOriginalFilename(), raw));
-        if (!(imported instanceof LetterOfCredit lc)) throw new IllegalArgumentException("Der Text ist kein Akkreditiv (MT700).");
-        inbox.attach(inboxId, new DocumentInboxAttachRequest(lc.getId(), DocumentType.ADVISING_LETTER, null, null));
-        return new Created(lc.getId(), lc.getReference());
+        // An amendment (MT707) belongs to its existing file; the received message is kept there as a document.
+        if (imported instanceof de.ostms.lc.lc.domain.Amendment amendment) {
+            var lc = amendment.getLetterOfCredit();
+            inbox.attach(inboxId, new DocumentInboxAttachRequest(lc.getId(), DocumentType.OTHER, null, null));
+            return new Created(lc.getId(), lc.getReference(), "MT707");
+        }
+        if (!(imported instanceof LetterOfCredit lc)) throw new IllegalArgumentException("Der Text ist keine importierbare SWIFT-Nachricht (MT700, MT707, MT760).");
+        // A pure SWIFT message is filed as such; an advice with a cover letter as advising letter.
+        inbox.attach(inboxId, new DocumentInboxAttachRequest(lc.getId(), swiftMessage(item) ? DocumentType.SWIFT_MT700 : DocumentType.ADVISING_LETTER, null, null));
+        return new Created(lc.getId(), lc.getReference(), "MT700");
     }
 }

@@ -276,7 +276,9 @@ public class SwiftImportService {
         Map<String,Long> counts=parsed.stream().collect(java.util.stream.Collectors.groupingBy(x->x[0],java.util.stream.Collectors.counting()));
         Map<String,String> targets=targets(type); List<SwiftFieldView> result=new ArrayList<>();
         for(String[] item:parsed) {
-            String code=item[0],value=item[1],target=targets.get(code),inferred=inferTarget(value);
+            String code=item[0],value=item[1],target=targets.get(code);
+            // Standard fields keep their meaning: documents (46A) or conditions (47A) mention the applicant or beneficiary all the time. Only unknown fields get a content-based guess.
+            String inferred=standardField(type,code)?null:inferTarget(value);
             boolean duplicate=target!=null&&counts.getOrDefault(code,0L)>1;
             boolean misplaced=inferred!=null&&target!=null&&!inferred.equals(target);
             boolean unusual=value.isBlank()||duplicate||misplaced;
@@ -314,6 +316,7 @@ public class SwiftImportService {
     private String label(String type,String code){String special=freeFormat(type)&&MT79X_LABELS.containsKey(code)?MT79X_LABELS.get(code):type.equals("MT710")&&MT710_LABELS.containsKey(code)?MT710_LABELS.get(code):type.equals("MT760")?MT760_LABELS.get(code):type.equals("MT707")?MT707_LABELS.get(code):MT700_LABELS.get(code);return special!=null?special:COMMON_LABELS.getOrDefault(code,"Weiteres SWIFT-Feld");}
     private void require(Map<String,String> values,String code,String name,List<String> errors){if(blank(values.get(code)))errors.add("Pflichtfeld :"+code+": ("+name+") fehlt.");}
     private boolean blank(String value){return value==null||value.isBlank();}
+    private boolean standardField(String type,String code){return MT700_LABELS.containsKey(code)||COMMON_LABELS.containsKey(code)||(type.equals("MT707")&&MT707_LABELS.containsKey(code))||(type.equals("MT760")&&MT760_LABELS.containsKey(code))||(type.equals("MT710")&&MT710_LABELS.containsKey(code))||(freeFormat(type)&&MT79X_LABELS.containsKey(code));}
     private String inferTarget(String value){String text=value==null?"":value.toLowerCase(Locale.ROOT);if(text.matches("(?s).*\\b(applicant|auftraggeber|antragsteller)\\b.*"))return "applicant";if(text.matches("(?s).*\\b(beneficiary|begünstigte[rrn]?)\\b.*"))return "beneficiary";if(text.matches("(?s).*\\b(expiry|expiration|ablaufdatum|valid until)\\b.*"))return "expiryDateAndPlace";if(text.matches("(?s).*\\b(latest shipment|späteste[rn]? versand)\\b.*"))return "latestShipmentDate";if(text.matches("(?s).*\\b(documents required|required documents|vorzulegende dokumente)\\b.*"))return "requiredDocuments";if(text.matches("(?s).*\\b(amount|betrag|total)\\b.*\\b(eur|usd|gbp|chf|jpy)\\b.*"))return "amountAndCurrency";return null;}
     private String requireRaw(SwiftImportRequest r){if(r==null||r.rawMessage()==null||r.rawMessage().isBlank())throw new IllegalArgumentException("Bitte eine SWIFT-Nachricht auswählen oder einfügen.");return r.rawMessage();}
     private String readable(RuntimeException ex){return ex.getMessage()==null?"SWIFT-Nachricht konnte nicht gelesen werden.":ex.getMessage();}

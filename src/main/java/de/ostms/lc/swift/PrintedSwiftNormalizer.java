@@ -82,7 +82,7 @@ public class PrintedSwiftNormalizer {
     }
 
     /** {tag, value on the same line} for a line that opens a field, or null. */
-    static String[] field(String line) {
+    public static String[] field(String line) {
         Matcher colon = COLON_FIELD.matcher(line);
         if (colon.matches()) {
             String tag = tag(colon.group(1), colon.group(2));
