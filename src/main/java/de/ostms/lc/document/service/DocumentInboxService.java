@@ -30,6 +30,7 @@ public class DocumentInboxService {
     @org.springframework.beans.factory.annotation.Autowired private InboxAutomaticSplitter automaticSplitter;
     @org.springframework.beans.factory.annotation.Autowired private SplitTrainingService splitTraining;
     @org.springframework.beans.factory.annotation.Autowired(required=false) private DocumentTypeTrainingService typeTraining;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private de.ostms.lc.rulepack.AutoRuleFacts autoFacts;
     @Transactional(rollbackFor=Exception.class)
     public List<DocumentInboxItemView> automaticSplit(UUID id,String requestedBy)throws Exception{
         var item=lockedOpenItem(id);requireProcessed(item);requirePdf(item);
@@ -175,6 +176,7 @@ public class DocumentInboxService {
         document.setOcrEvidenceJson(item.getOcrEvidenceJson());
         var auth=org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
         document.setClassificationHistoryJson(ClassificationHistory.manual(item.getClassificationHistoryJson(),request.documentType(),auth==null?"unknown":auth.getName()));
+        if(autoFacts!=null)autoFacts.apply(document);
         LcDocument saved = documents.save(document);
         if(typeTraining!=null)typeTraining.learn(item.getExtractedText(),request.documentType(),auth==null?"unknown":auth.getName());
         if (lc.releaseWaitingForCustomer()) { de.ostms.lc.rulepack.PresentationDate.stamp(lc, java.time.LocalDate.now()); lettersOfCredit.save(lc); }

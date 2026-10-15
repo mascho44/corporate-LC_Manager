@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Service
 public class DocumentReRecognitionService {
+ @org.springframework.beans.factory.annotation.Autowired(required=false) private de.ostms.lc.rulepack.AutoRuleFacts autoFacts;
  static final int MAX_PAGES=10;
  private static final long PENDING_MINUTES=15;
  public record Change(String key,String label,String before,String after,boolean appliesOnConfirm,String note){}
@@ -77,7 +78,7 @@ public class DocumentReRecognitionService {
   if(doc.getCopyNumber()==null&&hint.copyNumber()!=null)doc.setCopyNumber(hint.copyNumber());
   if(doc.getAmount()==null)doc.setAmount(probe.getExtractedAmount());
   if(doc.getCurrency()==null)doc.setCurrency(probe.getExtractedCurrency());
-  documents.save(doc);
+  if(autoFacts!=null)autoFacts.apply(doc);documents.save(doc);
   long reset=checks.invalidateDecisions(lcId);
   audit.recordChangeInTransaction(auth,"DOCUMENT_RE_RECOGNIZED","LETTER_OF_CREDIT",lcId,doc.getOriginalFilename()+" · erneut erkannt"+(reset>0?" · "+reset+" Prüfentscheidungen zurückgesetzt":""),before,AuditSnapshots.document(doc));
   return DocumentView.from(doc);

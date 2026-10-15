@@ -48,7 +48,10 @@ public class RuleFactsController {
  }
  @PutMapping("/rule-facts") @Transactional
  public Map<Field,String> saveLc(@PathVariable UUID lcId,jakarta.servlet.http.HttpServletRequest request,Authentication auth)throws java.io.IOException{
-  return updateLc(lcId,RuleFacts.decodeRequest(request.getInputStream().readNBytes(RuleFacts.MAX_BYTES+1)),auth);
+  var saved=updateLc(lcId,RuleFacts.decodeRequest(request.getInputStream().readNBytes(RuleFacts.MAX_BYTES+1)),auth);
+  // Saving the form confirms what is shown, including automatically filled values.
+  lcs.findById(lcId).ifPresent(lc->{lc.setAutoRuleFacts(null);lcs.save(lc);});
+  return saved;
  }
  @Transactional
  public Map<Field,String> updateLc(UUID lcId,Map<Field,String> facts,Authentication auth){
@@ -57,6 +60,11 @@ public class RuleFactsController {
   audit.recordInTransaction(auth,"LC_RULE_FACTS_UPDATED","LETTER_OF_CREDIT",lcId,"LC-Prüfdaten SHA-256 vorher="+RuleFacts.fingerprint(before)+" nachher="+RuleFacts.fingerprint(after)+" · Felder "+facts.keySet()+" · "+reset+" Prüfentscheidungen zurückgesetzt");
   return RuleFacts.read(after);
  }
+ /** Fields filled automatically from the recognised text and not yet confirmed by a person. */
+ @GetMapping("/documents/{id}/rule-facts/auto") @Transactional(readOnly=true)
+ public Set<String> documentAuto(@PathVariable UUID lcId,@PathVariable UUID id){return AutoRuleFacts.read(documentInLc(lcId,id).getAutoRuleFacts());}
+ @GetMapping("/rule-facts/auto") @Transactional(readOnly=true)
+ public Set<String> lcAuto(@PathVariable UUID lcId){return AutoRuleFacts.read(lcs.findById(lcId).orElseThrow().getAutoRuleFacts());}
  @GetMapping("/documents/{id}/rule-facts") @Transactional(readOnly=true)
  public Map<Field,String> document(@PathVariable UUID lcId,@PathVariable UUID id){return RuleFacts.read(documentInLc(lcId,id).getRuleFactsJson());}
  @org.springframework.beans.factory.annotation.Autowired(required=false) private DocumentFactSuggester suggester;
@@ -95,9 +103,9 @@ public class RuleFactsController {
   for(var entry:overview.documents()){
    var doc=documentInLc(lcId,entry.documentId());
    var merged=new EnumMap<Field,String>(Field.class);merged.putAll(RuleFacts.read(doc.getRuleFactsJson()));int before=merged.size();
-   for(var s:entry.suggestions())if(blank(merged.get(s.field())))merged.put(s.field(),s.value());
-   int added=merged.size()-before;
-   if(added>0){updateDocument(lcId,doc.getId(),merged,auth);docFields+=added;docs++;}
+   var filled=AutoRuleFacts.merge(merged,entry.suggestions());
+   int added=filled.size();
+   if(added>0){updateDocument(lcId,doc.getId(),merged,auth);var auto=AutoRuleFacts.read(doc.getAutoRuleFacts());auto.addAll(filled);doc.setAutoRuleFacts(AutoRuleFacts.write(auto));documents.save(doc);docFields+=added;docs++;}
   }
   audit.recordInTransaction(auth,"RULE_FACTS_SUGGESTIONS_APPLIED","LETTER_OF_CREDIT",lcId,lcFields+" LC-Angaben, "+docFields+" Dokumentangaben in "+docs+" Dokumenten übernommen");
   return new Applied(lcFields,docFields,docs);
@@ -105,7 +113,9 @@ public class RuleFactsController {
  private static boolean blank(String v){return v==null||v.isBlank();}
  @PutMapping("/documents/{id}/rule-facts") @Transactional
  public Map<Field,String> saveDocument(@PathVariable UUID lcId,@PathVariable UUID id,jakarta.servlet.http.HttpServletRequest request,Authentication auth)throws java.io.IOException{
-  return updateDocument(lcId,id,RuleFacts.decodeRequest(request.getInputStream().readNBytes(RuleFacts.MAX_BYTES+1)),auth);
+  var saved=updateDocument(lcId,id,RuleFacts.decodeRequest(request.getInputStream().readNBytes(RuleFacts.MAX_BYTES+1)),auth);
+  var doc=documentInLc(lcId,id);doc.setAutoRuleFacts(null);documents.save(doc);
+  return saved;
  }
  @Transactional
  public Map<Field,String> updateDocument(UUID lcId,UUID id,Map<Field,String> facts,Authentication auth){

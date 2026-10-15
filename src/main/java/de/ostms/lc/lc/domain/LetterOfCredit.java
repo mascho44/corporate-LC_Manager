@@ -14,6 +14,8 @@ public class LetterOfCredit {
  public String getRulePackIds(){return rulePackIds;}
  public void setRulePackIds(String value){rulePackIds=value;}
  public String getRuleFactsJson(){return ruleFactsJson;}
+ @Column(name="auto_rule_facts",columnDefinition="text") @com.fasterxml.jackson.annotation.JsonIgnore private String autoRuleFacts;
+ public String getAutoRuleFacts(){return autoRuleFacts;} public void setAutoRuleFacts(String v){autoRuleFacts=v;}
  public void setRuleFactsJson(String value){ruleFactsJson=value;}
  @Column(columnDefinition="text") @com.fasterxml.jackson.annotation.JsonIgnore private String ruleRequirementsJson;
  public String getRuleRequirementsJson(){return ruleRequirementsJson;}

@@ -50,6 +50,25 @@
  globalThis.LcDocumentReview = { isPendingApproval, groupFindings, nextOpen, nextGroupWithOpen, isOpen, tierOf, progress, siblingsOf };
  if (typeof document === 'undefined' || !document.body) return;
 
+ /** Draft notice of discrepancies (MT734 and letter) from the confirmed discrepancies; editable and copyable, nothing is sent. */
+ async function openNotice(lcId) {
+  const box = document.createElement('dialog'); box.className = 'wide-dialog notice-dialog'; document.body.append(box); box.onclose = () => box.remove();
+  box.innerHTML = '<div class="dialoghead"><h2>Unstimmigkeitsmeldung (Entwurf)</h2><button type="button" data-close>Schließen</button></div><p role="status">Wird erstellt …</p>';
+  box.querySelector('[data-close]').onclick = () => box.close(); box.showModal();
+  try {
+   const draft = await json(`/api/lcs/${lcId}/document-checks/discrepancy-notice`);
+   if (!draft.discrepancies) { box.querySelector('[role=status]').textContent = 'Noch keine bestätigten Abweichungen. Im Prüfmodus „Abweichung bestätigen“ wählen; nur bestätigte Abweichungen kommen in die Meldung.'; return; }
+   box.querySelector('[role=status]').textContent = `${draft.discrepancies} bestätigte Abweichung${draft.discrepancies === 1 ? '' : 'en'}. Entwurf prüfen, ergänzen (z. B. :21: Referenz der Einreicherbank, Betrag) und selbst versenden.`;
+   for (const [key, title] of [['mt734', 'SWIFT MT734 (Advice of Refusal)'], ['letter', 'Schreiben an die Bank']]) {
+    const section = document.createElement('section'); section.className = 'notice-part';
+    const head = document.createElement('h3'); head.textContent = title;
+    const area = document.createElement('textarea'); area.rows = key === 'mt734' ? 12 : 14; area.value = draft[key]; area.spellcheck = false;
+    const copy = document.createElement('button'); copy.type = 'button'; copy.className = 'secondary'; copy.textContent = 'Kopieren';
+    copy.onclick = async () => { try { await navigator.clipboard.writeText(area.value); copy.textContent = 'Kopiert ✓'; } catch { area.select(); copy.textContent = 'Markiert – mit Strg/Cmd+C kopieren'; } };
+    section.append(head, area, copy); box.append(section);
+   }
+  } catch (error) { box.querySelector('[role=status]').textContent = 'Entwurf nicht verfügbar: ' + error.message; }
+ }
  async function open() {
   const lcId = activeLc?.id; if (!lcId) return;
   let dialog = document.querySelector('#documentReviewDialog');
@@ -65,7 +84,7 @@
   try { await load(); } catch (error) { dialog.querySelector('p').textContent = 'Prüfung konnte nicht geladen werden: ' + error.message; return; }
   if (!groups.length) { dialog.querySelector('p').textContent = 'Keine Befunde zu Dokumenten vorhanden.'; return; }
   gi = Math.max(0, nextGroupWithOpen(groups)); 
-  dialog.innerHTML = '<div class="dialoghead"><h2>Dokumentweise Prüfung</h2><div class="doc-review-nav"><button type="button" class="secondary" data-doc-prev aria-label="Vorheriges Dokument">←</button><b data-doc-label></b><button type="button" class="secondary" data-doc-next aria-label="Nächstes Dokument">→</button></div><button type="button" data-close>Schließen</button></div>' +
+  dialog.innerHTML = '<div class="dialoghead"><h2>Dokumentweise Prüfung</h2><div class="doc-review-nav"><button type="button" class="secondary" data-doc-prev aria-label="Vorheriges Dokument">←</button><b data-doc-label></b><button type="button" class="secondary" data-doc-next aria-label="Nächstes Dokument">→</button></div><button type="button" class="secondary" data-notice>Unstimmigkeitsmeldung (Entwurf)</button><button type="button" data-close>Schließen</button></div>' +
    '<div class="doc-review-progress"><span data-doc-progress></span><progress data-doc-progress-bar max="1" value="0"></progress></div><nav class="doc-review-strip" data-doc-strip aria-label="Dokumente"></nav>' +
    '<div class="evidence-workspace"><section class="evidence-details">' + (can('DOCUMENT_UPLOAD') ? '<p class="doc-review-bar"><button type="button" class="secondary" data-doc-apply>Erkannte Prüfdaten übernehmen</button> <small data-doc-apply-status role="status"></small></p>' : '') + '<div data-doc-findings></div></section><section class="evidence-document" data-pdf-pages></section></div>' +
    '<p class="doc-review-keys"><kbd>J</kbd> erfüllt · <kbd>N</kbd> Abweichung · <kbd>↑</kbd><kbd>↓</kbd> Befund · <kbd>←</kbd><kbd>→</kbd> Dokument</p>';
@@ -116,7 +135,7 @@
     const badge = document.createElement('b'); badge.className = 'doc-review-badge ' + String(finding.severity || '').toLowerCase(); badge.textContent = SEVERITY[finding.severity] || finding.severity;
     head.append(badge, document.createTextNode(' ' + (finding.message || ''))); card.append(head);
     if (finding.lcCondition) { const c = document.createElement('small'); c.textContent = 'LC-Bedingung: ' + finding.lcCondition; card.append(c); }
-    if (finding.documentEvidence) { const q = document.createElement('blockquote'); q.textContent = finding.documentEvidence; card.append(q); }
+    if (finding.documentEvidence) { const q = document.createElement('blockquote'); q.textContent = globalThis.readableEvidence ? readableEvidence(finding.documentEvidence) : finding.documentEvidence; card.append(q); }
     if (isOpen(finding)) {
      const actions = document.createElement('div'); actions.className = 'doc-review-actions';
      const pending = isPendingApproval(finding);
@@ -209,6 +228,7 @@
    } catch (error) { status.textContent = 'Nicht übernommen: ' + error.message; }
    finally { applyButton.disabled = false; }
   };
+  dialog.querySelector('[data-notice]').onclick = () => openNotice(lcId);
   dialog.onkeydown = event => {
    if (event.target.closest?.('input,textarea,select') || event.metaKey || event.ctrlKey || event.altKey || busy || !groups?.length) return;
    const items = groups[gi].items, key = event.key;

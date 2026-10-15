@@ -19,6 +19,8 @@ public class LcDocument {
     }
     @Column(columnDefinition="text") @JsonIgnore private String ruleFactsJson;
     public String getRuleFactsJson(){return ruleFactsJson;}
+    @Column(name="auto_rule_facts",columnDefinition="text") @com.fasterxml.jackson.annotation.JsonIgnore private String autoRuleFacts;
+    public String getAutoRuleFacts(){return autoRuleFacts;} public void setAutoRuleFacts(String v){autoRuleFacts=v;}
     public void setRuleFactsJson(String value){ruleFactsJson=value;}
     @Column(columnDefinition="text") @JsonIgnore private String classificationHistoryJson;
     public String getClassificationHistoryJson(){return classificationHistoryJson;}
