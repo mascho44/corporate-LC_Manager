@@ -322,10 +322,10 @@ async function openSplitPretraining(){
 /** Why a page of a split proposal was recognised, and whether it is safe: {sure, text}. */
 function inboxSplitPageReason(classification){
     const c=classification||{},method=String(c.method||'');
-    const how=[[/^DOCUMENT_HEADINGS|^SWIFT_MT700|^LC_CORRESPONDENCE/,'Überschrift'],[/^LC_EXPECTED/,'vom LC gefordert'],[/^PAGE_SEQUENCE/,'Seitenzählung'],[/^PAGE_TOTAL/,'Seitenanzahl der Vorseite'],[/^DOCUMENT_REFERENCE/,'gleiche Dokumentnummer'],[/^BLANK_PAGE/,'Leer- oder Rückseite'],[/^KEYWORD_PROFILE/,'typische Felder'],[/^CONFIRMED_SPLIT_PATTERN/,'bestätigtes Training'],[/^FILENAME_HINT/,'nur Dateiname']].find(([re])=>re.test(method));
+    const how=[[/^DOCUMENT_HEADINGS|^SWIFT_MT700|^LC_CORRESPONDENCE/,'Überschrift'],[/^LC_EXPECTED/,'vom LC gefordert'],[/^PAGE_SEQUENCE/,'Seitenzählung'],[/^PAGE_TOTAL/,'Seitenanzahl der Vorseite'],[/^DOCUMENT_REFERENCE/,'gleiche Dokumentnummer'],[/^BLANK_PAGE/,'Leer- oder Rückseite'],[/^KEYWORD_PROFILE/,'typische Felder'],[/^CONFIRMED_SPLIT_PATTERN/,'bestätigtes Training'],[/^TRAINED_LAYOUT/,'bekanntes Layout'],[/^TRAINED_TYPE/,'ähnlich bestätigten Beispielen'],[/^FILENAME_HINT/,'nur Dateiname']].find(([re])=>re.test(method));
     const evidence=Array.isArray(c.evidence)&&c.evidence.length?String(c.evidence[0]).replace(/\s+/g,' ').slice(0,60):'';
     const sure=!!c.suggestedType&&c.status!=='REVIEW'&&c.status!=='AMBIGUOUS'&&c.status!=='UNKNOWN';
-    const reason=c.status==='AMBIGUOUS'?'mehrere Dokumentarten möglich':!c.suggestedType?'nicht erkannt':how?how[1]+(evidence&&/Überschrift|gefordert/.test(how[1])?` „${evidence}“`:''):'erkannt';
+    const reason=c.status==='AMBIGUOUS'?'mehrere Dokumentarten möglich':!c.suggestedType?'nicht erkannt':how?how[1]+(evidence&&/Überschrift|gefordert|Layout/.test(how[1])?` „${evidence}“`:''):'erkannt';
     return {sure,text:(sure?'sicher: ':'prüfen: ')+reason};
 }
 async function openInboxSplit(item){

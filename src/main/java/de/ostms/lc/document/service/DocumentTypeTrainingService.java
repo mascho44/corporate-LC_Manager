@@ -15,7 +15,19 @@ import java.util.*;
  */
 @Service
 public class DocumentTypeTrainingService {
- public record Match(DocumentType type, double similarity, int examples) {}
+ public record Match(DocumentType type, double similarity, int examples, boolean layout, String confirmedBy, OffsetDateTime confirmedAt) {
+  public Match(DocumentType type, double similarity, int examples) { this(type, similarity, examples, false, null, null); }
+ }
+ static final int HEADER_LINES = 6, MIN_LINES = 12, MIN_HEADER_WORDS = 4;
+ static final double LAYOUT_THRESHOLD = 0.8;
+ /** Words of the letterhead: the first non-empty lines, where issuer name, address and form title stand. */
+ static LinkedHashSet<String> headerWords(String text) {
+  if (text == null) return new LinkedHashSet<>();
+  var all = Arrays.stream(text.split("\\R")).filter(l -> !l.isBlank()).toList();
+  // Only a real document has a letterhead apart from its body; a short text would be compared with itself.
+  if (all.size() < MIN_LINES) return new LinkedHashSet<>();
+  return words(String.join("\n", all.subList(0, HEADER_LINES)));
+ }
  public record Example(UUID id, DocumentType type, String sample, String confirmedBy, OffsetDateTime confirmedAt) {}
  static final int MIN_WORDS = 8, MAX_WORDS = 150, MAX_EXAMPLES_PER_TYPE = 60;
  static final double THRESHOLD = 0.6, MARGIN = 0.08, DUPLICATE = 0.95;
@@ -52,8 +64,9 @@ public class DocumentTypeTrainingService {
   var existing = jdbc.queryForList("select terms from document_type_example where tenant_id=? and document_type=?", String.class, tenant, type.name());
   for (String known : existing) if (similarity(terms, new HashSet<>(Arrays.asList(known.split(" ")))) >= DUPLICATE) return false;
   if (existing.size() >= MAX_EXAMPLES_PER_TYPE) return false;
-  jdbc.update("insert into document_type_example(id,tenant_id,document_type,terms,sample,confirmed_by) values (?,?,?,?,?,?)",
-   UUID.randomUUID(), tenant, type.name(), String.join(" ", terms), sample(text), actor == null ? "unknown" : actor);
+  var header = headerWords(text);
+  jdbc.update("insert into document_type_example(id,tenant_id,document_type,terms,sample,confirmed_by,header_terms) values (?,?,?,?,?,?,?)",
+   UUID.randomUUID(), tenant, type.name(), String.join(" ", terms), sample(text), actor == null ? "unknown" : actor, header.size() >= MIN_HEADER_WORDS ? String.join(" ", header) : null);
   return true;
  }
 
@@ -63,7 +76,28 @@ public class DocumentTypeTrainingService {
   var terms = words(text);
   if (terms.size() < MIN_WORDS) return Optional.empty();
   var best = new HashMap<String, double[]>();
-  for (var row : jdbc.queryForList("select document_type, terms from document_type_example where tenant_id=?", TenantContext.currentId())) {
+  var rows = jdbc.queryForList("select document_type, terms, header_terms, confirmed_by, confirmed_at from document_type_example where tenant_id=?", TenantContext.currentId());
+  // Known issuer layout first: the letterhead of the text matches the letterhead of a confirmed example closely, and only one type does so.
+  var header = headerWords(text);
+  if (header.size() >= MIN_HEADER_WORDS) {
+   Map<String, Object> layoutBest = null; double layoutScore = 0; var layoutTypes = new HashMap<String, Double>(); var layoutCounts = new HashMap<String, Integer>();
+   for (var row : rows) {
+    Object known = row.get("header_terms"); if (known == null) continue;
+    double score = similarity(header, new HashSet<>(Arrays.asList(((String) known).split(" "))));
+    layoutTypes.merge((String) row.get("document_type"), score, Math::max);
+    if (score >= LAYOUT_THRESHOLD) layoutCounts.merge((String) row.get("document_type"), 1, Integer::sum);
+    if (score > layoutScore) { layoutScore = score; layoutBest = row; }
+   }
+   if (layoutBest != null && layoutScore >= LAYOUT_THRESHOLD) {
+    String type = (String) layoutBest.get("document_type"); final double top = layoutScore;
+    boolean clear = layoutTypes.entrySet().stream().noneMatch(e -> !e.getKey().equals(type) && top - e.getValue() < MARGIN);
+    if (clear) try {
+     OffsetDateTime when; try { when = at(layoutBest.get("confirmed_at")); } catch (ClassCastException e) { when = null; }
+     return Optional.of(new Match(DocumentType.valueOf(type), top, layoutCounts.getOrDefault(type, 1), true, (String) layoutBest.get("confirmed_by"), when));
+    } catch (IllegalArgumentException unknownType) { /* fall back to the word comparison */ }
+   }
+  }
+  for (var row : rows) {
    double score = similarity(terms, new HashSet<>(Arrays.asList(((String) row.get("terms")).split(" "))));
    var entry = best.computeIfAbsent((String) row.get("document_type"), k -> new double[]{0, 0});
    entry[0] = Math.max(entry[0], score); entry[1]++;
@@ -89,13 +123,36 @@ public class DocumentTypeTrainingService {
    if (match.isEmpty()) { parts.add(part); continue; }
    changed = true;
    parts.add(new PdfDocumentSplitter.Part(part.fromPage(), part.toPage(), match.get().type(), part.copyNumber()));
-   String evidence = "Aus Training erkannt (Ähnlichkeit " + Math.round(match.get().similarity() * 100) + " % zu " + match.get().examples() + " bestätigten Beispiel(en)) – bitte prüfen";
+   String evidence = describe(match.get());
    for (int number = part.fromPage(); number <= part.toPage(); number++) {
     int index = number - 1; var old = pages.get(index);
-    pages.set(index, new PdfDocumentSplitter.Page(old.number(), new DocumentClassifier.Classification(match.get().type(), .8, "REVIEW", "TRAINED_TYPE_V1", List.of(evidence)), old.textSource(), old.copyHint()));
+    pages.set(index, new PdfDocumentSplitter.Page(old.number(), classification(match.get(), evidence), old.textSource(), old.copyHint()));
    }
   }
   return changed ? new PdfDocumentSplitter.Proposal(baseline.pageCount(), List.copyOf(pages), List.copyOf(parts)) : baseline;
+ }
+
+ /** A known layout is a safe suggestion; a mere word similarity stays a suggestion for review. */
+ static DocumentClassifier.Classification classification(Match match, String evidence) {
+  // One example of a letterhead does not yet tell which of the issuer's documents this is; two confirmed ones of the same type do.
+  if (match.layout() && match.examples() < 2) return new DocumentClassifier.Classification(match.type(), .8, "REVIEW", "TRAINED_LAYOUT_V1", List.of(evidence + " – erst ein Beispiel, bitte prüfen"));
+  return match.layout()
+   ? new DocumentClassifier.Classification(match.type(), .9, "SUGGESTED", "TRAINED_LAYOUT_V1", List.of(evidence))
+   : new DocumentClassifier.Classification(match.type(), .8, "REVIEW", "TRAINED_TYPE_V1", List.of(evidence));
+ }
+ static String describe(Match match) {
+  if (match.layout()) return "Briefkopf wie " + (match.examples() > 1 ? match.examples() + " bestätigte Beispiele, zuletzt" : "bestätigtes Beispiel") + (match.confirmedAt() == null ? "" : " vom " + match.confirmedAt().format(java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy"))) + (match.confirmedBy() == null ? "" : " (" + match.confirmedBy() + ")") + ", Übereinstimmung " + Math.round(match.similarity() * 100) + " %";
+  return "Aus Training erkannt (Ähnlichkeit " + Math.round(match.similarity() * 100) + " % zu " + match.examples() + " bestätigten Beispiel(en)) – bitte prüfen";
+ }
+ /** Replaces a missing or weak automatic suggestion in a classification history by a learned one; a confirmed (manual) type is never touched. */
+ @Transactional(readOnly = true)
+ public String improve(String history, String text) {
+  if (ClassificationHistory.selectedType(history) != null) return history;
+  var current = ClassificationHistory.suggestion(history);
+  if (current != null && current.suggestedType() != null && "SUGGESTED".equals(current.status())) return history;
+  var match = match(text);
+  if (match.isEmpty()) return history;
+  return ClassificationHistory.withAutomatic(classification(match.get(), describe(match.get())));
  }
 
  @Transactional(readOnly = true)
