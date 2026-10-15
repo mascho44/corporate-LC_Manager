@@ -45,7 +45,7 @@ public class LetterOfCreditController {
     }
 
     @GetMapping("/dossier-status")
-    public List<LcDossierStatus> dossierStatus(){return service.all().stream().map(lc->{var review=checks.check(lc.getId());return new LcDossierStatus(lc.getId(),review.status(),documents.countByLetterOfCreditId(lc.getId()),review.discrepancies(),review.warnings(),review.passed());}).toList();}
+    public List<LcDossierStatus> dossierStatus(){return service.all().stream().map(lc->{var review=checks.check(lc.getId());return LcDossierStatus.of(lc.getId(),review.status(),documents.countByLetterOfCreditId(lc.getId()),review.discrepancies(),review.warnings(),review.passed(),review.results());}).toList();}
 
     @GetMapping("/{id}")
     public LetterOfCredit one(@PathVariable UUID id) {

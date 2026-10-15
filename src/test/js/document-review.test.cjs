@@ -26,3 +26,29 @@ test('the hint that an earlier decision no longer applies is not an open finding
  const mixed = api.groupFindings([stale, f('Y', 'a.pdf', 'DISCREPANCY')], docs);
  assert.equal(mixed[0].openCount, 1); assert.equal(mixed[0].items[api.nextOpen(mixed[0].items)].code, 'Y');
 });
+
+test('findings are sorted into blocking, check, hint and done tiers', () => {
+ const { tierOf } = api;
+ assert.equal(tierOf({ code: 'INVOICE_AMOUNT_EXCEEDED', severity: 'DISCREPANCY' }), 'blocking');
+ assert.equal(tierOf({ code: 'SHIPMENT_DATE_EXCEEDED', severity: 'WARNING' }), 'blocking');
+ assert.equal(tierOf({ code: 'MISSING_DOCUMENT', severity: 'DISCREPANCY' }), 'blocking');
+ assert.equal(tierOf({ code: 'SIGNATURE_REQUIREMENT_MISSING_SUSPECTED', severity: 'WARNING' }), 'blocking');
+ assert.equal(tierOf({ code: 'GOODS_DESCRIPTION', severity: 'DISCREPANCY' }), 'check');
+ assert.equal(tierOf({ code: 'GOODS_DESCRIPTION', severity: 'WARNING' }), 'hint');
+ assert.equal(tierOf({ code: 'INVOICE_AMOUNT_EXCEEDED', severity: 'DISCREPANCY', reviewDecision: 'ACCEPTED' }), 'done');
+});
+
+test('blocking findings come first and progress counts decidable findings over all documents', () => {
+ const { groupFindings, progress } = api;
+ const groups = groupFindings([
+  { code: 'GOODS', severity: 'WARNING', documentName: 'a.pdf' },
+  { code: 'INVOICE_AMOUNT_EXCEEDED', severity: 'DISCREPANCY', documentName: 'a.pdf' },
+  { code: 'X', severity: 'DISCREPANCY', documentName: 'b.pdf', reviewDecision: 'ACCEPTED' },
+  { code: 'REVIEW_STALE', severity: 'WARNING', documentName: 'b.pdf' },
+  { code: 'OKAY', severity: 'OK', documentName: 'b.pdf' }
+ ], [{ originalFilename: 'a.pdf', id: '1' }, { originalFilename: 'b.pdf', id: '2' }]);
+ assert.equal(groups[0].items[0].code, 'INVOICE_AMOUNT_EXCEEDED');
+ assert.equal(groups[0].blockingCount, 1);
+ const p = progress(groups);
+ assert.equal(p.total, 3); assert.equal(p.open, 2); assert.equal(p.done, 1);
+});

@@ -42,3 +42,22 @@
 .doc-review-finding small{color:#667085}.doc-review-doneline{color:#0f6b3a!important;font-weight:600}.doc-review-done{font-weight:700;color:#0f6b3a}
 @media(max-width:850px){#documentReviewDialog .evidence-workspace{grid-template-columns:1fr}}
 .doc-review-bar{margin:0 0 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}.doc-review-bar small{color:#475467}
+
+/* Prüfmodus: Fortschritt, Dokumentleiste, Stufen, Tastenkürzel */
+.doc-review-progress{display:flex;align-items:center;gap:10px;margin:4px 0 8px;padding:0 24px;color:#475467;font-size:14px}
+.doc-review-progress progress{flex:1;height:8px;appearance:none;-webkit-appearance:none;border:0;border-radius:99px;background:#e6eaf0;overflow:hidden}
+.doc-review-progress progress::-webkit-progress-bar{background:#e6eaf0;border-radius:99px}
+.doc-review-progress progress::-webkit-progress-value{background:#16a34a;border-radius:99px}
+.doc-review-progress progress::-moz-progress-bar{background:#16a34a;border-radius:99px}
+.doc-review-strip{display:flex;gap:6px;overflow-x:auto;padding:2px 24px 10px;margin-bottom:6px;border-bottom:1px solid #e6eaf0}
+.doc-review-chip{flex:0 0 auto;min-height:30px;padding:4px 12px;border-radius:99px;border:1px solid #c5d0e2;background:#fff;color:#14213d;font-size:13px;font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;max-width:300px}
+.doc-review-chip span{overflow:hidden;text-overflow:ellipsis;min-width:0}.doc-review-chip b{flex:0 0 auto}
+.doc-review-chip.done{color:#166534;border-color:#bbe5c8;background:#f0fbf3}
+.doc-review-chip.blocking{border-color:#f3b4b4;color:#b42318}
+.doc-review-chip.active{background:#1f4ed8;border-color:#1f4ed8;color:#fff}
+.doc-review-tier{margin:0 0 10px}
+.doc-review-tier>summary{cursor:pointer;font-weight:700;font-size:14px;padding:4px 0;color:#344054}
+.doc-review-tier.tier-blocking>summary{color:#b42318}
+.doc-review-tier>.doc-review-finding{margin-top:8px}
+.doc-review-keys{margin:8px 0 0;color:#667085;font-size:12px}
+.doc-review-keys kbd{display:inline-block;min-width:18px;padding:1px 5px;margin:0 1px;border:1px solid #c5d0e2;border-bottom-width:2px;border-radius:4px;background:#f8fafc;font:600 11px/1.4 system-ui;text-align:center}
