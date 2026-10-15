@@ -154,8 +154,33 @@ public class DocumentExtractionService {
     static final int MIN_TEXT_LAYER_CHARS=25,MIN_SCAN_IMAGE_PIXELS=400;
     static boolean scannedPage(org.apache.pdfbox.pdmodel.PDDocument pdf,int pageIndex,String text){
         if(text==null||text.isBlank())return true;
+        // A text layer of control and replacement characters (fonts without a Unicode mapping) is no text; the rendered page is.
+        if(unreadable(text))return true;
         if(text.replaceAll("[^\\p{L}\\p{N}]","").length()>=MIN_TEXT_LAYER_CHARS)return false;
-        return hasLargeImage(pdf.getPage(pageIndex));
+        return hasLargeImage(pdf.getPage(pageIndex))||hasUnmappedFont(pdf.getPage(pageIndex));
+    }
+    /** More than a third of the visible characters are control, replacement, private-use or unassigned characters. */
+    static boolean unreadable(String text){
+        int visible=0,bad=0;
+        for(int i=0;i<text.length();){
+            int c=text.codePointAt(i);i+=Character.charCount(c);
+            if(Character.isWhitespace(c))continue;
+            visible++;
+            int type=Character.getType(c);
+            if(c==0xFFFD||type==Character.CONTROL||type==Character.PRIVATE_USE||type==Character.UNASSIGNED||type==Character.SURROGATE)bad++;
+        }
+        return visible>=10&&bad*3>visible;
+    }
+    /** A composite (Type 0) font without a ToUnicode map: its glyphs cannot be turned into text, so little or no text means nothing about the page. */
+    private static boolean hasUnmappedFont(org.apache.pdfbox.pdmodel.PDPage page){
+        try{
+            var resources=page.getResources();if(resources==null)return false;
+            for(var name:resources.getFontNames()){
+                var font=resources.getFont(name);
+                if(font instanceof org.apache.pdfbox.pdmodel.font.PDType0Font&&!font.getCOSObject().containsKey(org.apache.pdfbox.cos.COSName.TO_UNICODE))return true;
+            }
+        }catch(IOException unreadable){/* an unreadable font is not evidence either way */}
+        return false;
     }
     private static boolean hasLargeImage(org.apache.pdfbox.pdmodel.PDPage page){
         try{

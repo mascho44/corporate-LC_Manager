@@ -41,4 +41,55 @@ class PrintedSwiftNormalizerTest {
     void keepsStandardColonFormat() {
         assertThat(normalizer.normalize(":20:ABC123\n:31C:260923")).isEqualTo(":20:ABC123\n:31C:260923");
     }
+
+    @Test
+    void readsBankPrintViewWithTagColonLabelAndValueBelow() {
+        String printed = """
+                MESSAGE TYPE: 700
+                TO INSTITUTION: ABCDDEFFXXX
+                SAMPLE BANK AG
+                PRIORITY: NORMAL
+                27: SEQUENCE OF TOTAL
+                1/1
+                40A: FORM OF DOCUMENTARY CREDIT
+                IRREVOCABLE
+                20: DOCUMENTARY CREDIT NUMBER
+                ILC250B000001
+                31C: DATE OF ISSUE
+                251027
+                40E: APPLICABLE RULES
+                UCPURR LATEST VERSION
+                31D: DATE AND PLACE OF EXPIRY
+                260222GERMANY
+                50: APPLICANT
+                SAMPLE INDUSTRIAL LLC
+                P.O.BOX 1234,
+                DUBAI, U.A.E AE
+                59: BENEFICIARY
+                MUSTER MASCHINEN GMBH,
+                32B: CURRENCY CODE, AMOUNT
+                EUR250000,00
+                42C: DRAFTS AT ...
+                AT SIGHT
+                45A: DESCRIPTION OF GOODS AND/OR SERVICES
+                WOODWORKING MACHINE
+                """;
+        String result = normalizer.normalize(printed);
+        assertThat(result).startsWith(":27:1/1");
+        assertThat(result).contains(":40A:IRREVOCABLE", ":20:ILC250B000001", ":31C:251027", ":40E:UCPURR LATEST VERSION", ":31D:260222GERMANY",
+                ":50:SAMPLE INDUSTRIAL LLC\nP.O.BOX 1234,\nDUBAI, U.A.E AE", ":59:MUSTER MASCHINEN GMBH,", ":32B:EUR250000,00", ":42C:AT SIGHT", ":45A:WOODWORKING MACHINE");
+        assertThat(result).doesNotContain("MESSAGE TYPE", "PRIORITY", "SEQUENCE OF TOTAL", "FORM OF DOCUMENTARY");
+    }
+
+    @Test
+    void toleratesOcrConfusionsInTagsAndLabelWithValueOnOneLine() {
+        String result = normalizer.normalize(":4OA:IRREVOCABLE\n3lD: DATE AND PLACE OF EXPIRY 260222GERMANY\nS9: BENEFICIARY\nMUSTER GMBH\n32B Currency Code, Amount EUR1000,");
+        assertThat(result).contains(":40A:IRREVOCABLE", ":31D:260222GERMANY", ":59:MUSTER GMBH", ":32B:EUR1000,");
+    }
+
+    @Test
+    void unreadableTextLayerIsDetected() {
+        assertThat(de.ostms.lc.document.service.DocumentExtractionServiceAccess.unreadable("\u0001\u0002\u0003\uFFFD\uFFFD\uE000\uE001 \u0004\u0005\u0006 ab")).isTrue();
+        assertThat(de.ostms.lc.document.service.DocumentExtractionServiceAccess.unreadable("27: SEQUENCE OF TOTAL 1/1 40A: FORM OF DOCUMENTARY CREDIT")).isFalse();
+    }
 }
