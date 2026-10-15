@@ -31,6 +31,10 @@ public class AutoRuleFacts {
         }
         return filled;
     }
+    /** Only suggestions read from a labelled place; guesses (marked "bitte prüfen", e.g. issuer from the letterhead) stay proposals for a person. */
+    static List<DocumentFactSuggester.Suggestion> safe(List<DocumentFactSuggester.Suggestion> suggestions) {
+        return suggestions.stream().filter(s -> s.source() == null || !s.source().toLowerCase(java.util.Locale.ROOT).matches("(?s).*(bitte pr(ü|ue)fen|prüfen\\b|unsicher|vermutlich).*")).toList();
+    }
     public static Set<String> read(String json) {
         if (json == null || json.isBlank()) return new LinkedHashSet<>();
         try { return new LinkedHashSet<>(JSON.readValue(json, new TypeReference<List<String>>() {})); } catch (Exception unreadable) { return new LinkedHashSet<>(); }
@@ -44,7 +48,7 @@ public class AutoRuleFacts {
         if (documents == null || doc == null) return 0;
         try {
             var facts = new EnumMap<Field, String>(Field.class); facts.putAll(RuleFacts.read(doc.getRuleFactsJson()));
-            var filled = merge(facts, documents.suggest(doc));
+            var filled = merge(facts, safe(documents.suggest(doc)));
             if (filled.isEmpty()) return 0;
             doc.setRuleFactsJson(RuleFacts.encode(facts, true));
             var auto = read(doc.getAutoRuleFacts()); auto.addAll(filled); doc.setAutoRuleFacts(write(auto));
@@ -57,7 +61,7 @@ public class AutoRuleFacts {
         if (letters == null || lc == null) return 0;
         try {
             var facts = new EnumMap<Field, String>(Field.class); facts.putAll(RuleFacts.read(lc.getRuleFactsJson()));
-            var filled = merge(facts, letters.suggest(lc));
+            var filled = merge(facts, safe(letters.suggest(lc)));
             if (filled.isEmpty()) return 0;
             lc.setRuleFactsJson(RuleFacts.encode(facts, false));
             var auto = read(lc.getAutoRuleFacts()); auto.addAll(filled); lc.setAutoRuleFacts(write(auto));
