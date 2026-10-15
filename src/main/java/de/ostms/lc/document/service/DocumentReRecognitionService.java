@@ -79,7 +79,7 @@ public class DocumentReRecognitionService {
   if(doc.getAmount()==null)doc.setAmount(probe.getExtractedAmount());
   if(doc.getCurrency()==null)doc.setCurrency(probe.getExtractedCurrency());
   if(autoFacts!=null)autoFacts.apply(doc);documents.save(doc);
-  long reset=checks.invalidateDecisions(lcId);
+  long reset=0; // the changed document invalidates only its own findings (scoped binding)
   audit.recordChangeInTransaction(auth,"DOCUMENT_RE_RECOGNIZED","LETTER_OF_CREDIT",lcId,doc.getOriginalFilename()+" · erneut erkannt"+(reset>0?" · "+reset+" Prüfentscheidungen zurückgesetzt":""),before,AuditSnapshots.document(doc));
   return DocumentView.from(doc);
  }

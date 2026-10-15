@@ -57,7 +57,7 @@ class DocumentReRecognitionServiceTest {
   assertThat(doc.getExtractionStatus()).isEqualTo("OCR_EXTRACTED");assertThat(doc.getExtractedDocumentNumber()).isEqualTo("INV-1");
   assertThat(doc.getDocumentDate()).isEqualTo(LocalDate.of(2026,7,21));assertThat(doc.getCopyNumber()).isEqualTo(1);assertThat(doc.getAmount()).isEqualByComparingTo("10");assertThat(doc.getCurrency()).isEqualTo("EUR");
   assertThat(doc.getDocumentType()).isEqualTo(DocumentType.OTHER);assertThat(view).isNotNull();
-  verify(checks).invalidateDecisions(lcId);
+  verify(checks,never()).invalidateDecisions(lcId);
   verify(audit).recordChangeInTransaction(eq(auth),eq("DOCUMENT_RE_RECOGNIZED"),eq("LETTER_OF_CREDIT"),eq(lcId),contains("scan.pdf"),anyString(),anyString());
   assertThatThrownBy(()->service.apply(lcId,documentId,preview.token(),auth)).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("abgelaufen");
  }

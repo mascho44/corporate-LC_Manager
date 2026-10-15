@@ -180,7 +180,7 @@ public class DocumentInboxService {
         LcDocument saved = documents.save(document);
         if(typeTraining!=null)typeTraining.learn(item.getExtractedText(),request.documentType(),auth==null?"unknown":auth.getName());
         if (lc.releaseWaitingForCustomer()) { de.ostms.lc.rulepack.PresentationDate.stamp(lc, java.time.LocalDate.now()); lettersOfCredit.save(lc); }
-        checks.invalidateDecisions(request.lcId());
+        // No reset of other decisions: they are bound to their own document and the credit terms.
         item.setStatus("ATTACHED");closeTasks(item.getId());
         item.setAttachedLcId(lc.getId());
         item.setAttachedDocumentId(saved.getId());
