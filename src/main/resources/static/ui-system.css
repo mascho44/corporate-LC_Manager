@@ -269,3 +269,6 @@ html[data-profile="bank"] #appNavEbics{display:none!important}
 .tenant-tab{min-height:40px;padding:8px 16px;background:none;border:0;border-bottom:3px solid transparent;border-radius:0;color:#475467;font-weight:600;white-space:nowrap}
 .tenant-tab:hover{color:#14213d}.tenant-tab.active{color:#1f4ed8;border-bottom-color:#1f4ed8}
 .tenant-tab[hidden],.tenant-pane[hidden]{display:none}
+
+.dossier-blocking{color:#b42318;font-weight:700}
+.dossier-numbers .dossier-review-start{margin-top:4px;min-height:30px;padding:4px 12px}
