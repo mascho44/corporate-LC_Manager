@@ -1,5 +1,16 @@
 # Platform accounts, invitations and grants
 
+## Aufbau der Plattformadministration (Stand 15.10.2026)
+Die Seite ist deutsch und in Reiter gegliedert:
+* **Übersicht:** Kennzahlen (aktive Mandanten, aktive Konten, offene Einladungen, Plattformadministratoren – jede Kachel führt zum passenden Reiter), Hinweise (Mandanten ohne aktiven Administrator, gesperrte Mandanten, nicht zugestellte oder abgelaufene Einladungen, aktive Konten ohne Zwei-Faktor) und der Stand der **Sanktionslisten** mit „Jetzt aktualisieren".
+* **Mandanten:** anlegen, Profil, sperren, archivieren, löschen.
+* **Konten & Einladungen:** globale Konten, Einladen, offene Einladungen, Plattformrechte und „Benutzer & Mandanten" (Zuordnung, Rolle, Sperre je Mandant).
+* **Protokoll:** Plattform-Audit (nur Metadaten, Audit-Ketten prüfen) und abgelehnte Anfragen.
+* **Mein Konto** (Knopf im Kopf): eigenes Passwort ändern.
+
+Die frühere Liste „Memberships across tenants" ist entfallen; ihre Funktionen (Rolle ändern, Zugang sperren) liegen in „Benutzer & Mandanten". Die Schnittstellen unter `/api/platform/memberships` bestehen weiter.
+
+
 Platform administration also manages [tenant creation, suspension and module
 profiles](tenant-lifecycle.md). Local tenant roles cannot create tenants or change
 global lifecycle/profile flags.
