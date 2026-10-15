@@ -41,3 +41,11 @@ test('invalid edits never mutate subsequent ranges or silently remove document t
     const parts=ranges();parts[2].toPage=7;assert.throws(()=>context.adjustInboxSplitRanges(parts,2,'toPage',8));
     parts[0].fromPage=2;assert.throws(()=>context.adjustInboxSplitRanges(parts,0,'fromPage',8));
 });
+test('each split page says whether it is safe and why',()=>{
+ const sure=context.inboxSplitPageReason({suggestedType:'COMMERCIAL_INVOICE',status:'SUGGESTED',method:'DOCUMENT_HEADINGS_V1',evidence:['COMMERCIAL INVOICE']});
+ assert.equal(sure.sure,true);assert.equal(sure.text,'sicher: Überschrift „COMMERCIAL INVOICE“');
+ const sequence=context.inboxSplitPageReason({suggestedType:'COMMERCIAL_INVOICE',status:'REVIEW',method:'PAGE_SEQUENCE_V1',evidence:['Page 2 of 3']});
+ assert.equal(sequence.sure,false);assert.equal(sequence.text,'prüfen: Seitenzählung');
+ assert.equal(context.inboxSplitPageReason({suggestedType:null,status:'AMBIGUOUS',method:'DOCUMENT_HEADINGS_V1',evidence:['a','b']}).text,'prüfen: mehrere Dokumentarten möglich');
+ assert.equal(context.inboxSplitPageReason(null).text,'prüfen: nicht erkannt');
+});
