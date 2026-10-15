@@ -49,3 +49,8 @@ test('each split page says whether it is safe and why',()=>{
  assert.equal(context.inboxSplitPageReason({suggestedType:null,status:'AMBIGUOUS',method:'DOCUMENT_HEADINGS_V1',evidence:['a','b']}).text,'prüfen: mehrere Dokumentarten möglich');
  assert.equal(context.inboxSplitPageReason(null).text,'prüfen: nicht erkannt');
 });
+test('the assignment form is prefilled with the only suggestion and a confirmed or safe type',()=>{
+ const src=fs.readFileSync('src/main/resources/static/app.js','utf8');const ctx=vm.createContext({});vm.runInContext(src.slice(src.indexOf('function inboxPrefill('),src.indexOf('function renderInboxSuggestions(')),ctx);
+ assert.deepEqual({...ctx.inboxPrefill({assignmentCandidates:[{lcId:'a'}],classification:{suggestedType:'OTHER',status:'CONFIRMED'}})},{lcId:'a',documentType:'OTHER'});
+ assert.deepEqual({...ctx.inboxPrefill({assignmentCandidates:[{lcId:'a'},{lcId:'b'}],classification:{suggestedType:'PACKING_LIST',status:'REVIEW'}})},{lcId:'',documentType:''});
+});
