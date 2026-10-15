@@ -131,8 +131,8 @@ public final class PdfDocumentSplitter {
     }
 
     /** {page,total}; total is 0 when the page states only "Page 2". */
-    private static int[] pageNumber(String text){
-        var matcher=java.util.regex.Pattern.compile("(?i)\\b(?:page|seite)\\s{0,3}(\\d{1,3})(?:\\s{0,3}(?:of|von|/)\\s{0,3}(\\d{1,3}))?\\b").matcher(text);
+    static int[] pageNumber(String text){
+        var matcher=java.util.regex.Pattern.compile("(?i)\\b(?:page(?:\\s{0,2}no\\.?)?|seite|blatt)\\s{0,3}(\\d{1,3})(?:\\s{0,3}(?:of|von|/)\\s{0,3}(\\d{1,3}))?\\b").matcher(text);
         int[] result=null;
         while(matcher.find()){
             int page=Integer.parseInt(matcher.group(1)),total=matcher.group(2)==null?0:Integer.parseInt(matcher.group(2));
