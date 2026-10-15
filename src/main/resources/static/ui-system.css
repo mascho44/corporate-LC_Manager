@@ -284,3 +284,4 @@ html[data-profile="bank"] #appNavEbics{display:none!important}
 .inbox-split-dialog .only-uncertain>.split-safe{display:none}
 .inbox-split-dialog .evidence-page-thumb.split-unsure{outline:2px solid #f5a524;outline-offset:-2px}
 .inbox-split-dialog .split-clarity button{margin-top:6px}
+.accuracy-report table{margin:6px 0}.accuracy-report tr.accuracy-low td{background:#fff7e6}
