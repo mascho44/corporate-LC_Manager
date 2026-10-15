@@ -10,6 +10,12 @@ public interface AppUserRepository extends de.ostms.lc.tenant.repository.TenantS
  boolean hasActiveAdministratorMembership(UUID userId);
  @org.springframework.data.jpa.repository.Query("select m.user from TenantMembership m where m.tenantId=:#{T(de.ostms.lc.tenant.domain.TenantContext).currentId()} and m.active=true and m.user.active=true and not exists(select s.id from TenantMembershipSuspension s where s.tenantId=m.tenantId and s.userId=m.user.id and s.suspended=true) order by m.user.displayName")
  List<AppUser> findAssignableMembershipUsers();
+ /** Active administrators of the current tenant (for operational notices). */
+ @org.springframework.data.jpa.repository.Query("select m.user from TenantMembership m where m.tenantId=:#{T(de.ostms.lc.tenant.domain.TenantContext).currentId()} and m.active=true and m.user.active=true and m.role.baseRole=de.ostms.lc.user.domain.UserRole.ADMIN and not exists(select s.id from TenantMembershipSuspension s where s.tenantId=m.tenantId and s.userId=m.user.id and s.suspended=true)")
+ List<AppUser> findActiveTenantAdministrators();
+ /** Active platform administrators (global; for notices about global reference data such as sanctions lists). */
+ @org.springframework.data.jpa.repository.Query("select u from AppUser u where u.platformAdministrator=true and u.active=true")
+ List<AppUser> findActivePlatformAdministrators();
  // Global identity lookup is reserved for authentication/password reset; administration is scoped below.
  Optional<AppUser> findByUsernameIgnoreCase(String username);boolean existsByUsernameIgnoreCase(String username);
  boolean existsByEmailIgnoreCase(String email);
