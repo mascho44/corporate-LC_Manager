@@ -102,7 +102,7 @@ public class DocumentExtractionService {
             log.warn("Document extraction failed: type={}",exception.getClass().getSimpleName());
             document.setExtractionStatus("FAILED");
         } finally {
-            document.setClassificationHistoryJson(ClassificationHistory.automatic(document.getOriginalFilename(),document.getExtractedText()));
+            document.setClassificationHistoryJson(ClassificationHistory.automatic(document.getOriginalFilename(),document.getExtractedText(),expectedTypes(document)));
             log.info("Document extraction completed: status={}, elapsedMillis={}",document.getExtractionStatus(),java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-started));
         }
     }
@@ -130,7 +130,7 @@ public class DocumentExtractionService {
             }
             if (!amountSet && firstBareAmount != null) parseAmount(firstBareAmount).ifPresent(document::setExtractedAmount);
             document.setExtractionStatus(status);
-            document.setClassificationHistoryJson(ClassificationHistory.automatic(document.getOriginalFilename(),document.getExtractedText()));
+            document.setClassificationHistoryJson(ClassificationHistory.automatic(document.getOriginalFilename(),document.getExtractedText(),expectedTypes(document)));
     }
 
     private String readText(LcDocument document) throws Exception {
@@ -168,6 +168,13 @@ public class DocumentExtractionService {
         return false;
     }
 
+    /** Document types the LC of this document asks for (field 46A); empty without an LC. */
+    static java.util.Set<de.ostms.lc.document.domain.DocumentType> expectedTypes(LcDocument document){
+        var lc=document.getLetterOfCredit();if(lc==null||lc.getRequiredDocuments()==null)return java.util.Set.of();
+        var out=java.util.EnumSet.noneOf(de.ostms.lc.document.domain.DocumentType.class);
+        try{lc.getRequiredDocuments().forEach(r->de.ostms.lc.check.service.DocumentCheckService.requirementType(r).ifPresent(out::add));}catch(RuntimeException lazy){return java.util.Set.of();}
+        return out;
+    }
     static List<String> readPdfPages(byte[] content)throws Exception{
         try(var pdf=Loader.loadPDF(content)){
             PdfProcessingSafety.validate(pdf);var stripper=new PDFTextStripper();var pages=new java.util.ArrayList<String>();

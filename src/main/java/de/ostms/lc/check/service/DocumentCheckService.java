@@ -292,7 +292,9 @@ public class DocumentCheckService {
     }
     private String display(String value){return value==null||value.isBlank()?"-":value.trim();}
 
-    private Optional<DocumentType> classify(String requirement) {
+    private Optional<DocumentType> classify(String requirement){return requirementType(requirement);}
+    /** Document type an LC requirement (field 46A line) asks for, if it can be read from the wording. */
+    public static Optional<DocumentType> requirementType(String requirement) {
         String text = requirement.toLowerCase(Locale.ROOT);
         if (text.contains("inspection certificate") || text.matches("(?s).*\\bcertificates? of inspection\\b.*") || text.contains("inspection report")) return Optional.of(DocumentType.INSPECTION_CERTIFICATE);
         if (text.matches("(?s).*\\bcertificates? of analysis\\b.*") || text.contains("analysis certificate") || text.contains("quality certificate") || text.contains("test certificate")) return Optional.of(DocumentType.QUALITY_CERTIFICATE);
