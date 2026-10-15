@@ -204,7 +204,7 @@ function swift(reference){return `:20:${reference}\n:31C:261001\n:31D:271231SYNT
  await call('/api/platform/tenants/'+created.id,'PUT',{active:false,bankEnabled:true,corporateEnabled:true});
  const globalSession=await call('/api/platform/session');assert.equal(globalSession.username,'admin');assert.ok(globalSession.csrfToken);assert.ok(!('tenantId' in globalSession));
  assert.ok(Array.isArray(await call('/api/platform/tenants')));
- const platformPage=await call('/platform.html','GET',undefined,200,'application/json',true);assert.ok(platformPage.includes('GLOBAL SCOPE'));assert.ok(!platformPage.includes('id="tenantChooser"'));
+ const platformPage=await call('/platform.html','GET',undefined,200,'application/json',true);assert.ok(platformPage.includes('GLOBALER BEREICH'));assert.ok(!platformPage.includes('id="tenantChooser"'));
  await call('/api/platform/tenants/'+created.id,'PUT',{active:true,bankEnabled:true,corporateEnabled:true});
  await call('/api/tenants/'+home+'/select','POST');csrf=(await call('/api/auth/me')).csrfToken;
  await call('/api/platform/tenants/'+home,'PUT',{active:false,bankEnabled:true,corporateEnabled:false},400);

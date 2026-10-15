@@ -49,3 +49,16 @@ body.platform-shell>.platform-header{position:static;display:flex;align-items:ce
 .platform-shell .membership-row>small.error,.platform-shell .membership-row>small[role=alert]{flex:1 1 100%;color:#b42318}
 .platform-shell .membership-row details{flex:1 1 100%;margin-top:4px}
 .platform-shell .membership-row details summary{cursor:pointer;color:#b42318;font-weight:600}
+
+/* Tabs, Kennzahlen, Hinweise */
+.platform-head{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px}
+.platform-head p{margin:0;flex:1 1 420px;color:#52607a}
+.platform-tabs{display:flex;gap:4px;border-bottom:1px solid #dfe3f0;margin:14px 0 18px;overflow-x:auto}
+.platform-tab{min-height:40px;padding:8px 16px;background:none;border:0;border-bottom:3px solid transparent;border-radius:0;color:#475467;font-weight:600;white-space:nowrap;cursor:pointer}
+.platform-tab:hover{color:#14213d}.platform-tab.active{color:#4338ca;border-bottom-color:#4338ca}
+.platform-pane[hidden]{display:none}.platform-pane>h3:first-child{margin-top:4px}
+.platform-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.platform-shell .platform-tile{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:16px 18px;background:#fbfbfe;border:1px solid #dfe3f0;border-radius:12px;color:#14213d;text-align:left;cursor:pointer}
+.platform-shell .platform-tile:hover{border-color:#6d5dfc;background:#f5f4ff}
+.platform-tile b{font-size:30px;line-height:1.1}.platform-tile span{font-weight:600}.platform-tile small{color:#52607a}
+.platform-ok{color:#166534;margin:0}
