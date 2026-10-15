@@ -13,8 +13,11 @@ public final class PdfDocumentSplitter {
         public Part(int fromPage,int toPage,DocumentType type){this(fromPage,toPage,type,null);}
         public Part {de.ostms.lc.document.domain.DocumentCopy.validate(copyNumber);}
     }
-    public record Page(int number,DocumentClassifier.Classification classification,String textSource,DocumentCopyDetector.Hint copyHint) {
-        public Page(int number,DocumentClassifier.Classification classification,String textSource){this(number,classification,textSource,DocumentCopyDetector.detect(null));}
+    /** `sample` is the beginning of the text read from the page (for the person to judge what the recognition delivered); null when nothing was read. */
+    public record Page(int number,DocumentClassifier.Classification classification,String textSource,DocumentCopyDetector.Hint copyHint,String sample) {
+        public Page(int number,DocumentClassifier.Classification classification,String textSource,DocumentCopyDetector.Hint copyHint){this(number,classification,textSource,copyHint,null);}
+        public Page(int number,DocumentClassifier.Classification classification,String textSource){this(number,classification,textSource,DocumentCopyDetector.detect(null),null);}
+        static String sampleOf(String text){String flat=text==null?"":text.replaceAll("\\s+"," ").trim();return flat.isEmpty()?null:flat.length()>160?flat.substring(0,160)+"…":flat;}
     }
     public record Proposal(int pageCount,List<Page> pages,List<Part> parts) {}
     public record Output(Part part,byte[] content,String text,OcrEvidence evidence) {}
@@ -33,6 +36,14 @@ public final class PdfDocumentSplitter {
             }
             String pattern="SPLIT_V1:"+texts.size()+":"+String.join("\u000c",normalized);
             return HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(pattern.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+        }
+    }
+
+    /** The text of every page (text layer or recognised text), in page order. */
+    public static List<String> texts(byte[] content,String evidenceJson) throws Exception {
+        try(var slot=PdfProcessingSafety.acquire();var pdf=Loader.loadPDF(content)) {
+            PdfProcessingSafety.validate(pdf);
+            return pageTexts(pdf,DocumentExtractionService.readEvidence(evidenceJson));
         }
     }
 
@@ -71,7 +82,7 @@ public final class PdfDocumentSplitter {
                     detected=current;
                     classification=new DocumentClassifier.Classification(current,.8,"REVIEW",numberedContinuation?"PAGE_SEQUENCE_V1":referenceContinuation?"DOCUMENT_REFERENCE_V1":blankPage?"BLANK_PAGE_V1":attachmentCue!=null?attachmentCue:"PAGE_TOTAL_V1",List.of(numberedContinuation?"Fortsetzungsseite "+number[0]+" / "+number[1]+"; bitte prüfen":referenceContinuation?"Gleiche Dokumentnummer wie vorherige Seite; bitte prüfen":blankPage?"Leere Seite, der vorherigen zugeordnet; bitte prüfen":"Vorherige Seite kündigt weitere Seiten an; bitte prüfen"));
                 }
-                pages.add(new Page(i+1,classification,texts.get(i).isBlank()?"UNAVAILABLE":"PAGE_TEXT",DocumentCopyDetector.detect(texts.get(i))));
+                pages.add(new Page(i+1,classification,texts.get(i).isBlank()?"UNAVAILABLE":"PAGE_TEXT",DocumentCopyDetector.detect(texts.get(i)),Page.sampleOf(texts.get(i))));
                 // Unknown pages are isolated instead of silently treated as continuations.
                 // A page with its own heading after a headed front page that already has back sides or enclosures attached is a new document (e.g. the next original of a bill of lading); two bare headed pages stay together as before.
                 boolean headed=detected!=null&&classification.score()>=.9;
@@ -120,8 +131,8 @@ public final class PdfDocumentSplitter {
     }
 
     /** {page,total}; total is 0 when the page states only "Page 2". */
-    private static int[] pageNumber(String text){
-        var matcher=java.util.regex.Pattern.compile("(?i)\\b(?:page|seite)\\s{0,3}(\\d{1,3})(?:\\s{0,3}(?:of|von|/)\\s{0,3}(\\d{1,3}))?\\b").matcher(text);
+    static int[] pageNumber(String text){
+        var matcher=java.util.regex.Pattern.compile("(?i)\\b(?:page(?:\\s{0,2}no\\.?)?|seite|blatt)\\s{0,3}(\\d{1,3})(?:\\s{0,3}(?:of|von|/)\\s{0,3}(\\d{1,3}))?\\b").matcher(text);
         int[] result=null;
         while(matcher.find()){
             int page=Integer.parseInt(matcher.group(1)),total=matcher.group(2)==null?0:Integer.parseInt(matcher.group(2));
@@ -174,9 +185,12 @@ public final class PdfDocumentSplitter {
         List<String> result=new ArrayList<>();var stripper=new PDFTextStripper();
         for(int page=1;page<=pdf.getNumberOfPages();page++) {
             stripper.setStartPage(page);stripper.setEndPage(page);String text=stripper.getText(pdf);
-            if(text.isBlank()&&evidence!=null) {
+            // A page with only a stamp in its text layer is a scan: its recognised text replaces the stray layer text.
+            boolean sparse=!text.isBlank()&&DocumentExtractionService.scannedPage(pdf,page-1,text);
+            if((text.isBlank()||sparse)&&evidence!=null) {
                 String completed=evidence.completedPageText(page);
-                if(completed!=null){result.add(completed.length()>100_000?completed.substring(0,100_000):completed);continue;}
+                if(completed!=null&&(!sparse||!completed.isBlank())){result.add(completed.length()>100_000?completed.substring(0,100_000):completed);continue;}
+                if(sparse){result.add(text.length()>100_000?text.substring(0,100_000):text);continue;}
                 int number=page;var words=evidence.words().stream().filter(w->w.page()==number).toList();
                 StringBuilder rebuilt=new StringBuilder();int top=-1;
                 for(var word:words) {if(top>=0&&Math.abs(word.top()-top)>8)rebuilt.append('\n');else rebuilt.append(' ');rebuilt.append(word.text());top=word.top();}

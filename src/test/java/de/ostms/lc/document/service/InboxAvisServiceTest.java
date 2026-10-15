@@ -47,4 +47,36 @@ class InboxAvisServiceTest {
         assertThat(InboxAvisService.creditText(normalizer, "Sehr geehrte Damen und Herren, anbei unsere Rechnung. Mit freundlichen Grüßen")).isEmpty();
         assertThat(InboxAvisService.creditText(normalizer, null)).isEmpty();
     }
+
+    @Test void adviceWithoutCreditTextOffersWhatTheCoverLetterSays() {
+        var inbox = org.mockito.Mockito.mock(DocumentInboxService.class);
+        var item = new de.ostms.lc.document.domain.DocumentInboxItem();
+        item.setOriginalFilename("avis.pdf");
+        item.setExtractedText("Ort, 08. Juni 2026\nDokumentenakkreditiv – Avisierung\nAkkreditivnummer ABC123456\nAkkreditiv über EUR 1.000,00\nGültig bis 30.11.2026 / GERMANY\nSehr geehrte Damen und Herren,\nden Inhalt entnehmen Sie bitte der beigefügten Kopie.");
+        var id = java.util.UUID.randomUUID();
+        org.mockito.Mockito.when(inbox.openItem(id)).thenReturn(item);
+        var preview = new InboxAvisService(inbox, normalizer, null).preview(id);
+        assertThat(preview.creditTextFound()).isFalse();assertThat(preview.credit()).isNull();
+        assertThat(preview.cover().fields()).containsEntry("reference", "ABC123456").containsEntry("amount", "1000.00").containsEntry("expiryDate", "2026-11-30");
+    }
+
+    @Test void bankPrintFormatIsFoundAfterACoverLetterWithClosing() {
+        String advice = """
+                Dear Sirs,
+                please find below the documentary credit.
+                Best regards
+                Sample Bank
+                MESSAGE TYPE: 700
+                27: SEQUENCE OF TOTAL
+                1/1
+                20: DOCUMENTARY CREDIT NUMBER
+                ILC250B000001
+                31D: DATE AND PLACE OF EXPIRY
+                260222GERMANY
+                32B: CURRENCY CODE, AMOUNT
+                EUR1000,00
+                """;
+        String raw = InboxAvisService.creditText(normalizer, advice);
+        assertThat(raw).contains(":20:ILC250B000001", ":31D:260222GERMANY", ":32B:EUR1000,00");
+    }
 }

@@ -31,4 +31,14 @@ class FindingEvidenceControllerTest {
   assertThatThrownBy(()->controller.evidence(id,"MISSING","invoice.pdf")).isInstanceOf(ResponseStatusException.class);
   verify(docs,never()).findAll();
  }
+ @Test void identicalFindingsWithTheSameFingerprintAreOneFindingButWithoutFingerprintStayAmbiguous(){
+  var checks=mock(DocumentCheckService.class);var docs=mock(LcDocumentRepository.class);var id=UUID.randomUUID();
+  var a=new CheckResult(CheckResult.Severity.DISCREPANCY,"DOCUMENT_COPY_COUNT","Kopien: 0 erfasst / 2 gefordert","Condition","invoice.pdf","x");
+  var twin=new CheckResult(CheckResult.Severity.DISCREPANCY,"DOCUMENT_COPY_COUNT","Kopien: 0 erfasst / 2 gefordert","Condition","invoice.pdf","x");
+  assertThat(twin.reviewFingerprint()).isEqualTo(a.reviewFingerprint());
+  when(checks.check(id)).thenReturn(new ReviewSummary("RED",2,0,0,List.of(a,twin)));
+  var controller=new FindingEvidenceController(checks,docs);
+  assertThat(controller.evidence(id,"DOCUMENT_COPY_COUNT","invoice.pdf",a.reviewFingerprint()).finding()).isEqualTo(a);
+  assertThatThrownBy(()->controller.evidence(id,"DOCUMENT_COPY_COUNT","invoice.pdf")).isInstanceOf(ResponseStatusException.class);
+ }
 }

@@ -27,7 +27,15 @@ public final class DocumentClassifier {
   HEADINGS.put(DocumentType.COURIER_RECEIPT,"(?:courier receipt|courier delivery receipt|kurierbeleg)");
  }
  private DocumentClassifier(){}
- public static Classification classify(String filename,String text){
+ public static Classification classify(String filename,String text){return classify(filename,text,Set.of());}
+ /** With the document types the LC asks for: they decide between several headings or weak profiles; a type the LC does not ask for is offered for review only. */
+ public static Classification classify(String filename,String text,Set<DocumentType> expected){
+  var base=classifyWith(filename,text,expected==null?Set.of():expected);
+  if(expected==null||expected.isEmpty()||base.suggestedType()==null||expected.contains(base.suggestedType())||base.suggestedType()==DocumentType.SWIFT_MT700||base.suggestedType()==DocumentType.ADVISING_LETTER||base.suggestedType()==DocumentType.DOCUMENT_SUBMISSION)return base;
+  var evidence=new ArrayList<>(base.evidence());evidence.add("Dokumentart wird im LC nicht gefordert – bitte prüfen");
+  return new Classification(base.suggestedType(),Math.min(base.score(),.75),"REVIEW",base.method(),List.copyOf(evidence));
+ }
+ private static Classification classifyWith(String filename,String text,Set<DocumentType> expected){
   String headingText=text==null?"":text.substring(0,Math.min(text.length(),4000)).replaceAll("[\\t ]+"," ");
   String normalized=headingText.replace('\u00a0',' ').replace('\r','\n');
   var advice=Pattern.compile("(?im)^[\\t ]*+(?:betreff[\\t ]*+:[\\t ]*+)?(?:avisierung(?:sschreiben)?(?:[\\t ]++(?:eines?|des|zum|von|einer))?[\\t ]*+(?:dokumenten[- ]?)?akkreditiv\\w*|akkreditiv[- ]?avis(?:ierung)?|advice[\\t ]++of[\\t ]++(?:a[\\t ]++)?(?:documentary|letter[\\t ]++of)[\\t ]++credit|notification[\\t ]++of[\\t ]++(?:a[\\t ]++)?documentary[\\t ]++credit|avisierungsschreiben)\\b").matcher(normalized);
@@ -56,9 +64,13 @@ public final class DocumentClassifier {
    if(submission.find()&&submission.start()<800)return new Classification(DocumentType.DOCUMENT_SUBMISSION,.9,"SUGGESTED","DOCUMENT_HEADINGS_V3",List.of(found.get(DocumentType.DOCUMENT_SUBMISSION)));
   }
   if(found.size()>1&&pure.size()==1){var only=pure.iterator().next();return new Classification(only,.9,"SUGGESTED","DOCUMENT_HEADINGS_V2",List.of(found.get(only)));}
-  if(found.size()>1)return new Classification(null,0,"AMBIGUOUS","DOCUMENT_HEADINGS_V1",List.copyOf(found.values()));
+  if(found.size()>1){
+   var wanted=found.keySet().stream().filter(expected::contains).toList();
+   if(wanted.size()==1)return new Classification(wanted.get(0),.85,"SUGGESTED","LC_EXPECTED_V1",List.of(found.get(wanted.get(0)),"Mehrere Überschriften; diese Dokumentart fordert das LC"));
+   return new Classification(null,0,"AMBIGUOUS","DOCUMENT_HEADINGS_V1",List.copyOf(found.values()));
+  }
   if(found.size()==1){var entry=found.entrySet().iterator().next();return new Classification(entry.getKey(),.9,"SUGGESTED","DOCUMENT_HEADINGS_V1",List.of(entry.getValue()));}
-  var profile=profile(normalized);
+  var profile=profile(normalized,expected);
   if(profile!=null)return profile;
   String name=filename==null?"":filename.replaceAll("[_./\\\\-]+"," ").toLowerCase(Locale.ROOT);
   if(Pattern.compile("\\bmt[\\t ]*+700\\b").matcher(name).find())return new Classification(DocumentType.SWIFT_MT700,.55,"REVIEW","FILENAME_HINT_V2",List.of(filename));
@@ -72,16 +84,26 @@ public final class DocumentClassifier {
   PROFILE_TERMS.put(DocumentType.BILL_OF_LADING,List.of("shipper","consignee","notify party","port of loading","port of discharge","vessel","freight","shipped on board"));
   PROFILE_TERMS.put(DocumentType.PACKING_LIST,List.of("packing","gross weight","net weight","packages","carton","measurement","marks and numbers"));
   PROFILE_TERMS.put(DocumentType.COMMERCIAL_INVOICE,List.of("invoice","unit price","amount due","total amount","terms of payment","incoterms","buyer","seller"));
+  PROFILE_TERMS.put(DocumentType.AIR_WAYBILL,List.of("airport of departure","airport of destination","shipper's account","consignee's account","issuing carrier","iata","flight","chargeable weight"));
+  PROFILE_TERMS.put(DocumentType.INSURANCE_CERTIFICATE,List.of("insured","sum insured","policy no","claims payable","institute cargo clauses","underwriter","premium","assured"));
+  PROFILE_TERMS.put(DocumentType.CERTIFICATE_OF_ORIGIN,List.of("country of origin","chamber of commerce","exporter","consignor","we hereby certify","origin of the goods","certified","handelskammer"));
+  PROFILE_TERMS.put(DocumentType.ROAD_CONSIGNMENT_NOTE,List.of("sender","carrier","place of delivery","place and date of taking over","successive carriers","convention","vehicle","documents attached"));
+  PROFILE_TERMS.put(DocumentType.BILL_OF_EXCHANGE,List.of("pay to the order of","at sight","days after","value received","drawee","drawn under","exchange for","the sum of"));
+  PROFILE_TERMS.put(DocumentType.INSPECTION_CERTIFICATE,List.of("inspection","inspected","inspector","surveyor","we hereby certify","sampling","found to be","in accordance with"));
  }
  /** Weak, field-based hint for pages without a heading; never reaches the automatic split threshold. */
- private static Classification profile(String text){
-  String lower=text.toLowerCase(Locale.ROOT);DocumentType best=null;int bestHits=0;boolean tie=false;List<String> bestTerms=List.of();
-  for(var entry:PROFILE_TERMS.entrySet()){
-   var hits=entry.getValue().stream().filter(lower::contains).toList();
-   if(hits.size()>bestHits){best=entry.getKey();bestHits=hits.size();bestTerms=hits;tie=false;}
-   else if(hits.size()==bestHits&&bestHits>0)tie=true;
-  }
-  if(best==null||bestHits<4||tie)return null;
-  return new Classification(best,.7,"REVIEW","KEYWORD_PROFILE_V1",List.of("Typische Felder erkannt: "+String.join(", ",bestTerms)+" – bitte prüfen"));
+ private static Classification profile(String text,Set<DocumentType> expected){
+  String lower=text.toLowerCase(Locale.ROOT);
+  var hits=new LinkedHashMap<DocumentType,List<String>>();
+  PROFILE_TERMS.forEach((type,terms)->hits.put(type,terms.stream().filter(lower::contains).toList()));
+  int max=hits.values().stream().mapToInt(List::size).max().orElse(0);if(max==0)return null;
+  var top=hits.entrySet().stream().filter(e->e.getValue().size()==max).map(Map.Entry::getKey).toList();
+  DocumentType best=top.size()==1?top.get(0):null;
+  // A tie between profiles is decided by the documents the LC asks for, if exactly one of them is expected.
+  if(best==null){var wanted=top.stream().filter(expected::contains).toList();if(wanted.size()==1)best=wanted.get(0);}
+  // An expected type needs one typical field less.
+  if(best==null||max<(expected.contains(best)?3:4))return null;
+  return new Classification(best,.7,"REVIEW","KEYWORD_PROFILE_V1",List.of("Typische Felder erkannt: "+String.join(", ",hits.get(best))+" – bitte prüfen"));
  }
+
 }

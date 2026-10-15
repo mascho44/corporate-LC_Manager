@@ -34,3 +34,25 @@ Ursprungsland (nur wenn als Land erkannt) sowie beim Versicherungszertifikat Ver
 
 **Vermerke (`DocumentIndicators`)** – die `*_INDICATED`/`*_PRESENT`-Fakten (Umladung, Charter Party, On Deck, To Order, Container, Agent, Rabatt, Prämie bezahlt, Franchise, Indossament u. a.)
 werden nur bei **gefundenem** Textmuster als „true“ vorgeschlagen; ein fehlender Text beweist nichts und erzeugt keinen Vorschlag. Alle Vorschläge werden erst nach Bestätigung gespeichert.
+
+## Aussteller, Empfänger und Warenbeschreibung aus dem Druckbild
+Für diese drei Freitextfelder schlägt die Regel-Erkennung (ohne KI) vor:
+* **Aussteller:** eine beschriftete Zeile („Seller:", „Issued by", „Aussteller", „Lieferant" …), sonst die erste Zeile mit Firmenform (GmbH, AG, Ltd, Limited, Co., Inc …) in den ersten 12 Zeilen (Briefkopf).
+* **Empfänger:** eine beschriftete Zeile („Buyer", „Sold to", „Bill to", „Consignee", „Rechnungsempfänger" …), sonst die nächste Firma nach dem Aussteller.
+* **Warenbeschreibung:** die Zeile(n) hinter „Description of goods", „Warenbezeichnung" …, sonst die Wörter der ersten Artikelzeile unter einer Tabellenüberschrift mit Artikel-/Beschreibungs- und Mengenspalte (Codes, Zahlen und Einheiten entfallen).
+Widersprüchliche Beschriftungen ergeben keinen Vorschlag. Vorschläge aus Position und Tabelle sind mit „bitte prüfen" gekennzeichnet und wie alle Vorschläge unbestätigt.
+
+## Fundstelle im PDF markieren (statt Kommentar)
+In der Belegansicht eines Befunds gibt es „Fundstelle markieren": ein Rechteck um die Stelle im PDF aufziehen (Maus oder Finger). Wird der Befund danach mit „Als erfüllt bestätigen" abgeschlossen, ist **kein Kommentar** mehr nötig; die Markierung (Dokument, Seite, Rechteck als Anteil der Seite) wird mit der Entscheidung gespeichert (`document_check_decision.evidence_mark`). Ohne Markierung bleibt die Begründung Pflicht. Beim erneuten Öffnen erscheint die gespeicherte Fundstelle grün auf der Seite; in der Entscheidungshistorie steht „Fundstelle im PDF markiert (Seite n)". Der Server prüft, dass das Dokument zur Akte gehört. Im PDF-Prüfbericht steht die Markierung noch nicht.
+
+## Dokumentweise Prüfung
+In der Prüfung der Akte (Recht „Dokumente prüfen") öffnet **„Dokumentweise prüfen"** einen Dialog je Dokument: rechts das PDF, links alle Befunde zu diesem Dokument untereinander (offene Abweichungen vor Hinweisen, Erledigtes grau). Der aktive Befund springt im PDF auf seine Fundstellen-Seite. Pro Befund „Als erfüllt bestätigen" / „Abweichung bestätigen"; mit einer im PDF markierten Fundstelle (siehe oben) entfällt der Kommentar, sonst fragt das System wie sonst nach der Begründung. Nach jeder Entscheidung springt der Dialog zum nächsten offenen Befund, nach dem letzten zum nächsten Dokument mit offenen Befunden; mit ← und → lässt sich auch von Hand zwischen den Dokumenten wechseln. Befunde zum ganzen Dokumentensatz (ohne einzelnes Dokument) stehen am Ende ohne PDF. Die Reihenfolge der Dokumente ist die der Dokumentenliste der Akte.
+
+## Positionstabelle und Betrag
+Steht die Menge nicht als „Quantity: 931" sondern in der Positionszeile einer Tabelle (Kopfzeile mit Mengen- und Preisspalte, darunter z. B. „FW26 Women Clothing 931 pcs 76,08 70.831,40 EUR"), schlägt die Erkennung Menge, Einheit und Einzelpreis aus dieser Zeile vor. Der Rechnungsbetrag ist eine „Total"-Zeile **mit Währung**; „Total 4.815 Pcs" (eine Stückzahl) gilt nicht mehr als Betrag. Fehlt eine solche Zeile, dient die Summe der Positionszeile als Betrag (mit Währung). Im Dialog „Dokumentweise prüfen" übernimmt **„Erkannte Prüfdaten übernehmen"** alle Vorschläge für noch leere Felder der Akte in einem Zug; Eingetragenes wird nie überschrieben, die Befunde werden danach neu berechnet.
+
+## Vorlagedatum
+„Geprüftes Datum der Dokumentenvorlage" (`LC_PRESENTATION_DATE`, im Dialog „LC-Prüfkontext") und „Geprüftes Vorlagedatum" je Dokument (`DOCUMENT_PRESENTATION_DATE`, im Dialog „Dokument-Prüfdaten") sind **keine Erkennungswerte**: Das Datum, an dem die Dokumente bei der Bank vorgelegt werden, steht auf keinem Dokument. Erreicht eine Akte den Status **„Dokumente eingereicht"** (Bearbeiten der Akte oder automatisch, wenn ein Dokument bei einer auf den Kunden wartenden Akte eingeht), setzt das System das Datum der Akte auf **heute**, falls dort noch keins steht. Ein eingetragenes Datum wird nie ersetzt und kann im LC-Prüfkontext geändert werden. Die Vorlagefrist (Datum des Transportdokuments + Tage aus Feld :48:) steht unabhängig davon in den Fristen.
+
+## Automatische Übernahme (Stand 15.10.2026)
+Erkannte Angaben werden jetzt **automatisch** in leere Felder der Prüfdaten übernommen – beim Hochladen eines Dokuments in eine Akte, beim Zuordnen aus dem Posteingang, bei „Neu erkennen“ und (für die Akte selbst) beim SWIFT-Import. Von Personen eingetragene Werte werden nie überschrieben, und bestehende Prüfentscheidungen werden dadurch nicht zurückgesetzt. Automatisch übernommene Felder sind im Prüfdaten-Formular orange markiert („aus OCR, unbestätigt“); wer das Formular speichert, bestätigt sie. Für Akten von vor dieser Änderung füllt „Erkannte Prüfdaten übernehmen“ im Prüfmodus nach (ebenfalls markiert).

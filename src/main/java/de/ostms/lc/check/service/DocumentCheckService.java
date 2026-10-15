@@ -21,6 +21,7 @@ public class DocumentCheckService {
     @Autowired(required=false) private de.ostms.lc.rulepack.InternalPackService internalPacks;
     @Autowired(required=false) private de.ostms.lc.document.service.SignatureEvidenceService signatures;
     @Autowired(required=false) private de.ostms.lc.rulepack.RuleSourceService ruleSource;
+    @Autowired(required=false) private de.ostms.lc.sanctions.SanctionsService sanctions;
     private final LetterOfCreditRepository lcs;
     private final LcDocumentRepository documents;private final DocumentCheckDecisionRepository decisions;private final LcRequirementMappingRepository mappings;private final AmendmentRepository amendments;
 
@@ -47,6 +48,11 @@ public class DocumentCheckService {
         return evaluate(lcId,lc,documents.findByLetterOfCreditIdOrderByUploadedAtDesc(lcId),false,true);
     }
 
+    /** Goods description of the LC for the HS code comparison: the reviewed fact and the original message (field 45A). */
+    private static String lcGoodsText(LetterOfCredit lc){
+        String fact;try{fact=de.ostms.lc.rulepack.RuleFacts.read(lc.getRuleFactsJson()).get(de.ostms.lc.rulepack.PackDefinition.Field.LC_GOODS_DESCRIPTION);}catch(RuntimeException e){fact=null;}
+        return (fact==null?"":fact)+"\n"+(lc.getRawMessage()==null?"":lc.getRawMessage());
+    }
     private ReviewSummary evaluate(UUID lcId,LetterOfCredit lc,List<de.ostms.lc.document.domain.LcDocument> uploaded,boolean simulation){
         return evaluate(lcId,lc,uploaded,simulation,false);
     }
@@ -156,9 +162,9 @@ public class DocumentCheckService {
         String goodsDescription=LcConditions.value(lc,LcCondition.GOODS_DESCRIPTION).orElse(null);
         if(goodsDescription!=null){
             uploaded.stream().filter(d->(d.getDocumentType()==DocumentType.COMMERCIAL_INVOICE||d.getDocumentType()==DocumentType.PACKING_LIST)&&readable(d)).forEach(document->{
-                String documentDescription=labeledValue(document.getExtractedText(),"Description").orElse(null);
+                String documentDescription=goodsDescription(document.getExtractedText()).orElse(null);
                 String condition="Warenbeschreibung :45A: "+excerpt(goodsDescription);
-                if(documentDescription==null)results.add(finding(WARNING,"GOODS_DESCRIPTION_NOT_FOUND","Warenbeschreibung konnte im Dokument nicht gefunden werden.",condition,document.getOriginalFilename(),"Keine Zeile 'Description' im ausgelesenen Dokumenttext"));
+                if(documentDescription==null)results.add(finding(WARNING,"GOODS_DESCRIPTION_NOT_FOUND","Warenbeschreibung konnte im Dokument nicht gefunden werden.",condition,document.getOriginalFilename(),"Keine beschriftete Warenbeschreibung (z. B. 'Description of goods:') im ausgelesenen Dokumenttext"));
                 else if(!similarDescription(goodsDescription,documentDescription))results.add(finding(DISCREPANCY,"GOODS_DESCRIPTION_MISMATCH","Warenbeschreibung weicht von der gültigen LC-Fassung ab.",condition,document.getOriginalFilename(),"Description: "+excerpt(documentDescription)));
                 else results.add(finding(OK,"GOODS_DESCRIPTION_OK","Warenbeschreibung stimmt mit der gültigen LC-Fassung überein.",condition,document.getOriginalFilename(),"Description: "+excerpt(documentDescription)));
             });
@@ -191,15 +197,25 @@ public class DocumentCheckService {
         if (lc.getExpiryDate() != null && lc.getExpiryDate().isBefore(LocalDate.now()))
             results.add(new CheckResult(WARNING, "LC_EXPIRED", "The LC has expired."));
         addImportedRules(lc,uploaded,results);
+        if(sanctions!=null)results.addAll(sanctions.screen(lc,uploaded));
+        results.addAll(HsCodeCheck.evaluate(lcGoodsText(lc),uploaded));
         if (results.isEmpty()) results.add(new CheckResult(WARNING, "NO_RULES_APPLIED", "No automated rule could be applied."));
-        String inputFingerprint=ReviewInputFingerprint.of(lc,uploaded);
+        // Decisions are bound to the finding, its document and the credit terms; decisions made under the former whole-file binding stay valid until their inputs change.
+        String legacyFingerprint=ReviewInputFingerprint.of(lc,uploaded);
+        var scopedFingerprints=new HashMap<String,String>();
         List<DocumentCheckDecision> reviewed=simulation||precheck?List.of():decisions.findByLcId(lcId);
         List<CheckResult> reviewedResults=new ArrayList<>();
         for(CheckResult rawResult:results){
+            String inputFingerprint=scopedFingerprints.computeIfAbsent(Objects.toString(rawResult.documentName(),""),name->ReviewInputFingerprint.scoped(lc,uploaded,name));
             CheckResult result=rawResult.withInputFingerprint(inputFingerprint);
+            String legacyReview=rawResult.withInputFingerprint(legacyFingerprint).reviewFingerprint();
             var matching=reviewed.stream().filter(d->decisionKey(d.getFindingCode(),d.getDocumentName()).equals(decisionKey(result.code(),result.documentName()))).toList();
-            var current=matching.stream().filter(d->d.getInvalidatedAt()==null&&result.reviewFingerprint().equals(d.getFindingFingerprint())).findFirst();
-            if(current.isPresent()){
+            var current=matching.stream().filter(d->d.getInvalidatedAt()==null&&(result.reviewFingerprint().equals(d.getFindingFingerprint())||legacyReview.equals(d.getFindingFingerprint()))).findFirst();
+            if(current.isPresent()&&"ACCEPTED".equals(current.get().getDecision())&&de.ostms.lc.sanctions.SanctionsService.isHit(result.code())&&current.get().getSecondReviewedBy()==null){
+                // Four-eyes: a false-positive note on a sanctions hit stays open until a second person approves it.
+                var d=current.get();
+                reviewedResults.add(new CheckResult(result.severity(),result.code(),result.message(),result.lcCondition(),result.documentName(),result.documentEvidence(),null,"Als Falsch-positiv vorgemerkt"+(d.getComment()==null||d.getComment().isBlank()?"":": "+d.getComment())+" – Freigabe durch eine zweite Person mit dem Recht „Sanktionstreffer freigeben“ ausstehend.",d.getReviewedBy(),d.getReviewedAt(),result.automaticSeverity()).withRule(result.rule()).withInputFingerprint(inputFingerprint));
+            }else if(current.isPresent()){
                 var d=current.get();var effective="ACCEPTED".equals(d.getDecision())?OK:DISCREPANCY;
                 reviewedResults.add(new CheckResult(effective,result.code(),result.message(),result.lcCondition(),result.documentName(),result.documentEvidence(),d.getDecision(),d.getComment(),d.getReviewedBy(),d.getReviewedAt(),result.automaticSeverity()).withRule(result.rule()).withInputFingerprint(inputFingerprint));
             }else{
@@ -211,21 +227,45 @@ public class DocumentCheckService {
         return new ReviewSummary(status,discrepancies,warnings,count(reviewedResults,OK),reviewedResults,simulation?"SIMULATION":precheck?"PRECHECK":"REVIEW");
     }
 
-    @Transactional public DocumentCheckDecision decide(UUID lcId,CheckDecisionRequest request,String username){
+    @Transactional public DocumentCheckDecision decide(UUID lcId,CheckDecisionRequest request,String username){return decide(lcId,request,username,false);}
+    @Transactional public DocumentCheckDecision decide(UUID lcId,CheckDecisionRequest request,String username,boolean mayApproveSanctions){
         lcs.findById(lcId).orElseThrow();
         if(!Set.of("ACCEPTED","CONFIRMED_DISCREPANCY").contains(request.decision()))throw new IllegalArgumentException("Ungültige Prüfentscheidung.");
-        if("ACCEPTED".equals(request.decision())&&(request.comment()==null||request.comment().isBlank()))throw new IllegalArgumentException("Bitte begründen, warum der Befund als erfüllt bestätigt wird.");
+        if("ACCEPTED".equals(request.decision())&&request.mark()==null&&(request.comment()==null||request.comment().isBlank()))throw new IllegalArgumentException("Bitte die Fundstelle im PDF markieren oder begründen, warum der Befund als erfüllt bestätigt wird.");
+        String markJson=evidenceMarkJson(lcId,request.mark());
         if(request.reviewFingerprint()==null)throw new IllegalArgumentException("Bitte den Befund neu laden und erneut bestätigen.");
         String name=request.documentName()==null?"":request.documentName();
         var selected=check(lcId).results().stream().filter(r->Objects.equals(r.code(),request.findingCode())&&Objects.equals(r.documentName()==null?"":r.documentName(),name)&&r.reviewFingerprint().equals(request.reviewFingerprint())).findFirst().orElseThrow(()->new IllegalArgumentException("Der Befund hat sich geändert oder besteht nicht mehr. Bitte neu laden und prüfen."));
         if("REVIEW_STALE".equals(selected.code()))throw new IllegalArgumentException("Bitte den ursprünglichen Befund erneut prüfen und bestätigen.");
         var baseline=new CheckResult(selected.automaticSeverity(),selected.code(),selected.message(),selected.lcCondition(),selected.documentName(),selected.documentEvidence()).withRule(selected.rule()).withInputFingerprint(selected.inputFingerprint());
         var decision=decisions.findByLcIdAndFindingCodeAndDocumentNameAndFindingFingerprint(lcId,request.findingCode(),name,baseline.reviewFingerprint()).orElseGet(DocumentCheckDecision::new);
+        if(de.ostms.lc.sanctions.SanctionsService.isHit(request.findingCode())&&"ACCEPTED".equals(request.decision())&&"ACCEPTED".equals(decision.getDecision())&&decision.getInvalidatedAt()==null&&decision.getSecondReviewedBy()==null&&decision.getReviewedBy()!=null){
+            // Second step of the four-eyes principle: approval of the false-positive note by another person.
+            if(!mayApproveSanctions)throw new IllegalArgumentException("Die Freigabe eines Sanktionstreffers erfordert das Recht „Sanktionstreffer freigeben“.");
+            if(decision.getReviewedBy().equalsIgnoreCase(username))throw new IllegalArgumentException("Vier-Augen-Prinzip: Die Freigabe muss eine andere Person vornehmen als die, die den Treffer als Falsch-positiv vorgemerkt hat.");
+            decision.setSecondReviewedBy(username);decision.setSecondReviewedAt(java.time.LocalDateTime.now());
+            var saved=decisions.save(decision);
+            if(sanctions!=null)sanctions.remember(lcId,selected,decision.getReviewedBy(),username);
+            return saved;
+        }
+        decision.setSecondReviewedBy(null);decision.setSecondReviewedAt(null);
         decision.setLcId(lcId);decision.setFindingCode(request.findingCode());decision.setDocumentName(name);
         decision.setFindingFingerprint(baseline.reviewFingerprint());decision.setRuleCatalogVersion(baseline.ruleCatalogVersion());decision.setRuleId(baseline.rule().id());decision.setRuleVersion(baseline.rule().version());
         try{decision.setFindingSnapshot(new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules().writeValueAsString(baseline));}catch(com.fasterxml.jackson.core.JsonProcessingException e){throw new IllegalStateException("Prüfgrundlage konnte nicht gespeichert werden.",e);}
-        decision.setInvalidatedAt(null);decision.setDecision(request.decision());decision.setComment(request.comment()==null?null:request.comment().strip());decision.setReviewedBy(username);decision.setReviewedAt(java.time.LocalDateTime.now());
+        decision.setEvidenceMark(markJson);decision.setInvalidatedAt(null);decision.setDecision(request.decision());decision.setComment(request.comment()==null?null:request.comment().strip());decision.setReviewedBy(username);decision.setReviewedAt(java.time.LocalDateTime.now());
         return decisions.save(decision);
+    }
+    /** The mark as stored JSON; the document must belong to this LC file. */
+    private String evidenceMarkJson(UUID lcId,CheckDecisionRequest.EvidenceMark mark){
+        if(mark==null)return null;
+        var document=documents.findById(mark.documentId()).filter(d->d.getLetterOfCredit()!=null&&lcId.equals(d.getLetterOfCredit().getId())).orElseThrow(()->new IllegalArgumentException("Das markierte Dokument gehört nicht zu dieser LC-Akte."));
+        try{return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(java.util.Map.of("documentId",document.getId().toString(),"page",mark.page(),"x",mark.x(),"y",mark.y(),"w",mark.w(),"h",mark.h()));}
+        catch(com.fasterxml.jackson.core.JsonProcessingException e){throw new IllegalStateException("Markierung konnte nicht gespeichert werden.",e);}
+    }
+    /** The stored mark (JSON) of the decision on exactly this finding, if one was made with a mark. */
+    @Transactional(readOnly=true) public Optional<String> decisionMark(UUID lcId,CheckResult finding){
+        String name=finding.documentName()==null?"":finding.documentName();
+        return decisions.findByLcIdAndFindingCodeAndDocumentNameAndFindingFingerprint(lcId,finding.code(),name,finding.reviewFingerprint()).filter(d->d.getInvalidatedAt()==null).map(DocumentCheckDecision::getEvidenceMark);
     }
     @Transactional public void mapRequirement(UUID lcId,String requirement,DocumentType type,String username){LetterOfCredit lc=lcs.findById(lcId).orElseThrow();if(!lc.getRequiredDocuments().contains(requirement))throw new IllegalArgumentException("Dokumentenanforderung gehört nicht zu dieser LC-Akte.");if(mappings==null)throw new IllegalStateException("Zuordnung ist nicht verfügbar.");LcRequirementMapping mapping=mappings.findByLcIdAndRequirement(lcId,requirement).orElseGet(LcRequirementMapping::new);mapping.setLcId(lcId);mapping.setRequirement(requirement);mapping.setDocumentType(type);mapping.setMappedBy(username);mapping.setMappedAt(java.time.LocalDateTime.now());mappings.save(mapping);}
     @Transactional(readOnly=true)public List<LcRequirementMapping> requirementMappings(UUID lcId){lcs.findById(lcId).orElseThrow();return mappings==null?List.of():mappings.findByLcIdOrderByMappedAtDesc(lcId);}
@@ -256,7 +296,9 @@ public class DocumentCheckService {
     }
     private String display(String value){return value==null||value.isBlank()?"-":value.trim();}
 
-    private Optional<DocumentType> classify(String requirement) {
+    private Optional<DocumentType> classify(String requirement){return requirementType(requirement);}
+    /** Document type an LC requirement (field 46A line) asks for, if it can be read from the wording. */
+    public static Optional<DocumentType> requirementType(String requirement) {
         String text = requirement.toLowerCase(Locale.ROOT);
         if (text.contains("inspection certificate") || text.matches("(?s).*\\bcertificates? of inspection\\b.*") || text.contains("inspection report")) return Optional.of(DocumentType.INSPECTION_CERTIFICATE);
         if (text.matches("(?s).*\\bcertificates? of analysis\\b.*") || text.contains("analysis certificate") || text.contains("quality certificate") || text.contains("test certificate")) return Optional.of(DocumentType.QUALITY_CERTIFICATE);
@@ -294,6 +336,13 @@ public class DocumentCheckService {
     private String partyEvidence(String text,String party){if(text==null)return "Keine Fundstelle verfügbar";for(String token:normalize(party).split(" "))if(token.length()>3)for(String line:text.split("\\R"))if(normalize(line).contains(token))return excerpt(line);return "Partei im Dokumenttext erkannt";}
     private String amountEvidence(String text,String currency,java.math.BigDecimal amount){if(text!=null){String digits=amount.toPlainString().replaceAll("[^0-9]","");for(String line:text.split("\\R")){String normalized=line.replaceAll("[^0-9]","");if((currency!=null&&line.toUpperCase(Locale.ROOT).contains(currency.toUpperCase(Locale.ROOT)))||(!digits.isBlank()&&normalized.contains(digits)))return excerpt(line);}}return (currency==null?"":currency+" ")+amount;}
     private String excerpt(String line){String value=line.replaceAll("\\s+"," ").trim();return value.length()<=240?value:value.substring(0,237)+"…";}
+    private static final java.util.regex.Pattern GOODS_LABEL=java.util.regex.Pattern.compile("(?i)^\\s*(?:description\\s+of\\s+(?:the\\s+)?goods(?:\\s+and/or\\s+services)?|goods\\s+description|description|commodity|warenbeschreibung|warenbezeichnung|beschreibung\\s+der\\s+waren)\\s*[:\\-]\\s*(.+)$");
+    /** Goods description of a document in its usual labelled forms ("Description of goods:", "Goods description:", "Description:", "Warenbeschreibung:"). */
+    static Optional<String> goodsDescription(String text){
+        if(text==null)return Optional.empty();
+        for(String line:text.split("\\R")){var m=GOODS_LABEL.matcher(line.trim());if(m.matches()){String v=m.group(1).trim();if(!v.isBlank()&&!"-".equals(v))return Optional.of(v);}}
+        return Optional.empty();
+    }
     private Optional<String> labeledValue(String text,String label){if(text==null)return Optional.empty();String prefix=label.toLowerCase(Locale.ROOT)+":";return Arrays.stream(text.split("\\R")).map(String::trim).filter(line->line.toLowerCase(Locale.ROOT).startsWith(prefix)).map(line->line.substring(line.indexOf(':')+1).trim()).filter(value->!value.isBlank()&&!"-".equals(value)).findFirst();}
     private void checkBillOfLading(de.ostms.lc.document.domain.LcDocument document,LetterOfCredit lc,List<CheckResult> results){String name=document.getOriginalFilename(),referenceCondition="LC-Referenz :20: "+lc.getReference();if(document.getExtractedReference()==null)results.add(finding(WARNING,"BILL_OF_LADING_REFERENCE_NOT_FOUND","LC-Referenz konnte im Konnossement nicht gefunden werden.",referenceCondition,name,"Keine passende Referenz im ausgelesenen Text"));else if(!sameReference(document.getExtractedReference(),lc.getReference()))results.add(finding(DISCREPANCY,"BILL_OF_LADING_REFERENCE_MISMATCH","Die Referenz des Konnossements weicht vom LC ab.",referenceCondition,name,evidence(document.getExtractedText(),document.getExtractedReference())));else results.add(finding(OK,"BILL_OF_LADING_REFERENCE_OK","Das Konnossement nennt die richtige LC-Referenz.",referenceCondition,name,evidence(document.getExtractedText(),document.getExtractedReference())));if(lc.getLatestShipmentDate()!=null&&document.getDocumentDate()!=null){boolean timely=!document.getDocumentDate().isAfter(lc.getLatestShipmentDate());results.add(finding(timely?OK:DISCREPANCY,"SHIPMENT_DATE_"+(timely?"OK":"EXCEEDED"),timely?"Das Datum des Konnossements liegt innerhalb der Versandfrist.":"Das Datum des Konnossements liegt nach dem spätesten Versanddatum.","Spätester Versand :44C: "+lc.getLatestShipmentDate(),name,"Dokumentdatum: "+document.getDocumentDate()));}String requirement=lc.getRequiredDocuments().stream().filter(value->classify(value).orElse(null)==DocumentType.BILL_OF_LADING).findFirst().orElse("");String lower=requirement.toLowerCase(Locale.ROOT),text=normalize(document.getExtractedText());checkTransportPhrase(lower,text,"clean on board",Set.of("clean on board","clean shipped on board"),"CLEAN_ON_BOARD",requirement,name,document.getExtractedText(),results);checkTransportPhrase(lower,text,"full set",Set.of("full set","3 3 original","three originals"),"FULL_SET_BILL_OF_LADING",requirement,name,document.getExtractedText(),results);checkTransportPhrase(lower,text,"to order",Set.of("consignee to order","to order of","consigned to order"),"BILL_OF_LADING_TO_ORDER",requirement,name,document.getExtractedText(),results);if(lower.contains("blank endorsed")||lower.contains("endorsed in blank"))checkTransportPhrase(lower,text,lower.contains("blank endorsed")?"blank endorsed":"endorsed in blank",Set.of("blank endorsed","endorsed in blank","blank endorsement"),"BILL_OF_LADING_BLANK_ENDORSEMENT",requirement,name,document.getExtractedText(),results);checkTransportPhrase(lower,text,"freight prepaid",Set.of("freight prepaid","freight charges prepaid"),"BILL_OF_LADING_FREIGHT_PREPAID",requirement,name,document.getExtractedText(),results);if(lower.contains("notify applicant")||lower.contains("notify party applicant")){boolean notify=text.contains("notify")&&mentionsParty(document.getExtractedText(),lc.getApplicant());results.add(finding(notify?OK:WARNING,"BILL_OF_LADING_NOTIFY_APPLICANT_"+(notify?"EVIDENCED":"REVIEW"),notify?"Antragsteller wurde als Notify Party erkannt.":"Geforderter Antragsteller als Notify Party konnte nicht sicher zugeordnet werden.",requirement,name,notify?partyEvidence(document.getExtractedText(),lc.getApplicant()):"Kein eindeutiger Notify-Party-Vermerk für den Antragsteller erkannt"));}}
     private void checkAirWaybill(de.ostms.lc.document.domain.LcDocument document,LetterOfCredit lc,List<CheckResult> results){String name=document.getOriginalFilename(),condition="LC-Referenz :20: "+lc.getReference();if(document.getExtractedReference()==null)results.add(finding(WARNING,"AIR_WAYBILL_REFERENCE_NOT_FOUND","LC-Referenz konnte im Luftfrachtbrief nicht gefunden werden.",condition,name,"Keine passende Referenz im ausgelesenen Text"));else if(!sameReference(document.getExtractedReference(),lc.getReference()))results.add(finding(DISCREPANCY,"AIR_WAYBILL_REFERENCE_MISMATCH","Die Referenz des Luftfrachtbriefs weicht vom LC ab.",condition,name,evidence(document.getExtractedText(),document.getExtractedReference())));else results.add(finding(OK,"AIR_WAYBILL_REFERENCE_OK","Der Luftfrachtbrief nennt die richtige LC-Referenz.",condition,name,evidence(document.getExtractedText(),document.getExtractedReference())));if(lc.getLatestShipmentDate()!=null&&document.getDocumentDate()!=null){boolean timely=!document.getDocumentDate().isAfter(lc.getLatestShipmentDate());results.add(finding(timely?OK:DISCREPANCY,"AIR_SHIPMENT_DATE_"+(timely?"OK":"EXCEEDED"),timely?"Das Luftfrachtbriefdatum liegt innerhalb der Versandfrist.":"Das Luftfrachtbriefdatum liegt nach dem spätesten Versanddatum.","Spätester Versand :44C: "+lc.getLatestShipmentDate(),name,"Dokumentdatum: "+document.getDocumentDate()));}String requirement=lc.getRequiredDocuments().stream().filter(value->classify(value).orElse(null)==DocumentType.AIR_WAYBILL).findFirst().orElse("");String lower=requirement.toLowerCase(Locale.ROOT),text=normalize(document.getExtractedText());checkTransportPhrase(lower,text,"freight prepaid",Set.of("freight prepaid","freight charges prepaid"),"AWB_FREIGHT_PREPAID",requirement,name,document.getExtractedText(),results);checkTransportPhrase(lower,text,"airport of departure",Set.of("airport of departure","departure airport","airport of loading"),"AWB_DEPARTURE_AIRPORT",requirement,name,document.getExtractedText(),results);checkTransportPhrase(lower,text,"airport of destination",Set.of("airport of destination","destination airport","airport of discharge"),"AWB_DESTINATION_AIRPORT",requirement,name,document.getExtractedText(),results);}

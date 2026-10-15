@@ -15,7 +15,28 @@
   line(`${report.correctedPages} Seiten mit korrigiertem Dokumenttyp · ${report.changedBoundaries} Bestätigungen mit geänderten Grenzen`);
   const details=document.createElement('details');const summary=document.createElement('summary');summary.textContent='Letzte Bestätigungen';const list=document.createElement('ul');for(const sample of report.recent){const item=document.createElement('li');const replay=sample.method?.includes('CONFIRMED_SPLIT_PATTERN');const timing=sample.method?.startsWith('CONFIRM_TIME_')?'bei Bestätigung neu berechnet':'gespeicherter Vorschlag';item.textContent=`Muster ${sample.pattern} · ${replay?'Bestätigtes Muster':'Regelbasiert'} · ${timing} · ${sample.pages} Seiten · ${sample.correctedPages} Typkorrekturen · Grenzen ${sample.boundariesChanged?'geändert':'unverändert'} · ${sample.confirmedAt}`;const mapping=document.createElement("p");mapping.textContent="Vorschlag: "+ranges(sample.proposedParts)+" → Bestätigt: "+ranges(sample.confirmedParts);item.append(mapping);list.append(item);}details.append(summary,list);output.append(details);
  }catch(error){if(current===generation){output.replaceChildren();line('Qualität konnte nicht geladen werden: '+error.message);}}finally{if(current===generation)refresh.disabled=false;}}
- refresh.addEventListener('click',load);new MutationObserver(()=>{if(!section.classList.contains('hidden'))load();}).observe(section,{attributes:true,attributeFilter:['class']});if(!section.classList.contains('hidden'))load();
+ refresh.addEventListener('click',()=>{loadAccuracy();return load();});new MutationObserver(()=>{if(!section.classList.contains('hidden'))load();}).observe(section,{attributes:true,attributeFilter:['class']});if(!section.classList.contains('hidden'))load();
+ // Hit rate per document type: first automatic suggestion compared with the type a person confirmed.
+ const accuracyHeading=document.createElement('h3');accuracyHeading.textContent='Trefferquote je Dokumentart';
+ const accuracyNote=document.createElement('p');accuracyNote.textContent='Erster automatischer Vorschlag im Vergleich zur bestätigten Art, über Dokumente in Akten und bestätigte Posteingangs-Dokumente. Beobachtete Werte, keine statistische Garantie.';
+ const accuracyOutput=document.createElement('div');accuracyOutput.className='accuracy-report';accuracyOutput.setAttribute('role','status');
+ panel.append(accuracyHeading,accuracyNote,accuracyOutput);
+ const pct=value=>value==null?'–':Math.round(value*100)+' %';
+ async function loadAccuracy(){
+  accuracyOutput.textContent='Wird geladen …';
+  try{
+   const response=await fetch('/api/training/document-types/accuracy',{cache:'no-store'});if(!response.ok)throw new Error('HTTP '+response.status);
+   const report=await response.json();accuracyOutput.replaceChildren();
+   const sum=document.createElement('p');sum.textContent=report.documents?`${report.correct} von ${report.documents} Dokumenten richtig erkannt (${pct(report.rate)})`:'Noch keine bestätigten Dokumente zum Vergleich.';accuracyOutput.append(sum);
+   if(!report.documents)return;
+   const table=document.createElement('table');table.className='pu-table';
+   const head=document.createElement('tr');['Dokumentart','Dokumente','richtig','Quote','falsch','ohne Vorschlag','davon sicher richtig'].forEach(h=>{const th=document.createElement('th');th.textContent=h;head.append(th);});table.append(head);
+   report.types.forEach(row=>{const tr=document.createElement('tr');[row.label,row.documents,row.correct,pct(row.rate),row.wrong,row.none,row.safe?`${row.correctSafe} von ${row.safe}`:'–'].forEach(v=>{const td=document.createElement('td');td.textContent=String(v);tr.append(td);});if(row.rate!=null&&row.rate<.7)tr.className='accuracy-low';table.append(tr);});
+   accuracyOutput.append(table);
+   if(report.mistakes.length){const p=document.createElement('p');p.textContent='Häufigste Verwechslungen: '+report.mistakes.map(m=>`${m.suggested} statt ${m.confirmed} (${m.count}×)`).join(', ');accuracyOutput.append(p);}
+  }catch(error){accuracyOutput.textContent='Trefferquote nicht verfügbar: '+error.message;}
+ }
+ new MutationObserver(()=>{if(!section.classList.contains('hidden'))loadAccuracy();}).observe(section,{attributes:true,attributeFilter:['class']});if(!section.classList.contains('hidden'))loadAccuracy();
  const benchmark=document.createElement('button');benchmark.type='button';benchmark.textContent='Synthetischen Erkennungstest ausführen';
  const benchmarkOutput=document.createElement('div');benchmarkOutput.setAttribute('role','status');panel.append(benchmark,benchmarkOutput);
  benchmark.addEventListener('click',async()=>{

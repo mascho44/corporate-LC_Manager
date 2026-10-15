@@ -32,3 +32,6 @@ Ein aktiver Zugang, der seit mindestens zwei Arbeitstagen (Montag bis Freitag, W
 
 ## Poststellen-Seite (`/poststelle.html`)
 Für die Poststelle gibt es eine einfache Seite ohne Anmeldung: `https://<server>/poststelle.html`. Dort trägt man einmal den Erfassungszugang und den Gerätenamen ein (optional „Auf diesem Gerät merken", sonst nur für diesen Besuch), gibt den Stapel an (Vorgabe: heutiges Datum) und zieht Dateien in das Feld oder wählt sie aus. Jede Datei wird einzeln mit Prüfwert an `POST /api/capture/upload` gesendet; die Seite zeigt je Datei „angeliefert", „schon früher angeliefert" oder einen Fehler in Klartext (z. B. Zugang widerrufen). Die Seite selbst enthält keine Geheimnisse; ohne gültigen Zugang kann man nichts anliefern. Sie ist handytauglich.
+
+## E-Mail bei stillen Zugängen
+Ab 7 Uhr prüft der stündliche Hintergrundjob je Mandant die Erfassungszugänge. Ist mindestens einer still (wie in der Anzeige „still"), bekommen die aktiven Administratoren des Mandanten **höchstens einmal täglich** eine E-Mail mit den betroffenen Zugängen (Name, seit wie vielen Arbeitstagen keine Lieferung bzw. „noch nie genutzt"). Voraussetzung: E-Mail-Versand eingerichtet (`app.mail.enabled`, `app.mail.from`).

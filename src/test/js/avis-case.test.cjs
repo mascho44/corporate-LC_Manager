@@ -11,3 +11,10 @@ test('preview shows the credit data, required documents, warnings and errors, es
 test('without credit text the user is told what an advice must contain', () => {
  assert.match(api.previewHtml({ creditTextFound: false, credit: null }), /kein Akkreditivtext erkannt/);
 });
+test('advice without credit text offers the cover letter data as an editable form and a clean request', () => {
+ const html = api.coverFormHtml({ fields: { reference: 'ABC <1>', amount: '1000.00', currency: 'EUR', expiryDate: '2026-11-30', applicant: 'Buyer' }, warnings: ['Bitte prüfen'] });
+ assert.match(html, /value="ABC &lt;1&gt;"/); assert.match(html, /name="expiryDate" value="2026-11-30" type="date"/); assert.match(html, /Bitte prüfen/); assert.match(html, /Anschreiben/);
+ assert.equal(api.coverFormHtml({ fields: {} }), '');
+ const body = api.coverRequest({ reference: ' ABC1 ', amount: '1.000,50'.replace('.', ''), currency: 'EUR', expiryDate: '2026-11-30', beneficiary: '' });
+ assert.equal(body.reference, 'ABC1'); assert.equal(body.amount, 1000.5); assert.equal(body.beneficiary, null); assert.equal(body.documentType, 'ADVISING_LETTER'); assert.equal(body.expiryDate, '2026-11-30');
+});

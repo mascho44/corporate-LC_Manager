@@ -15,8 +15,10 @@ import de.ostms.lc.lc.domain.LetterOfCredit; import org.springframework.stereoty
   lc.setSequenceOfTotal(f.get("27"));lc.setFormOfCredit(f.get("40A"));lc.setAvailableWith(first(f,"41A","41D"));lc.setDraweeBank(f.get("42A"));lc.setDraftsAt(f.get("42C"));
   lc.setMixedPaymentDetails(f.get("42M"));lc.setDeferredPaymentDetails(f.get("42P"));lc.setConfirmationInstructions(f.get("49"));lc.setReimbursingBank(first(f,"53A","53D"));
   lc.setConfirmationParty(first(f,"58A","58D"));lc.setCharges(f.get("71D"));lc.setBankInstructions(f.get("78"));
-  if(advised){lc.getAdditionalFields().put("MT710 - Nachrichtenart","Von einer Zweitbank avisiertes Akkreditiv (MT710)");lc.getAdditionalFields().put("20 - Referenz der avisierenden Bank",f.get("20").trim());}
-  unmappedFields(f).forEach((tag,value)->{if(!(advised&&tag.equals("21")))lc.getAdditionalFields().put(tag+" - "+label(tag),value);}); return lc;
+  boolean transferred=f.containsKey("40B");
+  if(transferred){if(lc.getFormOfCredit()==null)lc.setFormOfCredit(f.get("40B"));lc.getAdditionalFields().put("MT720 - Nachrichtenart","Übertragenes Akkreditiv (MT720): :50: ist der erste, :59: der zweite Begünstigte");if(f.get("20")!=null)lc.getAdditionalFields().put("20 - Referenz der übertragenden Bank",f.get("20").trim());}
+  else if(advised){lc.getAdditionalFields().put("MT710 - Nachrichtenart","Von einer Zweitbank avisiertes Akkreditiv (MT710)");lc.getAdditionalFields().put("20 - Referenz der avisierenden Bank",f.get("20").trim());}
+  unmappedFields(f).forEach((tag,value)->{if(!((advised||transferred)&&tag.equals("21"))&&!(transferred&&tag.equals("40B")))lc.getAdditionalFields().put(tag+" - "+label(tag),value);}); return lc;
  }
  private static final Pattern CONDITION_MARKER=Pattern.compile("^(?:[+*-]+|\\(?\\d{1,2}[.)])\\s*");
  /** SWIFT wraps lines at 65 characters: a line without "+", "-", "*" or "1." continues the previous condition. Without any marker every line stays its own condition. */
@@ -27,7 +29,7 @@ import de.ostms.lc.lc.domain.LetterOfCredit; import org.springframework.stereoty
  private static String first(Map<String,String> f,String... tags){for(String t:tags)if(f.get(t)!=null&&!f.get(t).isBlank())return f.get(t);return null;}
  public static boolean isAdvised(Map<String,String> fields){
   String number=fields.get("21");
-  return number!=null&&!number.isBlank()&&(fields.containsKey("52A")||fields.containsKey("52D"))&&!fields.containsKey("26E");
+  return number!=null&&!number.isBlank()&&(fields.containsKey("52A")||fields.containsKey("52D")||fields.containsKey("40B"))&&!fields.containsKey("26E");
  }
  public static String label(String tag){return LABELS.getOrDefault(tag,"Feld "+tag);}
  /** Unmappable fields in message order, trimmed and cut to the column size; the full text stays in the raw message. */

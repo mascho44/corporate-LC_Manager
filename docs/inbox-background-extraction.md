@@ -33,3 +33,6 @@ OCR-Lauf; sie verhindert, dass dessen Dauer den Upload-Aufruf offen hält.
 
 Migration: `V47__inbox_background_extraction.sql` ergänzt Übernahmezeit,
 Auftragstoken und einen Queue-Index, ohne bestehende Dokumente zu verändern.
+
+## Scans mit Stempel in der Textebene
+Manche Scanner und Archivprogramme legen nur eine Marke oder einen Stempel („1+2K") als Text über das Bild der Seite. Früher galt so eine Seite als „digital", die Bilderkennung lief nicht, und der eigentliche Inhalt (Rechnungsnummer, Betrag, Positionen) fehlte. Jetzt gilt eine Seite als **Scan**, wenn ihre Textebene leer ist **oder** weniger als 25 Buchstaben und Ziffern enthält **und** ein großes Bild (mindestens 400 × 400 Pixel) auf der Seite liegt. Kurze rein digitale Seiten ohne Bild behalten ihren Text. Beim Aufteilen von Sammel-PDFs ersetzt der erkannte Text einer solchen Seite den Stempeltext. Bereits gespeicherte Dokumente müssen dafür einmal über „Neu erkennen" laufen.

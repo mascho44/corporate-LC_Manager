@@ -20,5 +20,18 @@ test('start page loads the worklist and its styles, and the cockpit page include
  const html=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/index.html'),'utf8');
  assert.match(html,/worklist\.js/);assert.match(html,/worklist\.css/);
  const app=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/app.js'),'utf8');
- assert.match(app,/cockpit:\['cockpitSection','todaySection'/);assert.match(app,/pageSections=\['platformSection','tenantSection','ebicsSection','groupInboxSection','deadlineCalendarSection','profileSection','menuOverviewSection','cockpitSection','todaySection'/);
+ assert.match(app,/cockpit:\['cockpitSection','todaySection'/);assert.match(app,/pageSections=\['platformSection','tenantSection','membersSection','ebicsSection','groupInboxSection','deadlineCalendarSection','profileSection','menuOverviewSection','cockpitSection','todaySection'/);
+});
+
+test('urgent files have blocking findings and expiry or shipment within five days', () => {
+ const today = new Date('2026-10-15T09:00:00');
+ const lcs = [
+  { id: 'a', status: 'RECEIVED', expiryDate: '2026-10-18', dossierStatus: { blocking: 2 } },
+  { id: 'b', status: 'RECEIVED', expiryDate: '2026-12-01', latestShipmentDate: '2026-10-16', dossierStatus: { blocking: 1 } },
+  { id: 'c', status: 'RECEIVED', expiryDate: '2026-10-17', dossierStatus: { blocking: 0 } },
+  { id: 'd', status: 'CLOSED', expiryDate: '2026-10-17', dossierStatus: { blocking: 3 } },
+  { id: 'e', status: 'RECEIVED', expiryDate: '2026-10-25', dossierStatus: { blocking: 3 } },
+  { id: 'f', status: 'RECEIVED', expiryDate: '2026-10-10', dossierStatus: { blocking: 3 } }
+ ];
+ assert.deepEqual(Array.from(load().urgentFiles(lcs, 5, today), x => x.id), ['b', 'a']);
 });

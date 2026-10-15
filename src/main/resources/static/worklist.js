@@ -4,6 +4,8 @@
  function tiles(m) {
   const list = [];
   const add = (key, label, count, hint, tone) => { if (count === null || count === undefined) return; list.push({ key, label, count, hint, tone: count > 0 ? tone : 'ok' }); };
+  add('sanctions', 'Sanktionstreffer offen', m.sanctions, 'Prüfen und freigeben', 'bad');
+  add('urgent', 'Frist knapp, blockiert', m.urgent, 'Zuerst prüfen', 'bad');
   add('overdue', 'Überfällige Fristen', m.overdue, 'Fristen prüfen', 'bad');
   add('ebics', 'Neue EBICS-Nachrichten', m.ebics, 'Ansehen und importieren', 'info');
   add('inbox', 'Posteingang offen', m.inbox, 'Dokumente zuordnen', 'info');
@@ -13,8 +15,16 @@
   add('unassigned', 'Ohne Bearbeiter', m.unassigned, 'Zuweisen', 'warn');
   return list;
  }
+ /** Open LC files with blocking findings whose expiry or latest shipment date is at most `days` days away. */
+ function urgentFiles(lcs, days = 5, today = new Date()) {
+  const start = new Date(today); start.setHours(0, 0, 0, 0);
+  const left = date => { if (!date) return Infinity; const d = new Date(date + 'T00:00:00'); return Math.round((d - start) / 864e5); };
+  return (lcs || []).filter(lc => !['CLOSED', 'EXPIRED'].includes(lc.status) && (lc.dossierStatus?.blocking || 0) > 0)
+   .map(lc => ({ lc, days: Math.min(left(lc.expiryDate), left(lc.latestShipmentDate)) }))
+   .filter(x => x.days >= 0 && x.days <= days).sort((a, b) => a.days - b.days).map(x => x.lc);
+ }
  const symbol = tone => tone === 'ok' ? '✓' : tone === 'bad' ? '!' : tone === 'warn' ? '!' : 'i';
- globalThis.LcWorklist = { tiles, symbol };
+ globalThis.LcWorklist = { tiles, symbol, urgentFiles };
  if (typeof document === 'undefined' || !document.body) return;
 
  const num = selector => { const n = Number(document.querySelector(selector)?.textContent); return Number.isFinite(n) ? n : null; };
@@ -25,6 +35,8 @@
  async function collect() {
   const lcs = typeof data !== 'undefined' && Array.isArray(data) ? data : [];
   return {
+   urgent: urgentFiles(lcs).length,
+   sanctions: lcs.filter(lc => (lc.dossierStatus?.sanctions || 0) > 0).length || null,
    overdue: num('#queueOverdue'),
    upcoming: num('#queueUpcoming'),
    unassigned: num('#queueUnassigned'),
@@ -36,6 +48,18 @@
  }
  function open(key) {
   const click = id => document.querySelector(id)?.click();
+  if (key === 'sanctions') {
+   const list = (typeof data !== 'undefined' ? data : []).filter(lc => (lc.dossierStatus?.sanctions || 0) > 0);
+   if (list.length === 1) { const start = document.querySelector(`[data-review-lc="${list[0].id}"]`); if (start) start.click(); else globalThis.show?.(list[0].id); return; }
+   document.querySelector('[data-app-section="lcs"]')?.click(); return;
+  }
+  if (key === 'urgent') {
+   const list = urgentFiles(typeof data !== 'undefined' ? data : []);
+   if (list.length === 1) { const start = document.querySelector(`[data-review-lc="${list[0].id}"]`); if (start) start.click(); else globalThis.show?.(list[0].id); return; }
+   document.querySelector('[data-app-section="lcs"]')?.click();
+   const sort = document.querySelector('#lcSort'); if (sort) { sort.value = 'expiry'; sort.dispatchEvent(new Event('change')); }
+   return;
+  }
   if (key === 'inbox') click('#appNavInbox');
   else if (key === 'ebics') click('#appNavEbics');
   else if (key === 'team') click('#appNavGroupInbox');

@@ -102,7 +102,7 @@ public class DocumentExtractionService {
             log.warn("Document extraction failed: type={}",exception.getClass().getSimpleName());
             document.setExtractionStatus("FAILED");
         } finally {
-            document.setClassificationHistoryJson(ClassificationHistory.automatic(document.getOriginalFilename(),document.getExtractedText()));
+            document.setClassificationHistoryJson(ClassificationHistory.automatic(document.getOriginalFilename(),document.getExtractedText(),expectedTypes(document)));
             log.info("Document extraction completed: status={}, elapsedMillis={}",document.getExtractionStatus(),java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-started));
         }
     }
@@ -115,14 +115,22 @@ public class DocumentExtractionService {
             match(DOCUMENT_NUMBER, text, 1).ifPresent(document::setExtractedDocumentNumber);
             if(match(DOCUMENT_NUMBER, text, 1).isEmpty())InsuranceNumberDetector.detect(text).ifPresent(document::setExtractedDocumentNumber);
             document.setExtractedReference(DocumentReferenceDetector.detect(text));
+            // A "Total" line with a currency is the amount; "Total 4.815 Pcs" (a quantity) is not. The item table's total is the fallback, the first bare match the last resort.
             var amountMatcher = AMOUNT.matcher(text);
-            if (amountMatcher.find()) {
+            String firstBareAmount = null;boolean amountSet = false;
+            while (amountMatcher.find()) {
                 String currency = amountMatcher.group(1) != null ? amountMatcher.group(1) : amountMatcher.group(3);
-                document.setExtractedCurrency(currency == null ? null : currency.toUpperCase(Locale.ROOT));
-                parseAmount(amountMatcher.group(2)).ifPresent(document::setExtractedAmount);
+                if (currency == null) { if (firstBareAmount == null) firstBareAmount = amountMatcher.group(2); continue; }
+                var parsed = parseAmount(amountMatcher.group(2));
+                if (parsed.isPresent()) { document.setExtractedCurrency(currency.toUpperCase(Locale.ROOT)); document.setExtractedAmount(parsed.get()); amountSet = true; break; }
             }
+            if (!amountSet) {
+                var table = de.ostms.lc.rulepack.ItemTableFacts.detect(text).filter(row -> row.total() != null && row.currency() != null);
+                if (table.isPresent()) { document.setExtractedCurrency(table.get().currency()); document.setExtractedAmount(new java.math.BigDecimal(table.get().total())); amountSet = true; }
+            }
+            if (!amountSet && firstBareAmount != null) parseAmount(firstBareAmount).ifPresent(document::setExtractedAmount);
             document.setExtractionStatus(status);
-            document.setClassificationHistoryJson(ClassificationHistory.automatic(document.getOriginalFilename(),document.getExtractedText()));
+            document.setClassificationHistoryJson(ClassificationHistory.automatic(document.getOriginalFilename(),document.getExtractedText(),expectedTypes(document)));
     }
 
     private String readText(LcDocument document) throws Exception {
@@ -139,10 +147,63 @@ public class DocumentExtractionService {
         return null;
     }
 
+    /**
+     * A page is a scan when its text layer is empty, or nearly empty (fewer than this many letters and digits) and a large image lies on the page: scanners and archive tools
+     * often leave only a stamp or page mark ("1+2K") as text, which must not stop the recognition of the image. Short digital pages (no image) keep their text.
+     */
+    static final int MIN_TEXT_LAYER_CHARS=25,MIN_SCAN_IMAGE_PIXELS=400;
+    static boolean scannedPage(org.apache.pdfbox.pdmodel.PDDocument pdf,int pageIndex,String text){
+        if(text==null||text.isBlank())return true;
+        // A text layer of control and replacement characters (fonts without a Unicode mapping) is no text; the rendered page is.
+        if(unreadable(text))return true;
+        if(text.replaceAll("[^\\p{L}\\p{N}]","").length()>=MIN_TEXT_LAYER_CHARS)return false;
+        return hasLargeImage(pdf.getPage(pageIndex))||hasUnmappedFont(pdf.getPage(pageIndex));
+    }
+    /** More than a third of the visible characters are control, replacement, private-use or unassigned characters. */
+    static boolean unreadable(String text){
+        int visible=0,bad=0;
+        for(int i=0;i<text.length();){
+            int c=text.codePointAt(i);i+=Character.charCount(c);
+            if(Character.isWhitespace(c))continue;
+            visible++;
+            int type=Character.getType(c);
+            if(c==0xFFFD||type==Character.CONTROL||type==Character.PRIVATE_USE||type==Character.UNASSIGNED||type==Character.SURROGATE)bad++;
+        }
+        return visible>=10&&bad*3>visible;
+    }
+    /** A composite (Type 0) font without a ToUnicode map: its glyphs cannot be turned into text, so little or no text means nothing about the page. */
+    private static boolean hasUnmappedFont(org.apache.pdfbox.pdmodel.PDPage page){
+        try{
+            var resources=page.getResources();if(resources==null)return false;
+            for(var name:resources.getFontNames()){
+                var font=resources.getFont(name);
+                if(font instanceof org.apache.pdfbox.pdmodel.font.PDType0Font&&!font.getCOSObject().containsKey(org.apache.pdfbox.cos.COSName.TO_UNICODE))return true;
+            }
+        }catch(IOException unreadable){/* an unreadable font is not evidence either way */}
+        return false;
+    }
+    private static boolean hasLargeImage(org.apache.pdfbox.pdmodel.PDPage page){
+        try{
+            var resources=page.getResources();if(resources==null)return false;
+            for(var name:resources.getXObjectNames()){
+                var object=resources.getXObject(name);
+                if(object instanceof org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject image&&image.getWidth()>=MIN_SCAN_IMAGE_PIXELS&&image.getHeight()>=MIN_SCAN_IMAGE_PIXELS)return true;
+            }
+        }catch(IOException unreadable){/* an unreadable resource is not evidence of a scan */}
+        return false;
+    }
+
+    /** Document types the LC of this document asks for (field 46A); empty without an LC. */
+    static java.util.Set<de.ostms.lc.document.domain.DocumentType> expectedTypes(LcDocument document){
+        var lc=document.getLetterOfCredit();if(lc==null||lc.getRequiredDocuments()==null)return java.util.Set.of();
+        var out=java.util.EnumSet.noneOf(de.ostms.lc.document.domain.DocumentType.class);
+        try{lc.getRequiredDocuments().forEach(r->de.ostms.lc.check.service.DocumentCheckService.requirementType(r).ifPresent(out::add));}catch(RuntimeException lazy){return java.util.Set.of();}
+        return out;
+    }
     static List<String> readPdfPages(byte[] content)throws Exception{
         try(var pdf=Loader.loadPDF(content)){
             PdfProcessingSafety.validate(pdf);var stripper=new PDFTextStripper();var pages=new java.util.ArrayList<String>();
-            for(int page=1;page<=pdf.getNumberOfPages();page++){stripper.setStartPage(page);stripper.setEndPage(page);String text=stripper.getText(pdf);pages.add(text.length()>MAX_TEXT_LENGTH?text.substring(0,MAX_TEXT_LENGTH):text);}
+            for(int page=1;page<=pdf.getNumberOfPages();page++){stripper.setStartPage(page);stripper.setEndPage(page);String text=stripper.getText(pdf);pages.add(scannedPage(pdf,page-1,text)?"":text.length()>MAX_TEXT_LENGTH?text.substring(0,MAX_TEXT_LENGTH):text);}
             return List.copyOf(pages);
         }
     }

@@ -13,19 +13,22 @@ public class FindingEvidenceController {
     private final DocumentCheckService checks;
     private final LcDocumentRepository documents;
     public FindingEvidenceController(DocumentCheckService checks,LcDocumentRepository documents){this.checks=checks;this.documents=documents;}
-    public record View(CheckResult finding,UUID documentId,String contentType,EvidenceLocator.Location location,String mode){
-        public View(CheckResult finding,UUID documentId,String contentType,EvidenceLocator.Location location){this(finding,documentId,contentType,location,"REVIEW");}
+    public record View(CheckResult finding,UUID documentId,String contentType,EvidenceLocator.Location location,String mode,String evidenceMark){
+        public View(CheckResult finding,UUID documentId,String contentType,EvidenceLocator.Location location,String mode){this(finding,documentId,contentType,location,mode,null);}
+        public View(CheckResult finding,UUID documentId,String contentType,EvidenceLocator.Location location){this(finding,documentId,contentType,location,"REVIEW",null);}
     }
     @GetMapping("/api/lcs/{lcId}/document-checks/evidence") @Transactional(readOnly=true)
     public View evidence(@PathVariable UUID lcId,@RequestParam String code,@RequestParam(required=false) String documentName,@RequestParam(required=false) String reviewFingerprint,@RequestParam(defaultValue="REVIEW") String mode){
         if(!Set.of("REVIEW","PRECHECK").contains(mode))throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Unknown review mode");
         var findings=("PRECHECK".equals(mode)?checks.precheck(lcId):checks.check(lcId)).results().stream().filter(r->Objects.equals(r.code(),code)&&Objects.equals(r.documentName(),documentName)&&(reviewFingerprint==null||reviewFingerprint.equals(r.reviewFingerprint()))).toList();
-        if(findings.size()!=1)throw new ResponseStatusException(HttpStatus.CONFLICT,"Befund nicht eindeutig oder nicht mehr aktuell. Bitte Prüfung neu laden.");
+        // Several identical findings (same fingerprint) are one finding; without a fingerprint more than one match stays ambiguous.
+        if(findings.isEmpty()||(findings.size()>1&&reviewFingerprint==null))throw new ResponseStatusException(HttpStatus.CONFLICT,"Befund nicht eindeutig oder nicht mehr aktuell. Bitte Prüfung neu laden.");
         var finding=findings.get(0);
+        String mark="REVIEW".equals(mode)?checks.decisionMark(lcId,finding).orElse(null):null;
         var matches=documents.findByLetterOfCreditIdOrderByUploadedAtDesc(lcId).stream().filter(d->finding.documentName()!=null&&Objects.equals(d.getOriginalFilename(),finding.documentName())).toList();
-        if(matches.size()!=1)return new View(finding,null,null,new EvidenceLocator.Location(matches.isEmpty()?"NO_DOCUMENT":"AMBIGUOUS_DOCUMENT","NONE",List.of()),mode);
+        if(matches.size()!=1)return new View(finding,null,null,new EvidenceLocator.Location(matches.isEmpty()?"NO_DOCUMENT":"AMBIGUOUS_DOCUMENT","NONE",List.of()),mode,mark);
         var doc=matches.get(0);
-        return new View(finding,doc.getId(),doc.getContentType(),EvidenceLocator.locate(doc,finding.documentEvidence()),mode);
+        return new View(finding,doc.getId(),doc.getContentType(),EvidenceLocator.locate(doc,finding.documentEvidence()),mode,mark);
     }
     @org.springframework.beans.factory.annotation.Autowired private de.ostms.lc.document.service.FindingCropService crops;
     @GetMapping(value="/api/lcs/{lcId}/documents/{id}/finding-crop",produces="image/png") @Transactional(readOnly=true)

@@ -71,7 +71,7 @@ class PackSecurityTest {
   session.setAttribute("SPRING_SECURITY_CONTEXT",new SecurityContextImpl(auth));
   mvc.perform(put("/api/lcs/"+id+"/rule-facts").session(session).contentType("application/json").content("{}")).andExpect(status().isForbidden());
   mvc.perform(put("/api/lcs/"+id+"/rule-facts").session(session).header(token.getHeaderName(),value).contentType("application/json").content("{\"LC_TRANSFERRED\":\"false\"}")).andExpect(status().isOk()).andExpect(jsonPath("$.LC_TRANSFERRED").value("false"));
-  verify(checks).invalidateDecisions(id);verify(audit).recordInTransaction(any(),eq("LC_RULE_FACTS_UPDATED"),anyString(),eq(id),contains("SHA-256"));
+  verify(checks,never()).invalidateDecisions(id);verify(audit).recordInTransaction(any(),eq("LC_RULE_FACTS_UPDATED"),anyString(),eq(id),contains("SHA-256"));
   mvc.perform(put("/api/lcs/"+id+"/rule-facts").session(session).header(token.getHeaderName(),value).contentType("application/json").content("{\"DOCUMENT_ISSUER\":\"Demo\"}")).andExpect(status().isBadRequest());
  }
  @Test void typedRequirementsRequireEditRightsAndCsrfAndRejectInvalidTypes()throws Exception{

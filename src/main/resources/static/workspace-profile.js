@@ -7,7 +7,8 @@ function workspaceProfile(settings){
 function applyWorkspaceProfile(settings){
  globalThis.LcWorkspaceModules={bank:settings?.bankEnabled===true,corporate:settings?.corporateEnabled===true};
  globalThis.LcSelectedTenantId=settings?.tenantId;
- const mode=workspaceProfile(settings),hero=document.querySelector('#cockpitSection'),nav=document.querySelector('#appNav nav');if(!hero||!nav)return;
+ const mode=workspaceProfile(settings);if(document.documentElement?.dataset)document.documentElement.dataset.profile=mode;
+ const hero=document.querySelector('#cockpitSection'),nav=document.querySelector('#appNav nav');if(!hero||!nav)return;
  const text=(key,fallback)=>{const value=globalThis.LcI18n?.t(key);return value&&value!==key?value:fallback;};
  const node=(tag,key,fallback)=>{const n=document.createElement(tag);n.dataset.i18n=key;n.textContent=text(key,fallback);return n;};
  const titles={bank:'Bank workspace',corporate:'Corporate workspace',combined:'Bank & Corporate workspace',general:'Letters of credit at a glance'};

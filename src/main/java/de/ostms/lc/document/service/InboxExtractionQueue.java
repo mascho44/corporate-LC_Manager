@@ -21,6 +21,7 @@ public class InboxExtractionQueue {
     private final DocumentInboxRepository inbox;
     private final DocumentExtractionService extraction;
     private final AuditService audit;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private DocumentTypeTrainingService typeTraining;
     private final TransactionTemplate transaction;
     private final ExecutorService executor=Executors.newSingleThreadExecutor(task->{var thread=new Thread(task,"inbox-extraction");thread.setDaemon(true);return thread;});
     private final AtomicBoolean busy=new AtomicBoolean();
@@ -85,7 +86,7 @@ public class InboxExtractionQueue {
         item.setExtractedReference(result.getExtractedReference());item.setExtractedDocumentNumber(result.getExtractedDocumentNumber());
         item.setExtractedAmount(result.getExtractedAmount());item.setExtractedCurrency(result.getExtractedCurrency());item.setExtractedText(result.getExtractedText());
         var selected=ClassificationHistory.selectedType(item.getClassificationHistoryJson());
-        item.setOcrEvidenceJson(result.getOcrEvidenceJson());item.setClassificationHistoryJson(selected==null?result.getClassificationHistoryJson():ClassificationHistory.manual(result.getClassificationHistoryJson(),selected,item.getReceivedBy()));
+        item.setOcrEvidenceJson(result.getOcrEvidenceJson());item.setClassificationHistoryJson(selected==null?(typeTraining==null?result.getClassificationHistoryJson():typeTraining.improve(result.getClassificationHistoryJson(),result.getExtractedText())):ClassificationHistory.manual(result.getClassificationHistoryJson(),selected,item.getReceivedBy()));
         item.setExtractionToken(null);item.setExtractionStartedAt(null);inbox.save(item);
         if(automaticSplitter!=null)automaticSplitter.persist(item,plan);
         return true;

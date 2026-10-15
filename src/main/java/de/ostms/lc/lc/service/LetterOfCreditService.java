@@ -107,6 +107,7 @@ public class LetterOfCreditService {
         lc.setFollowUpDate(request.followUpDate());
         var previousStatus = lc.getStatus();
         lc.setStatus(request.status());
+        if (previousStatus != request.status() && request.status() == de.ostms.lc.lc.domain.LetterOfCreditStatus.DOCUMENTS_PRESENTED) de.ostms.lc.rulepack.PresentationDate.stamp(lc, java.time.LocalDate.now());
         if (request.status() == de.ostms.lc.lc.domain.LetterOfCreditStatus.WAITING_FOR_CUSTOMER) {
             // Entering the waiting state stamps the date; without an explicit follow-up the LC returns after a week.
             if (previousStatus != request.status() || lc.getWaitingSince() == null) lc.setWaitingSince(java.time.LocalDate.now());

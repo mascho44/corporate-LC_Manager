@@ -5,7 +5,7 @@ import java.util.regex.Pattern;
 
 /** Resolves only explicit, uniquely labelled address blocks; never treats all conditions as an address. */
 public final class BeneficiaryReferenceResolver {
-    private static final Pattern REFERENCE = Pattern.compile("(?i)\\b(?:SEE|REFER(?:\\s{1,5}+TO)?|SIEHE|VIDE)\\s{1,5}+(?:(?:FIELD|FLD|TAG|FELD)\\s{0,5}+:?\\s{0,5}+)?(\\d{2}[A-Z]?)\\b");
+    private static final Pattern REFERENCE = Pattern.compile("(?i)\\b(?:SEE|REFER(?:\\s{1,5}+TO)?|SIEHE|VIDE|AS\\s{1,5}+PER|GEM(?:AESS|ÄSS|\\.))\\s{1,5}+(?:(?:FIELD|FLD|TAG|FELD)\\s{0,5}+:?\\s{0,5}+)?(\\d{2}[A-Z]?)\\b");
     private static String headerFor(String role,String german){
         return "(?i)^\\s{0,5}+(?:[+*-]|\\d+[.)])?\\s{0,5}+(?:(?:FULL\\s{1,5}+)?(?:ADDRESS|NAME(?:\\s{1,5}+AND\\s{1,5}+ADDRESS)?)\\s{1,5}+OF\\s{1,5}+(?:THE\\s{1,5}+)?"+role
             +"|"+role+"(?:'S)?(?:\\s{1,5}+FULL)?(?:\\s{1,5}+(?:NAME(?:\\s{0,5}+(?:AND|&|/)\\s{0,5}+ADDRESS)?|ADDRESS|DETAILS))?|"+german+")\\s{0,5}+[:\\-]\\s{0,5}+(.*)$";
@@ -34,6 +34,8 @@ public final class BeneficiaryReferenceResolver {
         String source = reference.group(1).toUpperCase(java.util.Locale.ROOT);
         if (reference.find() || source.equals(ownField)) return new Resolution(original, source, false);
         String text = fields.get(source);
+        // "SEE 47" usually means 47A.
+        if (text == null && source.matches("\\d{2}") && fields.containsKey(source + "A")) { source = source + "A"; text = fields.get(source); }
         if (text == null) return new Resolution(original, source, false);
         StringBuilder address = new StringBuilder();
         boolean collecting = false;

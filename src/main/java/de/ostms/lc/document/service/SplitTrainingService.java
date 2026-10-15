@@ -48,7 +48,7 @@ public class SplitTrainingService {
   PdfDocumentSplitter.validate(parts,baseline.pageCount());
   var pages=baseline.pages().stream().map(page->{
    var part=parts.stream().filter(p->page.number()>=p.fromPage()&&page.number()<=p.toPage()).findFirst().orElseThrow();
-   return new PdfDocumentSplitter.Page(page.number(),new DocumentClassifier.Classification(part.documentType(),.8,"REVIEW","CONFIRMED_SPLIT_PATTERN_V1",List.of("Muster "+hash.substring(0,12)+": Seiten "+part.fromPage()+"–"+part.toPage()+"; Zuordnung und Grenzen bitte prüfen")),page.textSource(),page.copyHint());
+   return new PdfDocumentSplitter.Page(page.number(),new DocumentClassifier.Classification(part.documentType(),.8,"REVIEW","CONFIRMED_SPLIT_PATTERN_V1",List.of("Muster "+hash.substring(0,12)+": Seiten "+part.fromPage()+"–"+part.toPage()+"; Zuordnung und Grenzen bitte prüfen")),page.textSource(),page.copyHint(),page.sample());
   }).toList();
   return new PdfDocumentSplitter.Proposal(baseline.pageCount(),pages,parts);
  }

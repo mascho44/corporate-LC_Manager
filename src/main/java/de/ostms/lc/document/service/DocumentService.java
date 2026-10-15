@@ -27,6 +27,8 @@ public class DocumentService {
     private final LetterOfCreditRepository lcs;
     private final DocumentExtractionService extraction;
     @org.springframework.beans.factory.annotation.Autowired(required=false) private PdfPagePreviewService previews;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private de.ostms.lc.rulepack.AutoRuleFacts autoFacts;
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private DocumentTypeTrainingService typeTraining;
 
     public DocumentService(LcDocumentRepository documents, LetterOfCreditRepository lcs,
             DocumentExtractionService extraction) {
@@ -63,9 +65,10 @@ public class DocumentService {
         extraction.extract(document);document.setClassificationHistoryJson(ClassificationHistory.manual(document.getClassificationHistoryJson(),document.getDocumentType(),ClassificationHistory.actor()));
         if (document.getAmount() == null) document.setAmount(document.getExtractedAmount());
         if (document.getCurrency() == null) document.setCurrency(document.getExtractedCurrency());
+        if(autoFacts!=null)autoFacts.apply(document);
         var savedDocument = documents.save(document);
         if(previews!=null)previews.prewarm(document.getContent(),document.getContentType());
-        if (lc.releaseWaitingForCustomer()) lcs.save(lc);
+        if (lc.releaseWaitingForCustomer()) { de.ostms.lc.rulepack.PresentationDate.stamp(lc, java.time.LocalDate.now()); lcs.save(lc); }
         return DocumentView.from(savedDocument);
     }
 
@@ -104,8 +107,9 @@ public class DocumentService {
     public DocumentType suggestType(String filename){return type(filename==null?"":filename);}
 
     private DocumentView save(de.ostms.lc.lc.domain.LetterOfCredit lc,String filename,byte[] content,String contentType,DocumentType type,LocalDate date,BigDecimal amount,String currency){
-        LcDocument document=new LcDocument();document.setLetterOfCredit(lc);document.setDocumentType(type);document.setOriginalFilename(filename);document.setContentType(contentType);document.setFileSize(content.length);document.setDocumentDate(date);document.setAmount(amount);document.setCurrency(currency);document.setContent(content);extraction.extract(document);document.setClassificationHistoryJson(ClassificationHistory.manual(document.getClassificationHistoryJson(),document.getDocumentType(),ClassificationHistory.actor()));if(document.getAmount()==null)document.setAmount(document.getExtractedAmount());if(document.getCurrency()==null)document.setCurrency(document.getExtractedCurrency());return DocumentView.from(documents.save(document));
+        LcDocument document=new LcDocument();document.setLetterOfCredit(lc);document.setDocumentType(type);document.setOriginalFilename(filename);document.setContentType(contentType);document.setFileSize(content.length);document.setDocumentDate(date);document.setAmount(amount);document.setCurrency(currency);document.setContent(content);extraction.extract(document);document.setClassificationHistoryJson(ClassificationHistory.manual(document.getClassificationHistoryJson(),document.getDocumentType(),ClassificationHistory.actor()));if(document.getAmount()==null)document.setAmount(document.getExtractedAmount());if(document.getCurrency()==null)document.setCurrency(document.getExtractedCurrency());return DocumentView.from(documents.save(autoFilled(document)));
     }
+    private LcDocument autoFilled(LcDocument document){if(autoFacts!=null)autoFacts.apply(document);return document;}
     private DocumentType type(String filename){String name=filename.toLowerCase(Locale.ROOT);if(name.contains("invoice")||name.contains("rechnung"))return DocumentType.COMMERCIAL_INVOICE;if(name.contains("packing")||name.contains("packliste"))return DocumentType.PACKING_LIST;if(name.contains("bill-of-lading")||name.contains("bill_of_lading")||name.matches(".*(?:^|[-_ ])bl(?:[-_ .]|$).*"))return DocumentType.BILL_OF_LADING;if(name.contains("airway")||name.contains("air-waybill")||name.contains("awb"))return DocumentType.AIR_WAYBILL;if(name.contains("cmr"))return DocumentType.ROAD_CONSIGNMENT_NOTE;if(name.contains("origin")||name.contains("ursprung"))return DocumentType.CERTIFICATE_OF_ORIGIN;if(name.contains("insurance")||name.contains("versicherung"))return DocumentType.INSURANCE_CERTIFICATE;if(name.contains("inspection")||name.contains("inspektion"))return DocumentType.INSPECTION_CERTIFICATE;if(name.contains("draft")||name.contains("bill-of-exchange")||name.contains("wechsel"))return DocumentType.BILL_OF_EXCHANGE;if(name.contains("beneficiary-certificate"))return DocumentType.BENEFICIARY_CERTIFICATE;if(name.contains("quality")||name.contains("analysis")||name.contains("analyse"))return DocumentType.QUALITY_CERTIFICATE;if(name.contains("courier")||name.contains("dhl")||name.contains("fedex"))return DocumentType.COURIER_RECEIPT;return DocumentType.ANNEX;}
     private String contentType(String filename){String name=filename.toLowerCase(Locale.ROOT);if(name.endsWith(".pdf"))return "application/pdf";if(name.endsWith(".xml"))return "application/xml";if(name.endsWith(".txt")||name.endsWith(".csv"))return "text/plain";if(name.endsWith(".png"))return "image/png";if(name.endsWith(".jpg")||name.endsWith(".jpeg"))return "image/jpeg";return "application/octet-stream";}
 
@@ -137,6 +141,8 @@ public class DocumentService {
         if(document.getDocumentType()!=request.type()){
             var auth=org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
             document.setClassificationHistoryJson(ClassificationHistory.manual(document.getClassificationHistoryJson(),request.type(),auth==null?"unknown":auth.getName()));
+            // A corrected type in the file is a confirmed example too.
+            if(typeTraining!=null&&request.type()!=null)try{typeTraining.learn(document.getExtractedText(),request.type(),auth==null?"unknown":auth.getName());}catch(RuntimeException ignored){/* learning is a convenience */}
         }
         document.setDocumentType(request.type());document.setDocumentDate(request.documentDate());document.setAmount(request.amount());
         document.setCopyNumber(request.copyNumber());

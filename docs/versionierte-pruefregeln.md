@@ -41,3 +41,6 @@ Für noch nicht explizit katalogisierte interne Prüfungen muss mindestens die
 Katalogversion erhöht werden. Neue fachliche UCP-/ISBP-Einzelregeln benötigen
 eine geprüfte Grundlage und fachliche Freigabe; allgemeine ICC-Verweise allein
 reichen hierfür nicht aus.
+
+## Bindung von Prüfentscheidungen (Stand 15.10.2026)
+Eine Entscheidung gilt für den Befund (Regel, Text, Vergleichswerte), **das betroffene Dokument** (Inhalt, erkannter Text, Prüfdaten) und die **Akkreditivbedingungen** (Parteien, Betrag, Fristen, Dokumentenanforderungen, Rohtext, Prüfdaten und Rule Packs der Akte). Bei Befunden zum Dokumentensatz zählt nur, welche Dokumente welcher Art vorliegen. Ein weiteres Dokument, eine Zuweisung, ein Statuswechsel, Notizen oder Wiedervorlagen lassen Entscheidungen unberührt; Upload, Zuordnung aus dem Posteingang, Neuerkennung und Prüfdaten-Änderungen setzen nicht mehr alle Entscheidungen zurück – veraltet wird nur, was sich wirklich geändert hat. Entscheidungen aus der Zeit der früheren Bindung an die gesamte Akte gelten weiter, solange sich nichts geändert hat.

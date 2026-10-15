@@ -19,7 +19,18 @@ class DocumentCheckReportServiceTest {
         var report=new DocumentCheckReportService(checks,lcs).create(id);
         try(var pdf=Loader.loadPDF(report.content())){
             assertThat(new PDFTextStripper().getText(pdf)).contains("Manual decision: pending - no professional decision recorded","Final professional review remains required.");
-            assertThat(new PDFTextStripper().getText(pdf)).contains("Automatic assessment: DISCREPANCY","Manual decision: fulfilled","Rule code: AMOUNT","Decision reason: Original reviewed","Reviewed by: checker","Exact PDF page reference: not recorded","EUR 1000","EUR 1200");
+            assertThat(new PDFTextStripper().getText(pdf)).contains("Automatic assessment: DISCREPANCY","Manual decision: fulfilled","Rule code: AMOUNT","Decision reason: Original reviewed","Reviewed by: checker","Marked evidence: not marked","EUR 1000","EUR 1200");
+        }
+    }
+    @Test void reportsTheMarkedEvidenceOfADecision() throws Exception {
+        UUID id=UUID.randomUUID();var lcs=mock(LetterOfCreditRepository.class);var checks=mock(DocumentCheckService.class);
+        var lc=new LetterOfCredit();lc.setReference("LC-MARK");when(lcs.findById(id)).thenReturn(Optional.of(lc));
+        var finding=new CheckResult(CheckResult.Severity.OK,"AMOUNT","Amount review","EUR 1000","invoice.pdf","EUR 1000","ACCEPTED",null,"checker",LocalDateTime.of(2026,10,4,10,0),CheckResult.Severity.DISCREPANCY);
+        when(checks.check(id)).thenReturn(new ReviewSummary("GREEN",0,0,1,List.of(finding)));
+        when(checks.decisionMark(eq(id),any())).thenReturn(Optional.of("{\"documentId\":\""+UUID.randomUUID()+"\",\"page\":2,\"x\":0.1,\"y\":0.2,\"w\":0.3,\"h\":0.05}"));
+        var report=new DocumentCheckReportService(checks,lcs).create(id);
+        try(var pdf=Loader.loadPDF(report.content())){
+            assertThat(new PDFTextStripper().getText(pdf)).contains("Marked evidence: marked document, page 2");
         }
     }
 }
