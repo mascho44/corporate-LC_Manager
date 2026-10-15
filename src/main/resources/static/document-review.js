@@ -135,7 +135,7 @@
     const badge = document.createElement('b'); badge.className = 'doc-review-badge ' + String(finding.severity || '').toLowerCase(); badge.textContent = SEVERITY[finding.severity] || finding.severity;
     head.append(badge, document.createTextNode(' ' + (finding.message || ''))); card.append(head);
     if (finding.lcCondition) { const c = document.createElement('small'); c.textContent = 'LC-Bedingung: ' + finding.lcCondition; card.append(c); }
-    if (finding.documentEvidence) { const q = document.createElement('blockquote'); q.textContent = finding.documentEvidence; card.append(q); }
+    if (finding.documentEvidence) { const q = document.createElement('blockquote'); q.textContent = globalThis.readableEvidence ? readableEvidence(finding.documentEvidence) : finding.documentEvidence; card.append(q); }
     if (isOpen(finding)) {
      const actions = document.createElement('div'); actions.className = 'doc-review-actions';
      const pending = isPendingApproval(finding);
