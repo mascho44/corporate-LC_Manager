@@ -61,3 +61,5 @@
 .doc-review-tier>.doc-review-finding{margin-top:8px}
 .doc-review-keys{margin:8px 0 0;color:#667085;font-size:12px}
 .doc-review-keys kbd{display:inline-block;min-width:18px;padding:1px 5px;margin:0 1px;border:1px solid #c5d0e2;border-bottom-width:2px;border-radius:4px;background:#f8fafc;font:600 11px/1.4 system-ui;text-align:center}
+.doc-review-also{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin-top:8px;padding:8px 10px;border-radius:8px;background:#f5f7ff;border:1px dashed #b9c6f0}
+.doc-review-also small{flex:1 1 100%;color:#344054}

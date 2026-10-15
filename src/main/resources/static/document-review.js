@@ -37,7 +37,14 @@
  function nextOpen(items, from = -1) { for (let i = from + 1; i < items.length; i++) if (isOpen(items[i])) return i; return -1; }
  /** Index of the next document group with open findings after `from` (no wrap), -1 when none is left. */
  function nextGroupWithOpen(groups, from = -1) { for (let i = from + 1; i < groups.length; i++) if (groups[i].openCount > 0) return i; return -1; }
- globalThis.LcDocumentReview = { groupFindings, nextOpen, nextGroupWithOpen, isOpen, tierOf, progress };
+ /** Open findings with the same rule in other documents: one cause, several places. A finding without a single document is never bundled. */
+ function siblingsOf(groups, finding) {
+  if (!finding?.documentName) return [];
+  const out = [];
+  (groups || []).forEach(g => g.items.forEach(f => { if (f !== finding && f.code === finding.code && f.documentName && f.documentName !== finding.documentName && isOpen(f)) out.push(f); }));
+  return out;
+ }
+ globalThis.LcDocumentReview = { groupFindings, nextOpen, nextGroupWithOpen, isOpen, tierOf, progress, siblingsOf };
  if (typeof document === 'undefined' || !document.body) return;
 
  async function open() {
@@ -114,6 +121,17 @@
       button.onclick = event => { event.stopPropagation(); decide(index, decision); }; actions.append(button);
      });
      const hint = document.createElement('small'); hint.textContent = 'Fundstelle rechts im PDF markieren statt Kommentar schreiben.'; card.append(actions, hint);
+     const siblings = siblingsOf(groups, finding);
+     if (siblings.length) {
+      const also = document.createElement('div'); also.className = 'doc-review-also';
+      const names = [...new Set(siblings.map(f => f.documentName))];
+      const text = document.createElement('small'); text.textContent = `Gleicher Befund auch in: ${names.join(', ')}`;
+      const all = document.createElement('button'); all.type = 'button'; all.className = 'secondary'; all.disabled = busy; all.textContent = `Für alle ${siblings.length + 1} als erfüllt bestätigen`;
+      all.onclick = event => { event.stopPropagation(); decideAll(index, 'ACCEPTED'); };
+      const allDiscrepancy = document.createElement('button'); allDiscrepancy.type = 'button'; allDiscrepancy.className = 'secondary'; allDiscrepancy.disabled = busy; allDiscrepancy.textContent = `Für alle ${siblings.length + 1} Abweichung bestätigen`;
+      allDiscrepancy.onclick = event => { event.stopPropagation(); decideAll(index, 'CONFIRMED_DISCREPANCY'); };
+      also.append(text, all, allDiscrepancy); card.append(also);
+     }
     } else if (finding.code === 'REVIEW_STALE') {
      const note = document.createElement('small'); note.textContent = 'Eine frühere Entscheidung gilt nicht mehr (Regel oder Vergleichsgrundlage haben sich geändert). Bitte den ursprünglichen Befund dieses Dokuments erneut bestätigen; dieser Hinweis verschwindet dann von selbst.'; card.append(note);
     } else {
@@ -147,6 +165,29 @@
     const nextIndex = nextOpen(groups[gi].items);
     if (nextIndex >= 0) { active = nextIndex; renderList(); showEvidencePage(groups[gi].items[nextIndex]); }
     else { const n = nextGroupWithOpen(groups, gi); if (n >= 0) await showGroup(n); else { active = -1; renderList(); } }
+   } catch (error) { alert('Entscheidung konnte nicht gespeichert werden: ' + error.message); }
+   finally { busy = false; if (dialog.open) renderList(); }
+  }
+  /** One decision for the finding and the same open finding in the other documents. The marked evidence belongs to the current document only, so the others need a written reason. */
+  async function decideAll(index, decision) {
+   if (busy) return; const finding = groups[gi].items[index], siblings = siblingsOf(groups, finding); if (!siblings.length) return decide(index, decision);
+   const comment = prompt(decision === 'ACCEPTED' ? `Begründung für alle ${siblings.length + 1} Dokumente (Pflicht; eine markierte Fundstelle gilt nur für dieses Dokument):` : `Optionaler Prüfvermerk für alle ${siblings.length + 1} Dokumente:`);
+   if (comment === null) return;
+   if (decision === 'ACCEPTED' && !comment.trim()) { alert('Bitte eine Begründung eingeben. Die Entscheidung wurde nicht gespeichert.'); return; }
+   if (comment.length > 1000) { alert('Die Begründung darf maximal 1000 Zeichen enthalten.'); return; }
+   busy = true; const name = groups[gi].name, mark = dialog.getEvidenceMark?.() || null; renderList();
+   const post = (f, withMark) => json(`/api/lcs/${lcId}/document-checks/decisions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ findingCode: f.code, documentName: f.documentName || '', decision, comment: comment.trim() || null, reviewFingerprint: f.reviewFingerprint, mark: withMark ? mark : null }) });
+   let failed = 0;
+   try {
+    await post(finding, true);
+    for (const f of siblings) { try { await post(f, false); } catch (ignored) { failed++; } }
+    await load(); dialog.clearEvidenceMark?.();
+    if (activeLc?.id === lcId && typeof refreshReviewInline === 'function') refreshReviewInline(lcId);
+    if (failed) alert(`${failed} von ${siblings.length + 1} Entscheidungen konnten nicht gespeichert werden; bitte diese Befunde einzeln prüfen.`);
+    const at = groups.findIndex(g => g.name === name);
+    const nextIndex = at >= 0 ? nextOpen(groups[at].items) : -1;
+    if (at >= 0 && nextIndex >= 0) { gi = at; active = nextIndex; renderList(); showEvidencePage(groups[gi].items[nextIndex]); }
+    else { const n = nextGroupWithOpen(groups, Math.max(at, -1)); const first = n >= 0 ? n : nextGroupWithOpen(groups); if (first >= 0) await showGroup(first); else { active = -1; renderList(); } }
    } catch (error) { alert('Entscheidung konnte nicht gespeichert werden: ' + error.message); }
    finally { busy = false; if (dialog.open) renderList(); }
   }
