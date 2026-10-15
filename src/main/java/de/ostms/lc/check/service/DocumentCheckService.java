@@ -207,7 +207,11 @@ public class DocumentCheckService {
             CheckResult result=rawResult.withInputFingerprint(inputFingerprint);
             var matching=reviewed.stream().filter(d->decisionKey(d.getFindingCode(),d.getDocumentName()).equals(decisionKey(result.code(),result.documentName()))).toList();
             var current=matching.stream().filter(d->d.getInvalidatedAt()==null&&result.reviewFingerprint().equals(d.getFindingFingerprint())).findFirst();
-            if(current.isPresent()){
+            if(current.isPresent()&&"ACCEPTED".equals(current.get().getDecision())&&de.ostms.lc.sanctions.SanctionsService.isHit(result.code())&&current.get().getSecondReviewedBy()==null){
+                // Four-eyes: a false-positive note on a sanctions hit stays open until a second person approves it.
+                var d=current.get();
+                reviewedResults.add(new CheckResult(result.severity(),result.code(),result.message(),result.lcCondition(),result.documentName(),result.documentEvidence(),null,"Als Falsch-positiv vorgemerkt"+(d.getComment()==null||d.getComment().isBlank()?"":": "+d.getComment())+" – Freigabe durch eine zweite Person mit dem Recht „Sanktionstreffer freigeben“ ausstehend.",d.getReviewedBy(),d.getReviewedAt(),result.automaticSeverity()).withRule(result.rule()).withInputFingerprint(inputFingerprint));
+            }else if(current.isPresent()){
                 var d=current.get();var effective="ACCEPTED".equals(d.getDecision())?OK:DISCREPANCY;
                 reviewedResults.add(new CheckResult(effective,result.code(),result.message(),result.lcCondition(),result.documentName(),result.documentEvidence(),d.getDecision(),d.getComment(),d.getReviewedBy(),d.getReviewedAt(),result.automaticSeverity()).withRule(result.rule()).withInputFingerprint(inputFingerprint));
             }else{
@@ -219,7 +223,8 @@ public class DocumentCheckService {
         return new ReviewSummary(status,discrepancies,warnings,count(reviewedResults,OK),reviewedResults,simulation?"SIMULATION":precheck?"PRECHECK":"REVIEW");
     }
 
-    @Transactional public DocumentCheckDecision decide(UUID lcId,CheckDecisionRequest request,String username){
+    @Transactional public DocumentCheckDecision decide(UUID lcId,CheckDecisionRequest request,String username){return decide(lcId,request,username,false);}
+    @Transactional public DocumentCheckDecision decide(UUID lcId,CheckDecisionRequest request,String username,boolean mayApproveSanctions){
         lcs.findById(lcId).orElseThrow();
         if(!Set.of("ACCEPTED","CONFIRMED_DISCREPANCY").contains(request.decision()))throw new IllegalArgumentException("Ungültige Prüfentscheidung.");
         if("ACCEPTED".equals(request.decision())&&request.mark()==null&&(request.comment()==null||request.comment().isBlank()))throw new IllegalArgumentException("Bitte die Fundstelle im PDF markieren oder begründen, warum der Befund als erfüllt bestätigt wird.");
@@ -230,6 +235,16 @@ public class DocumentCheckService {
         if("REVIEW_STALE".equals(selected.code()))throw new IllegalArgumentException("Bitte den ursprünglichen Befund erneut prüfen und bestätigen.");
         var baseline=new CheckResult(selected.automaticSeverity(),selected.code(),selected.message(),selected.lcCondition(),selected.documentName(),selected.documentEvidence()).withRule(selected.rule()).withInputFingerprint(selected.inputFingerprint());
         var decision=decisions.findByLcIdAndFindingCodeAndDocumentNameAndFindingFingerprint(lcId,request.findingCode(),name,baseline.reviewFingerprint()).orElseGet(DocumentCheckDecision::new);
+        if(de.ostms.lc.sanctions.SanctionsService.isHit(request.findingCode())&&"ACCEPTED".equals(request.decision())&&"ACCEPTED".equals(decision.getDecision())&&decision.getInvalidatedAt()==null&&decision.getSecondReviewedBy()==null&&decision.getReviewedBy()!=null){
+            // Second step of the four-eyes principle: approval of the false-positive note by another person.
+            if(!mayApproveSanctions)throw new IllegalArgumentException("Die Freigabe eines Sanktionstreffers erfordert das Recht „Sanktionstreffer freigeben“.");
+            if(decision.getReviewedBy().equalsIgnoreCase(username))throw new IllegalArgumentException("Vier-Augen-Prinzip: Die Freigabe muss eine andere Person vornehmen als die, die den Treffer als Falsch-positiv vorgemerkt hat.");
+            decision.setSecondReviewedBy(username);decision.setSecondReviewedAt(java.time.LocalDateTime.now());
+            var saved=decisions.save(decision);
+            if(sanctions!=null)sanctions.remember(lcId,selected,decision.getReviewedBy(),username);
+            return saved;
+        }
+        decision.setSecondReviewedBy(null);decision.setSecondReviewedAt(null);
         decision.setLcId(lcId);decision.setFindingCode(request.findingCode());decision.setDocumentName(name);
         decision.setFindingFingerprint(baseline.reviewFingerprint());decision.setRuleCatalogVersion(baseline.ruleCatalogVersion());decision.setRuleId(baseline.rule().id());decision.setRuleVersion(baseline.rule().version());
         try{decision.setFindingSnapshot(new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules().writeValueAsString(baseline));}catch(com.fasterxml.jackson.core.JsonProcessingException e){throw new IllegalStateException("Prüfgrundlage konnte nicht gespeichert werden.",e);}

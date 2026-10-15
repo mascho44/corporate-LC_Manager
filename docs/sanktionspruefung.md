@@ -26,5 +26,10 @@ Die Befunde erscheinen im Prüfmodus unter „Blockierend“ und werden wie ande
 - **Parteien aus den Dokumenten**: Empfänger (Consignee), Notify Party, Frachtführer; dazu Empfänger und Notify Party der Akte.
 - **Embargoländer** (`EMBARGO_COUNTRY`, Hinweis, blockierend): Iran, Nordkorea, Syrien, Kuba, Russland, Belarus, Krim und besetzte Gebiete der Ukraine, jeweils mit üblichen Schreibweisen und wichtigen Häfen. Geprüft werden Ursprungsland, Lade-/Löschhafen, Flughäfen und Adressländer aus Akte und Dokumenten sowie die Parteienfelder der Akte. Ein reiner ISO-Code („RU“) zählt nur, wenn das Feld nur aus dem Code besteht. Erweiterbar über `app.sanctions.embargo-extra`, z. B. `Venezuela:VENEZUELA|CARACAS`. Die Länderprüfung braucht keine geladenen Listen.
 
-## Noch nicht enthalten (folgende Schritte)
-Neuprüfung offener Akten bei neuem Listenstand mit Hinweis; Gedächtnis für bestätigte Falsch-Positive; eigenes Recht für die Vier-Augen-Freigabe von Treffern.
+## Vier-Augen-Freigabe und Falsch-Positiv-Gedächtnis (Schritt 3)
+- **Treffer bestätigen** (`CONFIRMED_DISCREPANCY`): wie bisher in einem Schritt.
+- **Als Falsch-positiv vormerken**: die erste Person (Recht „Dokumente prüfen“) begründet; der Treffer bleibt offen und zeigt „Als Falsch-positiv vorgemerkt … Freigabe ausstehend“.
+- **Falsch-positiv freigeben (Vier-Augen)**: eine *andere* Person mit dem neuen Recht **„Sanktionstreffer freigeben“** (`SANCTIONS_REVIEW`, Administratoren erhalten es automatisch) gibt frei. Dieselbe Person oder jemand ohne das Recht wird abgewiesen.
+- Nach der Freigabe merkt sich der Mandant die Kombination aus Partei und Listeneintrag (Tabelle `sanctions_clearance`). In späteren Prüfungen – auch in anderen Akten – erscheint statt des Treffers der Vermerk `SANCTIONS_CLEARED` mit den beiden Namen und dem Datum. Ändert sich der Listeneintrag (Namen, Aliase, Programm, IMO), wird wieder gemeldet.
+- **Neue Listenstände** wirken sofort: jede Prüfung läuft gegen den aktuellen Stand. Das Cockpit zeigt die Kachel **„Sanktionstreffer offen“**, sobald eine Akte offene Treffer hat.
+- Gelöschte Mandanten: das Gedächtnis wird mit gelöscht.
