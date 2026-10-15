@@ -285,3 +285,7 @@ html[data-profile="bank"] #appNavEbics{display:none!important}
 .inbox-split-dialog .evidence-page-thumb.split-unsure{outline:2px solid #f5a524;outline-offset:-2px}
 .inbox-split-dialog .split-clarity button{margin-top:6px}
 .accuracy-report table{margin:6px 0}.accuracy-report tr.accuracy-low td{background:#fff7e6}
+.party-correction{display:grid;gap:8px;margin:10px 0;padding:12px;border:1px solid #f5c26b;border-radius:10px;background:#fff9ec}
+.party-correction textarea{width:100%;box-sizing:border-box;margin-top:4px;font:inherit}
+.party-correction pre{white-space:pre-wrap;max-height:180px;overflow:auto;font-size:12px;background:#fff;padding:8px;border-radius:6px}
+.party-correction small{color:#5c4a1a}

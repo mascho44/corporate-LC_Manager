@@ -46,7 +46,8 @@
    const amendment = result.credit?.messageType === 'MT707';
    const title = swift ? 'SWIFT-Nachricht importieren' : 'Avis einlesen';
    const action = cover ? 'LC-Akte aus Anschreiben anlegen' : amendment ? 'Änderung (MT707) zur Akte übernehmen' : swift ? 'LC-Akte aus SWIFT-Nachricht anlegen' : 'LC-Akte aus Avis anlegen';
-   dialog.innerHTML = `<div class="dialoghead"><h2>${title}</h2><button type="button" data-close>Schließen</button></div><p>${esc(name)}${result.credit?.messageType ? ' · ' + esc(result.credit.messageType) : ''}</p>${cover ? coverFormHtml(cover) : previewHtml(result)}` +
+   const partyBox = !cover && ok && globalThis.LcPartyReference ? LcPartyReference.html(LcPartyReference.corrections(result.credit)) : '';
+   dialog.innerHTML = `<div class="dialoghead"><h2>${title}</h2><button type="button" data-close>Schließen</button></div><p>${esc(name)}${result.credit?.messageType ? ' · ' + esc(result.credit.messageType) : ''}</p>${cover ? coverFormHtml(cover) : previewHtml(result)}${partyBox}` +
     `<p data-error role="alert"></p><div class="dialog-actions"><button type="button" data-create${ok || cover ? '' : ' disabled'}>${action}</button></div>`;
    dialog.querySelector('[data-close]').onclick = () => dialog.close();
    dialog.querySelector('[data-create]').onclick = async event => {
@@ -58,7 +59,11 @@
       if (!body.reference) throw new Error('Bitte die Akkreditivnummer angeben.');
       await json(`/api/inbox/${encodeURIComponent(id)}/new-case`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       created = { reference: body.reference };
-    } else created = await json(`/api/inbox/${encodeURIComponent(id)}/avis-case`, { method: 'POST' });
+    } else {
+      const box = dialog.querySelector('[data-party-correction]'), party = box ? LcPartyReference.read(box) : null;
+      if (party?.missing.length) throw new Error(`Bitte ${party.missing.join(' und ')} ergänzen – die Nachricht verweist nur auf ein anderes Feld.`);
+      created = await json(`/api/inbox/${encodeURIComponent(id)}/avis-case`, party ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ applicant: party.applicant, beneficiary: party.beneficiary }) } : { method: 'POST' });
+     }
      dialog.close();
      const message = document.querySelector('#inboxMessage');
      if (message) message.textContent = created.kind === 'MT707' ? `Änderung zur LC-Akte „${created.reference}" übernommen (bitte in der Akte annehmen oder ablehnen); die Nachricht ist als Dokument abgelegt.` : `LC-Akte „${created.reference}" angelegt; ${swift ? 'die SWIFT-Nachricht' : 'der Avis'} ist als Dokument abgelegt.`;

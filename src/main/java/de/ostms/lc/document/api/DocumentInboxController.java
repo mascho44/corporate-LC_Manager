@@ -182,10 +182,12 @@ public class DocumentInboxController {
     @GetMapping("/{id}/avis-preview")
     public de.ostms.lc.document.service.InboxAvisService.Preview avisPreview(@PathVariable UUID id){ return avis.preview(id); }
 
+    /** Corrections of applicant/beneficiary when :50:/:59: only refer to another field ("SEE 47A"). */
+    public record PartyCorrection(@jakarta.validation.constraints.Size(max=2000) String applicant,@jakarta.validation.constraints.Size(max=2000) String beneficiary){}
     @PostMapping("/{id}/avis-case")
-    public de.ostms.lc.document.service.InboxAvisService.Created avisCase(@PathVariable UUID id,Authentication authentication){
+    public de.ostms.lc.document.service.InboxAvisService.Created avisCase(@PathVariable UUID id,@jakarta.validation.Valid @RequestBody(required=false) PartyCorrection correction,Authentication authentication){
         if(authentication.getAuthorities().stream().noneMatch(a->a.getAuthority().equals("PERM_LC_EDIT")))throw new org.springframework.security.access.AccessDeniedException("Keine Berechtigung zur Aktenanlage.");
-        var created=avis.create(id);
+        var created=correction==null?avis.create(id):avis.create(id,correction.applicant(),correction.beneficiary());
         audit.record(authentication,"LC_CREATED","LETTER_OF_CREDIT",created.lcId(),"Neue Akte aus Avis · "+created.reference());
         audit.record(authentication,"DOCUMENT_INBOX_ATTACHED","LETTER_OF_CREDIT",created.lcId(),"Avis aus Posteingang "+id);
         return created;

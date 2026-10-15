@@ -45,6 +45,13 @@ class SwiftImportServiceProfileTest {
         });
     }
 
+    @Test void seeWithoutLetterMeansTheAFieldAndAsPerIsAReference() {
+        String raw=":20:REF\n:31D:271231BERLIN\n:32B:EUR100,\n:50:AS PER FIELD 47A\n:59:SEE 47\n:47A:APPLICANT: BUYER LLC\nDUBAI\n\nBENEFICIARY: SELLER GMBH\nSTUTTGART";
+        var preview=service.preview(new SwiftImportRequest("lc.swift",raw));
+        assertThat(preview.applicant()).isEqualTo("BUYER LLC\nDUBAI");
+        assertThat(preview.beneficiary()).isEqualTo("SELLER GMBH\nSTUTTGART");
+    }
+
     @Test void detectsMt707ByProfileFields() {
         assertThat(service.detect(":20:LC-1\n:26E:2\n:30:260922\n:46B:NEW DOCUMENTS"))
                 .isEqualTo("MT707");

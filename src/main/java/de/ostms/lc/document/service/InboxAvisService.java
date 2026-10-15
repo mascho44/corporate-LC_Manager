@@ -76,11 +76,14 @@ public class InboxAvisService {
     }
 
     @Transactional
-    public Created create(UUID inboxId) {
+    public Created create(UUID inboxId) { return create(inboxId, null, null); }
+    /** With corrections of applicant/beneficiary when :50:/:59: only refer to another field. */
+    @Transactional
+    public Created create(UUID inboxId, String applicant, String beneficiary) {
         var item = inbox.openItem(inboxId);
         String raw = creditText(normalizer, item.getExtractedText());
         if (raw.isEmpty()) throw new IllegalArgumentException("Im Avis wurde kein Akkreditivtext erkannt (Felder wie :20:, :32B:, :31D:).");
-        Object imported = swift.execute(new SwiftImportRequest(item.getOriginalFilename(), raw));
+        Object imported = swift.execute(new SwiftImportRequest(item.getOriginalFilename(), raw, applicant, beneficiary));
         // An amendment (MT707) belongs to its existing file; the received message is kept there as a document.
         if (imported instanceof de.ostms.lc.lc.domain.Amendment amendment) {
             var lc = amendment.getLetterOfCredit();
