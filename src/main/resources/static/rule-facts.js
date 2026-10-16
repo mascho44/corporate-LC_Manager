@@ -99,7 +99,7 @@
     event.preventDefault();if(!allowed)return;
     const button=form.querySelector('[type="submit"]');if(button.disabled)return;button.disabled=true;
     const payload=Object.fromEntries(keys.map(key=>[key,form.elements[key].value||null]));
-    try{await json(url,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});dialog.close();if(activeLc?.id===lcId)await (typeof showKeepingView==='function'?showKeepingView:show)(lcId);}
+    try{await json(url,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});dialog.close();if(typeof CustomEvent==='function')document.dispatchEvent?.(new CustomEvent('lc-rule-facts-saved'));if(activeLc?.id===lcId)await (typeof showKeepingView==='function'?showKeepingView:show)(lcId);}
     catch(error){dialog.querySelector('[data-message]').textContent=error.message;}
     finally{button.disabled=false;}
    };

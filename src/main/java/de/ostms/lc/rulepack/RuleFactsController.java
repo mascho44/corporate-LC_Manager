@@ -60,6 +60,15 @@ public class RuleFactsController {
   audit.recordInTransaction(auth,"LC_RULE_FACTS_UPDATED","LETTER_OF_CREDIT",lcId,"LC-Prüfdaten SHA-256 vorher="+RuleFacts.fingerprint(before)+" nachher="+RuleFacts.fingerprint(after)+" · Felder "+facts.keySet()+" · "+reset+" Prüfentscheidungen zurückgesetzt");
   return RuleFacts.read(after);
  }
+ public record PresentationDateRequest(@jakarta.validation.constraints.NotNull java.time.LocalDate date){}
+ /** Sets only the date the documents were presented; other LC check data and their confirmation state stay as they are. */
+ @PutMapping("/rule-facts/presentation-date") @Transactional
+ public Map<Field,String> presentationDate(@PathVariable UUID lcId,@jakarta.validation.Valid @org.springframework.web.bind.annotation.RequestBody PresentationDateRequest request,Authentication auth){
+  if(request.date().isAfter(java.time.LocalDate.now().plusDays(1)))throw new IllegalArgumentException("Das Vorlagedatum darf nicht in der Zukunft liegen.");
+  var facts=new java.util.EnumMap<Field,String>(Field.class);facts.putAll(RuleFacts.read(lcs.findById(lcId).orElseThrow().getRuleFactsJson()));
+  facts.put(Field.LC_PRESENTATION_DATE,request.date().toString());
+  return updateLc(lcId,facts,auth);
+ }
  /** Fields filled automatically from the recognised text and not yet confirmed by a person. */
  @GetMapping("/documents/{id}/rule-facts/auto") @Transactional(readOnly=true)
  public Set<String> documentAuto(@PathVariable UUID lcId,@PathVariable UUID id){return AutoRuleFacts.read(documentInLc(lcId,id).getAutoRuleFacts());}
