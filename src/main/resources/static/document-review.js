@@ -17,6 +17,19 @@
   if (BLOCKING.test(String(finding.code || ''))) return 'blocking';
   return finding.severity === 'DISCREPANCY' ? 'check' : 'hint';
  }
+ /** LC field a rule could not be checked for because the LC data is missing ("LC_PRESENTATION_DATE = nicht erfasst"), or null. Such findings are collected once per field instead of per document. */
+ function missingField(finding) {
+  if (!isOpen(finding) || finding.severity !== 'WARNING' || !/^Regel nicht prüfbar/.test(finding.message || '')) return null;
+  return /\b(LC_[A-Z_]+) = nicht erfasst/.exec(finding.lcCondition || '')?.[1] || null;
+ }
+ /** Missing LC data with the number of rules and documents waiting for it, most rules first. */
+ function missingInputs(results) {
+  const byField = new Map();
+  (results || []).forEach(f => { const field = missingField(f); if (!field) return; const e = byField.get(field) || { field, rules: 0, documents: new Set() }; e.rules++; if (f.documentName) e.documents.add(f.documentName); byField.set(field, e); });
+  return [...byField.values()].sort((a, b) => b.rules - a.rules);
+ }
+ const FIELD_LABEL = { LC_PRESENTATION_DATE: 'Vorlagedatum', LC_PRESENTATION_PERIOD_DAYS: 'Vorlagefrist (Tage)', LC_INSURANCE_MIN_PERCENT: 'Mindestdeckung Versicherung (%)', LC_TOLERANCE_PERCENT: 'Toleranz (%)' };
+ const fieldLabel = field => FIELD_LABEL[field] || field.replace(/^LC_/, '').toLowerCase().replace(/_/g, ' ');
  const TIER_RANK = { blocking: 0, check: 1, hint: 2, done: 3 };
  /** Open and decidable findings over all documents, for the progress bar. */
  function progress(groups) {
@@ -30,7 +43,7 @@
   const docs = documents || [], order = new Map(docs.map((d, i) => [d.originalFilename, i]));
   const rank = f => TIER_RANK[tierOf(f)];
   const groups = new Map();
-  (results || []).forEach(f => { const key = f.documentName || ''; if (!groups.has(key)) groups.set(key, []); groups.get(key).push(f); });
+  (results || []).filter(f => !missingField(f)).forEach(f => { const key = f.documentName || ''; if (!groups.has(key)) groups.set(key, []); groups.get(key).push(f); });
   return [...groups.entries()]
    .filter(([, items]) => items.some(f => f.severity !== 'OK' || f.reviewDecision))
    .map(([name, items]) => { const doc = docs.find(d => d.originalFilename === name); return { name, documentId: doc?.id || null, contentType: doc?.contentType || null, items: [...items].sort((a, b) => rank(a) - rank(b)), openCount: items.filter(isOpen).length, blockingCount: items.filter(f => tierOf(f) === 'blocking').length }; })
@@ -47,7 +60,7 @@
   (groups || []).forEach(g => g.items.forEach(f => { if (f !== finding && f.code === finding.code && f.documentName && f.documentName !== finding.documentName && isOpen(f)) out.push(f); }));
   return out;
  }
- globalThis.LcDocumentReview = { isPendingApproval, groupFindings, nextOpen, nextGroupWithOpen, isOpen, tierOf, progress, siblingsOf };
+ globalThis.LcDocumentReview = { missingField, missingInputs, isPendingApproval, groupFindings, nextOpen, nextGroupWithOpen, isOpen, tierOf, progress, siblingsOf };
  if (typeof document === 'undefined' || !document.body) return;
 
  /** Draft notice of discrepancies (MT734 and letter) from the confirmed discrepancies; editable and copyable, nothing is sent. */
@@ -76,16 +89,16 @@
   dialog.onclose?.(); dialog.onclose = null;
   dialog.innerHTML = '<p>Prüfung wird geladen …</p><button type="button" data-close>Schließen</button>';
   dialog.querySelector('[data-close]').onclick = () => dialog.close(); dialog.showModal();
-  let groups, gi = 0, active = -1, busy = false;
+  let groups, missing = [], gi = 0, active = -1, busy = false;
   const load = async () => {
    const [review, documents] = await Promise.all([json(`/api/lcs/${lcId}/document-checks`), json(`/api/lcs/${lcId}/documents`).catch(() => [])]);
-   groups = groupFindings(review.results, documents);
+   groups = groupFindings(review.results, documents); missing = missingInputs(review.results);
   };
   try { await load(); } catch (error) { dialog.querySelector('p').textContent = 'Prüfung konnte nicht geladen werden: ' + error.message; return; }
-  if (!groups.length) { dialog.querySelector('p').textContent = 'Keine Befunde zu Dokumenten vorhanden.'; return; }
+  if (!groups.length && !missing.length) { dialog.querySelector('p').textContent = 'Keine Befunde zu Dokumenten vorhanden.'; return; }
   gi = Math.max(0, nextGroupWithOpen(groups)); 
   dialog.innerHTML = '<div class="dialoghead"><h2>Dokumentweise Prüfung</h2><div class="doc-review-nav"><button type="button" class="secondary" data-doc-prev aria-label="Vorheriges Dokument">←</button><b data-doc-label></b><button type="button" class="secondary" data-doc-next aria-label="Nächstes Dokument">→</button></div><button type="button" data-close>Schließen</button></div>' +
-   '<div class="doc-review-progress"><span data-doc-progress></span><progress data-doc-progress-bar max="1" value="0"></progress><button type="button" class="secondary" data-notice>Unstimmigkeitsmeldung (Entwurf)</button></div><nav class="doc-review-strip" data-doc-strip aria-label="Dokumente"></nav>' +
+   '<div class="doc-review-progress"><span data-doc-progress></span><progress data-doc-progress-bar max="1" value="0"></progress><button type="button" class="secondary" data-notice>Unstimmigkeitsmeldung (Entwurf)</button></div><section class="doc-review-missing" data-doc-missing hidden></section><nav class="doc-review-strip" data-doc-strip aria-label="Dokumente"></nav>' +
    '<div class="evidence-workspace"><section class="evidence-details">' + (can('DOCUMENT_UPLOAD') ? '<p class="doc-review-bar"><button type="button" class="secondary" data-doc-apply>Erkannte Prüfdaten übernehmen</button> <small data-doc-apply-status role="status"></small></p>' : '') + '<div data-doc-findings></div></section><section class="evidence-document" data-pdf-pages></section></div>' +
    '<p class="doc-review-keys"><kbd>J</kbd> erfüllt · <kbd>N</kbd> Abweichung · <kbd>↑</kbd><kbd>↓</kbd> Befund · <kbd>←</kbd><kbd>→</kbd> Dokument</p>';
   dialog.querySelector('[data-close]').onclick = () => dialog.close();
@@ -93,6 +106,39 @@
   const prev = dialog.querySelector('[data-doc-prev]'), next = dialog.querySelector('[data-doc-next]');
   const strip = dialog.querySelector('[data-doc-strip]'), progressText = dialog.querySelector('[data-doc-progress]'), progressBar = dialog.querySelector('[data-doc-progress-bar]');
   const openTiers = new Set(['blocking', 'check']);
+  const missingBox = dialog.querySelector('[data-doc-missing]');
+  /** Reloads after LC data was entered: rules waiting for it are evaluated again. */
+  async function refreshAfterFacts() {
+   const name = groups[gi]?.name; await load(); renderMissing();
+   if (!groups.length) { list.textContent = missing.length ? 'Keine weiteren Befunde – zuerst die fehlenden Angaben oben erfassen.' : '✓ Alle Befunde sind erledigt.'; return; }
+   const at = groups.findIndex(g => g.name === name); await showGroup(at >= 0 ? at : Math.max(0, nextGroupWithOpen(groups)));
+  }
+  function renderMissing() {
+   missingBox.hidden = !missing.length; missingBox.replaceChildren(); if (!missing.length) return;
+   const rules = missing.reduce((n, m) => n + m.rules, 0);
+   const head = document.createElement('p'); head.innerHTML = `<b>Fehlende LC-Angaben</b> – ${rules} Regel${rules === 1 ? '' : 'n'} können erst geprüft werden, wenn diese Angaben erfasst sind. Sie stehen deshalb nicht einzeln bei den Dokumenten.`; missingBox.append(head);
+   const editable = can('LC_EDIT');
+   missing.forEach(m => {
+    const row = document.createElement('div'); row.className = 'doc-review-missing-row';
+    const text = document.createElement('span'); text.textContent = `${fieldLabel(m.field)} · ${m.rules} Regel${m.rules === 1 ? '' : 'n'}${m.documents.size ? ', ' + m.documents.size + ' Dokument' + (m.documents.size === 1 ? '' : 'e') : ''}`; row.append(text);
+    if (editable && m.field === 'LC_PRESENTATION_DATE') {
+     const input = document.createElement('input'); input.type = 'date'; input.value = new Date().toISOString().slice(0, 10); input.max = input.value; input.setAttribute('aria-label', 'Vorlagedatum');
+     const save = document.createElement('button'); save.type = 'button'; save.textContent = 'Vorlagedatum speichern';
+     const status = document.createElement('small'); status.setAttribute('role', 'status');
+     save.onclick = async () => {
+      if (!input.value) { status.textContent = 'Bitte ein Datum wählen.'; return; }
+      save.disabled = true; status.textContent = 'Wird gespeichert …';
+      try { await json(`/api/lcs/${lcId}/rule-facts/presentation-date`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ date: input.value }) }); await refreshAfterFacts(); }
+      catch (error) { status.textContent = 'Nicht gespeichert: ' + error.message; save.disabled = false; }
+     };
+     row.append(input, save, status);
+    } else if (editable) { const open = document.createElement('button'); open.type = 'button'; open.className = 'secondary'; open.dataset.ruleFacts = ''; open.textContent = 'In den LC-Prüfdaten erfassen'; row.append(open); }
+    missingBox.append(row);
+   });
+  }
+  const onFactsSaved = () => { if (dialog.open) refreshAfterFacts().catch(() => {}); };
+  document.addEventListener('lc-rule-facts-saved', onFactsSaved); dialog.onclose = () => document.removeEventListener('lc-rule-facts-saved', onFactsSaved);
+  renderMissing();
   function renderOverview() {
    const p = progress(groups);
    progressText.textContent = `${p.done} / ${p.total} erledigt`; progressBar.max = Math.max(1, p.total); progressBar.value = p.done;
@@ -245,7 +291,7 @@
    event.preventDefault();
   };
   prev.onclick = () => gi > 0 && showGroup(gi - 1); next.onclick = () => gi < groups.length - 1 && showGroup(gi + 1);
-  await showGroup(gi);
+  if (groups.length) await showGroup(gi); else list.textContent = 'Keine weiteren Befunde – zuerst die fehlenden Angaben oben erfassen.';
  }
 
  document.addEventListener('click', event => { if (event.target.closest?.('[data-document-review]')) open(); });
