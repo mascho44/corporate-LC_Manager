@@ -61,4 +61,21 @@ class DocumentExtractionServiceTest {
         assertThat(document.getExtractedCurrency()).isEqualTo("EUR");
         assertThat(document.getExtractedAmount()).isEqualByComparingTo(new BigDecimal("125000.00"));
     }
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.CsvSource(delimiter='|',value={"Total amount: EUR 131,500.00|EUR|131500.00","Total invoice value USD 9.876,50|USD|9876.50","Invoice total: GBP 1,200.00|GBP|1200.00","Total: EUR 5.00|EUR|5.00"})
+    void recognisesTheUsualTotalLabels(String line,String currency,String amount) {
+        LcDocument document = new LcDocument();
+        document.setOriginalFilename("invoice.txt");document.setContentType("text/plain");
+        document.setContent(("COMMERCIAL INVOICE\nInvoice No: INV-1\nQuantity: 2 units\n"+line+"\n").getBytes(StandardCharsets.UTF_8));
+        new DocumentExtractionService().extract(document);
+        assertThat(document.getExtractedCurrency()).isEqualTo(currency);
+        assertThat(document.getExtractedAmount()).isEqualByComparingTo(new BigDecimal(amount));
+    }
+    @Test void aTotalQuantityIsNotAnAmount() {
+        LcDocument document = new LcDocument();
+        document.setOriginalFilename("packing.txt");document.setContentType("text/plain");
+        document.setContent("PACKING LIST\nTotal 4.815 Pcs\n".getBytes(StandardCharsets.UTF_8));
+        new DocumentExtractionService().extract(document);
+        assertThat(document.getExtractedCurrency()).isNull();
+    }
 }
