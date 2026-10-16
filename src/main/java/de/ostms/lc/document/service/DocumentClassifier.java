@@ -17,7 +17,7 @@ public final class DocumentClassifier {
   HEADINGS.put(DocumentType.POST_RECEIPT,"(?:post receipt|postal receipt|posteinlieferungsbeleg)");
   HEADINGS.put(DocumentType.AIR_WAYBILL,"(?:air waybill|airway bill|luftfrachtbrief)");
   HEADINGS.put(DocumentType.CERTIFICATE_OF_ORIGIN,"(?:certificate of non[- ]preferential origin|certificate of origin|ursprungszeugnis)");
-  HEADINGS.put(DocumentType.INSURANCE_CERTIFICATE,"(?:marine insurance policy|marine insurance certificate|insurance certificate|certificate of insurance|insurance policy|versicherungszertifikat|versicherungspolice)");
+  HEADINGS.put(DocumentType.INSURANCE_CERTIFICATE,"(?:certificate[ ]*\\([ ]*policy[ ]*\\)[ ]*of[ ]*(?:marine[ ]*)?insurance|certificate[ ]*/[ ]*policy[ ]*of[ ]*(?:marine[ ]*)?insurance|certificate of marine insurance|marine cargo insurance (?:certificate|policy)|marine insurance policy|marine insurance certificate|insurance certificate|certificate of insurance|insurance policy|versicherungszertifikat|versicherungspolice|versicherungsschein)");
   HEADINGS.put(DocumentType.ROAD_CONSIGNMENT_NOTE,"(?:cmr|road consignment note|international consignment note)");
   HEADINGS.put(DocumentType.INSPECTION_CERTIFICATE,"(?:inspection certificate|certificate of inspection|inspektionszertifikat)");
   HEADINGS.put(DocumentType.BILL_OF_EXCHANGE,"(?:bill of exchange|draft|wechsel)");

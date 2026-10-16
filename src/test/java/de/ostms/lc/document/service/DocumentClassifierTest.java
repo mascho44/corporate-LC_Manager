@@ -12,4 +12,10 @@ class DocumentClassifierTest {
  @Test void conflictsAndMentionsDoNotBecomeCertain(){assertThat(DocumentClassifier.classify("scan.pdf","COMMERCIAL INVOICE\nPACKING LIST").status()).isEqualTo("AMBIGUOUS");assertThat(DocumentClassifier.classify("scan.pdf","Please present a commercial invoice and packing list").status()).isEqualTo("UNKNOWN");}
  @Test void filenameIsOnlyWeakHint(){var result=DocumentClassifier.classify("packing_list.pdf",null);assertThat(result.suggestedType()).isEqualTo(DocumentType.PACKING_LIST);assertThat(result.status()).isEqualTo("REVIEW");assertThat(result.score()).isEqualTo(.55);}
  @Test void manualChoiceRetainsAutoEvidence(){var automatic=ClassificationHistory.automatic("scan.pdf","COMMERCIAL INVOICE");var manual=ClassificationHistory.manual(automatic,DocumentType.PACKING_LIST,"reviewer");assertThat(ClassificationHistory.read(manual)).hasSize(2);assertThat(ClassificationHistory.suggestion(manual).suggestedType()).isEqualTo(DocumentType.COMMERCIAL_INVOICE);assertThat(manual).contains("reviewer","MANUAL","PACKING_LIST");}
+ @org.junit.jupiter.params.ParameterizedTest
+ @org.junit.jupiter.params.provider.ValueSource(strings={"Certificate (Policy) of Marine Insurance","CERTIFICATE (POLICY) OF MARINE INSURANCE","Certificate of Marine Insurance","Marine Cargo Insurance Certificate","Versicherungsschein"})
+ void recognisesMarineInsuranceHeadings(String heading){
+  var result=DocumentClassifier.classify("scan.pdf","Mittelstandsfinanzierung II\nMARSH\n"+heading+"\nSum insured EUR 396.000,00\nPlace and Date of Issue Stuttgart");
+  assertThat(result.suggestedType()).isEqualTo(DocumentType.INSURANCE_CERTIFICATE);
+ }
 }
