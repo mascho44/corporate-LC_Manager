@@ -72,3 +72,5 @@
 .doc-review-missing-row>span{font-weight:600;min-width:180px}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .doc-review-missing{background:#2e2610;border-color:#8a6d1f;color:#f5e3b0}}
 :root[data-theme="dark"] .doc-review-missing{background:#2e2610;border-color:#8a6d1f;color:#f5e3b0}
+.evidence-line-hints{position:absolute;inset:0;pointer-events:none}
+.evidence-line-hint{position:absolute;box-sizing:border-box;background:rgba(250,204,21,.35);border-bottom:2px solid #ca8a04;border-radius:2px;mix-blend-mode:multiply}

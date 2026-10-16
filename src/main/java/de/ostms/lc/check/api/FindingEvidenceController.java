@@ -28,7 +28,7 @@ public class FindingEvidenceController {
         var matches=documents.findByLetterOfCreditIdOrderByUploadedAtDesc(lcId).stream().filter(d->finding.documentName()!=null&&Objects.equals(d.getOriginalFilename(),finding.documentName())).toList();
         if(matches.size()!=1)return new View(finding,null,null,new EvidenceLocator.Location(matches.isEmpty()?"NO_DOCUMENT":"AMBIGUOUS_DOCUMENT","NONE",List.of()),mode,mark);
         var doc=matches.get(0);
-        return new View(finding,doc.getId(),doc.getContentType(),EvidenceLocator.locate(doc,finding.documentEvidence()),mode,mark);
+        return new View(finding,doc.getId(),doc.getContentType(),EvidenceLocator.locateWithLines(doc,finding.documentEvidence()),mode,mark);
     }
     @org.springframework.beans.factory.annotation.Autowired private de.ostms.lc.document.service.FindingCropService crops;
     @GetMapping(value="/api/lcs/{lcId}/documents/{id}/finding-crop",produces="image/png") @Transactional(readOnly=true)

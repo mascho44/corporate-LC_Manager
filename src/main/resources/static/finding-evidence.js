@@ -19,7 +19,7 @@ async function openFindingEvidence(button){
         const pdfPages=dialog.querySelector('[data-pdf-pages]');
         const cropKind=/SIGNATURE/.test(finding.code)?'signature':/ORIGINAL|COPY|STAMP/.test(finding.code)?'stamp':/DATE/.test(finding.code)?'date':null;
         if(cropKind&&view.documentId&&view.contentType==='application/pdf'&&pdfPages)showFindingCrop(dialog,pdfPages,lcId,view.documentId,cropKind);
-        if(view.documentId&&view.contentType==='application/pdf'&&pdfPages)await renderFindingPdf(dialog,pdfPages,view.documentId,page||1,location.status==='MATCH'||location.status==='AMBIGUOUS'?location.pages:[],parseMark(view.evidenceMark));
+        if(view.documentId&&view.contentType==='application/pdf'&&pdfPages)await renderFindingPdf(dialog,pdfPages,view.documentId,page||1,location.status==='MATCH'||location.status==='AMBIGUOUS'?location.pages:[],parseMark(view.evidenceMark));dialog.showEvidenceLines?.(location.boxes);
     }catch(error){dialog.innerHTML=`<p class="error">${esc(error.message)}</p><button type="button">Schließen</button>`;dialog.querySelector('button').onclick=()=>dialog.close();}
 }
 async function showFindingCrop(dialog,container,lcId,documentId,kind){
@@ -42,6 +42,11 @@ async function renderFindingPdf(dialog,container,documentId,initialPage,markedPa
     const abort=new AbortController();let imageUrl=null,selectedPage=initialPage,pageCount=null,version=0,loading=false;
     // Marking the evidence: a rectangle on the shown page (fractions of the page); it replaces the written comment when a finding is confirmed manually.
     const wrap=container.querySelector('.evidence-page-wrap'),markButton=container.querySelector('[data-mark]'),clearButton=container.querySelector('[data-mark-clear]');
+    // Automatically found lines of the evidence (yellow, from the server); a help for the eye, not a decision.
+    let lineHints=[];const hintLayer=wrap&&typeof document!=='undefined'?document.createElement('div'):null;
+    if(hintLayer){hintLayer.className='evidence-line-hints';hintLayer.setAttribute('aria-hidden','true');}
+    const refreshHints=()=>{if(!hintLayer?.replaceChildren)return;hintLayer.replaceChildren(...(image.hidden?[]:lineHints.filter(b=>b.page===selectedPage).map(b=>{const d=document.createElement('div');d.className='evidence-line-hint';d.style.left=b.x*100+'%';d.style.top=b.y*100+'%';d.style.width=b.w*100+'%';d.style.height=b.h*100+'%';return d;})));};
+    dialog.showEvidenceLines=boxes=>{lineHints=Array.isArray(boxes)?boxes.filter(b=>Number.isInteger(b?.page)&&[b.x,b.y,b.w,b.h].every(v=>typeof v==='number')):[];refreshHints();const first=lineHints.find(b=>b.page===selectedPage);if(first&&!image.hidden)hintLayer?.firstElementChild?.scrollIntoView?.({block:'center',behavior:'smooth'});};
     let refreshMark=()=>{},current=null;const saved=savedMark&&savedMark.documentId===documentId?savedMark:null;
     if(wrap&&markButton&&clearButton&&typeof document!=='undefined'){
     const box=document.createElement('div');box.className='evidence-mark-box';box.hidden=true;box.setAttribute('aria-hidden','true');
@@ -66,6 +71,7 @@ async function renderFindingPdf(dialog,container,documentId,initialPage,markedPa
         refreshMark();
     };
     }
+    if(hintLayer)wrap.append(hintLayer);
     const sidebar=container.querySelector('.evidence-pages');let sidebarBuilt=false;
     const keyHandler=event=>{
         if(!dialog.open||event.altKey||event.ctrlKey||event.metaKey||/^(INPUT|TEXTAREA|SELECT)$/.test(event.target?.tagName||''))return;
@@ -103,14 +109,14 @@ async function renderFindingPdf(dialog,container,documentId,initialPage,markedPa
     }
     const controls=()=>{previous.disabled=loading||selectedPage<=1;next.disabled=loading||pageCount==null||selectedPage>=pageCount;retry.disabled=loading;pageLabel.textContent=`Seite ${selectedPage}${pageCount?' / '+pageCount:''}`;};
     async function loadPage(number){
-        const request=++version;selectedPage=number;loading=true;controls();image.hidden=true;status.textContent=`Seite ${number} wird geladen …`;
+        const request=++version;selectedPage=number;loading=true;controls();image.hidden=true;refreshHints();status.textContent=`Seite ${number} wird geladen …`;
         try{
             const response=await fetch(`/api/documents/${encodeURIComponent(documentId)}/pages/${number}/preview`,{signal:abort.signal});
             if(!response.ok||!response.headers.get('Content-Type')?.startsWith('image/png'))throw Error(`Seitenvorschau nicht verfügbar (HTTP ${response.status}). Bitte neu laden oder das Original separat öffnen.`);
             const blob=await response.blob();if(request!==version||!dialog.open)return;
             const count=Number(response.headers.get('X-Page-Count'));if(Number.isInteger(count)&&count>=number)pageCount=count;
             if(imageUrl)URL.revokeObjectURL(imageUrl);imageUrl=URL.createObjectURL(blob);
-            image.onload=()=>{if(request===version&&dialog.open){image.hidden=false;if(!current)status.textContent='';refreshMark();}};
+            image.onload=()=>{if(request===version&&dialog.open){image.hidden=false;if(!current)status.textContent='';refreshMark();refreshHints();hintLayer?.firstElementChild?.scrollIntoView?.({block:'center'});}};
             image.onerror=()=>{if(request===version&&dialog.open)status.textContent='Seitenbild konnte nicht angezeigt werden. Bitte neu laden oder das Original separat öffnen.';};
             image.alt=`PDF-Seite ${number}`;image.src=imageUrl;
         }catch(error){if(request===version&&!abort.signal.aborted)status.textContent=error.message;}
