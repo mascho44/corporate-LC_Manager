@@ -856,7 +856,7 @@ function renderRuleMetadata(result){
 async function decideCheck(findingCode,documentName,decision,reviewFingerprint,mark=null){
     const lcId=activeLc.id;
     // With a marked evidence in the PDF no written comment is needed (the mark shows where the evidence is).
-    const askNote=globalThis.LcReviewNote?.ask||(o=>Promise.resolve(prompt(o.text)));const comment=mark?'':await askNote({decision,required:decision==='ACCEPTED',title:decision==='ACCEPTED'?'Als erfüllt bestätigen':'Abweichung bestätigen',text:decision==='ACCEPTED'?'Pflichtbegründung (oder vorher im PDF die Fundstelle markieren): Warum wird dieser Befund als erfüllt bestätigt?':'Optionaler Prüfvermerk zur bestätigten Abweichung.'});
+    const askNote=globalThis.LcReviewNote?.ask||(o=>Promise.resolve(prompt(o.text)));const comment=mark?'':await askNote({decision,finding:{code:findingCode},required:decision==='ACCEPTED',title:decision==='ACCEPTED'?'Als erfüllt bestätigen':'Abweichung bestätigen',text:decision==='ACCEPTED'?'Pflichtbegründung (oder vorher im PDF die Fundstelle markieren): Warum wird dieser Befund als erfüllt bestätigt?':'Optionaler Prüfvermerk zur bestätigten Abweichung.'});
     if(comment===null)return;
     if(decision==='ACCEPTED'&&!mark&&!comment.trim()){alert('Bitte eine Begründung eingeben oder die Fundstelle im PDF markieren. Die Entscheidung wurde nicht gespeichert.');return;}
     if(comment.length>1000){alert('Die Begründung darf maximal 1000 Zeichen enthalten.');return;}
