@@ -156,6 +156,7 @@
     const params = new URLSearchParams({ code: finding.code }); if (finding.documentName) params.set('documentName', finding.documentName); if (finding.reviewFingerprint) params.set('reviewFingerprint', finding.reviewFingerprint);
     const view = await json(`/api/lcs/${lcId}/document-checks/evidence?${params}`);
     const page = (view.location?.status === 'MATCH' || view.location?.status === 'AMBIGUOUS') ? view.location.pages?.[0] : null;
+    dialog.showEvidenceLines?.(page ? view.location.boxes : []);
     if (page && dialog.open) dialog.showPdfPage?.(page);
    } catch (ignored) { /* the page jump is a convenience only */ }
   }

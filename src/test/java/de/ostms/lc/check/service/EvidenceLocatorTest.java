@@ -14,6 +14,12 @@ class EvidenceLocatorTest {
   var doc=document("Reference LC123456","Reference LC123456");doc.setExtractedReference("LC123456");assertThat(EvidenceLocator.locate(doc,"Reference captured: LC123456").status()).isEqualTo("AMBIGUOUS");
   var other=document("Reference XLC123456Y");other.setExtractedReference("LC123456");assertThat(EvidenceLocator.locate(other,"Reference captured: LC123456").status()).isEqualTo("UNAVAILABLE");
  }
+ @Test void exactTextGetsTheLineOnItsPage()throws Exception{
+  var result=EvidenceLocator.locateWithLines(document("Invoice number 123","Shipped on Board: 18 SEP 2026"),"Shipped on Board: 18 SEP 2026");
+  assertThat(result.boxes()).hasSize(1);var box=result.boxes().get(0);
+  assertThat(box.page()).isEqualTo(2);assertThat(box.y()).isBetween(0.08,0.13);assertThat(box.x()).isBetween(0.03,0.08);assertThat(box.h()).isBetween(0.01,0.04);
+ }
+ @Test void noLinesWithoutAFoundPage()throws Exception{assertThat(EvidenceLocator.locateWithLines(document("Invoice 123"),"Something else entirely").boxes()).isEmpty();}
  private LcDocument document(String... texts)throws Exception{
   var doc=new LcDocument();doc.setContentType("application/pdf");
   try(var pdf=new PDDocument();var out=new ByteArrayOutputStream()){
