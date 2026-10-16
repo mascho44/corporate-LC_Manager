@@ -38,6 +38,13 @@
   return { open, done: total - open, total };
  }
 
+ /** State of the whole presentation: documents finished, decisions taken, and whether the review is complete (nothing open, no LC data missing). */
+ function summary(groups, missing = []) {
+  let accepted = 0, discrepancies = 0;
+  (groups || []).forEach(g => g.items.forEach(f => { if (f.reviewDecision === 'ACCEPTED') accepted++; else if (f.reviewDecision === 'CONFIRMED_DISCREPANCY') discrepancies++; }));
+  const docs = (groups || []).filter(g => g.name).length, docsDone = (groups || []).filter(g => g.name && g.openCount === 0).length, open = progress(groups).open;
+  return { docs, docsDone, accepted, discrepancies, open, complete: open === 0 && !(missing || []).length };
+ }
  /** Findings grouped by document in the order of the document list (findings without a single document last); open ones first, discrepancies before warnings. Documents with nothing to look at are left out. */
  function groupFindings(results, documents) {
   const docs = documents || [], order = new Map(docs.map((d, i) => [d.originalFilename, i]));
@@ -60,7 +67,7 @@
   (groups || []).forEach(g => g.items.forEach(f => { if (f !== finding && f.code === finding.code && f.documentName && f.documentName !== finding.documentName && isOpen(f)) out.push(f); }));
   return out;
  }
- globalThis.LcDocumentReview = { missingField, missingInputs, isPendingApproval, groupFindings, nextOpen, nextGroupWithOpen, isOpen, tierOf, progress, siblingsOf };
+ globalThis.LcDocumentReview = { summary, missingField, missingInputs, isPendingApproval, groupFindings, nextOpen, nextGroupWithOpen, isOpen, tierOf, progress, siblingsOf };
  if (typeof document === 'undefined' || !document.body) return;
 
  /** Draft notice of discrepancies (MT734 and letter) from the confirmed discrepancies; editable and copyable, nothing is sent. */
@@ -98,7 +105,7 @@
   if (!groups.length && !missing.length) { dialog.querySelector('p').textContent = 'Keine Befunde zu Dokumenten vorhanden.'; return; }
   gi = Math.max(0, nextGroupWithOpen(groups)); 
   dialog.innerHTML = '<div class="dialoghead"><h2>Dokumentweise Prüfung</h2><div class="doc-review-nav"><button type="button" class="secondary" data-doc-prev aria-label="Vorheriges Dokument">←</button><b data-doc-label></b><button type="button" class="secondary" data-doc-next aria-label="Nächstes Dokument">→</button></div><button type="button" data-close>Schließen</button></div>' +
-   '<div class="doc-review-progress"><span data-doc-progress></span><progress data-doc-progress-bar max="1" value="0"></progress><button type="button" class="secondary" data-notice>Unstimmigkeitsmeldung (Entwurf)</button></div><section class="doc-review-missing" data-doc-missing hidden></section><nav class="doc-review-strip" data-doc-strip aria-label="Dokumente"></nav>' +
+   '<div class="doc-review-progress"><span data-doc-progress></span><progress data-doc-progress-bar max="1" value="0"></progress><button type="button" class="secondary" data-notice>Unstimmigkeitsmeldung (Entwurf)</button></div><section class="doc-review-finish" data-doc-finish hidden></section><section class="doc-review-missing" data-doc-missing hidden></section><nav class="doc-review-strip" data-doc-strip aria-label="Dokumente"></nav>' +
    '<div class="evidence-workspace"><section class="evidence-details">' + (can('DOCUMENT_UPLOAD') ? '<p class="doc-review-bar"><button type="button" class="secondary" data-doc-apply>Erkannte Prüfdaten übernehmen</button> <small data-doc-apply-status role="status"></small></p>' : '') + '<div data-doc-findings></div></section><section class="evidence-document" data-pdf-pages></section></div>' +
    '<p class="doc-review-keys"><kbd>J</kbd> erfüllt · <kbd>N</kbd> Abweichung · <kbd>↑</kbd><kbd>↓</kbd> Befund · <kbd>←</kbd><kbd>→</kbd> Dokument</p>';
   dialog.querySelector('[data-close]').onclick = () => dialog.close();
@@ -112,6 +119,31 @@
    const name = groups[gi]?.name; await load(); renderMissing();
    if (!groups.length) { list.textContent = missing.length ? 'Keine weiteren Befunde – zuerst die fehlenden Angaben oben erfassen.' : '✓ Alle Befunde sind erledigt.'; return; }
    const at = groups.findIndex(g => g.name === name); await showGroup(at >= 0 ? at : Math.max(0, nextGroupWithOpen(groups)));
+  }
+  const finishBox = dialog.querySelector('[data-doc-finish]');
+  let finished = false;
+  /** When nothing is open any more: the result of the presentation and the next step (notice of discrepancies or a closing note in the file). */
+  function renderFinish(sum) {
+   finishBox.hidden = !sum.complete; if (!sum.complete || finishBox.dataset.key === `${sum.accepted}/${sum.discrepancies}/${finished}`) return;
+   finishBox.dataset.key = `${sum.accepted}/${sum.discrepancies}/${finished}`; finishBox.replaceChildren();
+   const head = document.createElement('p');
+   head.textContent = sum.discrepancies ? `✓ Alle Befunde entschieden: ${sum.accepted} erfüllt, ${sum.discrepancies} Unstimmigkeit${sum.discrepancies === 1 ? '' : 'en'} bestätigt. Nächster Schritt: Unstimmigkeitsmeldung.` : `✓ Alle Befunde entschieden: ${sum.accepted} erfüllt, keine Unstimmigkeiten. Die Dokumente können als konform behandelt werden.`;
+   finishBox.classList.toggle('with-discrepancies', sum.discrepancies > 0); finishBox.append(head);
+   const actions = document.createElement('div'); actions.className = 'doc-review-finish-actions';
+   if (sum.discrepancies) { const notice = document.createElement('button'); notice.type = 'button'; notice.textContent = 'Unstimmigkeitsmeldung erstellen'; notice.onclick = () => openNotice(lcId); actions.append(notice); }
+   if (can('LC_EDIT')) {
+    const close = document.createElement('button'); close.type = 'button'; close.className = sum.discrepancies ? 'secondary' : ''; close.disabled = finished;
+    close.textContent = finished ? 'Abschluss vermerkt ✓' : 'Prüfung abschließen (Vermerk in der Akte)';
+    close.onclick = async () => {
+     const text = `Dokumentenprüfung abgeschlossen: ${sum.docs} Dokument${sum.docs === 1 ? '' : 'e'}, ${sum.accepted} Befund${sum.accepted === 1 ? '' : 'e'} als erfüllt bestätigt, ${sum.discrepancies ? sum.discrepancies + ' Unstimmigkeit' + (sum.discrepancies === 1 ? '' : 'en') + ' bestätigt' : 'keine Unstimmigkeiten'}.`;
+     close.disabled = true;
+     try { await json(`/api/lcs/${lcId}/notes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: text }) }); finished = true; renderFinish(summary(groups, missing)); }
+     catch (error) { close.disabled = false; alert('Vermerk konnte nicht gespeichert werden: ' + error.message); }
+    };
+    actions.append(close);
+   }
+   if (can('AUDIT_VIEW')) { const dossier = document.createElement('a'); dossier.className = 'button-link secondary'; dossier.href = `/api/lcs/${lcId}/dossier`; dossier.textContent = 'Prüfakte exportieren'; actions.append(dossier); }
+   finishBox.append(actions);
   }
   function renderMissing() {
    missingBox.hidden = !missing.length; missingBox.replaceChildren(); if (!missing.length) return;
@@ -141,7 +173,9 @@
   renderMissing();
   function renderOverview() {
    const p = progress(groups);
-   progressText.textContent = `${p.done} / ${p.total} erledigt`; progressBar.max = Math.max(1, p.total); progressBar.value = p.done;
+   const sum = summary(groups, missing);
+   progressText.textContent = `${p.done} / ${p.total} Befunde erledigt · ${sum.docsDone} / ${sum.docs} Dokumente fertig`;
+   renderFinish(sum); progressBar.max = Math.max(1, p.total); progressBar.value = p.done;
    strip.replaceChildren(...groups.map((g, i) => {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'doc-review-chip' + (i === gi ? ' active' : '') + (g.openCount === 0 ? ' done' : '') + (g.blockingCount ? ' blocking' : '');
     const name = document.createElement('span'); name.textContent = g.name || 'Dokumentensatz'; const count = document.createElement('b'); count.textContent = g.openCount === 0 ? '✓' : g.openCount + (g.blockingCount ? ' !' : ''); b.append(name, count);
