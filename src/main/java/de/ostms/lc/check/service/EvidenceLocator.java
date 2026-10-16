@@ -18,14 +18,14 @@ public final class EvidenceLocator {
         var location=locate(doc,evidence);
         if(location.pages().isEmpty()||!"application/pdf".equalsIgnoreCase(doc.getContentType())||doc.getContent()==null)return location;
         String needle=normalize(evidence);
-        Set<String> needles=location.method().endsWith("_TEXT")?Set.of(needle):anchorValues(doc,needle);
+        Set<String> needles=location.method().endsWith("_TEXT")?Set.of(needle):location.method().contains("FIELD_VALUE")?fieldValues(needle):anchorValues(doc,needle);
         if(needles.isEmpty())return location;
         try{
             List<Box> boxes=new ArrayList<>();
             for(var line:lines(doc)){
                 if(!location.pages().contains(line.box().page()))continue;
                 String text=normalize(line.text());
-                if(needles.stream().anyMatch(n->java.util.regex.Pattern.compile("(?<![\\p{L}\\p{N}])"+java.util.regex.Pattern.quote(n)+"(?![\\p{L}\\p{N}])").matcher(text).find()))boxes.add(line.box());
+                if(needles.stream().anyMatch(n->bounded(n).matcher(text).find()))boxes.add(line.box());
                 if(boxes.size()>5)return location;
             }
             return new Location(location.status(),location.method(),location.pages(),List.copyOf(boxes));
@@ -109,8 +109,38 @@ public final class EvidenceLocator {
         List<Integer> matches=new ArrayList<>();for(var entry:pages.entrySet())for(String value:needles){
             String text=normalize(entry.getValue());var matcher=java.util.regex.Pattern.compile("(?<![\\p{L}\\p{N}])"+java.util.regex.Pattern.quote(value)+"(?![\\p{L}\\p{N}])").matcher(text);while(matcher.find())matches.add(entry.getKey());
         }
+        if(matches.isEmpty())return fieldAnchors(evidence,pages,method.replace("_VALUE_ANCHOR","_FIELD_VALUE_ANCHOR"));
+        return result(List.copyOf(matches),method);
+    }
+    /** Fallback for rule-engine evidence ("DOCUMENT_TOTAL_AMOUNT = 125000.00 · …"): the checked document value in the spellings it usually has on paper. */
+    private static Location fieldAnchors(String evidence,Map<Integer,String> pages,String method){
+        Set<String> needles=fieldValues(evidence);
+        List<Integer> matches=new ArrayList<>();for(var entry:pages.entrySet()){String text=normalize(entry.getValue());for(String value:needles){var m=bounded(value).matcher(text);while(m.find())matches.add(entry.getKey());}}
         return result(List.copyOf(matches),matches.isEmpty()?"NONE":method);
     }
+    private static final java.util.regex.Pattern FIELD_EVIDENCE=java.util.regex.Pattern.compile("^(DOCUMENT_[A-Z_]+) = (.+?) · ");
+    private static final java.util.Locale EN=java.util.Locale.ENGLISH;
+    static Set<String> fieldValues(String evidence){
+        Set<String> out=new LinkedHashSet<>();var m=FIELD_EVIDENCE.matcher(normalize(evidence));if(!m.find())return out;
+        String v=m.group(2).trim();
+        if(v.equals("nicht erfasst")||v.equalsIgnoreCase("true")||v.equalsIgnoreCase("false")||v.matches("\\d{1,3}")||v.length()<3)return out;
+        if(v.matches("\\d+(\\.\\d+)?")){
+            var n=new java.math.BigDecimal(v).setScale(2,java.math.RoundingMode.HALF_UP);
+            var us=new java.text.DecimalFormat("#,##0.00",java.text.DecimalFormatSymbols.getInstance(EN));var de=new java.text.DecimalFormat("#,##0.00",java.text.DecimalFormatSymbols.getInstance(java.util.Locale.GERMANY));
+            out.add(us.format(n));out.add(de.format(n));out.add(n.toPlainString());
+            if(n.stripTrailingZeros().scale()<=0){var whole=n.setScale(0,java.math.RoundingMode.UNNECESSARY);out.add(new java.text.DecimalFormat("#,##0",java.text.DecimalFormatSymbols.getInstance(EN)).format(whole));out.add(new java.text.DecimalFormat("#,##0",java.text.DecimalFormatSymbols.getInstance(java.util.Locale.GERMANY)).format(whole));}
+            out.removeIf(x->x.matches("\\d{1,3}"));return out;
+        }
+        if(v.matches("\\d{4}-\\d{2}-\\d{2}")){
+            var d=java.time.LocalDate.parse(v);
+            for(String pattern:List.of("uuuu-MM-dd","dd.MM.uuuu","dd/MM/uuuu","d/M/uuuu","dd MMM uuuu","d MMM uuuu","MMM d, uuuu","dd-MMM-uuuu"))out.add(d.format(java.time.format.DateTimeFormatter.ofPattern(pattern,EN)));
+            return out;
+        }
+        if(v.length()>60){int cut=v.lastIndexOf(' ',60);v=v.substring(0,cut>20?cut:60);}
+        out.add(v);return out;
+    }
+    /** The value as a whole word or number ("125,000" does not match inside "125,000.00"), ignoring case. */
+    private static java.util.regex.Pattern bounded(String value){return java.util.regex.Pattern.compile("(?<![\\p{L}\\p{N}]|\\p{N}[.,])"+java.util.regex.Pattern.quote(value)+"(?![\\p{L}\\p{N}]|[.,]\\p{N})",java.util.regex.Pattern.CASE_INSENSITIVE|java.util.regex.Pattern.UNICODE_CASE);}
     /** Values from the evidence that can be found in the document text: the captured reference and the document date in its usual spellings. */
     private static Set<String> anchorValues(LcDocument doc,String evidence){
         Set<String> needles=new LinkedHashSet<>();
