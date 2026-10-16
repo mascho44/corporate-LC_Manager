@@ -23,6 +23,7 @@ public class RuleFactsController {
   return packs.missingDocumentFields(lc,documentInLc(lcId,id),source.packIds());
  }
  public RuleFactsController(LetterOfCreditRepository l,LcDocumentRepository d,AuditService a,DocumentCheckService c){lcs=l;documents=d;audit=a;checks=c;}
+ @org.springframework.beans.factory.annotation.Autowired(required=false) private LearnedLabelService learnedLabels;
  @GetMapping("/rule-facts") @Transactional(readOnly=true)
  public Map<Field,String> lc(@PathVariable UUID lcId){return RuleFacts.read(lcs.findById(lcId).orElseThrow().getRuleFactsJson());}
  @GetMapping("/rule-facts/definitions")
@@ -122,8 +123,13 @@ public class RuleFactsController {
  private static boolean blank(String v){return v==null||v.isBlank();}
  @PutMapping("/documents/{id}/rule-facts") @Transactional
  public Map<Field,String> saveDocument(@PathVariable UUID lcId,@PathVariable UUID id,jakarta.servlet.http.HttpServletRequest request,Authentication auth)throws java.io.IOException{
-  var saved=updateDocument(lcId,id,RuleFacts.decodeRequest(request.getInputStream().readNBytes(RuleFacts.MAX_BYTES+1)),auth);
+  var facts=RuleFacts.decodeRequest(request.getInputStream().readNBytes(RuleFacts.MAX_BYTES+1));
+  var previous=RuleFacts.read(documentInLc(lcId,id).getRuleFactsJson());
+  var saved=updateDocument(lcId,id,facts,auth);
   var doc=documentInLc(lcId,id);doc.setAutoRuleFacts(null);documents.save(doc);
+  // Values entered by hand teach the printed label they stand under (proposals for later documents of the same type).
+  if(learnedLabels!=null){var learned=learnedLabels.learn(doc.getDocumentType(),doc.getExtractedText(),previous,saved,auth.getName());
+   if(!learned.isEmpty())audit.recordInTransaction(auth,"FIELD_LABELS_LEARNED","DOCUMENT",id,"Typ "+doc.getDocumentType()+" · "+learned.stream().map(l->l.field()+" ← „"+l.label()+"“").toList());}
   return saved;
  }
  @Transactional
