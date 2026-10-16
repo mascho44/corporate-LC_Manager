@@ -32,7 +32,7 @@
    const groups=new Map();
    fields.forEach(d=>{const key=section(d);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(d);});
    const title=requirements?'LC-Anforderungen · '+documentType:documentId?'Dokument-Prüfdaten':'LC-Prüfkontext';
-   dialog.innerHTML='<form><div class="dialoghead"><h2>'+esc(title)+'</h2><button type="button" data-close class="ghost">×</button></div><p>Nur fachlich geprüfte Angaben erfassen. Leer bedeutet unbekannt, nicht „nein“. Änderungen setzen bisherige Prüfentscheidungen zurück. Die Dokumentensatzkennung muss bei zusammengehörigen Dokumenten übereinstimmen.</p>'+Array.from(groups,([name,items])=>'<details class="rule-facts-section" open><summary>'+esc(name)+'</summary><div class="form-grid">'+items.map(d=>'<label class="'+(d.field.includes('GOODS_DESCRIPTION')||d.field.endsWith('RISKS')?'wide':'')+'">'+esc(d.label)+widget(d,values[d.field])+'</label>').join('')+'</div></details>').join('')+'<p class="error" data-message role="alert"></p><div class="actions">'+(documentId||requirements?'<button type="button" class="secondary" data-context>LC-Prüfkontext</button>':'')+(documentType&&!requirements?'<button type="button" class="secondary" data-requirements>LC-Anforderungen für diesen Dokumenttyp</button>':'')+'<button type="button" class="secondary" data-close>Schließen</button>'+(allowed?'<button type="submit">Prüfdaten speichern</button>':'')+'</div></form>';
+   dialog.innerHTML='<form><div class="dialoghead"><h2>'+esc(title)+'</h2><button type="button" data-close class="ghost">×</button></div><p>Nur fachlich geprüfte Angaben erfassen. Leer bedeutet unbekannt, nicht „nein“. Änderungen setzen bisherige Prüfentscheidungen zurück. Die Dokumentensatzkennung muss bei zusammengehörigen Dokumenten übereinstimmen.</p>'+Array.from(groups,([name,items])=>'<details class="rule-facts-section" open><summary>'+esc(name)+'</summary><div class="form-grid">'+items.map(d=>'<label class="'+(d.field.includes('GOODS_DESCRIPTION')||d.field.endsWith('RISKS')?'wide':'')+'">'+esc(d.label)+widget(d,values[d.field])+'</label>').join('')+'</div></details>').join('')+'<p class="error" data-message role="alert"></p><div class="actions">'+(documentId||requirements?'<button type="button" class="secondary" data-context>LC-Prüfkontext</button>':'')+(documentType&&!requirements?'<button type="button" class="secondary" data-requirements>LC-Anforderungen für diesen Dokumenttyp</button>':'')+(documentId&&!requirements?'<button type="button" class="secondary" data-learned-labels>Gelernte Beschriftungen</button>':'')+'<button type="button" class="secondary" data-close>Schließen</button>'+(allowed?'<button type="submit">Prüfdaten speichern</button>':'')+'</div></form>';
    const form=dialog.querySelector('form');
    // Values filled automatically from the recognised text: marked until a person saves (which confirms them).
    if(!requirements){
@@ -93,6 +93,7 @@
    }
    if(!allowed)form.querySelectorAll('input,textarea,select').forEach(input=>input.disabled=true);
    dialog.querySelectorAll('[data-close]').forEach(button=>button.onclick=()=>{++sequence;dialog.close();});
+   const learnedButton=dialog.querySelector('[data-learned-labels]');if(learnedButton)learnedButton.onclick=()=>openLearnedLabels(documentType);
    const context=dialog.querySelector('[data-context]');if(context)context.onclick=()=>openFacts(null,documentType);
    const requirementButton=dialog.querySelector('[data-requirements]');if(requirementButton)requirementButton.onclick=()=>openFacts(null,documentType,true);
    form.onsubmit=async event=>{
@@ -105,6 +106,22 @@
    };
    dialog.showModal();
   }catch(error){alert('Prüfdaten konnten nicht geladen werden: '+error.message);}
+ }
+ /** Labels learned from values entered by hand (per document type); a wrong one can be removed. */
+ async function openLearnedLabels(documentType){
+  const box=document.createElement('dialog');box.className='wide-dialog';document.body.append(box);box.onclose=()=>box.remove();
+  box.innerHTML='<div class="dialoghead"><h2>Gelernte Beschriftungen</h2><button type="button" class="ghost" data-close>×</button></div><p>Trägst du in den Prüfdaten eines Dokuments einen Wert von Hand ein, merkt sich das System die Beschriftung, unter der er gedruckt ist (z. B. „Description of goods“), für diesen Dokumenttyp. Bei späteren Dokumenten wird der Wert dann als Vorschlag erkannt – nur wenn er dort eindeutig ist.</p><div data-list>Wird geladen …</div>';
+  box.querySelector('[data-close]').onclick=()=>box.close();box.showModal();
+  const list=box.querySelector('[data-list]'),removable=can('DOCUMENT_UPLOAD');
+  const render=async()=>{
+   try{
+    const rows=(await json('/api/learned-labels')).sort((a,b)=>(a.document_type===documentType?0:1)-(b.document_type===documentType?0:1));
+    if(!rows.length){list.textContent='Noch nichts gelernt.';return;}
+    list.innerHTML='<table class="compact-table"><thead><tr><th>Dokumenttyp</th><th>Prüffeld</th><th>Beschriftung</th><th>Gelernt von</th><th></th></tr></thead><tbody>'+rows.map(r=>'<tr><td>'+esc(r.document_type)+'</td><td>'+esc(r.field)+'</td><td>„'+esc(r.label)+'“</td><td>'+esc(r.learned_by)+'</td><td>'+(removable?'<button type="button" class="ghost danger-text" data-forget="'+esc(r.id)+'">Vergessen</button>':'')+'</td></tr>').join('')+'</tbody></table>';
+    list.querySelectorAll('[data-forget]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{await json('/api/learned-labels/'+b.dataset.forget,{method:'DELETE'});await render();}catch(error){b.disabled=false;alert('Nicht entfernt: '+error.message);}});
+   }catch(error){list.textContent='Nicht verfügbar: '+error.message;}
+  };
+  render();
  }
  async function applyAllSuggestions(){
   const lcId=activeLc?.id;if(!lcId)return;

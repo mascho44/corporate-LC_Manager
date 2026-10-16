@@ -21,7 +21,10 @@ public class DocumentFactSuggester {
  private static final Pattern INSURED=Pattern.compile("(?i)(?:sum\\s+insured|insured\\s+amount|amount\\s+insured)\\b[^\\d\\n]{0,15}?([A-Z]{3})\\s{0,2}([\\d.,]+\\d)");
  private static final Pattern RISKS=Pattern.compile("(?i)(INSTITUTE\\s+CARGO\\s+CLAUSES?\\s*\\(?\\s*[ABC]\\s*\\)?|\\bICC\\s*\\(?\\s*[ABC]\\s*\\)?|ALL\\s+RISKS|INSTITUTE\\s+WAR\\s+CLAUSES|INSTITUTE\\s+STRIKES\\s+CLAUSES)");
  private final SignatureEvidenceService signatures;
- public DocumentFactSuggester(SignatureEvidenceService s){signatures=s;}
+ private final LearnedLabelService learned;
+ public DocumentFactSuggester(SignatureEvidenceService s){this(s,(LearnedLabelService)null);}
+ DocumentFactSuggester(SignatureEvidenceService s,LearnedLabelService l){signatures=s;learned=l;}
+ @org.springframework.beans.factory.annotation.Autowired public DocumentFactSuggester(SignatureEvidenceService s,org.springframework.beans.factory.ObjectProvider<LearnedLabelService> l){this(s,l.getIfAvailable());}
 
  public List<Suggestion> suggest(LcDocument doc){
   var current=RuleFacts.read(doc.getRuleFactsJson());
@@ -90,6 +93,8 @@ public class DocumentFactSuggester {
   var parties=DocumentPartyFacts.detect(text);
   if(parties.applicantCountry()!=null)add(out,current,Field.DOCUMENT_APPLICANT_ADDRESS_COUNTRY,parties.applicantCountry(),"Land der Auftraggeber-Adresse im Text erkannt: "+parties.applicantSource());
   if(parties.beneficiaryCountry()!=null)add(out,current,Field.DOCUMENT_BENEFICIARY_ADDRESS_COUNTRY,parties.beneficiaryCountry(),"Land der Begünstigten-Adresse im Text erkannt: "+parties.beneficiarySource());
+  // Labels learned from earlier manual entries for this document type; only for fields nothing else proposed.
+  if(learned!=null)for(var l:learned.labels(doc.getDocumentType()))if(out.stream().noneMatch(x->x.field()==l.field()))LearnedLabelService.valueFor(text,l.field(),l.label()).ifPresent(v->add(out,current,l.field(),v,"Gelernte Beschriftung „"+l.label()+"“ – bitte prüfen"));
   return out;
  }
  /** Value after a printed label on the same line, or on the next non-empty line; null unless exactly one distinct plausible value exists. */
