@@ -19,3 +19,12 @@ test('presentation date is saved only for the presented status and never in the 
  assert.strictEqual(p.dateToSave('ACTIVE', '2026-10-10', '2026-10-16'), null);
  assert.strictEqual(p.dateToSave('DOCUMENTS_PRESENTED', '', '2026-10-16'), null);
 });
+test('the review is complete only when nothing is open and no LC data is missing', () => {
+ const r = load('document-review.js').LcDocumentReview;
+ const done = [{ code: 'A', severity: 'WARNING', documentName: 'a.pdf', reviewDecision: 'ACCEPTED' }, { code: 'B', severity: 'DISCREPANCY', documentName: 'b.pdf', reviewDecision: 'CONFIRMED_DISCREPANCY' }];
+ const s = r.summary(r.groupFindings(done, []), []);
+ assert.strictEqual(s.complete, true); assert.strictEqual(s.accepted, 1); assert.strictEqual(s.discrepancies, 1); assert.strictEqual(s.docs, 2); assert.strictEqual(s.docsDone, 2);
+ assert.strictEqual(r.summary(r.groupFindings(done, []), [{ field: 'LC_PRESENTATION_DATE' }]).complete, false);
+ const open = r.summary(r.groupFindings([...done, { code: 'C', severity: 'WARNING', documentName: 'a.pdf' }], []), []);
+ assert.strictEqual(open.complete, false); assert.strictEqual(open.docsDone, 1);
+});
