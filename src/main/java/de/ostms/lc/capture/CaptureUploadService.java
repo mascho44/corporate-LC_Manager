@@ -19,7 +19,7 @@ import java.util.*;
 public class CaptureUploadService {
  public record Meta(String batchId,String scanner,Integer declaredPages,String scannedAt,String sha256){}
  public record Receipt(String filename,String status,UUID inboxItemId,String sha256,Integer declaredPages,Integer actualPages,boolean pageCountMatches,String note){}
- public record Info(String source,String batchId,String scanner,Integer declaredPages,Integer actualPages,boolean pageCountMatches,LocalDateTime scannedAt){}
+ public record Info(String source,String batchId,String scanner,Integer declaredPages,Integer actualPages,boolean pageCountMatches,LocalDateTime scannedAt,String channel,String reference,String sender,String subject){}
 
  private final de.ostms.lc.intake.InboxIntakeService intake;private final InboxCaptureInfoRepository infos;
  public CaptureUploadService(de.ostms.lc.intake.InboxIntakeService intake,InboxCaptureInfoRepository infos){this.intake=intake;this.infos=infos;}
@@ -58,7 +58,7 @@ public class CaptureUploadService {
  @Transactional(readOnly=true)
  public Map<UUID,Info> overview(){
   Map<UUID,Info> out=new LinkedHashMap<>();
-  infos.findAll().forEach(i->out.put(i.getInboxItemId(),new Info(i.getSource(),i.getBatchId(),i.getScanner(),i.getDeclaredPages(),i.getActualPages(),i.pageCountMatches(),i.getScannedAt())));
+  infos.findAll().forEach(i->out.put(i.getInboxItemId(),new Info(i.getSource(),i.getBatchId(),i.getScanner(),i.getDeclaredPages(),i.getActualPages(),i.pageCountMatches(),i.getScannedAt(),i.getChannel(),i.getOriginReference(),i.getSender(),i.getSubject())));
   return out;
  }
 }

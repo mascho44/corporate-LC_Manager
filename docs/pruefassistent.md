@@ -1,6 +1,6 @@
 # Prüfungsassistent: geführte Prüfung in sieben Schritten
 
-Stand: 17.10.2026. Der Assistent führt durch die Prüfung einer Akte in einer festen fachlichen Reihenfolge. Er ersetzt den [Prüfmodus](pruefmodus.md) nicht, sondern ruft ihn an der richtigen Stelle auf. Start: in der Akte **„Prüfungsassistent"** (Recht „Dokumente prüfen"; ohne dieses Recht ist er nur lesbar).
+Stand: 17.10.2026. Der Assistent führt durch die Prüfung einer Akte in einer festen fachlichen Reihenfolge. Er ersetzt den [Prüfmodus](pruefmodus.md) nicht, sondern ruft ihn an der richtigen Stelle auf. Start: in der Akte **„Prüfungsassistent"** oder in der Aktenliste mit dem Knopf **„Assistent"** (Recht „Dokumente prüfen"; ohne dieses Recht ist er nur lesbar).
 
 ## Die sieben Schritte
 | Schritt | Was geprüft wird |
@@ -26,4 +26,4 @@ Der Fortschritt wird **je Akte** gespeichert (Tabelle `lc_review_step`, V120): S
 Die Schritte sind im Code fest (keine Konfiguration). Der Fortschritt wird mit der Akte bzw. dem Mandanten gelöscht.
 
 ## Noch offen
-Einstieg aus der Aktenliste, eine Checkliste mit Abhaken einzelner Punkte je Schritt, Hinweise zu Fristen nach Arbeitstagen und Feiertagen.
+Eine Checkliste mit Abhaken einzelner Punkte je Schritt, Hinweise zu Fristen nach Arbeitstagen und Feiertagen.
