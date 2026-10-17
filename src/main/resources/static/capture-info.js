@@ -4,7 +4,21 @@
  /** One line about the delivery; `warning` is set when the declared page count does not match. */
  function describe(info) {
   if (!info) return null;
-  const source = String(info.source || '').replace(/^capture:/, '');
+  const source = String(info.source || '').replace(/^(?:capture|mail|folder):/, '');
+  if (info.channel === 'EMAIL') {
+   const mail = ['Eingang: E-Mail' + (info.sender ? ' von ' + info.sender : '')];
+   if (info.subject) mail.push('Betreff „' + info.subject + '“');
+   if (info.scannedAt) mail.push('gesendet ' + fmt(info.scannedAt));
+   if (source) mail.push('Postfach ' + source);
+   return { text: mail.join(' · '), warning: null };
+  }
+  if (info.channel === 'FOLDER') {
+   const file = info.reference ? String(info.reference).replace(/^[^/]*\//, '') : '';
+   const folder = ['Eingang: Ordner ' + (info.scanner || source || '')];
+   if (file) folder.push('Datei ' + file);
+   if (info.scannedAt) folder.push('abgelegt ' + fmt(info.scannedAt));
+   return { text: folder.join(' · '), warning: null };
+  }
   const parts = ['Eingang: ' + (source || 'Erfassung')];
   if (info.scanner) parts.push('Gerät ' + info.scanner);
   if (info.batchId) parts.push('Stapel ' + info.batchId);

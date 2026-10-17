@@ -12,6 +12,9 @@ Dateipfad), Stapel, Gerät, Absender, Betreff, gemeldete Seitenzahl, Zeitpunkt, 
 * **Herkunft:** Kanal, Referenz, Absender und Betreff stehen am Posteingangs-Eintrag (Tabelle `inbox_capture_info`, Spalten `channel`, `origin_reference`, `sender`, `subject`).
 * Die Grenzen des normalen Uploads gelten (10 MB je Datei, keine ZIP-Archive über die Kanäle).
 
+## Anzeige im Posteingang
+Am Dokument steht eine Zeile „Eingang: …": bei E-Mail „E-Mail von <Absender> · Betreff „…" · gesendet … · Postfach …", beim Ordner „Ordner <Kanal> · Datei … · abgelegt …", bei der Scan-Station wie bisher Gerät, Stapel und Seiten (`GET /api/inbox-capture`).
+
 ## Kanal-Schnittstelle (`IntakeChannel`)
 Ein Kanal, der selbst abruft, liefert über `poll(Konfiguration, Sink)` Dateien an den Eingang und handelt **erst nach der Quittung** (Datei verschieben, Mail als gelesen markieren). Eine nicht
 zustellbare Datei geht so nie verloren. Ein neuer Kanal ist eine Klasse mit `type()` und `poll()`; Konfiguration, Zeitplan, Verwaltung und Protokoll sind schon da.
@@ -54,6 +57,6 @@ REST `GET/POST /api/intake/channels`, `PUT/DELETE /api/intake/channels/{id}`, `P
 
 ## Noch offen
 * **Mail-Anmeldung per OAuth** (Microsoft 365, Google): bisher nur Benutzername und Kennwort (bei Microsoft 365 meist ein App-Kennwort oder ein eigenes Dienstkonto). Push (IDLE) statt Abruf im Minutentakt.
-* Anzeige der Herkunft (Absender, Betreff) in der Posteingangs-Oberfläche; Benachrichtigung bei Kanälen, die lange nichts liefern; Mail-Text als Notiz zum Dokument.
+* Benachrichtigung bei Kanälen, die lange nichts liefern; Mail-Text als Notiz zum Dokument.
 * Der IMAP-Zugriff ist gegen einen IMAP-Testserver (GreenMail, IMAPS mit Zertifikat) geprüft: ungelesene Mails lesen, Anhänge, als gelesen markieren, in die Ordner *LC-verarbeitet* und *LC-abgelehnt* verschieben (werden angelegt), Wiederholung nach vorübergehendem Fehler, Verbindungstest ohne Änderung, Fehlermeldungen bei falschem Kennwort, fehlendem Ordner und nicht erreichbarem Server. **Nicht geprüft** sind STARTTLS und echte Anbieter (Microsoft 365, Google, eigene Exchange-Server); vor dem produktiven Einsatz mit einem Test-Postfach des Anbieters ausprobieren.
 * Optionale Begleitdateien eines Scanners (OCR-Text neben dem Bild) werden nicht ausgewertet; durchsuchbare PDFs reichen.

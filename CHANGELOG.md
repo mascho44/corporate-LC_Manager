@@ -3,6 +3,7 @@
 ## 0.5.1 – in Arbeit
 
 * IMAP-Kanal gegen einen IMAP-Testserver (GreenMail) geprüft; der Test läuft in der CI.
+* Prüfungsassistent auch aus der Aktenliste startbar (Knopf „Assistent"); der Posteingang zeigt die Herkunft von E-Mail- und Ordner-Eingängen (Absender, Betreff, Kanal).
 
 ## 0.5.0 – 17.10.2026 (erstes Release)
 
