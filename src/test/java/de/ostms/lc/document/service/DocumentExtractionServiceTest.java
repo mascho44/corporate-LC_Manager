@@ -87,4 +87,17 @@ class DocumentExtractionServiceTest {
         new DocumentExtractionService().extract(document);
         assertThat(document.getExtractedAmount()).isEqualByComparingTo(new BigDecimal(amount));
     }
+    @Test void aPdfWithHeadingsOfSeveralTypesIsACombinedFileNotOneOfThem()throws Exception {
+        LcDocument document = new LcDocument();
+        document.setOriginalFilename("sammel.pdf");document.setContentType("application/pdf");
+        document.setContent(PdfDocumentSplitterTest.pdf("COMMERCIAL INVOICE","PACKING LIST"));
+        new DocumentExtractionService().extract(document);
+        var history=document.getClassificationHistoryJson();
+        assertThat(history).contains("MULTI_DOCUMENT_V1").contains("COMMERCIAL_INVOICE").contains("PACKING_LIST").contains("AMBIGUOUS");
+        LcDocument single = new LcDocument();
+        single.setOriginalFilename("rechnung.pdf");single.setContentType("application/pdf");
+        single.setContent(PdfDocumentSplitterTest.pdf("COMMERCIAL INVOICE","COMMERCIAL INVOICE"));
+        new DocumentExtractionService().extract(single);
+        assertThat(single.getClassificationHistoryJson()).doesNotContain("MULTI_DOCUMENT_V1");
+    }
 }

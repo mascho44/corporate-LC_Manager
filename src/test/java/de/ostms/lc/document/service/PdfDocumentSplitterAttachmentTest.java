@@ -40,4 +40,27 @@ class PdfDocumentSplitterAttachmentTest {
   assertThat(proposal.pages().get(0).textSource()).isEqualTo("UNAVAILABLE");assertThat(proposal.pages().get(0).sample()).isNull();
   assertThat(proposal.pages().get(1).sample()).startsWith("COMMERCIAL INVOICE No. 1 x").hasSizeLessThanOrEqualTo(161).endsWith("…");
  }
+ // Back sides that OCR reads so badly that only typical fields of the type remain (no heading): they join the running bill of lading instead of becoming parts of their own.
+ private static final String BL_BACK_POOR="shipper consignee freight vessel\nTerma an cowDmONS 08 ah Corts tera\n";
+ @Test void aBadlyReadBackSideWithTheTypicalFieldsOfTheTypeJoinsItsFront(){
+  var result=parts(List.of(bl("ORIGINAL"),BL_BACK_POOR,bl("ORIGINAL"),BL_BACK_POOR));
+  assertThat(result).containsExactly("1-2 BILL_OF_LADING","3-4 BILL_OF_LADING");
+  var proposal=PdfDocumentSplitter.proposeFromTexts(List.of(bl("ORIGINAL"),BL_BACK_POOR));
+  assertThat(proposal.pages().get(1).classification().method()).isEqualTo("KEYWORD_CONTINUATION_V1");
+  assertThat(InboxAutomaticSplitter.reliablePage(proposal.pages().get(1))).isFalse(); // a guess stays a proposal for review, never an automatic split
+ }
+ @Test void aWeakPageOfAnotherTypeStaysSeparate(){
+  var result=parts(List.of(bl("ORIGINAL"),"packing gross weight net weight packages carton measurement\n"));
+  assertThat(result).hasSize(2);
+ }
+ @Test void continuationPagesWithBlankBoilerplateOrPageTotalCountAsReliableForAutomaticSplitting(){
+  for(String method:new String[]{"BLANK_PAGE_V1","BOILERPLATE_PAGE_V1","PAGE_TOTAL_V1","PAGE_SEQUENCE_V1"}){
+   var page=new PdfDocumentSplitter.Page(2,new DocumentClassifier.Classification(DocumentType.BILL_OF_LADING,.8,"REVIEW",method,List.of("x")),"PAGE_TEXT",DocumentCopyDetector.detect(null),"");
+   assertThat(InboxAutomaticSplitter.reliablePage(page)).as(method).isTrue();
+  }
+  for(String method:new String[]{"LETTERHEAD_CONTINUITY_V1","SHARED_IDENTIFIERS_V1","KEYWORD_CONTINUATION_V1","KEYWORD_PROFILE_V1"}){
+   var page=new PdfDocumentSplitter.Page(2,new DocumentClassifier.Classification(DocumentType.BILL_OF_LADING,.8,"REVIEW",method,List.of("x")),"PAGE_TEXT",DocumentCopyDetector.detect(null),"");
+   assertThat(InboxAutomaticSplitter.reliablePage(page)).as(method).isFalse();
+  }
+ }
 }
