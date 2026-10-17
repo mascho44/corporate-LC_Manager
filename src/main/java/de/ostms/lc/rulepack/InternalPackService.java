@@ -140,7 +140,7 @@ public class InternalPackService {
      if(definition.schemaVersion()==1)outcomeLabel=outcome==Outcome.PASS?"Interne Regel erfüllt: ":outcome==Outcome.FAIL?"Interne Regel verletzt: ":"Interne Regel nicht prüfbar: ";
      findings.add(new CheckResult(level,code,outcomeLabel+rule.message(),
       metadata.basis()+" · "+rule.right()+" = "+Objects.toString(right,"nicht erfasst"),
-      document.getOriginalFilename(),rule.left()+" = "+Objects.toString(left,"nicht erfasst")+" · "+rule.operator()+" · SHA-256 "+stored.checksum+(definition.schemaVersion()>=2?" · Ergebnis "+outcome+" · Prüfdaten "+facts:"")+peerEvidence(rule,document,documents)).withRule(metadata));
+      document.getOriginalFilename(),rule.left()+" = "+Objects.toString(left,"nicht erfasst")+" · "+rule.operator()+" · SHA-256 "+stored.checksum+(definition.schemaVersion()>=2?" · Ergebnis "+outcome+" · Prüfdaten "+facts:"")+peerEvidence(rule,document,documents)).withRule(metadata).withExplanation(outcome==Outcome.FAIL?DiscrepancyExplanation.of(rule,left,right).orElse(null):null));
     }
    }
    if(!notApplied.isEmpty()||!notAppliedByCondition.isEmpty()){

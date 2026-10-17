@@ -97,3 +97,4 @@
 @media (max-width:760px){.review-assistant .assistant-body{grid-template-columns:1fr}}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .assistant-step{background:#1d2939;border-color:#475467;color:#f2f4f7}:root:not([data-theme="light"]) .assistant-step.active{background:#1e3a8a}:root:not([data-theme="light"]) .assistant-recorded{background:#1d2939}:root:not([data-theme="light"]) .assistant-cards .card{border-color:#475467}}
 :root[data-theme="dark"] .assistant-step{background:#1d2939;border-color:#475467;color:#f2f4f7}:root[data-theme="dark"] .assistant-step.active{background:#1e3a8a}:root[data-theme="dark"] .assistant-recorded{background:#1d2939}:root[data-theme="dark"] .assistant-cards .card{border-color:#475467}
+.doc-review-explanation{margin:.25rem 0;font-style:italic;overflow-wrap:anywhere}
