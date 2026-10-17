@@ -41,6 +41,7 @@ public class DocumentFactSuggester {
    }
    var m=ORIGINALS.matcher(text);String count=m.find()?number(m.group(1)):null;
    if(count==null){var w=ORIGINALS_WORD.matcher(text);if(w.find())count=number(w.group(1));}
+   if(count==null){var stated=de.ostms.lc.document.service.StatedOriginals.detect(text);if(stated.isPresent())count=String.valueOf(stated.getAsInt());}
    if(count!=null)add(out,current,Field.DOCUMENT_ORIGINAL_COUNT,count,"Anzahl Originale im Text erkannt");
   }
   if(transport){
