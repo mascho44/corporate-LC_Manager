@@ -354,5 +354,6 @@
   if (groups.length) await showGroup(gi); else list.textContent = 'Keine weiteren Befunde – zuerst die fehlenden Angaben oben erfassen.';
  }
 
+ Object.assign(globalThis.LcDocumentReview, { open, openNotice });
  document.addEventListener('click', event => { if (event.target.closest?.('[data-document-review]')) open(); });
 })();
