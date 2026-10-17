@@ -2,6 +2,8 @@
 
 ## 0.5.1 – in Arbeit
 
+* Befunde mit Datums- oder Zahlenabweichung erklären die Differenz in Worten (z. B. „3 Tage nach der zulässigen Grenze“, Überschuss über dem Höchstbetrag).
+
 * IMAP-Kanal gegen einen IMAP-Testserver (GreenMail) geprüft; der Test läuft in der CI.
 * Prüfungsassistent auch aus der Aktenliste startbar (Knopf „Assistent"); der Posteingang zeigt die Herkunft von E-Mail- und Ordner-Eingängen (Absender, Betreff, Kanal).
 
