@@ -24,9 +24,14 @@ public class InboxAutomaticSplitter {
   if("OCR_EXTRACTED".equals(document.getExtractionStatus())){
    var evidence=DocumentExtractionService.readEvidence(document.getOcrEvidenceJson());if(evidence==null)return Plan.none();
    double minimum=tolerance==null?.8:tolerance.forTenant(document.getTenantId());
-   for(var page:proposal.pages()){var words=evidence.words().stream().filter(w->w.page()==page.number()).toList();if(words.isEmpty()||words.stream().anyMatch(w->w.confidence()==null||!Double.isFinite(w.confidence())||w.confidence()<minimum))return Plan.none();}
+   for(var page:proposal.pages()){var words=evidence.words().stream().filter(w->w.page()==page.number()).toList();if(!pageCertain(words,minimum))return Plan.none();}
   }
   return new Plan(PdfDocumentSplitter.split(document.getContent(),document.getOcrEvidenceJson(),proposal.parts()));
+ }
+ /** A page counts as certain when all its words have a confidence and their mean reaches the tolerance. Single uncertain words (stamps, logos, handwriting) are normal on real scans and do not decide. */
+ static boolean pageCertain(List<OcrEvidence.Word> words,double minimum){
+  if(words==null||words.isEmpty()||words.stream().anyMatch(w->w.confidence()==null||!Double.isFinite(w.confidence())))return false;
+  return words.stream().mapToDouble(OcrEvidence.Word::confidence).average().orElse(0)>=minimum;
  }
  static boolean eligible(PdfDocumentSplitter.Proposal proposal){return proposal.parts().size()>=2&&proposal.parts().size()<=100&&proposal.parts().stream().map(PdfDocumentSplitter.Part::documentType).distinct().count()>=2&&proposal.pages().stream().allMatch(InboxAutomaticSplitter::reliablePage);}
  static boolean reliablePage(PdfDocumentSplitter.Page p){var c=p.classification();if(c.suggestedType()==null)return false;if(c.score()>=.9&&"SUGGESTED".equals(c.status()))return true;return c.score()>=.8&&("PAGE_SEQUENCE_V1".equals(c.method())||"DOCUMENT_REFERENCE_V1".equals(c.method()));}

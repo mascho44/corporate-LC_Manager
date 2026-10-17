@@ -14,4 +14,12 @@ class InboxAutomaticSplitterTest {
  @Test void confidentScansReusePageEvidenceAndUncertainWordsPreventAutomaticSplit()throws Exception{var doc=document("","");doc.setExtractionStatus("OCR_EXTRACTED");var words=List.of(new OcrEvidence.Word("COMMERCIAL INVOICE",.95,1,0,0,200,20),new OcrEvidence.Word("PACKING LIST",.95,2,0,0,200,20));var mapper=new com.fasterxml.jackson.databind.ObjectMapper();doc.setOcrEvidenceJson(mapper.writeValueAsString(new OcrEvidence("test","OCR",200,.8,words)));var result=splitter.prepare(doc);assertThat(result.outputs()).hasSize(2);assertThat(result.outputs().get(1).evidence().words().get(0).page()).isEqualTo(1);doc.setOcrEvidenceJson(mapper.writeValueAsString(new OcrEvidence("test","OCR",200,.8,List.of(words.get(0),new OcrEvidence.Word("PACKING LIST",.3,2,0,0,200,20)))));assertThat(splitter.prepare(doc).outputs()).isEmpty();}
  @Test void failedAndNonPdfDocumentsNeverSplit()throws Exception{var doc=document("COMMERCIAL INVOICE","PACKING LIST");doc.setExtractionStatus("FAILED");assertThat(splitter.prepare(doc).outputs()).isEmpty();doc.setExtractionStatus("EXTRACTED");doc.setContentType("text/plain");assertThat(splitter.prepare(doc).outputs()).isEmpty();}
  @Test void foreignOwnershipIsRejectedBeforeReadingPdf()throws Exception{var doc=document("COMMERCIAL INVOICE","PACKING LIST");try(var scope=de.ostms.lc.tenant.domain.TenantContext.open(UUID.randomUUID())){assertThatThrownBy(()->splitter.prepare(doc)).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);}}
+ @Test void aPageIsCertainByTheMeanOfItsWordsNotByEverySingleWord(){
+  java.util.function.Function<double[],List<OcrEvidence.Word>> page=c->java.util.stream.IntStream.range(0,c.length).mapToObj(i->new OcrEvidence.Word("w"+i,c[i],1,i*10,0,9,9)).toList();
+  assertThat(InboxAutomaticSplitter.pageCertain(page.apply(new double[]{.95,.9,.92,.2,.88,.9,.91,.93}),.8)).isTrue();
+  assertThat(InboxAutomaticSplitter.pageCertain(page.apply(new double[]{.95,.9,.92,.2,.88,.9,.91,.93}),.9)).isFalse();
+  assertThat(InboxAutomaticSplitter.pageCertain(page.apply(new double[]{.3,.4,.5}),.8)).isFalse();
+  assertThat(InboxAutomaticSplitter.pageCertain(List.of(new OcrEvidence.Word("x",null,1,0,0,9,9)),.5)).isFalse();
+  assertThat(InboxAutomaticSplitter.pageCertain(List.of(),.5)).isFalse();
+ }
 }
