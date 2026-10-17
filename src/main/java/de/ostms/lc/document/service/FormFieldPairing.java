@@ -11,7 +11,7 @@ public final class FormFieldPairing {
  private FormFieldPairing(){}
  static final int MAX_LABEL_WORDS=6,MAX_VALUE_LINES=3;
  private record Line(int page,double top,double height,List<OcrEvidence.Word> words){}
- private record Label(String text,int left){}
+ private record Label(String text,int left,boolean captioned){}
 
  /** "Caption: value" lines for all caption rows found; empty when none. */
  public static List<String> pairs(List<OcrEvidence.Word> words){
@@ -34,7 +34,7 @@ public final class FormFieldPairing {
      for(var w:line.words())if(w.left()>=from-tol&&w.left()<to-tol)text.add(w.text());
      if(text.length()>0)parts.add(text.toString());
     }
-    if(!parts.isEmpty())out.add(labels.get(c).text()+" "+String.join(", ",parts));
+    if(!parts.isEmpty()&&labels.get(c).captioned())out.add(labels.get(c).text()+" "+String.join(", ",parts));
    }
   }
   return List.copyOf(out);
@@ -63,14 +63,17 @@ public final class FormFieldPairing {
  }
  /** The captions of a row consisting only of captions ("A: B: C:"), each of at most a few words ending with a colon; empty otherwise. */
  private static List<Label> labelRow(Line line){
-  var labels=new ArrayList<Label>();var text=new ArrayList<String>();int left=-1;
+  var labels=new ArrayList<Label>();var text=new ArrayList<String>();int left=-1,previousEnd=0;
   for(var w:line.words()){
-   if(text.isEmpty())left=w.left();text.add(w.text());
+   // A wide gap starts a new column: a caption without colon ("ASSURED") next to "Documentary Credit No.:" is a column of its own.
+   if(!text.isEmpty()&&w.left()-previousEnd>Math.max(60,line.height()*4)){labels.add(new Label(String.join(" ",text),left,false));text=new ArrayList<>();}
+   if(text.isEmpty())left=w.left();text.add(w.text());previousEnd=w.left()+w.width();
    if(w.text().endsWith(":")){
     if(text.size()>MAX_LABEL_WORDS||text.get(0).length()<2)return List.of();
-    labels.add(new Label(String.join(" ",text),left));text=new ArrayList<>();
+    labels.add(new Label(String.join(" ",text),left,true));text=new ArrayList<>();
    }
   }
-  return text.isEmpty()&&!labels.isEmpty()?labels:List.of();
+  if(!text.isEmpty())labels.add(new Label(String.join(" ",text),left,false));
+  return labels.stream().anyMatch(Label::captioned)&&labels.stream().noneMatch(l->!l.captioned()&&l.text().split(" ").length>MAX_LABEL_WORDS)?labels:List.of();
  }
 }

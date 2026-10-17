@@ -29,4 +29,9 @@ class FormFieldPairingTest {
   assertThat(FormFieldPairing.belongsTo("Invoice Date: 05.12.2026",de.ostms.lc.document.domain.DocumentType.PACKING_LIST)).isTrue();
   assertThat(type).isNotNull();
  }
+ @Test void aCaptionWithoutColonNextToALabelIsAColumnOfItsOwn(){
+  var words=List.of(w("ASSURED",100,300),w("Documentary",700,300),w("Credit",880,300),w("No.:",960,300),
+   w("BEISPIEL",104,340),w("MASCHINENBAU",250,340),w("GMBH",470,340),w("TEST-LC-2026-003",704,340));
+  assertThat(FormFieldPairing.pairs(words)).containsExactly("Documentary Credit No.: TEST-LC-2026-003");
+ }
 }

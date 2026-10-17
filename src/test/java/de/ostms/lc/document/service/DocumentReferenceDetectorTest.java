@@ -17,4 +17,12 @@ class DocumentReferenceDetectorTest {
   for(String text:new String[]{"Credit card number 4111111","Credit terms: 30 days","credit note 1234","Credit No.: ABC123\nL/C No.: DEF456"})
    assertThat(DocumentReferenceDetector.detect(text)).as(text).isNull();
  }
+ @Test void scannedFormsNeitherTakeTheInvoiceNumberNorCutTheReference(){
+  String row="COMMERCIAL INVOICE\nInvoice No.: Invoice Date: Documentary Credit No.:\nINV-2026-0815 05.12.2026 TEST-LC-2026-003\nPayment: by documentary credit TEST-LC-2026-003";
+  assertThat(DocumentReferenceDetector.detect(row)).isEqualTo("TEST-LC-2026-003");
+  assertThat(DocumentReferenceDetector.detect(row+"\nDocumentary Credit No.: TEST-LC-2026-003")).isEqualTo("TEST-LC-2026-003");
+  // "LC" inside a longer reference is not a label of its own ("2026-003" was read from TEST-LC-2026-003)
+  assertThat(DocumentReferenceDetector.detect("Certificate for TEST-LC-2026-003 issued")).isNull();
+  assertThat(DocumentReferenceDetector.detect("Documentary Credit No.: TEST-LC-2026-001")).isEqualTo("TEST-LC-2026-001");
+ }
 }
