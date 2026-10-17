@@ -83,6 +83,7 @@ public class DocumentExtractionService {
             if (pdfPages!=null&&pdfPages.stream().anyMatch(String::isBlank)) {
                 text = normalize(readPdfWithOcr(document,documentBudget,pdfPages,checkpoint));
                 ocrUsed = !text.isBlank();
+                if(ocrUsed){var scanned=readEvidence(document.getOcrEvidenceJson());var paired=new java.util.ArrayList<>(scanned==null?List.<String>of():FormFieldPairing.pairs(scanned.words()));paired.removeIf(line->!FormFieldPairing.belongsTo(line,document.getDocumentType()));if(!paired.isEmpty())text=text+"\n"+String.join("\n",paired);}
             }
             document.setExtractedText(limit(text));
             if (text.isBlank()) {
