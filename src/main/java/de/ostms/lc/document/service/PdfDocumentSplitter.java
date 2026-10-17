@@ -82,6 +82,12 @@ public final class PdfDocumentSplitter {
                     detected=current;
                     classification=new DocumentClassifier.Classification(current,.8,"REVIEW",numberedContinuation?"PAGE_SEQUENCE_V1":referenceContinuation?"DOCUMENT_REFERENCE_V1":blankPage?"BLANK_PAGE_V1":attachmentCue!=null?attachmentCue:"PAGE_TOTAL_V1",List.of(numberedContinuation?"Fortsetzungsseite "+number[0]+" / "+number[1]+"; bitte prüfen":referenceContinuation?"Gleiche Dokumentnummer wie vorherige Seite; bitte prüfen":blankPage?"Leere Seite, der vorherigen zugeordnet; bitte prüfen":"Vorherige Seite kündigt weitere Seiten an; bitte prüfen"));
                 }
+                // A page without heading that only shows the typical fields of the running document's type (e.g. the printed back of a bill of lading, badly read) continues that document.
+                boolean weakSame=detected==null&&!unheaded&&i>0&&current!=null&&classification.suggestedType()==current&&"KEYWORD_PROFILE_V1".equals(classification.method())&&!differentReference&&!differentCopy&&!restart;
+                if(weakSame){
+                    detected=current;
+                    classification=new DocumentClassifier.Classification(current,.8,"REVIEW","KEYWORD_CONTINUATION_V1",List.of("Typische Felder wie die vorherige Seite, keine eigene Überschrift; bitte prüfen"));
+                }
                 pages.add(new Page(i+1,classification,texts.get(i).isBlank()?"UNAVAILABLE":"PAGE_TEXT",DocumentCopyDetector.detect(texts.get(i)),Page.sampleOf(texts.get(i))));
                 // Unknown pages are isolated instead of silently treated as continuations.
                 // A page with its own heading after a headed front page that already has back sides or enclosures attached is a new document (e.g. the next original of a bill of lading); two bare headed pages stay together as before.
@@ -94,7 +100,7 @@ public final class PdfDocumentSplitter {
                 }
                 current=detected;
                 if(headed)headedPart=true;
-                if(continuation&&attachmentCue!=null)attachedInPart=true;
+                if((continuation&&attachmentCue!=null)||weakSame)attachedInPart=true;
                 if(!copy.kind().equals("UNKNOWN"))previousCopy=copy;
                 else if(start==i+1)previousCopy=copy;
                 if(!blankPage)previousNumber=number!=null||!(impliedByTotal&&continuation)?number:new int[]{previousNumber[0]+1,previousNumber[1]};if(nextReference!=null)reference=nextReference;

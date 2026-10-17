@@ -106,9 +106,23 @@ public class DocumentExtractionService {
             log.warn("Document extraction failed: type={}",exception.getClass().getSimpleName());
             document.setExtractionStatus("FAILED");
         } finally {
-            document.setClassificationHistoryJson(ClassificationHistory.automatic(document.getOriginalFilename(),document.getExtractedText(),expectedTypes(document)));
+            var mixed="FAILED".equals(document.getExtractionStatus())?null:mixedFile(document);
+            document.setClassificationHistoryJson(mixed!=null?ClassificationHistory.withAutomatic(mixed):ClassificationHistory.automatic(document.getOriginalFilename(),document.getExtractedText(),expectedTypes(document)));
             log.info("Document extraction completed: status={}, elapsedMillis={}",document.getExtractionStatus(),java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-started));
         }
+    }
+
+    /** A PDF whose pages carry the headings of several document types is a combined file: its type is none of them, it needs to be split. Null when it is not one. */
+    private DocumentClassifier.Classification mixedFile(LcDocument document){
+        if(!isPdf(document)||document.getContent()==null)return null;
+        try{
+            var proposal=PdfDocumentSplitter.propose(document.getContent(),document.getOcrEvidenceJson());
+            if(proposal.pageCount()<2)return null;
+            var types=new java.util.LinkedHashSet<String>();
+            for(var page:proposal.pages()){var c=page.classification();if(c.suggestedType()!=null&&c.score()>=.9&&"SUGGESTED".equals(c.status()))types.add(c.suggestedType().name());}
+            if(types.size()<2)return null;
+            return new DocumentClassifier.Classification(null,0,"AMBIGUOUS","MULTI_DOCUMENT_V1",List.of("Sammeldatei mit mehreren Dokumentarten ("+String.join(", ",types)+") – bitte aufteilen"));
+        }catch(Exception unreadable){return null;}
     }
 
     /** Reuse page-local recognition without rerunning OCR or copying aggregate metadata. */

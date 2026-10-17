@@ -96,3 +96,10 @@ Two entry points run the current recognition again:
   with before/after.
 * **Inbox items:** "Neu erkennen" appears for finished items (`POST /api/inbox/{id}/retry?force=true`) and re-queues the
   recognition; user entries in the form remain.
+
+## Rückseiten mit schwacher Erkennung, Sammeldateien (Stand 17.10.2026)
+* **Schwach gelesene Rückseiten:** Eine Seite ohne eigene Überschrift, die nur die typischen Felder des laufenden Dokumenttyps zeigt (z. B. die bedruckte Rückseite eines Konnossements, von der OCR schlecht gelesen), wird dem laufenden Dokument zugeschlagen (Methode `KEYWORD_CONTINUATION_V1`, Status „bitte prüfen"). Eine Vorderseite mit eigener Überschrift beginnt danach ein neues Dokument. Bei einem Satz mit sechs Konnossement-Originalen (je zwei Seiten) entstehen so sechs Teile statt elf.
+* **Nur ein Vorschlag:** Diese Zuordnung ist eine Vermutung und gilt für die **automatische** Aufteilung nicht als sicher; sie bleibt ein Vorschlag zur Prüfung.
+* **Sicher für die automatische Aufteilung** gelten außerdem Leerseiten (`BLANK_PAGE_V1`), bedruckte Bedingungsseiten (`BOILERPLATE_PAGE_V1`) und Seiten mit „Seite x von y" (`PAGE_TOTAL_V1`), neben Seitennummern- und Dokumentnummer-Fortsetzungen. Briefkopf- oder Kennungs-Übereinstimmung (`LETTERHEAD_CONTINUITY_V1`, `SHARED_IDENTIFIERS_V1`) und die schwache Fortsetzung genügen dafür nicht.
+* **Sammeldatei:** Tragen die Seiten eines PDFs die Überschriften mehrerer Dokumentarten, bekommt die Datei im Posteingang als Ganzes keine einzelne Art mehr, sondern den Hinweis „Sammeldatei mit mehreren Dokumentarten (…) – bitte aufteilen" (Methode `MULTI_DOCUMENT_V1`, Status mehrdeutig).
+* Grenze: Seiten ohne erkennbare Überschrift und ohne Fortsetzungshinweis (z. B. schlecht gelesene Anlagen- oder Hinweisseiten) bleiben eigene Teile; die automatische Aufteilung verlangt weiterhin, dass jede Seite sicher zugeordnet ist.
