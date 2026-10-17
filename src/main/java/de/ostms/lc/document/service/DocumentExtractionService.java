@@ -50,7 +50,7 @@ public class DocumentExtractionService {
     private static final class PageLimitException extends IOException{}
     private static final Pattern DOCUMENT_NUMBER = Pattern.compile("(?im)^(?:invoice|commercial invoice|document)[\\t ]*+(?:no\\.?|number|#)?[\\t ]*+[:#-]?[\\t ]*+([A-Z0-9][A-Z0-9./_-]{2,})[\\t ]*+$");
     private static final Pattern LC_REFERENCE = Pattern.compile("(?im)(?:letter of credit|documentary credit|lc|l/c)[\\t ]*+(?:no\\.?|number|reference|ref\\.?|#)?[\\t ]*+[:#-]?[\\t ]*+([A-Z0-9][A-Z0-9./_-]{3,})");
-    private static final Pattern AMOUNT = Pattern.compile("(?im)(?:total(?:[\\t ]++(?:invoice[\\t ]++)?(?:amount|value))?|invoice[\\t ]++(?:amount|total|value)|grand total|amount due)[\\t ]*+[:]?[\\t ]*+(EUR|USD|GBP|CHF|JPY)?[\\t ]*+([0-9][0-9., ]{0,20})[\\t ]*+(EUR|USD|GBP|CHF|JPY)?");
+    private static final Pattern AMOUNT = Pattern.compile("(?im)(?<![\\p{L}])(?:grand total|total(?:[\\t ]++(?:invoice|amount|value|payable|due|net|gross))*(?:[\\t ]*+\\([A-Za-z ]{2,12}\\))?(?:[\\t ]++(?:cif|cfr|fob|fca|exw|dap|ddp|cip|cpt)[A-Za-z ,]{0,25}?)?|invoice[\\t ]++(?:amount|total|value)|amount[\\t ]++(?:due|payable)|^[\\t ]*+amount|gesamtbetrag|gesamtsumme|rechnungsbetrag|rechnungssumme|endbetrag|endsumme|bruttobetrag|summe)[\\t ]*+[:]?[\\t ]*+(EUR|USD|GBP|CHF|JPY|CNY|AUD|CAD|INR|AED|SEK|NOK|DKK|PLN|CZK|HUF|TRY|SGD|HKD|ZAR|KRW|€|£)?[\\t ]*+([0-9][0-9.,' ’]{0,20})[\\t ]*+(EUR|USD|GBP|CHF|JPY|CNY|AUD|CAD|INR|AED|SEK|NOK|DKK|PLN|CZK|HUF|TRY|SGD|HKD|ZAR|KRW|€|£)?");
 
     public record TextExtraction(String text,String status,OcrEvidence ocrEvidence) {public TextExtraction(String text,String status){this(text,status,null);}}
     public TextExtraction extractFile(byte[] content,String filename,String contentType) { LcDocument document=new LcDocument();document.setContent(content);document.setOriginalFilename(filename==null?"document":filename);document.setContentType(contentType==null?"application/octet-stream":contentType);extract(document);return new TextExtraction(document.getExtractedText(),document.getExtractionStatus(),readEvidence(document.getOcrEvidenceJson())); }
@@ -116,8 +116,9 @@ public class DocumentExtractionService {
             de.ostms.lc.tenant.domain.TenantContext.require(document.getTenantId());
             String text=limit(normalize(recognized));document.setExtractedText(text);
             if(document.getDocumentDate()==null)document.setDocumentDate(DocumentDateDetector.detect(text).date());
-            match(DOCUMENT_NUMBER, text, 1).ifPresent(document::setExtractedDocumentNumber);
-            if(match(DOCUMENT_NUMBER, text, 1).isEmpty())InsuranceNumberDetector.detect(text).ifPresent(document::setExtractedDocumentNumber);
+            DocumentNumberDetector.detect(text,document.getDocumentType()).ifPresent(document::setExtractedDocumentNumber);
+            if(document.getExtractedDocumentNumber()==null)match(DOCUMENT_NUMBER, text, 1).filter(v->v.chars().anyMatch(Character::isDigit)).ifPresent(document::setExtractedDocumentNumber);
+            if(document.getExtractedDocumentNumber()==null)InsuranceNumberDetector.detect(text).ifPresent(document::setExtractedDocumentNumber);
             document.setExtractedReference(DocumentReferenceDetector.detect(text));
             // A "Total" line with a currency is the amount; "Total 4.815 Pcs" (a quantity) is not. The item table's total is the fallback, the first bare match the last resort.
             var amountMatcher = AMOUNT.matcher(text);
@@ -126,7 +127,7 @@ public class DocumentExtractionService {
                 String currency = amountMatcher.group(1) != null ? amountMatcher.group(1) : amountMatcher.group(3);
                 if (currency == null) { if (firstBareAmount == null) firstBareAmount = amountMatcher.group(2); continue; }
                 var parsed = parseAmount(amountMatcher.group(2));
-                if (parsed.isPresent()) { document.setExtractedCurrency(currency.toUpperCase(Locale.ROOT)); document.setExtractedAmount(parsed.get()); amountSet = true; break; }
+                if (parsed.isPresent()) { document.setExtractedCurrency("€".equals(currency) ? "EUR" : "£".equals(currency) ? "GBP" : currency.toUpperCase(Locale.ROOT)); document.setExtractedAmount(parsed.get()); amountSet = true; break; }
             }
             if (!amountSet) {
                 var table = de.ostms.lc.rulepack.ItemTableFacts.detect(text).filter(row -> row.total() != null && row.currency() != null);
@@ -357,9 +358,10 @@ public class DocumentExtractionService {
     }
 
     private java.util.Optional<BigDecimal> parseAmount(String raw) {
-        String value = raw.replace(" ", "");
+        String value = raw.replace(" ", "").replace("'", "").replace("’", "").replaceAll("[.,]+$", "");
         int comma = value.lastIndexOf(','); int dot = value.lastIndexOf('.');
-        if (comma > dot) value = value.replace(".", "").replace(',', '.');
+        if (comma >= 0 && dot < 0 && value.indexOf(',') != comma) value = value.replace(",", "");
+        else if (comma > dot) value = value.replace(".", "").replace(',', '.');
         else if (dot > comma && comma >= 0) value = value.replace(",", "");
         else if (comma >= 0) value = value.replace(',', '.');
         try { return java.util.Optional.of(new BigDecimal(value)); }
