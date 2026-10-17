@@ -30,7 +30,7 @@ versionierte Inventar der Java-Laufzeitbibliotheken.
 - [Training der Dokumentart (inkl. Absender-Layouts)](dokumentart-training.md)
 - [Bestätigte Aufteilungsmuster](split-training.md) · [Qualität des Aufteilungstrainings](split-training-quality.md)
 - [Hintergrundverarbeitung im Posteingang](inbox-background-extraction.md) · [Erfassungszugang für Scan-Stationen](erfassungszugang.md)
-- [Eingangskanäle: gemeinsamer Eingang und Ordner-Kanal (Scan to Folder)](eingangskanaele.md)
+- [Eingangskanäle: gemeinsamer Eingang, Ordner-Kanal (Scan to Folder) und E-Mail-Postfach](eingangskanaele.md)
 - [Scan-Profil und OCR-Engine](scan-profile.md) · [OCR-Konfidenz](ocr-confidence.md) · [OCR-Verarbeitung](ocr-performance.md) · [OCR-Toleranz, Modelle, Formularfelder, Vergleich](ocr-toleranz-und-modelle.md)
 - [Erkennungs-Benchmark](recognition-benchmark.md) · [KI-Unterstützung (optional)](ki-vorschlaege.md)
 

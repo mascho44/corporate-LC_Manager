@@ -161,8 +161,10 @@ Wichtige Variablen:
 | `SMTP_AUTH`, `SMTP_STARTTLS` | SMTP-Authentifizierung und STARTTLS |
 | `OUTBOX_INTERVAL_MS`, `OUTBOX_MAX_ATTEMPTS` | Ereignisversand und Wiederholungen |
 | `LC_OCR_CONFIDENCE_THRESHOLD` | OCR-Prüfschwelle für neue Extraktionen |
-| `APP_INTAKE_FOLDER_ROOT` | Wurzel der Eingangsordner (Standard `/data/intake`; im Betrieb als Volume einbinden, siehe [Eingangskanäle](eingangskanaele.md)) |
-| `APP_INTAKE_SETTLE_SECONDS`, `APP_INTAKE_POLL_MS` | Ruhezeit einer Datei im Eingangsordner (10 s) und Takt des Abrufs (30000 ms) |
+| `INTAKE_FOLDER_ROOT` | Wurzel der Eingangsordner (Standard `/data/intake`; im Betrieb als Volume einbinden, siehe [Eingangskanäle](eingangskanaele.md)) |
+| `INTAKE_ENCRYPTION_KEY` | Schlüssel (mindestens 32 Zeichen) für die verschlüsselte Ablage der Postfach-Kennwörter; ohne ihn lassen sich keine Postfächer einrichten |
+| `INTAKE_ALLOWED_HOSTS` | Komma-Liste interner Mailserver, die der Server aufrufen darf (sonst nur öffentliche Adressen) |
+| `INTAKE_SETTLE_SECONDS`, `INTAKE_POLL_MS` | Ruhezeit einer Datei im Eingangsordner (10 s) und Takt des Abrufs (30000 ms) |
 
 Die Produktions-Compose-Datei verlangt DB-Passwort, Admin-Passwort und
 TOTP-Schlüssel. Secrets und Originalgeschäftsdokumente gehören nicht in Git.

@@ -11,3 +11,15 @@ test('a channel line names type, state and the last run', () => {
  assert.strictEqual(c.failed({ lastResult: '1 neu' }), false);
  assert.strictEqual(c.failed({}), false);
 });
+test('a mailbox line shows server, folder, senders and never the password; the request leaves an empty password out', () => {
+ const channel = { type: 'EMAIL', name: 'post', enabled: false, intervalMinutes: 2, mail: { host: 'imap.kunde.example', port: 993, security: 'SSL', username: 'poststelle', folder: 'INBOX', allowedSenders: ['@kunde.example', 'a@b.example'], passwordSet: true } };
+ assert.match(c.rowText(channel), /E-Mail-Postfach \(IMAP\) · post · aus/);
+ const line = c.mailText(channel);
+ assert.match(line, /poststelle@imap\.kunde\.example:993 \(SSL\) · Ordner INBOX · Absender: @kunde\.example, a@b\.example · Kennwort hinterlegt/);
+ assert.match(c.mailText({ ...channel, mail: { ...channel.mail, allowedSenders: [], passwordSet: false } }), /keine freigegeben · Kennwort fehlt/);
+ assert.strictEqual(c.mailText({ type: 'FOLDER' }), null);
+ const withPassword = c.mailRequest({ host: ' h.example ', port: '', security: 'STARTTLS', username: ' u ', password: 'geheim', folder: '', processedFolder: '', rejectedFolder: 'Abgelehnt', senders: 'a@x.example, @y.example;\n\n b@z.example' });
+ assert.deepStrictEqual(JSON.parse(JSON.stringify(withPassword)), { host: 'h.example', security: 'STARTTLS', username: 'u', allowedSenders: ['a@x.example', '@y.example', 'b@z.example'], folder: null, processedFolder: null, rejectedFolder: 'Abgelehnt', password: 'geheim' });
+ assert.strictEqual('password' in c.mailRequest({ host: 'h', port: '143', security: 'SSL', username: 'u', password: '', folder: 'INBOX', processedFolder: 'v', rejectedFolder: 'a', senders: '' }), false);
+ assert.strictEqual(c.mailRequest({ host: 'h', port: '143', security: 'SSL', username: 'u', password: '', folder: '', processedFolder: '', rejectedFolder: '', senders: '' }).port, 143);
+});
