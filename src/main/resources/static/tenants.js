@@ -24,6 +24,13 @@ async function setupTenants(){
  const nameLabel=node('label',text('tenant.name','Tenant name')),settingsName=document.createElement('input');settingsName.name='name';settingsName.required=true;settingsName.maxLength=255;nameLabel.append(settingsName);
  const languageLabel=node('label',text('tenant.language','Default language')),settingsLanguage=document.createElement('select');settingsLanguage.name='defaultLanguage';[['en','English'],['de','Deutsch']].forEach(([value,label])=>{const option=node('option',label);option.value=value;settingsLanguage.append(option);});languageLabel.append(settingsLanguage);
  const saveSettings=node('button',text('tenant.saveSettings','Save settings'));saveSettings.type='submit';settingsForm.append(settingsTitle,nameLabel,languageLabel,saveSettings);section.append(settingsForm);
+ // OCR tolerance: minimum confidence of a recognised word to count as certain (own form, so the name/language save stays as it was).
+ const ocrForm=document.createElement('form');ocrForm.id='tenantOcrForm';ocrForm.className='form-grid';ocrForm.hidden=true;
+ const ocrTitle=node('h3',text('tenant.ocr','OCR-Toleranz'));
+ const ocrLabel=node('label',text('tenant.ocrThreshold','Mindest-Sicherheit erkannter Wörter (%)')),ocrInput=document.createElement('input');ocrInput.name='threshold';ocrInput.type='number';ocrInput.min='50';ocrInput.max='95';ocrInput.step='1';ocrLabel.append(ocrInput);
+ const ocrHint=node('p',text('tenant.ocrHint','Niedriger = toleranter: mehr Scans werden automatisch aufgeteilt und weniger Werte als unsicher markiert, dafür steigt das Fehlerrisiko. Leer = Standard.'));
+ const saveOcr=node('button',text('tenant.saveOcr','OCR-Toleranz speichern'));saveOcr.type='submit';ocrForm.append(ocrTitle,ocrLabel,ocrHint,saveOcr);section.append(ocrForm);
+ let ocrSettings=null;
  const readiness=document.createElement('section');readiness.id='tenantReadiness';readiness.className='tenant-readiness';readiness.hidden=true;section.append(readiness);
  async function refreshReadiness(generation){
   if(generation!==refreshGeneration)return;
@@ -75,7 +82,9 @@ async function setupTenants(){
     const button=node('button',workspace.id===overview.selectedTenantId?text('tenant.selected','Selected'):text('tenant.open','Open workspace'));button.type='button';button.className='secondary';button.disabled=workspace.id===overview.selectedTenantId;button.onclick=()=>switchTo(workspace.id);row.append(button);list.append(row);
    });chooser.value=overview.selectedTenantId;const choice=overview.workspaces.length>1||overview.creationEnabled;list.hidden=!choice;header.hidden=overview.workspaces.length<=1;
    const nextSettings=await json('/api/tenants/current/settings');if(generation!==refreshGeneration)return;settings=nextSettings;settingsForm.hidden=!settings.editingEnabled;settingsName.value=settings.name;settingsLanguage.value=settings.defaultLanguage;
-   if(typeof applyWorkspaceProfile==='function')applyWorkspaceProfile(settings);
+ if(typeof applyWorkspaceProfile==='function')applyWorkspaceProfile(settings);
+   ocrForm.hidden=true;ocrSettings=null;
+   if(settings.editingEnabled){try{const ocr=await json('/api/tenants/current/settings/ocr');if(generation===refreshGeneration&&ocr&&typeof ocr.defaultThreshold==='number'&&typeof ocr.min==='number'&&typeof ocr.max==='number'){ocrSettings=ocr;ocrForm.hidden=false;ocrInput.min=String(Math.round(ocr.min*100));ocrInput.max=String(Math.round(ocr.max*100));ocrInput.placeholder=text('tenant.ocrDefault','Standard')+': '+Math.round(ocr.defaultThreshold*100);ocrInput.value=ocr.threshold==null?'':String(Math.round(ocr.threshold*100));}}catch(ignored){/* the tolerance form stays hidden */}}
    const current=overview.workspaces.find(workspace=>workspace.id===overview.selectedTenantId);
    if(current){loginInfo.hidden=false;loginInfo.append(node('h3',text('tenant.loginInfo','Access to this tenant')),node('p',current.name),node('p',text('tenant.loginCode','Tenant identifier: ')+current.code),node('p',text('tenant.profile','Mandantenprofil')+': '+[settings.bankEnabled?text('tenant.profileBank','Bank'):'',settings.corporateEnabled?text('tenant.profileCorporate','Corporate'):''].filter(Boolean).join(' & ')),node('p',text('tenant.loginHelp','Sign in with your username, password and two-factor authentication when required, then select an authorized workspace. A single available workspace opens directly.')),node('p',text('tenant.accessHelp','A tenant administrator must first assign your existing account to a role under Users. Creating a tenant or knowing its code does not grant access.')));}
    await refreshReadiness(generation);if(generation===refreshGeneration)message.textContent='';
@@ -86,6 +95,11 @@ async function setupTenants(){
   try{const values=Object.fromEntries(new FormData(form));if(!['bank','corporate','combined'].includes(profile.value))throw Error(text('tenant.profileInvalid','Select a supported tenant profile.'));delete values.profile;values.bankEnabled=profile.value!=='corporate';values.corporateEnabled=profile.value!=='bank';const created=await json('/api/tenants',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(values)});form.reset();await refresh();message.textContent=text('tenant.created','Tenant created: ')+created.name;
    if(overview.workspaces.some(workspace=>workspace.id===created.id)){createdInfo.hidden=false;createdInfo.append(node('h3',created.name),node('p',text('tenant.createdNext','Open the new workspace to configure company records, document templates and user roles. Existing business data is not copied.')));const open=node('button',text('tenant.open','Open workspace'));open.id='tenantCreatedOpen';open.type='button';open.onclick=()=>switchTo(created.id);createdInfo.append(open);}}
   catch(error){message.textContent=error.message;}finally{busy=false;submit.disabled=false;chooser.disabled=false;}
+ };
+ ocrForm.onsubmit=async event=>{event.preventDefault();if(busy||!ocrSettings)return;busy=true;saveOcr.disabled=true;message.textContent='';
+  try{const raw=String(ocrInput.value).trim(),pct=raw===''?null:Number(raw);if(pct!==null&&(!Number.isFinite(pct)||pct<ocrSettings.min*100||pct>ocrSettings.max*100))throw new Error(text('tenant.ocrRange','Bitte einen Wert zwischen 50 und 95 angeben.'));
+   await json('/api/tenants/current/settings/ocr',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({threshold:pct===null?null:pct/100})});await refresh();message.textContent=text('tenant.ocrSaved','OCR-Toleranz gespeichert. Sie gilt für neu erkannte Dokumente; bereits erkannte behalten ihre bisherige Bewertung, bis sie neu erkannt werden.');}
+  catch(error){message.textContent=error.message;}finally{busy=false;saveOcr.disabled=false;}
  };
  settingsForm.onsubmit=async event=>{event.preventDefault();if(busy||!settings?.editingEnabled)return;busy=true;saveSettings.disabled=true;message.textContent='';
   try{await json('/api/tenants/current/settings',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:settingsName.value,defaultLanguage:settingsLanguage.value})});await refresh();message.textContent=text('tenant.settingsSaved','Settings saved. The default language applies to users without a personal language preference.');}
