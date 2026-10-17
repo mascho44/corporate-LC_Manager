@@ -41,7 +41,7 @@ class CaptureUploadServiceTest {
  }
  @BeforeEach void setUp(){
   if(tenants.findById(Tenant.DEFAULT_ID).isEmpty())tenants.saveAndFlush(new Tenant());
-  service=new CaptureUploadService(inbox,infos,pdf);
+  service=new CaptureUploadService(new de.ostms.lc.intake.InboxIntakeService(inbox,infos,pdf),infos);
  }
 
  @Test void aDeliveryIsStoredWithItsMetadataAndAnIdenticalSecondOneIsRecognised()throws Exception{
