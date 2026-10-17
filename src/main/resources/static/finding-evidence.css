@@ -83,3 +83,17 @@
 :root[data-theme="dark"] .doc-review-finish.with-discrepancies{background:#2d1512;border-color:#a1443a;color:#f8d0cb}
 .evidence-checks{position:absolute;inset:0;pointer-events:none}
 .evidence-check{position:absolute;transform:translate(6px,-58%);color:#d92d20;font:700 24px/1 "Segoe UI",system-ui,sans-serif;text-shadow:0 0 3px #fff,0 0 3px #fff;transform-origin:left center;rotate:-6deg}
+.review-assistant .assistant-body{display:grid;grid-template-columns:230px 1fr;gap:16px;padding:0 24px;min-height:340px}
+.assistant-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.assistant-step{width:100%;display:flex;align-items:center;gap:8px;text-align:left;padding:7px 10px;border:1px solid #d0d5dd;border-radius:8px;background:#fff;color:#1d2939;cursor:pointer}
+.assistant-step.active{border-color:#1f4ed8;background:#eef2ff;font-weight:600}
+.assistant-step.done .assistant-mark{background:#067647;color:#fff}.assistant-step.skipped .assistant-mark{background:#b54708;color:#fff}
+.assistant-mark{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#e4e7ec;font-size:12px;flex:none}
+.assistant-count{margin-left:auto;background:#fef3f2;color:#b42318;border-radius:99px;padding:0 7px;font-size:12px}
+.assistant-content{min-width:0}.assistant-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin:8px 0}
+.assistant-cards .card{padding:8px 10px;border:1px solid #e4e7ec;border-radius:8px}.assistant-cards small{display:block;color:#667085}
+.assistant-finding{margin:4px 0}.assistant-recorded{padding:6px 10px;border-radius:8px;background:#f2f4f7}
+.assistant-footer{display:flex;gap:8px;justify-content:space-between;padding:12px 24px;flex-wrap:wrap}
+@media (max-width:760px){.review-assistant .assistant-body{grid-template-columns:1fr}}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .assistant-step{background:#1d2939;border-color:#475467;color:#f2f4f7}:root:not([data-theme="light"]) .assistant-step.active{background:#1e3a8a}:root:not([data-theme="light"]) .assistant-recorded{background:#1d2939}:root:not([data-theme="light"]) .assistant-cards .card{border-color:#475467}}
+:root[data-theme="dark"] .assistant-step{background:#1d2939;border-color:#475467;color:#f2f4f7}:root[data-theme="dark"] .assistant-step.active{background:#1e3a8a}:root[data-theme="dark"] .assistant-recorded{background:#1d2939}:root[data-theme="dark"] .assistant-cards .card{border-color:#475467}

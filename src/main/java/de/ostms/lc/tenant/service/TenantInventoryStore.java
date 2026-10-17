@@ -17,6 +17,7 @@ public class TenantInventoryStore {
   result.add(count("document_type_example","from document_type_example where tenant_id=?",tenant));
   result.add(count("learned_field_label","from learned_field_label where tenant_id=?",tenant));
   result.add(count("intake_channel","from intake_channel where tenant_id=?",tenant));
+  result.add(count("lc_review_step","from lc_review_step where tenant_id=?",tenant));
   for(String table:List.of("letter_of_credit","lc_amendment","lc_note","lc_task","document_draft","document_check_decision","lc_requirement_mapping","training_learning_control","company_profile","document_approval_threshold","swift_import_record","charge_profile","charge_estimate","internal_rule_pack","internal_rule_pack_version","audit_event","integration_outbox","app_role","tenant_membership","tenant_membership_suspension"))
    result.add(count(table,"from "+table+" where tenant_id=?",tenant));
   for(String table:List.of("lc_required_document","lc_additional_field","lc_condition","document_comparison","email_delivery"))
