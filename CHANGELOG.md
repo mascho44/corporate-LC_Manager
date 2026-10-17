@@ -1,5 +1,9 @@
 # Änderungsprotokoll
 
+## 0.5.1 – in Arbeit
+
+* IMAP-Kanal gegen einen IMAP-Testserver (GreenMail) geprüft; der Test läuft in der CI.
+
 ## 0.5.0 – 17.10.2026 (erstes Release)
 
 Corporate LC Manager unterstützt die Bearbeitung von Akkreditiven (Documentary Credits) für Banken und Corporates: SWIFT-Import, Dokumentenerkennung, regelbasierte Prüfung mit Nachweis, geführte Prüfung, Posteingang mit mehreren Eingangskanälen, mandantengetrennte Verwaltung. Die ausführliche Beschreibung steht in der [Projektdokumentation](docs/README.md).
