@@ -19,9 +19,12 @@ The supported types follow DocumentClassifier, including invoice, packing list,
 transport/insurance/origin documents, advising letters and structured MT700 pages.
 Different documents of the same type are not automatically separated.
 
-For OCR_EXTRACTED scans, every proposed page must have OCR word evidence and all
-recorded confidences must be finite, present and >= 0.8. Partial OCR coverage or
-uncertain recognition prevents automatic splitting. Existing OCR page/time limits
+For OCR_EXTRACTED scans, every proposed page must have OCR word evidence, every
+word must have a finite confidence, and the **mean** word confidence of the page must
+reach the tolerance of the tenant (default 0.8, setting "OCR-Toleranz", see
+[OCR-Toleranz und Modelle](ocr-toleranz-und-modelle.md)). Individual uncertain words
+(stamps, logos, handwriting) do not decide. Partial OCR coverage or an uncertain page
+prevents automatic splitting; every page must also be classified reliably. Existing OCR page/time limits
 still apply. OCR is not rerun for child PDFs; text, words and coordinates are
 copied only from the corresponding pages, with page numbers rebased to one.
 Limits remain 100 parts, 10 MB per generated part and 50 MB total, in addition to

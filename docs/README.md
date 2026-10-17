@@ -1,6 +1,6 @@
 # Projektdokumentation
 
-Stand: 15.10.2026 · Corporate LC Manager 0.5.0
+Stand: 17.10.2026 · Corporate LC Manager 0.5.0
 
 Die Dokumentation beschreibt den Quellstand, mit dem sie ausgeliefert wird.
 Die Info-Seite `/info.html` enthält Copyright, Lizenz, Projektlinks und das
@@ -30,7 +30,8 @@ versionierte Inventar der Java-Laufzeitbibliotheken.
 - [Training der Dokumentart (inkl. Absender-Layouts)](dokumentart-training.md)
 - [Bestätigte Aufteilungsmuster](split-training.md) · [Qualität des Aufteilungstrainings](split-training-quality.md)
 - [Hintergrundverarbeitung im Posteingang](inbox-background-extraction.md) · [Erfassungszugang für Scan-Stationen](erfassungszugang.md)
-- [Scan-Profil und OCR-Engine](scan-profile.md) · [OCR-Konfidenz](ocr-confidence.md) · [OCR-Verarbeitung](ocr-performance.md)
+- [Eingangskanäle: gemeinsamer Eingang und Ordner-Kanal (Scan to Folder)](eingangskanaele.md)
+- [Scan-Profil und OCR-Engine](scan-profile.md) · [OCR-Konfidenz](ocr-confidence.md) · [OCR-Verarbeitung](ocr-performance.md) · [OCR-Toleranz, Modelle, Formularfelder, Vergleich](ocr-toleranz-und-modelle.md)
 - [Erkennungs-Benchmark](recognition-benchmark.md) · [KI-Unterstützung (optional)](ki-vorschlaege.md)
 
 ## Prüfregeln
