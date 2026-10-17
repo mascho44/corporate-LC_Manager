@@ -56,3 +56,11 @@ Steht die Menge nicht als „Quantity: 931" sondern in der Positionszeile einer 
 
 ## Automatische Übernahme (Stand 15.10.2026)
 Erkannte Angaben werden jetzt **automatisch** in leere Felder der Prüfdaten übernommen – beim Hochladen eines Dokuments in eine Akte, beim Zuordnen aus dem Posteingang, bei „Neu erkennen“ und (für die Akte selbst) beim SWIFT-Import. Von Personen eingetragene Werte werden nie überschrieben, und bestehende Prüfentscheidungen werden dadurch nicht zurückgesetzt. Automatisch übernommene Felder sind im Prüfdaten-Formular orange markiert („aus OCR, unbestätigt“); wer das Formular speichert, bestätigt sie. Für Akten von vor dieser Änderung füllt „Erkannte Prüfdaten übernehmen“ im Prüfmodus nach (ebenfalls markiert).
+
+## Gelernte Beschriftungen (Stand 17.10.2026)
+Trägt jemand in den Dokument-Prüfdaten einen **Text- oder Zahlenwert von Hand** ein (z. B. die Warenbeschreibung) und steht genau dieser Wert im Dokument auf **genau einer** beschrifteten Zeile („Description of goods: …"), merkt sich das System die Beschriftung für Mandant, Dokumenttyp und Prüffeld (Tabelle `learned_field_label`, V115, höchstens 200 je Dokumenttyp, Audit `FIELD_LABELS_LEARNED`).
+Bei späteren Dokumenten desselben Typs wird der Wert unter dieser Beschriftung als **Vorschlag** erkannt („Gelernte Beschriftung … – bitte prüfen"), aber nur, wenn er dort eindeutig ist und die übrige Erkennung nichts liefert. Steht der Wert auf mehreren Zeilen oder gar nicht im Dokument, wird nichts gelernt.
+Im Prüfdaten-Dialog zeigt **„Gelernte Beschriftungen"** die Liste; **„Vergessen"** entfernt eine falsche (`GET /api/learned-labels`, `DELETE /api/learned-labels/{id}`, Recht „Dokumente hochladen", Audit `FIELD_LABEL_FORGOTTEN`).
+
+## Warenbeschreibung und Beträge (Stand 17.10.2026)
+Die Warenbeschreibung wird unter den üblichen Beschriftungen gefunden („Description of goods", „Goods description", „Description", „Commodity", „Warenbeschreibung", „Warenbezeichnung") – in der Warenprüfung, im Ursprungszeugnis, in Inspektions- und Qualitätszertifikat und im Abgleich Rechnung/Packliste. Zu Beträgen, Nummern und Referenzen in Scans siehe [OCR-Toleranz, Modelle, Formularfelder](ocr-toleranz-und-modelle.md).

@@ -1,5 +1,7 @@
 # Erfassungszugang für Scan-Stationen
 
+Die Lieferung läuft über den [gemeinsamen Eingang](eingangskanaele.md) (Doppelte, Prüfsumme, Seitenzahl und Herkunft sind dort beschrieben); für Scanner, die in einen Ordner schreiben, gibt es den [Ordner-Kanal](eingangskanaele.md#ordner-kanal-scan-to-folder).
+
 Eine Scan-Station (z. B. in der Poststelle) liefert Dokumente über einen **Erfassungszugang** in den Posteingang eines Mandanten, ohne Benutzerkonto und Sitzung.
 
 * **Anlegen:** Mandanteneinstellungen → *Erfassungszugänge* (Recht „Einstellungen verwalten"). Der Zugang bekommt einen Namen (z. B. „Poststelle Scanner 2"); das
