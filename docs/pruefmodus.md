@@ -1,5 +1,7 @@
 # Prüfmodus, Aktenliste und Prüfbericht
 
+Für eine geführte Prüfung Schritt für Schritt gibt es den [Prüfungsassistenten](pruefassistent.md); er ruft diesen Prüfmodus beim Schritt „Dokumente" auf.
+
 ## Dokumentweise Prüfung (Prüfmodus)
 Aus der Akte („Dokumentweise prüfen") oder direkt aus der Aktenliste (Knopf **Prüfen**) öffnet sich ein Dialog: links die Befunde des aktuellen Dokuments, rechts das PDF.
 

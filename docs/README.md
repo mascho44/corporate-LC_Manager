@@ -14,6 +14,7 @@ versionierte Inventar der Java-Laufzeitbibliotheken.
 
 ## Akten, Prüfung und Befunde
 - [Prüfmodus, Aktenliste und Prüfbericht](pruefmodus.md)
+- [Prüfungsassistent: geführte Prüfung in sieben Schritten](pruefassistent.md)
 - [Befunde: Übersicht, kompakte Liste, Sammelbestätigung](befunde-uebersicht.md)
 - [Sanktionsprüfung (Listen, Schiffe, Embargoländer, Vier-Augen)](sanktionspruefung.md)
 - [HS-Code-Erkennung](hs-codes.md)
