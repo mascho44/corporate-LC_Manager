@@ -33,4 +33,13 @@ class ItemTableFactsTest {
   new DocumentExtractionService().applyRecognizedText(simple,"Invoice no. 1\nTotal EUR 1.250,50","EXTRACTED");
   assertThat(simple.getExtractedAmount()).isEqualByComparingTo(new BigDecimal("1250.50"));assertThat(simple.getExtractedCurrency()).isEqualTo("EUR");
  }
+ @Test void aLostDecimalCommaInTheTotalOfAScannedItemTableIsRestored(){
+  String text="commercial invoice\narticle quantity unit unit price total price\nWomen Clothing 931 pcs 76,08 70.831 40 EUR\n";
+  var row=ItemTableFacts.detect(text).orElseThrow();
+  assertThat(row.total()).isEqualTo("70831.40");assertThat(row.currency()).isEqualTo("EUR");
+  var doc=new de.ostms.lc.document.domain.LcDocument();new DocumentExtractionService().applyRecognizedText(doc,text,"OCR_EXTRACTED");
+  assertThat(doc.getExtractedAmount()).isEqualByComparingTo(new BigDecimal("70831.40"));
+  assertThat(ItemTableFacts.restoreDecimals(new String[]{"70.831","40","EUR"})).containsExactly("70.831,40","EUR");
+  assertThat(ItemTableFacts.restoreDecimals(new String[]{"931","40","pcs"})).containsExactly("931","40","pcs");
+ }
 }
