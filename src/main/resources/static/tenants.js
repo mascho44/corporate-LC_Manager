@@ -47,7 +47,7 @@ async function setupTenants(){
  /* Tabs: Übersicht / Erkennung & KI / Daten & Zugänge. Boxes of other modules append to the section and are routed into their pane. */
  const panes={overview:document.createElement('div'),recognition:document.createElement('div'),data:document.createElement('div')};
  const tabLabels=[['overview','tenant.tabOverview','Übersicht'],['recognition','tenant.tabRecognition','Erkennung & KI'],['data','tenant.tabData','Daten & Zugänge']];
- const boxPane={scanProfileBox:'recognition',aiSettingsBox:'recognition',docTypeTrainingBox:'recognition',customerMasterBox:'data',captureTokenBox:'data'};
+ const boxPane={scanProfileBox:'recognition',aiSettingsBox:'recognition',docTypeTrainingBox:'recognition',customerMasterBox:'data',captureTokenBox:'data',intakeChannelBox:'data'};
  const tabs=document.createElement('div');tabs.className='tenant-tabs';tabs.setAttribute('role','tablist');
  let activeTab='overview';
  function paintTabs(){[...tabs.children].forEach(b=>{const on=b.dataset.tab===activeTab;b.classList?.toggle('active',on);b.setAttribute('aria-selected',String(on));b.hidden=b.dataset.tab!=='overview'&&!panes[b.dataset.tab].children.length;});Object.entries(panes).forEach(([key,pane])=>{pane.hidden=key!==activeTab;});}
