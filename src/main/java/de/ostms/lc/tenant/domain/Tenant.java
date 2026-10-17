@@ -13,10 +13,19 @@ public class Tenant {
  @Column(nullable=false) private boolean corporateEnabled=false;
  @Column(nullable=false) private boolean active=true;
  @Column(nullable=false,length=16) private String ruleSourceMode="BOTH";
+ @Column(precision=3,scale=2) private java.math.BigDecimal ocrConfidenceThreshold;
  @Column private java.time.Instant archivedAt;
  @Column private java.time.Instant deletedAt;
  public String getRuleSourceMode(){return ruleSourceMode;}
  public void setRuleSourceMode(String mode){if(!java.util.List.of("EMBEDDED","IMPORTED","BOTH").contains(mode))throw new IllegalArgumentException("Unknown rule source mode.");this.ruleSourceMode=mode;}
+ public static final double OCR_MIN=0.50,OCR_MAX=0.95;
+ public Double getOcrConfidenceThreshold(){return ocrConfidenceThreshold==null?null:ocrConfidenceThreshold.doubleValue();}
+ /** null restores the installation default. */
+ public void setOcrConfidenceThreshold(Double value){
+  if(value==null){ocrConfidenceThreshold=null;return;}
+  if(!Double.isFinite(value)||value<OCR_MIN||value>OCR_MAX)throw new IllegalArgumentException("OCR-Toleranz: Wert zwischen 50 % und 95 % angeben.");
+  ocrConfidenceThreshold=java.math.BigDecimal.valueOf(Math.round(value*100)/100.0).setScale(2,java.math.RoundingMode.HALF_UP);
+ }
  public boolean isDeleted(){return deletedAt!=null;}
  public void markDeleted(){if(active||!isArchived()||DEFAULT_ID.equals(id))throw new IllegalArgumentException("Only archived, non-default tenants can be deleted.");deletedAt=java.time.Instant.now();}
  public Tenant(){}

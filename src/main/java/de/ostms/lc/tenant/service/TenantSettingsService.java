@@ -33,5 +33,16 @@ import java.util.*;
   var t=tenant();String before=snapshot(t);t.updatePresentation(name,language);tenants.saveAndFlush(t);
   audit.recordChangeInTransaction(auth,"TENANT_SETTINGS_UPDATED","TENANT",t.getId(),"Tenant name and default language updated",before,snapshot(t));return view(t,true);
  }
+ public record OcrSettings(Double threshold,double defaultThreshold,double min,double max,boolean editingEnabled){}
+ @org.springframework.beans.factory.annotation.Autowired(required=false) private de.ostms.lc.document.service.OcrTolerance ocrTolerance;
+ private double ocrDefault(){return ocrTolerance==null?0.8:ocrTolerance.defaultThreshold();}
+ /** OCR tolerance of the current tenant: own minimum word confidence, null = installation default. */
+ @Transactional(readOnly=true) public OcrSettings ocr(Authentication auth){boolean editable=canEdit(auth);return new OcrSettings(tenant().getOcrConfidenceThreshold(),ocrDefault(),Tenant.OCR_MIN,Tenant.OCR_MAX,editable);}
+ @Transactional public OcrSettings updateOcr(Double threshold,Authentication auth){
+  lock.acquire();if(!canEdit(auth))throw new AccessDeniedException("An administrator with user-management permission and two-factor authentication is required.");
+  var t=tenant();String before=String.valueOf(t.getOcrConfidenceThreshold());t.setOcrConfidenceThreshold(threshold);tenants.saveAndFlush(t);
+  audit.recordChangeInTransaction(auth,"TENANT_OCR_TOLERANCE_UPDATED","TENANT",t.getId(),"OCR-Toleranz (Mindest-Konfidenz) geändert","{\"ocrConfidenceThreshold\":"+before+"}","{\"ocrConfidenceThreshold\":"+t.getOcrConfidenceThreshold()+"}");
+  return new OcrSettings(t.getOcrConfidenceThreshold(),ocrDefault(),Tenant.OCR_MIN,Tenant.OCR_MAX,true);
+ }
  private String snapshot(Tenant t){try{return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(Map.of("name",t.getName(),"defaultLanguage",t.getDefaultLanguage()));}catch(com.fasterxml.jackson.core.JsonProcessingException e){throw new IllegalStateException("Tenant audit snapshot failed",e);}}
 }

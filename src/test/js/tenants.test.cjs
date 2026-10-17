@@ -44,3 +44,18 @@ test('workspace selection reloads to discard stale case state',async()=>{const f
 test('failed selection keeps old workspace and shows readable error',async()=>{const f=await fixture();f.setFailSwitch();const chooser=descendants(f.header).find(n=>n.tag==='select');chooser.value='other';await chooser.onchange();assert.equal(chooser.value,'home');assert.equal(f.reloads,0);assert.ok(descendants(f.main).some(n=>n.textContent==='No active membership'));});
 test('settings remain hidden and cannot submit without editing permission',async()=>{const f=await fixture(false),form=f.nodes.get('tenantSettingsForm');assert.equal(form.hidden,true);await form.onsubmit({preventDefault(){}});assert.equal(f.calls.some(c=>c.options?.method==='PUT'),false);});
 test('settings update sends only name and language to the current tenant endpoint',async()=>{const f=await fixture(),form=f.nodes.get('tenantSettingsForm');assert.equal(form.hidden,false);const fields=descendants(form);fields.find(n=>n.name==='name').value='Renamed synthetic';fields.find(n=>n.name==='defaultLanguage').value='de';await form.onsubmit({preventDefault(){}});const request=f.calls.find(c=>c.options?.method==='PUT');assert.equal(request.url,'/api/tenants/current/settings');assert.equal(request.options.headers['Content-Type'],'application/json');assert.deepEqual(JSON.parse(request.options.body),{name:'Renamed synthetic',defaultLanguage:'de'});});
+test('OCR tolerance is shown for editors and saved as a fraction, empty means default, out of range sends nothing',async()=>{
+ const f=await fixture();
+ f.setRequestHook((url,options)=>{if(url==='/api/tenants/current/settings/ocr'&&!options)return {threshold:0.7,defaultThreshold:0.8,min:0.5,max:0.95,editingEnabled:true};});
+ await f.nodes.get('appNavTenants').onclick();
+ const form=f.nodes.get('tenantOcrForm'),input=descendants(form).find(n=>n.name==='threshold');
+ assert.equal(form.hidden,false);assert.equal(input.value,'70');assert.equal(input.placeholder.endsWith(': 80'),true);
+ const put=()=>f.calls.filter(c=>c.url==='/api/tenants/current/settings/ocr'&&c.options?.method==='PUT');
+ input.value='40';await form.onsubmit({preventDefault(){}});assert.equal(put().length,0);
+ input.value='65';await form.onsubmit({preventDefault(){}});assert.deepEqual(JSON.parse(put()[0].options.body),{threshold:0.65});
+ input.value='';await form.onsubmit({preventDefault(){}});assert.deepEqual(JSON.parse(put()[1].options.body),{threshold:null});
+});
+test('OCR tolerance stays hidden when the endpoint is not available',async()=>{
+ const f=await fixture();await f.nodes.get('appNavTenants').onclick();
+ assert.equal(f.nodes.get('tenantOcrForm').hidden,true);
+});

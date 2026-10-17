@@ -15,6 +15,7 @@ public class InboxAutomaticSplitter {
  public record Plan(List<PdfDocumentSplitter.Output> outputs) { public static Plan none(){return new Plan(List.of());} }
  private final DocumentInboxRepository inbox;private final DocumentExtractionService extraction;private final AuditService audit;
  public InboxAutomaticSplitter(DocumentInboxRepository inbox,DocumentExtractionService extraction,AuditService audit){this.inbox=inbox;this.extraction=extraction;this.audit=audit;}
+ @org.springframework.beans.factory.annotation.Autowired(required=false) private OcrTolerance tolerance;
  public Plan prepare(LcDocument document)throws Exception{
   TenantContext.require(document.getTenantId());
   if(!"application/pdf".equals(document.getContentType())||!List.of("EXTRACTED","OCR_EXTRACTED").contains(document.getExtractionStatus()))return Plan.none();
@@ -22,7 +23,8 @@ public class InboxAutomaticSplitter {
   if(!eligible(proposal))return Plan.none();
   if("OCR_EXTRACTED".equals(document.getExtractionStatus())){
    var evidence=DocumentExtractionService.readEvidence(document.getOcrEvidenceJson());if(evidence==null)return Plan.none();
-   for(var page:proposal.pages()){var words=evidence.words().stream().filter(w->w.page()==page.number()).toList();if(words.isEmpty()||words.stream().anyMatch(w->w.confidence()==null||!Double.isFinite(w.confidence())||w.confidence()<.8))return Plan.none();}
+   double minimum=tolerance==null?.8:tolerance.forTenant(document.getTenantId());
+   for(var page:proposal.pages()){var words=evidence.words().stream().filter(w->w.page()==page.number()).toList();if(words.isEmpty()||words.stream().anyMatch(w->w.confidence()==null||!Double.isFinite(w.confidence())||w.confidence()<minimum))return Plan.none();}
   }
   return new Plan(PdfDocumentSplitter.split(document.getContent(),document.getOcrEvidenceJson(),proposal.parts()));
  }

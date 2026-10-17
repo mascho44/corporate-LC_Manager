@@ -32,6 +32,7 @@ class EndpointAuthorizationCoverageTest {
     /** Endpunkte ohne URL-Regel mit Begründung, wer sie schützt. Jeder Eintrag muss weiterhin existieren und ohne Regel sein. */
     static final Map<String, String> EXEMPT = Map.ofEntries(
         Map.entry("PUT /api/tenants/current/settings", "Dienst prüft Administratorrolle, Benutzerverwaltungsrecht und Zwei-Faktor (TenantSettingsService.canEdit)"),
+        Map.entry("PUT /api/tenants/current/settings/ocr", "Dienst prüft Administratorrolle, Benutzerverwaltungsrecht und Zwei-Faktor (TenantSettingsService.canEdit)"),
         Map.entry("POST /api/tenants/*/select", "Dienst prüft die aktive Mitgliedschaft im gewählten Mandanten"),
         Map.entry("DELETE /api/platform/tenants/*", "Dienst verlangt Plattformadministration mit Zwei-Faktor (PlatformTenantService.require)"),
         Map.entry("PUT /api/platform/tenants/*/archive", "Dienst verlangt Plattformadministration mit Zwei-Faktor (PlatformTenantService.require)"),
