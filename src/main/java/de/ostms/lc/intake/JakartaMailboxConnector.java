@@ -11,6 +11,10 @@ import java.util.*;
 @Component
 public class JakartaMailboxConnector implements MailboxConnector {
  static final long MAX_MESSAGE_BYTES=40L*1024*1024;
+ private final java.util.function.Consumer<Properties> customizer;
+ @org.springframework.beans.factory.annotation.Autowired public JakartaMailboxConnector(){this(p->{});}
+ /** For tests only: lets a test adjust the connection properties (e.g. trust a test server's certificate); production always uses the strict settings. */
+ JakartaMailboxConnector(java.util.function.Consumer<Properties> customizer){this.customizer=customizer;}
 
  @Override public MailboxClient open(MailboxSettings settings,String password)throws IOException{
   boolean ssl=MailboxSettings.SSL.equals(settings.security());String protocol=ssl?"imaps":"imap";
@@ -19,6 +23,7 @@ public class JakartaMailboxConnector implements MailboxConnector {
   p.put("mail."+protocol+".connectiontimeout","10000");p.put("mail."+protocol+".timeout","30000");p.put("mail."+protocol+".writetimeout","30000");
   p.put("mail."+protocol+".peek","true");p.put("mail."+protocol+".ssl.checkserveridentity","true");
   if(ssl)p.put("mail.imaps.ssl.enable","true");else{p.put("mail.imap.starttls.enable","true");p.put("mail.imap.starttls.required","true");}
+  customizer.accept(p);
   try{
    Store store=Session.getInstance(p).getStore(protocol);
    store.connect(settings.host(),settings.port(),settings.username(),password);

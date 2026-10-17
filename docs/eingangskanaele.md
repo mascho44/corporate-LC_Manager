@@ -55,5 +55,5 @@ REST `GET/POST /api/intake/channels`, `PUT/DELETE /api/intake/channels/{id}`, `P
 ## Noch offen
 * **Mail-Anmeldung per OAuth** (Microsoft 365, Google): bisher nur Benutzername und Kennwort (bei Microsoft 365 meist ein App-Kennwort oder ein eigenes Dienstkonto). Push (IDLE) statt Abruf im Minutentakt.
 * Anzeige der Herkunft (Absender, Betreff) in der Posteingangs-Oberfläche; Benachrichtigung bei Kanälen, die lange nichts liefern; Mail-Text als Notiz zum Dokument.
-* Der IMAP-Zugriff ist durch Tests mit einem Ersatz-Postfach abgesichert, nicht gegen einen echten Mailserver; vor dem produktiven Einsatz mit einem Test-Postfach prüfen.
+* Der IMAP-Zugriff ist gegen einen IMAP-Testserver (GreenMail, IMAPS mit Zertifikat) geprüft: ungelesene Mails lesen, Anhänge, als gelesen markieren, in die Ordner *LC-verarbeitet* und *LC-abgelehnt* verschieben (werden angelegt), Wiederholung nach vorübergehendem Fehler, Verbindungstest ohne Änderung, Fehlermeldungen bei falschem Kennwort, fehlendem Ordner und nicht erreichbarem Server. **Nicht geprüft** sind STARTTLS und echte Anbieter (Microsoft 365, Google, eigene Exchange-Server); vor dem produktiven Einsatz mit einem Test-Postfach des Anbieters ausprobieren.
 * Optionale Begleitdateien eines Scanners (OCR-Text neben dem Bild) werden nicht ausgewertet; durchsuchbare PDFs reichen.
