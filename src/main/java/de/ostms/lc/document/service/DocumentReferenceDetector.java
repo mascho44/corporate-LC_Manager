@@ -5,7 +5,7 @@ import java.util.regex.Pattern;
 
 /** Only explicit LC labels; never infer an LC reference from an invoice number. */
 final class DocumentReferenceDetector {
-private static final Pattern LABEL = Pattern.compile("(?im)(?<![\\p{L}\\p{N}-])(?:letter of credit|documentary credit|l\\.?/?c\\.?|akkreditiv)(?![\\p{L}\\p{N}])(?:[\\t ]*+(?:no\\.?|number|reference|ref\\.?|nummer|nr\\.?|referenz|#))?[\\t ]*+[:#-]?[\\t ]*+(?:\\r?\\n[\\t ]*+)?([A-Z0-9][A-Z0-9./_-]{3,}+)(?![A-Z0-9./_-])");
+private static final Pattern LABEL = Pattern.compile("(?im)(?<![\\p{L}\\p{N}-])(?:letter of credit|documentary credit|l\\.?/?c\\.?|akkreditiv|d\\.?/?c\\.?(?=[\\t -]*+(?:no|nr|number)))(?![\\p{L}\\p{N}])(?:[\\t -]*+(?:no\\.?|number|reference|ref\\.?|nummer|nr\\.?|referenz|#))?[\\t ]*+[:#-]?[\\t ]*+(?:\\r?\\n[\\t ]*+)?([A-Z0-9][A-Z0-9./_-]{3,}+)(?![A-Z0-9./_-])");
     /** "Credit No." / "Credit Ref." as printed on insurance certificates and similar documents; the suffix is required so ordinary uses of "credit" never match. */
     private static final Pattern CREDIT = Pattern.compile("(?im)(?<![\\p{L}\\p{N}-])credit[\\t ]*+(?:no\\.?|number|ref\\.?|reference|nr\\.?)[\\t ]*+[:#-]?[\\t ]*+(?:\\r?\\n[\\t ]*+)?([A-Z0-9][A-Z0-9./_-]{3,}+)(?![A-Z0-9./_-])");
     /** A value taken from the next line although the label stands in a row of several captions ("Invoice No.: Invoice Date: Credit No.:") belongs to the first caption, not to this one. */

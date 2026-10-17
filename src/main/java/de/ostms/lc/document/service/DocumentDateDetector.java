@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
 public final class DocumentDateDetector {
  private DocumentDateDetector(){}
  private static final String TOKEN="(?:[0-9]{4}[-/][0-9]{1,2}[-/][0-9]{1,2}|[0-9]{1,2}[./-][0-9]{1,2}[./-][0-9]{4}|[0-9]{1,2}(?:st|nd|rd|th|\\.)?[ \\-]+[A-Za-zÄäÖöÜü.]{3,12}[ ,\\-]+[0-9]{4}|[0-9]{1,2}[ \\-]+[A-Za-zÄäÖöÜü]{3,9}[ \\-]+[0-9]{2}(?![0-9])|[A-Za-zÄäÖöÜü.]{3,12}[ ]+[0-9]{1,2}(?:st|nd|rd|th)?[,]?[ ]+[0-9]{4})";
- private static final Pattern SPECIFIC=Pattern.compile("(?im)\\b(?:invoice date|date of invoice|invoice dated|document date|issue date|date of issue|date of issuance|date and place of issue|place and date of issue|place and date of issuance|date of signing|issued on|dated|certificate date|date of certificate|packing list date|date of packing list|rechnungsdatum|rechnung vom|dokumentdatum|ausstellungsdatum|ausgestellt am|datum der ausstellung|belegdatum|ort und datum)\\b[\\t ]*[:\\-]?[\\t ]*(?:\\n[\\t ]*)?("+TOKEN+")(?![0-9])");
+ private static final Pattern SPECIFIC=Pattern.compile("(?im)\\b(?:invoice date|date of invoice|invoice dated|document date|issue date|date of issue|date of issuance|date and place of issue|place and date of issue|place and date of issuance|date of signing|issued on|dated|certificate date|date of certificate|packing list date|date of packing list|rechnungsdatum|rechnung vom|dokumentdatum|ausstellungsdatum|ausgestellt am|datum der ausstellung|belegdatum|ort und datum)\\b[\\t ]*[:\\-]?[\\t ]*(?:\\n[\\t ]*)?(?:[A-Za-zÄäÖöÜüß][A-Za-zÄäÖöÜüß .'-]{1,40},[\\t ]*)?("+TOKEN+")(?![0-9])");
  private static final Pattern GENERIC=Pattern.compile("(?im)^[\\t ]*(?:date|datum)\\b[\\t ]*[:\\-]?[\\t ]*(?:\\n[\\t ]*)?("+TOKEN+")(?![0-9])");
  private static final Map<String,Integer> MONTHS=new HashMap<>();
  static{
