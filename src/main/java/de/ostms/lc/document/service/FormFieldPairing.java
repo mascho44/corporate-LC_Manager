@@ -39,6 +39,10 @@ public final class FormFieldPairing {
   }
   return List.copyOf(out);
  }
+ /** An invoice number printed on a packing list or certificate refers to the invoice, not to that document; such pairs are used for invoices only (or when the type is not known yet). */
+ public static boolean belongsTo(String pair,de.ostms.lc.document.domain.DocumentType type){
+  return type==null||type==de.ostms.lc.document.domain.DocumentType.COMMERCIAL_INVOICE||!pair.regionMatches(true,0,"Invoice No",0,10);
+ }
  /** Words of one page grouped into lines (similar vertical centre), words left to right, lines top to bottom. */
  private static List<Line> lines(List<OcrEvidence.Word> words){
   var sorted=new ArrayList<>(words);sorted.removeIf(w->w.text()==null||w.text().isBlank());

@@ -21,4 +21,12 @@ class FormFieldPairingTest {
   assertThat(FormFieldPairing.pairs(words)).isEmpty();
   assertThat(FormFieldPairing.pairs(null)).isEmpty();
  }
+ @Test void anInvoiceNumberOnAnotherDocumentTypeIsNotItsOwnNumber(){
+  var type=de.ostms.lc.document.domain.DocumentType.class;
+  assertThat(FormFieldPairing.belongsTo("Invoice No.: INV-1",de.ostms.lc.document.domain.DocumentType.COMMERCIAL_INVOICE)).isTrue();
+  assertThat(FormFieldPairing.belongsTo("Invoice No.: INV-1",null)).isTrue();
+  assertThat(FormFieldPairing.belongsTo("Invoice No.: INV-1",de.ostms.lc.document.domain.DocumentType.PACKING_LIST)).isFalse();
+  assertThat(FormFieldPairing.belongsTo("Invoice Date: 05.12.2026",de.ostms.lc.document.domain.DocumentType.PACKING_LIST)).isTrue();
+  assertThat(type).isNotNull();
+ }
 }
