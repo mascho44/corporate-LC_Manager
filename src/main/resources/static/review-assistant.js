@@ -77,7 +77,7 @@
     const wrap = node('div'); const byDoc = new Map();
     documents.forEach(d => byDoc.set(d.originalFilename, { open: 0, blocking: 0, type: d.typeLabel || d.documentType }));
     summary.DOKUMENTE.items.forEach(f => { const e = byDoc.get(f.documentName) || { open: 0, blocking: 0, type: '' }; e.open++; byDoc.set(f.documentName, e); });
-    const table = node('table', undefined, 'compact-table'); byDoc.forEach((e, name) => { const r = node('tr'); [e.type, name, e.open ? `${e.open} offen` : '✓ erledigt'].forEach(t => r.append(node('td', t))); table.append(r); });
+    const table = node('table', undefined, 'compact-table'); byDoc.forEach((e, name) => { const r = node('tr'); [e.type, name, e.open ? `${e.open} offen` : 'nichts offen'].forEach(t => r.append(node('td', t))); table.append(r); });
     wrap.append(byDoc.size ? table : node('p', 'Keine Dokumente.', 'muted'));
     const b = reviewButton(); b.addEventListener('click', watchReviewDialog); wrap.append(b);
     return wrap;
