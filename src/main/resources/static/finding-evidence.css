@@ -81,3 +81,5 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .doc-review-finish{background:#0f2a1c;border-color:#2f7d52;color:#c7f0d8}:root:not([data-theme="light"]) .doc-review-finish.with-discrepancies{background:#2d1512;border-color:#a1443a;color:#f8d0cb}}
 :root[data-theme="dark"] .doc-review-finish{background:#0f2a1c;border-color:#2f7d52;color:#c7f0d8}
 :root[data-theme="dark"] .doc-review-finish.with-discrepancies{background:#2d1512;border-color:#a1443a;color:#f8d0cb}
+.evidence-checks{position:absolute;inset:0;pointer-events:none}
+.evidence-check{position:absolute;transform:translate(6px,-58%);color:#d92d20;font:700 24px/1 "Segoe UI",system-ui,sans-serif;text-shadow:0 0 3px #fff,0 0 3px #fff;transform-origin:left center;rotate:-6deg}

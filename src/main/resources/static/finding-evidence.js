@@ -43,6 +43,11 @@ async function renderFindingPdf(dialog,container,documentId,initialPage,markedPa
     // Marking the evidence: a rectangle on the shown page (fractions of the page); it replaces the written comment when a finding is confirmed manually.
     const wrap=container.querySelector('.evidence-page-wrap'),markButton=container.querySelector('[data-mark]'),clearButton=container.querySelector('[data-mark-clear]');
     // Automatically found lines of the evidence (yellow, from the server); a help for the eye, not a decision.
+    // Checked positions: a small red tick (accepted) or cross (confirmed discrepancy) next to the place a decision refers to, as on a paper check.
+    let checkMarks=[];const checkLayer=wrap&&typeof document!=='undefined'?document.createElement('div'):null;
+    if(checkLayer){checkLayer.className='evidence-checks';checkLayer.setAttribute('aria-hidden','true');}
+    const refreshChecks=()=>{if(!checkLayer?.replaceChildren)return;checkLayer.replaceChildren(...(image.hidden?[]:checkMarks.filter(m=>m.page===selectedPage).map(m=>{const d=document.createElement('div');d.className='evidence-check'+(m.kind==='discrepancy'?' bad':'');d.textContent=m.kind==='discrepancy'?'✗':'✓';d.style.left=Math.min(97,(m.x+m.w)*100)+'%';d.style.top=(m.y+m.h/2)*100+'%';if(m.title)d.title=m.title;return d;})));};
+    dialog.setCheckmarks=list=>{checkMarks=Array.isArray(list)?list.filter(m=>Number.isInteger(m?.page)&&[m.x,m.y,m.w,m.h].every(v=>typeof v==='number')):[];refreshChecks();};
     let lineHints=[];const hintLayer=wrap&&typeof document!=='undefined'?document.createElement('div'):null;
     if(hintLayer){hintLayer.className='evidence-line-hints';hintLayer.setAttribute('aria-hidden','true');}
     const refreshHints=()=>{if(!hintLayer?.replaceChildren)return;hintLayer.replaceChildren(...(image.hidden?[]:lineHints.filter(b=>b.page===selectedPage).map(b=>{const d=document.createElement('div');d.className='evidence-line-hint';d.style.left=b.x*100+'%';d.style.top=b.y*100+'%';d.style.width=b.w*100+'%';d.style.height=b.h*100+'%';return d;})));};
@@ -71,7 +76,7 @@ async function renderFindingPdf(dialog,container,documentId,initialPage,markedPa
         refreshMark();
     };
     }
-    if(hintLayer)wrap.append(hintLayer);
+    if(hintLayer)wrap.append(hintLayer);if(checkLayer)wrap.append(checkLayer);
     const sidebar=container.querySelector('.evidence-pages');let sidebarBuilt=false;
     const keyHandler=event=>{
         if(!dialog.open||event.altKey||event.ctrlKey||event.metaKey||/^(INPUT|TEXTAREA|SELECT)$/.test(event.target?.tagName||''))return;
@@ -81,7 +86,7 @@ async function renderFindingPdf(dialog,container,documentId,initialPage,markedPa
         event.preventDefault();return loadPage(target);
     };
     dialog.addEventListener?.('keydown',keyHandler);
-    const dispose=()=>{abort.abort();dialog.removeEventListener?.('keydown',keyHandler);if(imageUrl)URL.revokeObjectURL(imageUrl);};
+    const dispose=()=>{dialog.setCheckmarks=undefined;abort.abort();dialog.removeEventListener?.('keydown',keyHandler);if(imageUrl)URL.revokeObjectURL(imageUrl);};
     // A caller that replaces the viewer (document-wise review) disposes the old one first; closing the dialog does it too.
     dialog.disposePdfViewer=dispose;
     const oldClose=dialog.onclose;dialog.onclose=()=>{dispose();oldClose?.();};
@@ -109,14 +114,14 @@ async function renderFindingPdf(dialog,container,documentId,initialPage,markedPa
     }
     const controls=()=>{previous.disabled=loading||selectedPage<=1;next.disabled=loading||pageCount==null||selectedPage>=pageCount;retry.disabled=loading;pageLabel.textContent=`Seite ${selectedPage}${pageCount?' / '+pageCount:''}`;};
     async function loadPage(number){
-        const request=++version;selectedPage=number;loading=true;controls();image.hidden=true;refreshHints();status.textContent=`Seite ${number} wird geladen …`;
+        const request=++version;selectedPage=number;loading=true;controls();image.hidden=true;refreshHints();refreshChecks();status.textContent=`Seite ${number} wird geladen …`;
         try{
             const response=await fetch(`/api/documents/${encodeURIComponent(documentId)}/pages/${number}/preview`,{signal:abort.signal});
             if(!response.ok||!response.headers.get('Content-Type')?.startsWith('image/png'))throw Error(`Seitenvorschau nicht verfügbar (HTTP ${response.status}). Bitte neu laden oder das Original separat öffnen.`);
             const blob=await response.blob();if(request!==version||!dialog.open)return;
             const count=Number(response.headers.get('X-Page-Count'));if(Number.isInteger(count)&&count>=number)pageCount=count;
             if(imageUrl)URL.revokeObjectURL(imageUrl);imageUrl=URL.createObjectURL(blob);
-            image.onload=()=>{if(request===version&&dialog.open){image.hidden=false;if(!current)status.textContent='';refreshMark();refreshHints();hintLayer?.firstElementChild?.scrollIntoView?.({block:'center'});}};
+            image.onload=()=>{if(request===version&&dialog.open){image.hidden=false;if(!current)status.textContent='';refreshMark();refreshHints();refreshChecks();hintLayer?.firstElementChild?.scrollIntoView?.({block:'center'});}};
             image.onerror=()=>{if(request===version&&dialog.open)status.textContent='Seitenbild konnte nicht angezeigt werden. Bitte neu laden oder das Original separat öffnen.';};
             image.alt=`PDF-Seite ${number}`;image.src=imageUrl;
         }catch(error){if(request===version&&!abort.signal.aborted)status.textContent=error.message;}

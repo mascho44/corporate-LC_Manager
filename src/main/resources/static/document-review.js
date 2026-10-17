@@ -194,6 +194,29 @@
     if (page && dialog.open) dialog.showPdfPage?.(page);
    } catch (ignored) { /* the page jump is a convenience only */ }
   }
+  // Red ticks on the PDF for every decided finding of the shown document: at the line the evidence was found on, else at the marked area.
+  const checkCache = new Map();
+  async function loadCheckmarks(group) {
+   if (!group?.documentId || !dialog.setCheckmarks) return;
+   const decided = group.items.filter(f => f.reviewDecision && f.code !== 'REVIEW_STALE' && f.documentName).slice(0, 40), marks = [];
+   await Promise.all(decided.map(async f => {
+    const key = `${f.code}|${f.documentName}|${f.reviewFingerprint || ''}`;
+    let boxes = checkCache.get(key);
+    if (!boxes) {
+     boxes = [];
+     try {
+      const params = new URLSearchParams({ code: f.code, documentName: f.documentName }); if (f.reviewFingerprint) params.set('reviewFingerprint', f.reviewFingerprint);
+      const view = await json(`/api/lcs/${lcId}/document-checks/evidence?${params}`);
+      const located = (view.location?.status === 'MATCH' || view.location?.status === 'AMBIGUOUS') ? view.location.boxes || [] : [];
+      const drawn = typeof parseMark === 'function' ? parseMark(view.evidenceMark) : null;
+      boxes = located.length ? located : drawn ? [drawn] : [];
+     } catch (ignored) { /* the tick is a convenience only */ }
+     checkCache.set(key, boxes);
+    }
+    boxes.forEach(b => marks.push({ page: b.page, x: b.x, y: b.y, w: b.w, h: b.h, kind: f.reviewDecision === 'CONFIRMED_DISCREPANCY' ? 'discrepancy' : 'ok', title: `${f.reviewDecision === 'CONFIRMED_DISCREPANCY' ? 'Abweichung bestätigt' : 'Geprüft'}${f.reviewedBy ? ' · ' + f.reviewedBy : ''}` }));
+   }));
+   if (groups[gi] === group) dialog.setCheckmarks?.(marks);
+  }
   function renderList() {
    const group = groups[gi];
    renderOverview();
@@ -247,6 +270,7 @@
     }
     card.onclick = () => select(index); sections[tierOf(finding)].append(card);
    });
+   loadCheckmarks(group);
   }
   function select(index) { active = index; dialog.clearEvidenceMark?.(); renderList(); list.querySelector('.doc-review-finding.active')?.scrollIntoView?.({ block: 'nearest' }); const f = groups[gi].items[index]; if (f) showEvidencePage(f); }
   async function showGroup(index, keepSelection = false) {
@@ -257,6 +281,7 @@
    if (group.documentId && group.contentType === 'application/pdf') {
     const first = active >= 0 ? group.items[active] : null;
     await renderFindingPdf(dialog, viewer, group.documentId, 1, [], null);
+    loadCheckmarks(group);
     if (first) showEvidencePage(first);
    } else { const none = document.createElement('p'); none.textContent = group.documentId ? 'Dieses Dokument ist kein PDF und kann hier nicht angezeigt werden.' : 'Diese Befunde betreffen den Dokumentensatz, nicht ein einzelnes Dokument.'; viewer.append(none); }
   }
