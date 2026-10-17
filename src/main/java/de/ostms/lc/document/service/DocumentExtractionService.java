@@ -50,7 +50,7 @@ public class DocumentExtractionService {
     private static final class PageLimitException extends IOException{}
     private static final Pattern DOCUMENT_NUMBER = Pattern.compile("(?im)^(?:invoice|commercial invoice|document)[\\t ]*+(?:no\\.?|number|#)?[\\t ]*+[:#-]?[\\t ]*+([A-Z0-9][A-Z0-9./_-]{2,})[\\t ]*+$");
     private static final Pattern LC_REFERENCE = Pattern.compile("(?im)(?:letter of credit|documentary credit|lc|l/c)[\\t ]*+(?:no\\.?|number|reference|ref\\.?|#)?[\\t ]*+[:#-]?[\\t ]*+([A-Z0-9][A-Z0-9./_-]{3,})");
-    private static final Pattern AMOUNT = Pattern.compile("(?im)(?<![\\p{L}])(?:grand total|total(?:[\\t ]++(?:invoice|amount|value|payable|due|net|gross))*(?:[\\t ]*+\\([A-Za-z ]{2,12}\\))?(?:[\\t ]++(?:cif|cfr|fob|fca|exw|dap|ddp|cip|cpt)[A-Za-z ,]{0,25}?)?|invoice[\\t ]++(?:amount|total|value)|amount[\\t ]++(?:due|payable)|^[\\t ]*+amount|gesamtbetrag|gesamtsumme|rechnungsbetrag|rechnungssumme|endbetrag|endsumme|bruttobetrag|summe)[\\t ]*+[:]?[\\t ]*+(EUR|USD|GBP|CHF|JPY|CNY|AUD|CAD|INR|AED|SEK|NOK|DKK|PLN|CZK|HUF|TRY|SGD|HKD|ZAR|KRW|€|£)?[\\t ]*+([0-9][0-9.,' ’]{0,20})[\\t ]*+(EUR|USD|GBP|CHF|JPY|CNY|AUD|CAD|INR|AED|SEK|NOK|DKK|PLN|CZK|HUF|TRY|SGD|HKD|ZAR|KRW|€|£)?");
+    private static final Pattern AMOUNT = Pattern.compile("(?im)(?<![\\p{L}])(?:grand total|total(?:[\\t ]++(?:invoice|amount|value|price|payable|due|net|gross))*(?:[\\t ]*+\\([A-Za-z ]{2,12}\\))?(?:[\\t ]++(?:cif|cfr|fob|fca|exw|dap|ddp|cip|cpt)[A-Za-z ,]{0,25}?)?|invoice[\\t ]++(?:amount|total|value)|amount[\\t ]++(?:due|payable)|^[\\t ]*+amount|gesamtbetrag|gesamtsumme|rechnungsbetrag|rechnungssumme|endbetrag|endsumme|bruttobetrag|summe)[\\t ]*+[:]?[\\t ]*+(EUR|USD|GBP|CHF|JPY|CNY|AUD|CAD|INR|AED|SEK|NOK|DKK|PLN|CZK|HUF|TRY|SGD|HKD|ZAR|KRW|€|£)?[\\t ]*+([0-9][0-9.,' ’]{0,20})[\\t ]*+(EUR|USD|GBP|CHF|JPY|CNY|AUD|CAD|INR|AED|SEK|NOK|DKK|PLN|CZK|HUF|TRY|SGD|HKD|ZAR|KRW|€|£)?");
 
     public record TextExtraction(String text,String status,OcrEvidence ocrEvidence) {public TextExtraction(String text,String status){this(text,status,null);}}
     public TextExtraction extractFile(byte[] content,String filename,String contentType) { LcDocument document=new LcDocument();document.setContent(content);document.setOriginalFilename(filename==null?"document":filename);document.setContentType(contentType==null?"application/octet-stream":contentType);extract(document);return new TextExtraction(document.getExtractedText(),document.getExtractionStatus(),readEvidence(document.getOcrEvidenceJson())); }
@@ -358,7 +358,11 @@ public class DocumentExtractionService {
     }
 
     private java.util.Optional<BigDecimal> parseAmount(String raw) {
-        String value = raw.replace(" ", "").replace("'", "").replace("’", "");
+        String spaced = raw.trim();
+        // OCR often loses the decimal separator of "70.831,40" and reads "70.831 40": thousands separator, one space, two decimals.
+        if (spaced.matches("\\d{1,3}(?:\\.\\d{3})+ \\d{2}")) spaced = spaced.substring(0, spaced.length() - 3) + "," + spaced.substring(spaced.length() - 2);
+        else if (spaced.matches("\\d{1,3}(?:,\\d{3})+ \\d{2}")) spaced = spaced.substring(0, spaced.length() - 3) + "." + spaced.substring(spaced.length() - 2);
+        String value = spaced.replace(" ", "").replace("'", "").replace("’", "");
         int end = value.length(); while (end > 0 && (value.charAt(end - 1) == '.' || value.charAt(end - 1) == ',')) end--;
         value = value.substring(0, end);
         int comma = value.lastIndexOf(','); int dot = value.lastIndexOf('.');

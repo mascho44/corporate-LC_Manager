@@ -29,8 +29,17 @@ public final class ItemTableFacts {
   }
   return Optional.empty();
  }
+ /** OCR often drops the decimal comma of "70.831,40" and reads two tokens "70.831" "40": thousands groups followed by exactly two digits are one amount. */
+ static String[] restoreDecimals(String[] tokens){
+  var out=new ArrayList<String>();
+  for(int i=0;i<tokens.length;i++){
+   if(i+1<tokens.length&&tokens[i].matches("\\d{1,3}(?:\\.\\d{3})+")&&tokens[i+1].matches("\\d{2}")&&(i+2==tokens.length||CURRENCY.matcher(tokens[i+2].toUpperCase(Locale.ROOT)).matches())){out.add(tokens[i]+","+tokens[i+1]);i++;}
+   else out.add(tokens[i]);
+  }
+  return out.toArray(new String[0]);
+ }
  private static Row parse(String line){
-  String[] tokens=line.split("\\s+");
+  String[] tokens=restoreDecimals(line.split("\\s+"));
   for(int k=0;k+1<tokens.length;k++){
    if(!NUMBER.matcher(tokens[k]).matches()||!UNIT.matcher(tokens[k+1]).matches())continue;
    String quantity=DocumentFactSuggester.normalizeNumber(tokens[k]);if(quantity==null)continue;

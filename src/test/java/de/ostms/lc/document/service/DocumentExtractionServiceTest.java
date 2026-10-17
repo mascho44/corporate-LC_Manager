@@ -78,4 +78,13 @@ class DocumentExtractionServiceTest {
         new DocumentExtractionService().extract(document);
         assertThat(document.getExtractedCurrency()).isNull();
     }
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.CsvSource(delimiter='|',value={"Total price 70.831 40 EUR|70831.40","Total 70.831,40 EUR|70831.40","Total amount: EUR 1,250 00|1250.00","Total: EUR 125.000,00|125000.00"})
+    void aLostDecimalSeparatorIsRestored(String line,String amount) {
+        LcDocument document = new LcDocument();
+        document.setOriginalFilename("invoice.txt");document.setContentType("text/plain");
+        document.setContent(("COMMERCIAL INVOICE\n"+line+"\n").getBytes(StandardCharsets.UTF_8));
+        new DocumentExtractionService().extract(document);
+        assertThat(document.getExtractedAmount()).isEqualByComparingTo(new BigDecimal(amount));
+    }
 }
