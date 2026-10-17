@@ -19,7 +19,7 @@ test('preview HTTP error is visible and leaves a working retry button',async()=>
 });
 function setupMark(saved){
  const nodes={},calls=[];const dialog={open:true,onclose:null};
- const element=()=>({textContent:'',disabled:false,hidden:false,style:{},children:[],classList:{toggle(){return true;},add(){},remove(){},_set:new Set(),contains(){return false;}},append(...items){this.children.push(...items);},setAttribute(){},getBoundingClientRect:()=>({left:0,top:0,width:100,height:200})});
+ const element=()=>({textContent:'',disabled:false,hidden:false,style:{},children:[],classList:{toggle(){return true;},add(){},remove(){},_set:new Set(),contains(){return false;}},append(...items){this.children.push(...items);},replaceChildren(...items){this.children=items;},setAttribute(){},getBoundingClientRect:()=>({left:0,top:0,width:100,height:200})});
  for(const selector of ['img','[data-status]','[data-prev]','[data-next]','[data-retry]','[data-page]','[data-zoom]','.evidence-page-wrap','[data-mark]','[data-mark-clear]'])nodes[selector]=element();
  nodes['[data-mark-clear]'].hidden=true;
  Object.defineProperty(nodes.img,'src',{set(value){this.url=value;this.hidden=false;this.onload?.();}});
@@ -42,4 +42,15 @@ test('a saved evidence mark of the shown page is displayed (green) after loading
 test('a saved mark of another document is not shown', async()=>{
  const state=setupMark({documentId:'other',page:1,x:0.1,y:0.2,w:0.3,h:0.05});await state.run();
  assert.equal(state.nodes['.evidence-page-wrap'].children[0].hidden,true);
+});
+
+test('decided positions get a red tick or cross on the shown page only, and none while the page loads',async()=>{
+ const state=setupMark(null);await state.run();
+ const layer=state.nodes['.evidence-page-wrap'].children.find(c=>c.className==='evidence-checks');
+ assert.ok(layer);
+ state.dialog.setCheckmarks([{page:1,x:0.1,y:0.2,w:0.3,h:0.05,kind:'ok',title:'Geprüft'},{page:1,x:0.2,y:0.5,w:0.2,h:0.04,kind:'discrepancy'},{page:2,x:0.1,y:0.1,w:0.1,h:0.1,kind:'ok'},{page:'x'}]);
+ assert.equal(layer.children.length,2);
+ const [tick,cross]=layer.children;assert.equal(tick.textContent,'✓');assert.equal(cross.textContent,'✗');assert.match(cross.className,/bad/);
+ assert.equal(tick.style.left,'40%');assert.equal(tick.style.top,'22.5%');
+ state.dialog.setCheckmarks(null);assert.equal(layer.children.length,0);
 });
