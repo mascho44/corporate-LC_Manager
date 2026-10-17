@@ -1,6 +1,6 @@
 # Corporate LC Manager – Fachliche Dokumentation
 
-Stand: 05.10.2026 · Version 0.5.0-SNAPSHOT
+Stand: 17.10.2026 · Version 0.5.0
 
 ## Zweck und fachlicher Rahmen
 
