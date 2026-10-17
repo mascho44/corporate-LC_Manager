@@ -358,7 +358,9 @@ public class DocumentExtractionService {
     }
 
     private java.util.Optional<BigDecimal> parseAmount(String raw) {
-        String value = raw.replace(" ", "").replace("'", "").replace("’", "").replaceAll("[.,]+$", "");
+        String value = raw.replace(" ", "").replace("'", "").replace("’", "");
+        int end = value.length(); while (end > 0 && (value.charAt(end - 1) == '.' || value.charAt(end - 1) == ',')) end--;
+        value = value.substring(0, end);
         int comma = value.lastIndexOf(','); int dot = value.lastIndexOf('.');
         if (comma >= 0 && dot < 0 && value.indexOf(',') != comma) value = value.replace(",", "");
         else if (comma > dot) value = value.replace(".", "").replace(',', '.');
