@@ -52,4 +52,30 @@ class IntakeChannelServiceTest {
    new IntakeChannelService(repo,intake,audit,List.of(broken),folder).pollDue();assertThat(off.getLastRunAt()).isNull();
   }
  }
+ @Test void aMailboxChannelNeedsTheKeyASenderListAndAPasswordAndNeverShowsThePassword()throws Exception{
+  try(var scope=TenantContext.open(UUID.randomUUID())){
+   when(repo.byName(anyString())).thenReturn(Optional.empty());when(repo.save(any())).thenAnswer(c->c.getArgument(0));
+   var folder=new FolderIntakeChannel(root.toString(),0);
+   var cipher=new IntakeCipher("0123456789abcdef0123456789abcdef");
+   var mailChannel=new MailIntakeChannel((s,p)->{throw new java.io.IOException("nicht erreichbar");},cipher,new MailHostPolicy("mail.kunde.example"));
+   var service=new IntakeChannelService(repo,intake,audit,List.of(folder,mailChannel),folder);
+   org.springframework.test.util.ReflectionTestUtils.setField(service,"cipher",cipher);org.springframework.test.util.ReflectionTestUtils.setField(service,"hosts",new MailHostPolicy("mail.kunde.example"));org.springframework.test.util.ReflectionTestUtils.setField(service,"mailChannel",mailChannel);
+   var mail=new IntakeChannelService.MailRequest("mail.kunde.example",null,"SSL","poststelle@kunde.example","geheim123",null,null,null,List.of("@kunde.example"));
+   var view=service.create(new IntakeChannelService.Request("EMAIL","postfach",true,2,mail),admin);
+   assertThat(view.mail().host()).isEqualTo("mail.kunde.example");assertThat(view.mail().port()).isEqualTo(993);assertThat(view.mail().passwordSet()).isTrue();assertThat(view.mail().allowedSenders()).containsExactly("@kunde.example");
+   assertThat(view.toString()).doesNotContain("geheim123");
+   // no sender list or no password: not switched on
+   assertThatThrownBy(()->service.create(new IntakeChannelService.Request("EMAIL","ohne-absender",true,2,new IntakeChannelService.MailRequest("mail.kunde.example",null,"SSL","u","pw",null,null,null,List.of())),admin)).hasMessageContaining("Absender");
+   assertThatThrownBy(()->service.create(new IntakeChannelService.Request("EMAIL","ohne-kennwort",true,2,new IntakeChannelService.MailRequest("mail.kunde.example",null,"SSL","u",null,null,null,null,List.of("@kunde.example"))),admin)).hasMessageContaining("Kennwort");
+   // internal host refused
+   assertThatThrownBy(()->service.create(new IntakeChannelService.Request("EMAIL","intern",false,2,new IntakeChannelService.MailRequest("localhost",null,"SSL","u","pw",null,null,null,List.of("@x.example"))),admin)).hasMessageContaining("intern");
+   // without a key no password can be stored
+   var noKey=new IntakeChannelService(repo,intake,audit,List.of(folder,mailChannel),folder);
+   org.springframework.test.util.ReflectionTestUtils.setField(noKey,"cipher",new IntakeCipher(""));org.springframework.test.util.ReflectionTestUtils.setField(noKey,"hosts",new MailHostPolicy("mail.kunde.example"));
+   assertThatThrownBy(()->noKey.create(new IntakeChannelService.Request("EMAIL","ohne-schluessel",false,2,mail),admin)).hasMessageContaining("INTAKE_ENCRYPTION_KEY");
+   // connection test reports instead of throwing
+   when(repo.findById(any())).thenReturn(Optional.of(new IntakeChannelConfig("EMAIL","x",false,2,"a")));
+   assertThat(service.test(UUID.randomUUID(),admin)).startsWith("Fehler:");
+  }
+ }
 }

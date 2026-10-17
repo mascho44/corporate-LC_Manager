@@ -17,5 +17,6 @@ public class IntakeChannelController {
  @PostMapping @ResponseStatus(HttpStatus.CREATED) public IntakeChannelService.View create(@RequestBody IntakeChannelService.Request request,Authentication auth)throws IOException{return service.create(request,auth);}
  @PutMapping("/{id}") public IntakeChannelService.View update(@PathVariable UUID id,@RequestBody IntakeChannelService.Request request,Authentication auth){return service.update(id,request,auth);}
  @DeleteMapping("/{id}") public ResponseEntity<Void> delete(@PathVariable UUID id,Authentication auth){service.delete(id,auth);return ResponseEntity.noContent().build();}
+ @PostMapping("/{id}/test") public java.util.Map<String,String> test(@PathVariable UUID id,Authentication auth){return java.util.Map.of("result",service.test(id,auth));}
  @PostMapping("/{id}/run") public IntakeChannelService.View run(@PathVariable UUID id,Authentication auth){return service.runNow(id,auth);}
 }
