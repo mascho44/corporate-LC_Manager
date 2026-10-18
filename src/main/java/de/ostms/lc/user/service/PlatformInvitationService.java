@@ -20,7 +20,7 @@ import java.util.*;
 @Service
 public class PlatformInvitationService {
  public record RoleChoice(UUID id,String name,Set<UserPermission> permissions){}
- public record TenantChoice(UUID id,String name,String code,List<RoleChoice> roles){}
+ public record TenantChoice(UUID id,String name,String code,List<RoleChoice> roles,boolean home){}
  public record InvitationView(UUID userId,String username,String email,UUID tenantId,String tenantName,UUID roleId,String roleName,Instant expiresAt,String status,int attempts,Instant nextAttemptAt,String errorCode){}
  public record MailRequested(UUID userId,String token,String username,String email,String tenantCode,String tenantName){@Override public String toString(){return "InvitationMailRequested[redacted]";}}
  private final PlatformAdministrationService platform;private final PlatformAccountCreationService creation;
@@ -32,7 +32,7 @@ public class PlatformInvitationService {
  public PlatformInvitationService(PlatformAdministrationService platform,PlatformAccountCreationService creation,AppUserRepository users,AppRoleRepository roles,TenantRepository tenants,PlatformInvitationRepository invitations,TenantMembershipSuspensionRepository suspensions,TenantMembershipProvisioningStore memberships,TenantAdministrationLock lock,PasswordEncoder encoder,AuditService audit,ApplicationEventPublisher events,@Value("${app.mail.enabled:false}") boolean mailEnabled,@Value("${app.mail.from:}") String mailFrom){this.platform=platform;this.creation=creation;this.users=users;this.roles=roles;this.tenants=tenants;this.invitations=invitations;this.suspensions=suspensions;this.memberships=memberships;this.lock=lock;this.encoder=encoder;this.audit=audit;this.events=events;this.mailEnabled=mailEnabled;this.mailFrom=mailFrom;}
  private AppUser authorize(Authentication auth){if(!platform.enabled(auth))throw new AccessDeniedException("An active platform administrator with two-factor authentication is required.");return users.findByUsernameIgnoreCase(auth.getName()).orElseThrow(()->new AccessDeniedException("Platform access unavailable."));}
  @Transactional(readOnly=true) public List<TenantChoice> choices(Authentication auth){
-  try(var home=TenantContext.open(Tenant.homeId())){authorize(auth);return tenants.findAll().stream().filter(Tenant::isActive).sorted(Comparator.comparing(Tenant::getName)).map(tenant->{try(var scope=TenantContext.open(tenant.getId())){return new TenantChoice(tenant.getId(),tenant.getName(),tenant.getCode(),roles.findAllByOrderByNameAsc().stream().map(role->new RoleChoice(role.getId(),role.getName(),Set.copyOf(role.getPermissions()))).toList());}}).toList();}
+  try(var home=TenantContext.open(Tenant.homeId())){authorize(auth);return tenants.findAll().stream().filter(Tenant::isActive).sorted(Comparator.comparing(Tenant::getName)).map(tenant->{try(var scope=TenantContext.open(tenant.getId())){return new TenantChoice(tenant.getId(),tenant.getName(),tenant.getCode(),roles.findAllByOrderByNameAsc().stream().map(role->new RoleChoice(role.getId(),role.getName(),Set.copyOf(role.getPermissions()))).toList(),tenant.getId().equals(Tenant.homeId()));}}).toList();}
  }
  @Transactional(readOnly=true) public List<InvitationView> list(Authentication auth){try(var home=TenantContext.open(Tenant.homeId())){authorize(auth);return invitations.findAll().stream().map(this::view).toList();}}
  @Transactional public InvitationView invite(String username,String displayName,String email,UUID tenantId,UUID roleId,Authentication auth){
