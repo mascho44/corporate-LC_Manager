@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Plattform-Verwaltung „Benutzer & Mandanten“: Die Mandantenauswahl blendet den Heimatmandanten statt des festen Mandanten `default` aus (der Server liefert die Markierung `home`); die Benutzerzeile hat eine feste Breite, damit der Text in allen Browsern sichtbar bleibt.
 * Mandanten: Der frühere Standardmandant `default` ist ein normaler Mandant, sobald ein anderer Heimatmandant festgelegt ist (er lässt sich sperren, archivieren und löschen; geschützt ist stets der aktuelle Heimatmandant). Beim Löschen eines Mandanten wird sein Code frei (der Rest heißt `<code>~deleted~<id>`).
 * Mandant anlegen mit bestehendem Konto: Auch ein Plattformadministrator lässt sich als erster Mandantenadmin angeben (die Ablehnung entfällt; das Audit vermerkt es).
 * Heimatmandant wechseln: Fehlt eine Rolle im Zielmandanten dem Namen nach, ziehen die Konten auf die Standardrolle gleicher Art um (zum Beispiel „Sachbearbeiter“ auf „Editor“).

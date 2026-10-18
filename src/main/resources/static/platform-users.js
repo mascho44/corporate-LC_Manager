@@ -3,6 +3,8 @@
  const DEFAULT_TENANT = '00000000-0000-0000-0000-000000000001';
  const administrative = role => (role.permissions || []).some(p => p === 'USER_MANAGE' || p === 'SETTINGS_MANAGE');
  const lower = s => String(s || '').toLowerCase();
+ /** The home tenant only holds the accounts and is not a workspace; the server marks it (older answers fall back to the first default). */
+ const isHome = c => c.home === true || (c.home === undefined && c.id === DEFAULT_TENANT);
 
  /** Memberships grouped by user id. */
  function byUser(rows) {
@@ -35,7 +37,7 @@
  /** Tenants the user can still be added to (the identity home is not a workspace). */
  function addableTenants(account, choices, rows) {
   const has = new Set((byUser(rows).get(account.id) || []).map(r => r.tenantId));
-  return (choices || []).filter(c => c.id !== DEFAULT_TENANT && !has.has(c.id));
+  return (choices || []).filter(c => !isHome(c) && !has.has(c.id));
  }
  /** Roles of a tenant; administrative roles are disabled for platform administrators (they belong to no tenant). */
  function roleOptions(account, choice) {
@@ -58,7 +60,7 @@
  }
  /** Users × tenants; every cell is the membership row or null. */
  function matrix(choices, accounts, rows) {
-  const columns = (choices || []).filter(c => c.id !== DEFAULT_TENANT).sort((a, b) => lower(a.name).localeCompare(lower(b.name)));
+  const columns = (choices || []).filter(c => !isHome(c)).sort((a, b) => lower(a.name).localeCompare(lower(b.name)));
   const grouped = byUser(rows);
   return { columns, rows: [...(accounts || [])].sort((a, b) => lower(a.username).localeCompare(lower(b.username))).map(a => ({ account: a, cells: columns.map(c => (grouped.get(a.id) || []).find(r => r.tenantId === c.id) || null) })) };
  }
@@ -103,7 +105,7 @@
   function renderUsers() {
    const filterBar = node('div', undefined, 'pu-filter');
    const text = document.createElement('input'); text.type = 'search'; text.placeholder = 'Suchen: Name, E-Mail, Mandant, Rolle'; text.value = renderUsers.text || '';
-   const tenant = document.createElement('select'); tenant.append(option('', 'Alle Mandanten')); choices.filter(c => c.id !== DEFAULT_TENANT).forEach(c => tenant.append(option(c.id, c.name))); tenant.value = renderUsers.tenant || '';
+   const tenant = document.createElement('select'); tenant.append(option('', 'Alle Mandanten')); choices.filter(c => !isHome(c)).forEach(c => tenant.append(option(c.id, c.name))); tenant.value = renderUsers.tenant || '';
    const state = document.createElement('select'); [['all', 'Alle Konten'], ['active', 'Aktiv'], ['inactive', 'Gesperrt'], ['pending', 'Einladung offen'], ['platform', 'Plattformadministratoren']].forEach(([v, l]) => state.append(option(v, l))); state.value = renderUsers.state || 'all';
    filterBar.append(text, tenant, state);
    const list = node('div', undefined, 'pu-list'), detail = node('div', undefined, 'pu-detail');
@@ -130,7 +132,7 @@
     bulk.replaceChildren();
     if (!selected.size) { bulk.append(node('small', 'Mehrere Benutzer ankreuzen, um sie gemeinsam einem Mandanten zuzuweisen.')); return; }
     const picked = accounts.filter(a => selected.has(a.id));
-    const targets = choices.filter(c => c.id !== DEFAULT_TENANT);
+    const targets = choices.filter(c => !isHome(c));
     if (!targets.length) { bulk.append(node('small', 'Keine Mandanten verfügbar.')); return; }
     const t = tenantSelect(targets); let r = roleSelect(picked[0], targets[0]);
     const swap = () => { const choice = targets.find(c => c.id === t.value); const next = document.createElement('select'); (choice.roles || []).forEach(role => next.append(option(role.id, role.name))); r.replaceWith(next); r = next; };
@@ -197,7 +199,7 @@
 
   /* ---- tenants: member list and multi-select to add ---- */
   function renderTenants() {
-   const targets = choices.filter(c => c.id !== DEFAULT_TENANT);
+   const targets = choices.filter(c => !isHome(c));
    if (!targets.length) { body.replaceChildren(node('p', 'Es gibt noch keine Mandanten.')); return; }
    if (!tenantView || !targets.some(c => c.id === tenantView)) tenantView = targets[0].id;
    const pick = tenantSelect(targets); pick.value = tenantView; pick.onchange = () => { tenantView = pick.value; renderTenants(); };
