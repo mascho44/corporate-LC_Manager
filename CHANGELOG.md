@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Mandant anlegen mit bestehendem Konto: Auch ein Plattformadministrator lässt sich als erster Mandantenadmin angeben (die Ablehnung entfällt; das Audit vermerkt es).
 * Heimatmandant wechseln: Fehlt eine Rolle im Zielmandanten dem Namen nach, ziehen die Konten auf die Standardrolle gleicher Art um (zum Beispiel „Sachbearbeiter“ auf „Editor“).
 * Mandant anlegen: Als erster Mandantenadmin lässt sich ein bestehendes Konto angeben (Benutzername genügt). Der Navigationspunkt „Training & Erkennung“ ist vorerst ausgeblendet.
 * Plattform-Verwaltung: Knopf „Als Heimatmandant festlegen“ je aktivem Mandanten (Code eintippen, Umzug aller Konten bestätigen).

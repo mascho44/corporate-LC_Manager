@@ -58,7 +58,6 @@ public class TenantWorkspaceService {
   boolean adminGiven=admin!=null&&admin.username()!=null&&!admin.username().isBlank()&&admin.displayName()!=null&&!admin.displayName().isBlank()&&admin.email()!=null&&!admin.email().isBlank();
   var existingAdmin=admin!=null&&admin.username()!=null&&!admin.username().isBlank()?users.findByUsernameIgnoreCase(admin.username().trim()).orElse(null):null;
   if(existingAdmin!=null&&(!existingAdmin.isActive()||existingAdmin.isInvitationPending()))throw new IllegalArgumentException("Das bestehende Konto ist nicht aktiv oder die Einladung ist noch offen.");
-  if(existingAdmin!=null&&separated&&existingAdmin.isPlatformAdministrator())throw new IllegalArgumentException("Ein Plattformadministrator verwaltet keinen Mandanten selbst. Bitte ein anderes Konto wählen oder einen neuen Mandantenadmin einladen.");
   if(separated&&!adminGiven&&existingAdmin==null)throw new IllegalArgumentException("Bitte den ersten Mandantenadmin angeben: den Benutzernamen eines bestehenden Kontos, oder Benutzername, Name und E-Mail für eine Einladung. Der Plattformadministrator verwaltet keinen Mandanten selbst.");
   if(adminGiven&&existingAdmin==null&&invitations==null)throw new IllegalStateException("Einladungen sind nicht verfügbar.");
   if(!bank&&!corporate)throw new IllegalArgumentException("Select at least one profile.");
