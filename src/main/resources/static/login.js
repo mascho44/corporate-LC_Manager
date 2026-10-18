@@ -12,8 +12,8 @@ async function chooseWorkspace(){
   const platform=access.enabled===true;
   if(!response.ok&&!platform)throw Error(overview.error||'Mandanten konnten nicht geladen werden.');
   const all=response.ok&&Array.isArray(overview.workspaces)?overview.workspaces:[];
-  // The bootstrap tenant (code "default") only homes the accounts; offer it only when nothing else is available.
-  const workspaces=all.length>1?all.filter(workspace=>workspace.code!=='default'):all;
+  // The home tenant only holds the accounts; the server already leaves it out once real workspaces exist.
+  const workspaces=all;
   if(!workspaces.length){if(platform){location.replace('/platform.html');return;}throw Error('Kein berechtigter Mandant verfügbar.');}
   if(workspaces.length===1&&!platform){location.replace('/');return;}
   form.replaceChildren();

@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Mandanten: Der frühere Standardmandant `default` ist ein normaler Mandant, sobald ein anderer Heimatmandant festgelegt ist (er lässt sich sperren, archivieren und löschen; geschützt ist stets der aktuelle Heimatmandant). Beim Löschen eines Mandanten wird sein Code frei (der Rest heißt `<code>~deleted~<id>`).
 * Mandant anlegen mit bestehendem Konto: Auch ein Plattformadministrator lässt sich als erster Mandantenadmin angeben (die Ablehnung entfällt; das Audit vermerkt es).
 * Heimatmandant wechseln: Fehlt eine Rolle im Zielmandanten dem Namen nach, ziehen die Konten auf die Standardrolle gleicher Art um (zum Beispiel „Sachbearbeiter“ auf „Editor“).
 * Mandant anlegen: Als erster Mandantenadmin lässt sich ein bestehendes Konto angeben (Benutzername genügt). Der Navigationspunkt „Training & Erkennung“ ist vorerst ausgeblendet.

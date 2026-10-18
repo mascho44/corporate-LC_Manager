@@ -28,14 +28,14 @@ import java.util.*;
    audit.recordInTransaction(auth,"PLATFORM_TENANT_PURGED","TENANT",id,"All live tenant business data deleted; global identities, append-only audit and backups retained");
   }
  }
- public record View(UUID id,String code,String name,String defaultLanguage,boolean active,boolean bankEnabled,boolean corporateEnabled,boolean archived,java.time.Instant archivedAt,long administrators){}
+ public record View(UUID id,String code,String name,String defaultLanguage,boolean active,boolean bankEnabled,boolean corporateEnabled,boolean archived,java.time.Instant archivedAt,long administrators,boolean home){}
  private final TenantRepository tenants;private final PlatformAdministrationService platform;private final TenantWorkspaceService workspaces;private final TenantAdministrationLock lock;private final AuditService audit;
  public PlatformTenantService(TenantRepository tenants,PlatformAdministrationService platform,TenantWorkspaceService workspaces,TenantAdministrationLock lock,AuditService audit){this.tenants=tenants;this.platform=platform;this.workspaces=workspaces;this.lock=lock;this.audit=audit;}
  private void require(Authentication auth){if(!platform.enabled(auth))throw new AccessDeniedException("Platform administration with two-factor authentication is required.");platform.verifyLiveAccess(auth);}
   @org.springframework.beans.factory.annotation.Autowired(required=false) private de.ostms.lc.tenant.repository.TenantMembershipRepository memberships;
  /** Active administrators of the tenant itself (platform administrators excluded); -1 if unknown. */
  private long administrators(UUID tenantId){if(memberships==null)return -1;try(var scope=TenantContext.open(tenantId)){return memberships.countAccessibleTenantAdministrators();}}
- private View view(Tenant t){return new View(t.getId(),t.getCode(),t.getName(),t.getDefaultLanguage(),t.isActive(),t.isBankEnabled(),t.isCorporateEnabled(),t.isArchived(),t.getArchivedAt(),administrators(t.getId()));}
+ private View view(Tenant t){return new View(t.getId(),t.getCode(),t.getName(),t.getDefaultLanguage(),t.isActive(),t.isBankEnabled(),t.isCorporateEnabled(),t.isArchived(),t.getArchivedAt(),administrators(t.getId()),t.getId().equals(Tenant.homeId()));}
  @Transactional(readOnly=true) public List<View> list(Authentication auth){require(auth);return tenants.findAll().stream().filter(t->!t.isDeleted()).sorted(Comparator.comparing(Tenant::getName)).map(this::view).toList();}
  @Transactional public TenantWorkspaceService.Workspace create(String code,String name,String language,boolean bank,boolean corporate,Authentication auth){return create(code,name,language,bank,corporate,null,auth);}
  @Transactional public TenantWorkspaceService.Workspace create(String code,String name,String language,boolean bank,boolean corporate,TenantWorkspaceService.AdminInvite admin,Authentication auth){require(auth);try(var home=TenantContext.open(Tenant.homeId())){return workspaces.createForPlatform(code,name,language,bank,corporate,admin,auth);}}

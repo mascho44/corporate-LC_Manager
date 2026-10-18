@@ -23,7 +23,7 @@ Append-only audit may contain historical document-derived or personal informatio
 it is NOT erased. Backups and transient files held by already-running OCR are NOT
 erased by this operation. In-flight external messages cannot be unsent. A minimal
 tenant tombstone remains to preserve audit attribution and block late writes; its
-code cannot be reused. This is live business-data deletion, not complete erasure.
+code is released on deletion (renamed to `<code>~deleted~<id>`), so it can be used for a new tenant. This is live business-data deletion, not complete erasure.
 
 ## Freischalten auf einem Testsystem
 

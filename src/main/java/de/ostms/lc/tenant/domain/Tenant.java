@@ -29,7 +29,7 @@ public class Tenant {
   ocrConfidenceThreshold=java.math.BigDecimal.valueOf(Math.round(value*100)/100.0).setScale(2,java.math.RoundingMode.HALF_UP);
  }
  public boolean isDeleted(){return deletedAt!=null;}
- public void markDeleted(){if(active||!isArchived()||homeId().equals(id))throw new IllegalArgumentException("Only archived, non-default tenants can be deleted.");deletedAt=java.time.Instant.now();}
+ public void markDeleted(){if(active||!isArchived()||homeId().equals(id))throw new IllegalArgumentException("Only archived, non-default tenants can be deleted.");deletedAt=java.time.Instant.now();/* the remaining tombstone keeps audit attribution by id; its code is released so it can be used again */code=code+"~deleted~"+id.toString().substring(0,8);}
  public Tenant(){}
  public Tenant(String code,String name,String language,boolean bank,boolean corporate){this.id=UUID.randomUUID();this.code=code;this.name=name;this.defaultLanguage=language;this.bankEnabled=bank;this.corporateEnabled=corporate;}
  public UUID getId(){return id;} public String getCode(){return code;} public String getName(){return name;}
