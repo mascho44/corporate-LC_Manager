@@ -45,6 +45,9 @@ function swift(reference){return `:20:${reference}\n:31C:261001\n:31D:271231SYNT
  const homeDocument=await call('/api/lcs/'+homeLc.id+'/documents?type=ANNEX','POST',attachment(homeContent),200,'multipart');
  assert.equal(await call('/api/documents/'+homeDocument.id+'/content','GET',undefined,200,'application/json',true),homeContent);
  const created=await call('/api/platform/tenants','POST',{code:'synthetic-smoke',name:'Synthetic smoke workspace',defaultLanguage:'en',bankEnabled:true,corporateEnabled:true},201);
+ // An existing account can be named as the first administrator instead of inviting a new one.
+ const withExisting=await call('/api/platform/tenants','POST',{code:'existing-admin',name:'Existing admin tenant',defaultLanguage:'en',bankEnabled:true,corporateEnabled:true,administrator:{username:'admin'}},201);
+ assert.ok(withExisting.id);
  // Home tenant: all accounts move to another tenant, platform access continues, and the move can be undone.
  const homeTarget=await call('/api/platform/tenants','POST',{code:'home-move',name:'Home move target',defaultLanguage:'en',bankEnabled:true,corporateEnabled:true},201);
  await call('/api/platform/home-tenant','PUT',{tenantCode:'home-move',acknowledgeAccountMove:false},400);
