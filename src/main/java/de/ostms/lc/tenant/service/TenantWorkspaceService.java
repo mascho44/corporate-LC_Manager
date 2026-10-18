@@ -56,8 +56,11 @@ public class TenantWorkspaceService {
   if(!user.isPlatformAdministrator()||!user.isTotpEnabled()||user.isInvitationPending())throw new AccessDeniedException("A platform administrator with two-factor authentication is required.");
   boolean separated=PlatformSeparationPolicy.separated();
   boolean adminGiven=admin!=null&&admin.username()!=null&&!admin.username().isBlank()&&admin.displayName()!=null&&!admin.displayName().isBlank()&&admin.email()!=null&&!admin.email().isBlank();
-  if(separated&&!adminGiven)throw new IllegalArgumentException("Bitte den ersten Mandantenadmin angeben (Benutzername, Name, E-Mail). Der Plattformadministrator verwaltet keinen Mandanten selbst.");
-  if(adminGiven&&invitations==null)throw new IllegalStateException("Einladungen sind nicht verfügbar.");
+  var existingAdmin=admin!=null&&admin.username()!=null&&!admin.username().isBlank()?users.findByUsernameIgnoreCase(admin.username().trim()).orElse(null):null;
+  if(existingAdmin!=null&&(!existingAdmin.isActive()||existingAdmin.isInvitationPending()))throw new IllegalArgumentException("Das bestehende Konto ist nicht aktiv oder die Einladung ist noch offen.");
+  if(existingAdmin!=null&&separated&&existingAdmin.isPlatformAdministrator())throw new IllegalArgumentException("Ein Plattformadministrator verwaltet keinen Mandanten selbst. Bitte ein anderes Konto wählen oder einen neuen Mandantenadmin einladen.");
+  if(separated&&!adminGiven&&existingAdmin==null)throw new IllegalArgumentException("Bitte den ersten Mandantenadmin angeben: den Benutzernamen eines bestehenden Kontos, oder Benutzername, Name und E-Mail für eine Einladung. Der Plattformadministrator verwaltet keinen Mandanten selbst.");
+  if(adminGiven&&existingAdmin==null&&invitations==null)throw new IllegalStateException("Einladungen sind nicht verfügbar.");
   if(!bank&&!corporate)throw new IllegalArgumentException("Select at least one profile.");
   code=code==null?"":code.trim().toLowerCase(Locale.ROOT);name=name==null?"":name.trim();
   if(!code.matches("[a-z][a-z0-9-]{1,49}")||name.isEmpty()||name.length()>255||name.chars().anyMatch(Character::isISOControl)||language==null||!List.of("en","de").contains(language))throw new IllegalArgumentException("Provide a tenant code, name and supported language.");
@@ -70,9 +73,10 @@ public class TenantWorkspaceService {
    createStandardRole("Viewer",UserRole.VIEWER);
    adminRoleId=role.getId();
    if(!separated)store.create(tenant.getId(),user.getId(),role.getId()); // legacy single-identity mode (synthetic acceptance run only)
-   audit.recordInTransaction(auth,"TENANT_CREATED","TENANT",tenant.getId(),separated?"Tenant created; first tenant administrator invited, no platform membership":"Tenant created with initial administrator membership");
+   if(existingAdmin!=null&&!(existingAdmin.getId().equals(user.getId())&&!separated))store.create(tenant.getId(),existingAdmin.getId(),role.getId());
+   audit.recordInTransaction(auth,"TENANT_CREATED","TENANT",tenant.getId(),existingAdmin!=null?"Tenant created; existing account "+existingAdmin.getUsername()+" is the first tenant administrator":separated?"Tenant created; first tenant administrator invited, no platform membership":"Tenant created with initial administrator membership");
   }
-  if(adminGiven)invitations.invite(admin.username(),admin.displayName(),admin.email(),tenant.getId(),adminRoleId,auth);
+  if(adminGiven&&existingAdmin==null)invitations.invite(admin.username(),admin.displayName(),admin.email(),tenant.getId(),adminRoleId,auth);
   return new Workspace(tenant.getId(),tenant.getCode(),tenant.getName());
  }
  private AppRole createStandardRole(String name,UserRole base){
