@@ -27,6 +27,9 @@ import java.util.concurrent.ConcurrentHashMap;
 public class OperationalAlertService {
     private static final Logger log = LoggerFactory.getLogger(OperationalAlertService.class);
     static final Duration STALE = Duration.ofHours(48);
+    /** Right after a start the lists are loaded from the database and the first download is still pending; no notice in that time. */
+    static final Duration STARTUP_GRACE = Duration.ofHours(1);
+    private static final LocalDateTime STARTED = LocalDateTime.now();
     private final CaptureTokenService captures;
     private final SanctionsService sanctions;
     private final AppUserRepository users;
@@ -53,13 +56,18 @@ public class OperationalAlertService {
         return text.toString();
     }
 
+    /** An unchanged list keeps its old version date; the last successful check counts as freshness too. */
+    private static LocalDateTime freshest(SanctionsService.SourceStatus s) {
+        return s.checkedAt() != null && s.checkedAt().isAfter(s.fetchedAt()) ? s.checkedAt() : s.fetchedAt();
+    }
+
     /** Problems of the sanctions lists: a list never loaded, older than 48 hours, or with a failed last download. */
     static List<String> sanctionsProblems(SanctionsService.Status status, LocalDateTime now) {
         var out = new ArrayList<String>();
         if (!status.fetchEnabled()) return out;
         for (var s : status.sources()) {
             if (s.fetchedAt() == null) out.add(s.source() + ": noch nicht geladen" + (s.error() == null ? "" : " (" + s.error() + ")"));
-            else if (Duration.between(s.fetchedAt(), now).compareTo(STALE) > 0) out.add(s.source() + ": Stand vom " + s.fetchedAt().toLocalDate() + (s.error() == null ? "" : ", letzter Abruf fehlgeschlagen (" + s.error() + ")"));
+            else if (Duration.between(freshest(s), now).compareTo(STALE) > 0) out.add(s.source() + ": Stand vom " + freshest(s).toLocalDate() + (s.error() == null ? "" : ", letzter Abruf fehlgeschlagen (" + s.error() + ")"));
             else if (s.error() != null) out.add(s.source() + ": letzter Abruf fehlgeschlagen (" + s.error() + "), Stand noch aktuell");
         }
         return out;
@@ -81,6 +89,7 @@ public class OperationalAlertService {
     @Transactional(readOnly = true)
     public int sanctionsLists(LocalDate today) {
         if (!enabled || from.isBlank() || today.equals(sent.get("sanctions"))) return 0;
+        if (Duration.between(STARTED, LocalDateTime.now()).compareTo(STARTUP_GRACE) < 0) return 0;
         var problems = sanctionsProblems(sanctions.status(), LocalDateTime.now());
         if (problems.isEmpty()) return 0;
         sent.put("sanctions", today);
