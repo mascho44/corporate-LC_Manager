@@ -13,7 +13,7 @@ public class LanguagePreferencesService {
  public LanguagePreferencesService(AppUserRepository users,TenantRepository tenants){this.users=users;this.tenants=tenants;}
  @Transactional(readOnly=true) public Preferences get(String username){
   var user=users.findByUsernameIgnoreCase(username).orElseThrow(()->new NoSuchElementException("User not found."));
-  if(!Tenant.DEFAULT_ID.equals(user.getTenantId()))throw new org.springframework.security.access.AccessDeniedException("Global identity administration remains in the default tenant.");
+  if(!Tenant.homeId().equals(user.getTenantId()))throw new org.springframework.security.access.AccessDeniedException("Global identity administration remains in the default tenant.");
   var tenant=tenants.findById(de.ostms.lc.tenant.domain.TenantContext.currentId()).orElseThrow(()->new IllegalStateException("Tenant configuration is missing."));
   String fallback=SUPPORTED.contains(tenant.getDefaultLanguage())?tenant.getDefaultLanguage():"en";
   return new Preferences(user.getPreferredLanguage()!=null&&SUPPORTED.contains(user.getPreferredLanguage())?user.getPreferredLanguage():fallback,user.getPreferredLanguage(),fallback,tenant.getId(),tenant.getName(),SUPPORTED,true);

@@ -31,7 +31,7 @@ import java.util.UUID;
    UserDetails platformOnly=null;
    if(code==null||code.isBlank()){try{platformOnly=details.loadPlatformOnly(username);}catch(AuthenticationException notPlatform){platformOnly=null;}}
    if(platformOnly==null){encoder.matches(password==null?"":password,dummyHash);throw new BadCredentialsException("Login failed.");}
-   tenant=de.ostms.lc.tenant.domain.Tenant.DEFAULT_ID;user=platformOnly;
+   tenant=de.ostms.lc.tenant.domain.Tenant.homeId();user=platformOnly;
   }
   if(!encoder.matches(password==null?"":password,user.getPassword())||!user.isEnabled()||!user.isAccountNonLocked()||!user.isAccountNonExpired()||!user.isCredentialsNonExpired())throw new BadCredentialsException("Login failed.");
   return new Verified(tenant,user);

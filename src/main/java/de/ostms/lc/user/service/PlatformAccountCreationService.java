@@ -37,7 +37,7 @@ public class PlatformAccountCreationService {
   return createIdentity(username,displayName,email,password,true,auth,false);
  }
  private PlatformAdministrationService.Account createIdentity(String username,String displayName,String email,String password,boolean pending,Authentication auth,boolean platformChecked){
-  try(var scope=TenantContext.open(Tenant.DEFAULT_ID)){
+  try(var scope=TenantContext.open(Tenant.homeId())){
    if(platformChecked)authorize(auth);lock.acquire();if(platformChecked)authorize(auth);
    String name=username==null?"":username.trim().toLowerCase(java.util.Locale.ROOT);
    String display=displayName==null?"":displayName.trim();
@@ -48,7 +48,7 @@ public class PlatformAccountCreationService {
    UserService.validatePassword(password);
    if(users.existsByUsernameIgnoreCase(name))throw new IllegalArgumentException("Username already exists.");
    var role=roles.findByBaseRoleAndSystemRoleTrue(UserRole.VIEWER).orElseThrow(()->new IllegalStateException("Bootstrap viewer role is missing."));
-   if(!Tenant.DEFAULT_ID.equals(role.getTenantId())||!role.getPermissions().isEmpty())throw new IllegalStateException("Bootstrap viewer role must have no write permissions.");
+   if(!Tenant.homeId().equals(role.getTenantId())||!role.getPermissions().isEmpty())throw new IllegalStateException("Bootstrap viewer role must have no write permissions.");
    var user=new AppUser();user.setUsername(name);user.setDisplayName(display);user.setEmail(address);user.setAssignedRole(role);user.setPasswordHash(encoder.encode(password));user.setActive(!pending);user.setInvitationPending(pending);
    users.saveAndFlush(user);
    var suspension=new TenantMembershipSuspension(user.getId());suspension.setSuspended(true);suspensions.saveAndFlush(suspension);

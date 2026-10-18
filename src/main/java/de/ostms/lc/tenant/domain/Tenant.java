@@ -5,6 +5,8 @@ import java.util.UUID;
 @Entity @Table(name="tenant")
 public class Tenant {
  public static final UUID DEFAULT_ID=UUID.fromString("00000000-0000-0000-0000-000000000001");
+ /** The configured home tenant (global accounts, platform sign-in); the legacy default until the setting says otherwise. */
+ public static UUID homeId(){return HomeTenant.id();}
  @Id private UUID id=DEFAULT_ID;
  @Column(nullable=false,unique=true,length=100) private String code="default";
  @Column(nullable=false,length=255) private String name="Default tenant";
@@ -27,7 +29,7 @@ public class Tenant {
   ocrConfidenceThreshold=java.math.BigDecimal.valueOf(Math.round(value*100)/100.0).setScale(2,java.math.RoundingMode.HALF_UP);
  }
  public boolean isDeleted(){return deletedAt!=null;}
- public void markDeleted(){if(active||!isArchived()||DEFAULT_ID.equals(id))throw new IllegalArgumentException("Only archived, non-default tenants can be deleted.");deletedAt=java.time.Instant.now();}
+ public void markDeleted(){if(active||!isArchived()||homeId().equals(id))throw new IllegalArgumentException("Only archived, non-default tenants can be deleted.");deletedAt=java.time.Instant.now();}
  public Tenant(){}
  public Tenant(String code,String name,String language,boolean bank,boolean corporate){this.id=UUID.randomUUID();this.code=code;this.name=name;this.defaultLanguage=language;this.bankEnabled=bank;this.corporateEnabled=corporate;}
  public UUID getId(){return id;} public String getCode(){return code;} public String getName(){return name;}

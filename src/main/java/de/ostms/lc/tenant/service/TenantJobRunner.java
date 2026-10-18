@@ -10,7 +10,7 @@ import org.springframework.security.access.AccessDeniedException;
 public final class TenantJobRunner {
  private TenantJobRunner(){}
  public static void run(UUID tenantId,Runnable job){
-  if(!Tenant.DEFAULT_ID.equals(tenantId))throw new AccessDeniedException("Tenant jobs are not enabled for this tenant.");
+  if(!Tenant.homeId().equals(tenantId))throw new AccessDeniedException("Tenant jobs are not enabled for this tenant.");
   Objects.requireNonNull(job,"Job is missing.");
   try(var scope=TenantContext.open(tenantId)){job.run();}
  }

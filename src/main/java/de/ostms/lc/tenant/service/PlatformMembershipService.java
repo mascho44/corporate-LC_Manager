@@ -37,7 +37,7 @@ public class PlatformMembershipService {
  }
 
  private void requireManageable(UUID tenantId){
-  if(Tenant.DEFAULT_ID.equals(tenantId))throw new AccessDeniedException("Shared identity administration is not enabled in the bootstrap tenant.");
+  if(Tenant.homeId().equals(tenantId))throw new AccessDeniedException("Shared identity administration is not enabled in the bootstrap tenant.");
   var tenant=tenants.findById(tenantId).orElseThrow(()->new NoSuchElementException("Tenant not found."));
   if(tenant.isArchived())throw new IllegalArgumentException("Archived tenants cannot be changed. Restore the tenant first.");
  }
@@ -113,12 +113,12 @@ public class PlatformMembershipService {
  @Transactional
  public TenantMembershipService.Membership releaseHomeAccess(UUID userId,Authentication authentication){
   platform.verifyLiveAccess(authentication);
-  try(var scope=TenantContext.open(Tenant.DEFAULT_ID)){
+  try(var scope=TenantContext.open(Tenant.homeId())){
    lock.acquire();
-   var user=users.findForPasswordReset(userId).filter(u->Tenant.DEFAULT_ID.equals(u.getTenantId())).orElseThrow(()->new NoSuchElementException("Account not found."));
+   var user=users.findForPasswordReset(userId).filter(u->Tenant.homeId().equals(u.getTenantId())).orElseThrow(()->new NoSuchElementException("Account not found."));
    if(!user.isPlatformAdministrator())throw new IllegalArgumentException("Only platform administrators can be released from their home tenant this way.");
    var role=roles.findByBaseRoleAndSystemRoleTrue(UserRole.VIEWER).orElseThrow(()->new IllegalStateException("Bootstrap viewer role is missing."));
-   if(!Tenant.DEFAULT_ID.equals(role.getTenantId())||!role.getPermissions().isEmpty())throw new IllegalStateException("Bootstrap viewer role must have no permissions.");
+   if(!Tenant.homeId().equals(role.getTenantId())||!role.getPermissions().isEmpty())throw new IllegalStateException("Bootstrap viewer role must have no permissions.");
    if(!user.isTotpEnabled()||!users.hasLivePlatformAccess(userId))throw new IllegalArgumentException("The account needs live platform access with two-factor authentication; otherwise it would be locked out.");
    var before=access.forUser(userId).orElseThrow(()->new NoSuchElementException("Membership not found."));
    if(before.roleId().equals(role.getId())&&before.suspended())return before;
@@ -126,7 +126,7 @@ public class PlatformMembershipService {
    users.flush(); // the PostgreSQL membership sync trigger writes the home membership
    var state=suspensions.findByUserId(userId).orElseGet(()->new TenantMembershipSuspension(userId));TenantContext.require(state.getTenantId());
    state.setSuspended(true);suspensions.saveAndFlush(state);
-   var after=new TenantMembershipService.Membership(Tenant.DEFAULT_ID,userId,user.getUsername(),role.getId(),role.getName(),Set.copyOf(role.getPermissions()),false,true,before.identityActive());
+   var after=new TenantMembershipService.Membership(Tenant.homeId(),userId,user.getUsername(),role.getId(),role.getName(),Set.copyOf(role.getPermissions()),false,true,before.identityActive());
    audit.recordChangeInTransaction(authentication,"PLATFORM_HOME_ACCESS_RELEASED","MEMBERSHIP",userId,"Home membership of a platform administrator suspended and reduced to the no-permission viewer role",AdministrationAuditSnapshot.membership(before),AdministrationAuditSnapshot.membership(after));
    return after;
   }

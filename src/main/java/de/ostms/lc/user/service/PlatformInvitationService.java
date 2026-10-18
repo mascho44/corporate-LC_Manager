@@ -32,17 +32,17 @@ public class PlatformInvitationService {
  public PlatformInvitationService(PlatformAdministrationService platform,PlatformAccountCreationService creation,AppUserRepository users,AppRoleRepository roles,TenantRepository tenants,PlatformInvitationRepository invitations,TenantMembershipSuspensionRepository suspensions,TenantMembershipProvisioningStore memberships,TenantAdministrationLock lock,PasswordEncoder encoder,AuditService audit,ApplicationEventPublisher events,@Value("${app.mail.enabled:false}") boolean mailEnabled,@Value("${app.mail.from:}") String mailFrom){this.platform=platform;this.creation=creation;this.users=users;this.roles=roles;this.tenants=tenants;this.invitations=invitations;this.suspensions=suspensions;this.memberships=memberships;this.lock=lock;this.encoder=encoder;this.audit=audit;this.events=events;this.mailEnabled=mailEnabled;this.mailFrom=mailFrom;}
  private AppUser authorize(Authentication auth){if(!platform.enabled(auth))throw new AccessDeniedException("An active platform administrator with two-factor authentication is required.");return users.findByUsernameIgnoreCase(auth.getName()).orElseThrow(()->new AccessDeniedException("Platform access unavailable."));}
  @Transactional(readOnly=true) public List<TenantChoice> choices(Authentication auth){
-  try(var home=TenantContext.open(Tenant.DEFAULT_ID)){authorize(auth);return tenants.findAll().stream().filter(Tenant::isActive).sorted(Comparator.comparing(Tenant::getName)).map(tenant->{try(var scope=TenantContext.open(tenant.getId())){return new TenantChoice(tenant.getId(),tenant.getName(),tenant.getCode(),roles.findAllByOrderByNameAsc().stream().map(role->new RoleChoice(role.getId(),role.getName(),Set.copyOf(role.getPermissions()))).toList());}}).toList();}
+  try(var home=TenantContext.open(Tenant.homeId())){authorize(auth);return tenants.findAll().stream().filter(Tenant::isActive).sorted(Comparator.comparing(Tenant::getName)).map(tenant->{try(var scope=TenantContext.open(tenant.getId())){return new TenantChoice(tenant.getId(),tenant.getName(),tenant.getCode(),roles.findAllByOrderByNameAsc().stream().map(role->new RoleChoice(role.getId(),role.getName(),Set.copyOf(role.getPermissions()))).toList());}}).toList();}
  }
- @Transactional(readOnly=true) public List<InvitationView> list(Authentication auth){try(var home=TenantContext.open(Tenant.DEFAULT_ID)){authorize(auth);return invitations.findAll().stream().map(this::view).toList();}}
+ @Transactional(readOnly=true) public List<InvitationView> list(Authentication auth){try(var home=TenantContext.open(Tenant.homeId())){authorize(auth);return invitations.findAll().stream().map(this::view).toList();}}
  @Transactional public InvitationView invite(String username,String displayName,String email,UUID tenantId,UUID roleId,Authentication auth){
-  try(var home=TenantContext.open(Tenant.DEFAULT_ID)){
+  try(var home=TenantContext.open(Tenant.homeId())){
    authorize(auth);lock.acquire();var actor=authorize(auth);requireMail();var target=target(tenantId,roleId);
    String name=username==null?"":username.trim().toLowerCase(Locale.ROOT);String address=UserEmail.required(email);
    var existing=users.findByUsernameIgnoreCase(name);AppUser user;
    if(existing.isPresent()){
     user=users.findForPasswordReset(existing.get().getId()).orElseThrow(PlatformInvitationService::invalid);
-    if(!Tenant.DEFAULT_ID.equals(user.getTenantId())||!user.isInvitationPending()||user.isActive()||!address.equals(user.getEmail())||!Objects.equals(displayName==null?"":displayName.trim(),user.getDisplayName()))throw new IllegalArgumentException("Username already exists. Pending invitations must match the existing identity.");
+    if(!Tenant.homeId().equals(user.getTenantId())||!user.isInvitationPending()||user.isActive()||!address.equals(user.getEmail())||!Objects.equals(displayName==null?"":displayName.trim(),user.getDisplayName()))throw new IllegalArgumentException("Username already exists. Pending invitations must match the existing identity.");
    }else{var created=creation.createPending(name,displayName,address,"InviteOnly1-"+secret(),auth);user=users.findById(created.id()).orElseThrow();}
    return issue(user,actor,target,auth);
   }
@@ -50,14 +50,14 @@ public class PlatformInvitationService {
  private static final int MAX_PENDING_PER_TENANT=100;
  /** Pending invitations of one tenant (for its administrators). */
  @Transactional(readOnly=true) public List<InvitationView> listForTenant(UUID tenantId){
-  try(var home=TenantContext.open(Tenant.DEFAULT_ID)){return invitations.findAll().stream().filter(i->tenantId.equals(i.getTenantId())).map(this::view).toList();}
+  try(var home=TenantContext.open(Tenant.homeId())){return invitations.findAll().stream().filter(i->tenantId.equals(i.getTenantId())).map(this::view).toList();}
  }
  /**
   * Invitation issued by an administrator of the tenant itself; the caller has verified that authority. A fresh user name is derived from the address, so an existing
   * account is never revealed; an address that already has an account is skipped silently (empty result) and handled by the platform administration.
   */
  @Transactional public Optional<InvitationView> inviteForTenant(String displayName,String email,UUID tenantId,UUID roleId,Authentication auth){
-  try(var home=TenantContext.open(Tenant.DEFAULT_ID)){
+  try(var home=TenantContext.open(Tenant.homeId())){
    lock.acquire();requireMail();var actor=users.findByUsernameIgnoreCase(auth.getName()).orElseThrow(()->new AccessDeniedException("Identity unavailable."));
    var target=target(tenantId,roleId);String address=UserEmail.required(email);
    if(displayName==null||displayName.isBlank()||displayName.trim().length()>255)throw new IllegalArgumentException("Bitte einen Namen angeben.");
@@ -69,14 +69,14 @@ public class PlatformInvitationService {
   }
  }
  @Transactional public InvitationView resendForTenant(UUID userId,UUID tenantId,Authentication auth){
-  try(var home=TenantContext.open(Tenant.DEFAULT_ID)){
+  try(var home=TenantContext.open(Tenant.homeId())){
    lock.acquire();requireMail();var actor=users.findByUsernameIgnoreCase(auth.getName()).orElseThrow(()->new AccessDeniedException("Identity unavailable."));
    var saved=invitations.findByUserId(userId).filter(i->tenantId.equals(i.getTenantId())).orElseThrow(()->new NoSuchElementException("Einladung nicht gefunden."));var target=target(saved.getTenantId(),saved.getRoleId());
-   var user=users.findForPasswordReset(userId).orElseThrow(PlatformInvitationService::invalid);if(!Tenant.DEFAULT_ID.equals(user.getTenantId())||!user.isInvitationPending()||user.isActive())throw invalid();return issue(user,actor,target,auth);
+   var user=users.findForPasswordReset(userId).orElseThrow(PlatformInvitationService::invalid);if(!Tenant.homeId().equals(user.getTenantId())||!user.isInvitationPending()||user.isActive())throw invalid();return issue(user,actor,target,auth);
   }
  }
  @Transactional public void revokeForTenant(UUID userId,UUID tenantId,Authentication auth){
-  try(var home=TenantContext.open(Tenant.DEFAULT_ID)){
+  try(var home=TenantContext.open(Tenant.homeId())){
    lock.acquire();var saved=invitations.findByUserId(userId).filter(i->tenantId.equals(i.getTenantId())).orElseThrow(()->new NoSuchElementException("Einladung nicht gefunden."));
    var user=users.findForPasswordReset(userId).orElseThrow(PlatformInvitationService::invalid);if(!user.isInvitationPending()||user.isActive())throw invalid();
    invitations.deleteForUser(userId);audit.recordChangeInTransaction(auth,"TENANT_INVITATION_REVOKED","INVITATION",userId,"Einladung widerrufen",snapshot(saved),null);
@@ -92,13 +92,13 @@ public class PlatformInvitationService {
   return candidate;
  }
  @Transactional public InvitationView resend(UUID userId,Authentication auth){
-  try(var home=TenantContext.open(Tenant.DEFAULT_ID)){
+  try(var home=TenantContext.open(Tenant.homeId())){
    authorize(auth);lock.acquire();var actor=authorize(auth);requireMail();var saved=invitations.findByUserId(userId).orElseThrow(()->new NoSuchElementException("Invitation not found."));var target=target(saved.getTenantId(),saved.getRoleId());
-   var user=users.findForPasswordReset(userId).orElseThrow(PlatformInvitationService::invalid);if(!Tenant.DEFAULT_ID.equals(user.getTenantId())||!user.isInvitationPending()||user.isActive())throw invalid();return issue(user,actor,target,auth);
+   var user=users.findForPasswordReset(userId).orElseThrow(PlatformInvitationService::invalid);if(!Tenant.homeId().equals(user.getTenantId())||!user.isInvitationPending()||user.isActive())throw invalid();return issue(user,actor,target,auth);
   }
  }
  @Transactional public void revoke(UUID userId,Authentication auth){
-  try(var home=TenantContext.open(Tenant.DEFAULT_ID)){authorize(auth);lock.acquire();authorize(auth);var saved=invitations.findByUserId(userId).orElseThrow(()->new NoSuchElementException("Invitation not found."));var user=users.findForPasswordReset(userId).orElseThrow(PlatformInvitationService::invalid);if(!user.isInvitationPending()||user.isActive())throw invalid();invitations.deleteForUser(userId);audit.recordChangeInTransaction(auth,"PLATFORM_INVITATION_REVOKED","INVITATION",userId,"Invitation revoked; identity remains blocked",snapshot(saved),"{\"status\":\"REVOKED\"}");}
+  try(var home=TenantContext.open(Tenant.homeId())){authorize(auth);lock.acquire();authorize(auth);var saved=invitations.findByUserId(userId).orElseThrow(()->new NoSuchElementException("Invitation not found."));var user=users.findForPasswordReset(userId).orElseThrow(PlatformInvitationService::invalid);if(!user.isInvitationPending()||user.isActive())throw invalid();invitations.deleteForUser(userId);audit.recordChangeInTransaction(auth,"PLATFORM_INVITATION_REVOKED","INVITATION",userId,"Invitation revoked; identity remains blocked",snapshot(saved),"{\"status\":\"REVOKED\"}");}
  }
  private record Target(Tenant tenant,AppRole role){}
  private Target target(UUID tenantId,UUID roleId){
@@ -115,7 +115,7 @@ public class PlatformInvitationService {
  @Transactional public void accept(String token,String password){
   if(token==null||!token.matches("[A-Za-z0-9_-]{43}"))throw invalid();UserService.validatePassword(password);if(password.length()>200||password.getBytes(java.nio.charset.StandardCharsets.UTF_8).length>72)throw new IllegalArgumentException("Password must contain at most 72 UTF-8 bytes and 200 characters.");
   String hash=CredentialStamp.of(token);
-  try(var home=TenantContext.open(Tenant.DEFAULT_ID)){
+  try(var home=TenantContext.open(Tenant.homeId())){
    var initial=invitations.findById(hash).orElseThrow(PlatformInvitationService::invalid);lock.acquire();
    if(!invitations.existsById(hash))throw invalid();var saved=invitations.findById(hash).orElseThrow(PlatformInvitationService::invalid);
    if(!saved.getExpiresAt().isAfter(clock.instant()))throw invalid();
@@ -123,10 +123,10 @@ public class PlatformInvitationService {
    var user=users.findForPasswordReset(saved.getUserId()).orElseThrow(PlatformInvitationService::invalid);
    var issuer=users.findById(saved.getIssuerId()).orElseThrow(PlatformInvitationService::invalid);
    if(!issuer.isActive()||issuer.isInvitationPending()||!issuer.isPlatformAdministrator()||!issuer.isTotpEnabled())throw invalid();
-   if(!Tenant.DEFAULT_ID.equals(user.getTenantId())||!user.isInvitationPending()||user.isActive()||!saved.getEmail().equals(user.getEmail())||!saved.getCredentialStamp().equals(CredentialStamp.of(user.getPasswordHash())))throw invalid();
+   if(!Tenant.homeId().equals(user.getTenantId())||!user.isInvitationPending()||user.isActive()||!saved.getEmail().equals(user.getEmail())||!saved.getCredentialStamp().equals(CredentialStamp.of(user.getPasswordHash())))throw invalid();
    user.setPasswordHash(encoder.encode(password));user.setInvitationPending(false);user.setActive(true);
-   if(Tenant.DEFAULT_ID.equals(saved.getTenantId()))user.setAssignedRole(target.role());users.saveAndFlush(user);
-   if(Tenant.DEFAULT_ID.equals(saved.getTenantId())){var state=suspensions.findByUserId(user.getId()).orElseThrow(PlatformInvitationService::invalid);state.setSuspended(false);suspensions.saveAndFlush(state);}
+   if(Tenant.homeId().equals(saved.getTenantId()))user.setAssignedRole(target.role());users.saveAndFlush(user);
+   if(Tenant.homeId().equals(saved.getTenantId())){var state=suspensions.findByUserId(user.getId()).orElseThrow(PlatformInvitationService::invalid);state.setSuspended(false);suspensions.saveAndFlush(state);}
    else{try(var scope=TenantContext.open(saved.getTenantId())){memberships.create(saved.getTenantId(),user.getId(),saved.getRoleId());}}
    invitations.deleteForUser(user.getId());audit.recordChangeInTransaction(UsernamePasswordAuthenticationToken.authenticated(user.getUsername(),null,List.of()),"PLATFORM_INVITATION_ACCEPTED","INVITATION",user.getId(),"Password set and explicitly selected tenant membership activated",snapshot(saved),"{\"status\":\"ACCEPTED\"}");
   }

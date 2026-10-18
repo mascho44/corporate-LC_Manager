@@ -16,7 +16,7 @@ public final class TenantContext {
  public static Scope openPlatform(){var previous=PLATFORM.get();PLATFORM.set(Boolean.TRUE);try{changed(true);}catch(RuntimeException failure){restorePlatform(previous);throw failure;}return new Scope(null,true,previous);}
  private static void restorePlatform(Boolean previous){if(previous==null)PLATFORM.remove();else PLATFORM.set(previous);}
  private static void changed(boolean strict){var listener=changeListener;if(listener==null)return;try{listener.run();}catch(RuntimeException failure){if(strict)throw failure;}}
- public static UUID currentId(){var id=CURRENT.get();return id==null?Tenant.DEFAULT_ID:id;}
+ public static UUID currentId(){var id=CURRENT.get();return id==null?Tenant.homeId():id;}
  public static Scope open(UUID id){if(id==null)throw new AccessDeniedException("Tenant context is missing.");var previous=CURRENT.get();CURRENT.set(id);try{changed(true);}catch(RuntimeException failure){if(previous==null)CURRENT.remove();else CURRENT.set(previous);throw failure;}return new Scope(previous,false,null);}
  public static void require(UUID owner){if(!currentId().equals(owner))throw new AccessDeniedException("Resource belongs to another tenant.");}
  public static final class Scope implements AutoCloseable {

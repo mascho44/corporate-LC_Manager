@@ -38,8 +38,8 @@ public class TenantWorkspaceService {
  }
  /** The bootstrap tenant is the identity home of all accounts, not a workspace to work in: hide it once real workspaces exist (unless it is the selected one). */
  static List<Workspace> withoutPlatformHome(List<Workspace> choices,UUID selected){
-  if(Tenant.DEFAULT_ID.equals(selected)||choices.size()<2)return choices;
-  return choices.stream().filter(w->!Tenant.DEFAULT_ID.equals(w.id())).toList();
+  if(Tenant.homeId().equals(selected)||choices.size()<2)return choices;
+  return choices.stream().filter(w->!Tenant.homeId().equals(w.id())).toList();
  }
  @Transactional public Workspace create(String code,String name,String language,boolean bank,boolean corporate,Authentication auth){
   throw new AccessDeniedException("Tenant creation is available only in platform administration.");
@@ -49,7 +49,7 @@ public class TenantWorkspaceService {
  @org.springframework.beans.factory.annotation.Autowired(required=false) @org.springframework.context.annotation.Lazy private de.ostms.lc.user.service.PlatformInvitationService invitations;
  @Transactional public Workspace createForPlatform(String code,String name,String language,boolean bank,boolean corporate,Authentication auth){return createForPlatform(code,name,language,bank,corporate,null,auth);}
  @Transactional public Workspace createForPlatform(String code,String name,String language,boolean bank,boolean corporate,AdminInvite admin,Authentication auth){
-  if(!Tenant.DEFAULT_ID.equals(TenantContext.currentId()))throw new AccessDeniedException("Tenant creation is restricted to the identity administration tenant.");
+  if(!Tenant.homeId().equals(TenantContext.currentId()))throw new AccessDeniedException("Tenant creation is restricted to the identity administration tenant.");
   var checked=identity(auth);if(!checked.isPlatformAdministrator()||!checked.isTotpEnabled()||checked.isInvitationPending())throw new AccessDeniedException("Platform access required.");
   lock.acquire();var user=identity(auth);
   if(!users.hasLivePlatformAccess(user.getId()))throw new AccessDeniedException("Platform access unavailable.");

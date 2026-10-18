@@ -29,7 +29,7 @@ public class TenantSharedIdentityRoleService {
  @Transactional
  public TenantMembershipService.Membership changeRole(UUID userId,UUID roleId,Authentication authentication){
   var tenantId=TenantContext.currentId();
-  if(Tenant.DEFAULT_ID.equals(tenantId))throw new AccessDeniedException("Shared identity role administration is not enabled in the bootstrap tenant.");
+  if(Tenant.homeId().equals(tenantId))throw new AccessDeniedException("Shared identity role administration is not enabled in the bootstrap tenant.");
   if(authentication==null||!authentication.isAuthenticated()||authentication instanceof AnonymousAuthenticationToken)throw new AccessDeniedException("Authenticated tenant administration is required.");
   lock.acquire();
   var actor=users.findByUsernameIgnoreCase(authentication.getName()).orElseThrow(()->new AccessDeniedException("Active tenant administration is required."));
