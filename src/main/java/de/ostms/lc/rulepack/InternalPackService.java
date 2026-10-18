@@ -135,6 +135,7 @@ public class InternalPackService {
      String left=facts.get(rule.left()),right=PackEvaluator.right(rule,facts);
      var outcome=PackEvaluator.evaluate(rule,facts,definition.calendars()==null?List.of():definition.calendars(),definition.schemaVersion()>=3);
      if(outcome==Outcome.NOT_APPLICABLE){notAppliedByCondition.add(rule.id());continue;}
+     if(outcome==Outcome.NOT_EVALUABLE&&lackingOnlyWaived(rule,facts,RuleWaivers.read(lc.getRuleWaivedJson()))){notAppliedByCondition.add(rule.id());continue;}
      var level=outcome==Outcome.PASS?CheckResult.Severity.OK:outcome!=Outcome.FAIL||rule.severity()==Level.WARNING?CheckResult.Severity.WARNING:CheckResult.Severity.DISCREPANCY;
      String outcomeLabel=switch(outcome){case PASS->"Regel erfüllt: ";case FAIL->"Regel verletzt: ";case NOT_APPLICABLE->"Regel nicht anwendbar: ";case MANUAL_REVIEW->"Manuelle fachliche Prüfung erforderlich: ";case NOT_EVALUABLE->"Regel nicht prüfbar: ";};
      if(definition.schemaVersion()==1)outcomeLabel=outcome==Outcome.PASS?"Interne Regel erfüllt: ":outcome==Outcome.FAIL?"Interne Regel verletzt: ":"Interne Regel nicht prüfbar: ";
@@ -219,4 +220,12 @@ public class InternalPackService {
   case PEER_SHIPPING_MARKS->Field.DOCUMENT_SHIPPING_MARKS;
   default->throw new IllegalArgumentException("Kein Peer-Feld.");
  };}
+ /** A rule that cannot be evaluated because an LC field is missing which the examiner marked as not required by the credit. */
+ private static boolean lackingOnlyWaived(Rule rule,Map<Field,String> facts,Set<Field> waived){
+  if(waived.isEmpty())return false;
+  for(var field:List.of(rule.left(),rule.right())){
+   if(field.name().startsWith("LC_")&&waived.contains(field)&&(facts.get(field)==null||facts.get(field).isBlank()))return true;
+  }
+  return false;
+ }
 }

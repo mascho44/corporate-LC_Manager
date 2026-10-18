@@ -11,6 +11,8 @@ public final class Mt700Facts {
  private static final Pattern INSURANCE_PERCENT=Pattern.compile("(?i)\\b(\\d{2,3})\\s*(?:PCT|PERCENT|%)\\s+(?:OF\\s+)?(?:THE\\s+)?(?:INVOICE|CIF|CIP|COMMERCIAL)");
  private static final Pattern RISKS=Pattern.compile("(?i)(INSTITUTE\\s+CARGO\\s+CLAUSES?\\s*\\(?\\s*[ABC]\\s*\\)?|\\bICC\\s*\\(?\\s*[ABC]\\s*\\)?|ALL\\s+RISKS|INSTITUTE\\s+WAR\\s+CLAUSES|INSTITUTE\\s+STRIKES\\s+CLAUSES|\\bWAR\\s+RISKS?|\\bSTRIKES?\\s+RISKS?)");
  private static final Pattern DAYS_AFTER=Pattern.compile("(?i)(\\d{1,3})\\s*DAYS?\\s+(?:AFTER|FROM)\\s+(.+)");
+ private static final Pattern ORIGIN_COUNTRY=Pattern.compile("COUNTRY\\s+OF\\s+ORIGIN\\s*(?:IS|:|-)?\\s*([A-Z][A-Z ]{2,30}?)(?=[.,;\\n\\r]|\\s+(?:AND|MUST|SHOWING|STATING|TO|FOR)\\b|$)");
+ private static final Pattern UNIT_PRICE=Pattern.compile("(?i)\\b(?:USD|EUR|GBP|CHF|JPY|CNY)\\s?(\\d[\\d.,]*)\\s*(?:PER|/|EACH)\\s*(?:PCS?|PIECES?|SETS?|UNITS?|KGS?|MT|TONS?|CARTONS?|CTNS?)\\b");
  private Mt700Facts(){}
 
  public static List<Fact> detect(LetterOfCredit lc){
@@ -45,6 +47,8 @@ public final class Mt700Facts {
    if(found.size()==1){out.add(new Fact(Field.LC_INCOTERM,found.iterator().next(),"Feld :45A:"));out.add(new Fact(Field.LC_INCOTERM_SOURCE,"Feld 45A","Feld :45A:"));}
   }
   if(goods!=null){
+   var price=UNIT_PRICE.matcher(goods);var prices=new LinkedHashSet<String>();while(price.find()){String n=DocumentFactSuggester.normalizeNumber(price.group(1));if(n!=null)prices.add(n);}
+   if(prices.size()==1)out.add(new Fact(Field.LC_UNIT_PRICE_AMOUNT,prices.iterator().next(),"Feld :45A: (Einzelpreis)"));
    var q=Pattern.compile("(?i)\\b(\\d[\\d.,]*)\\s{0,2}(PCS|PIECES|SETS|UNITS|KGS?|MT|TONS?|CARTONS|CTNS)\\b").matcher(goods);var nums=new LinkedHashSet<String>();var units=new LinkedHashSet<String>();
    while(q.find()){String n=DocumentFactSuggester.normalizeNumber(q.group(1));if(n!=null){nums.add(n);units.add(q.group(2).toUpperCase(Locale.ROOT));}}
    if(nums.size()==1&&units.size()==1){out.add(new Fact(Field.LC_QUANTITY,nums.iterator().next(),"Feld :45A: (Menge)"));out.add(new Fact(Field.LC_QUANTITY_UNIT,units.iterator().next(),"Feld :45A: (Menge)"));}
@@ -62,6 +66,7 @@ public final class Mt700Facts {
    if(upper.contains("INSURANCE POLICY")&&!upper.contains("INSURANCE CERTIFICATE"))out.add(new Fact(Field.LC_INSURANCE_TYPE,"POLICY","Feld :46A: (Versicherung)"));
    else if(upper.contains("INSURANCE CERTIFICATE")&&!upper.contains("INSURANCE POLICY"))out.add(new Fact(Field.LC_INSURANCE_TYPE,"CERTIFICATE","Feld :46A: (Versicherung)"));
    if(upper.contains("PREMIUM PAID"))out.add(new Fact(Field.LC_PREMIUM_PAID_REQUIRED,"true","Feld :46A:"));
+   single(out,Field.LC_ORIGIN_COUNTRY,ORIGIN_COUNTRY,upper,"Feld :46A:/:47A: (Ursprungsland)",v->!v.startsWith("CERT")&&!v.startsWith("DOCUMENT"));
    if(Pattern.compile("\\bENDORSED\\b").matcher(upper).find())out.add(new Fact(Field.LC_ENDORSEMENT_REQUIRED,"true","Feld :46A:"));
    if(Pattern.compile("PRE-?SHIPMENT\\s+INSPECTION").matcher(upper).find())out.add(new Fact(Field.LC_PRESHIPMENT_INSPECTION_REQUIRED,"true","Feld :46A:"));
    if(upper.contains("IRRESPECTIVE OF PERCENTAGE"))out.add(new Fact(Field.LC_IRRESPECTIVE_OF_PERCENTAGE_REQUIRED,"true","Feld :46A:"));
@@ -94,6 +99,12 @@ public final class Mt700Facts {
   if(line.toUpperCase(Locale.ROOT).contains("SIGHT")){out.add(new Fact(Field.LC_DRAFT_TENOR_DAYS,"0","Feld :42C:"));out.add(new Fact(Field.LC_DRAFT_TENOR_BASIS,"SIGHT","Feld :42C:"));return;}
   var m=DAYS_AFTER.matcher(line);
   if(m.find()){out.add(new Fact(Field.LC_DRAFT_TENOR_DAYS,String.valueOf(Integer.parseInt(m.group(1))),"Feld :42C:"));out.add(new Fact(Field.LC_DRAFT_TENOR_BASIS,m.group(2).trim().toUpperCase(Locale.ROOT),"Feld :42C:"));}
+ }
+ /** One text value from the first capture group; skipped when the mentions disagree or the filter rejects it. */
+ private static void single(List<Fact> out,Field field,Pattern pattern,String upper,String source,java.util.function.Predicate<String> accept){
+  var values=new LinkedHashSet<String>();var m=pattern.matcher(upper);
+  while(m.find()){String v=m.group(1).replaceAll("\\s+"," ").trim();if(!v.isEmpty()&&accept.test(v))values.add(v);}
+  if(values.size()==1)out.add(new Fact(field,values.iterator().next(),source));
  }
  private static String firstLine(String v){return v.trim().split("\\r?\\n")[0].trim();}
 

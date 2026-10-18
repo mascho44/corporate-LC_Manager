@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Prüfassistent, Schritt „Fehlende Angaben“: Klartext statt technischer Feldnamen; „Im Akkreditiv nicht verlangt“ je Angabe (Migration V131, Regeln werden nicht anwendbar); Ursprungsland und Einzelpreis werden aus dem MT700 gelesen, Unterschrift, Originalanzahl und Aussteller je Dokumenttyp aus Feld 46A als Vorschlag zum Übernehmen.
 * Sanktionslisten-Warnung: Zu häufige Mails behoben. Eine unveränderte Liste gilt nach erfolgreichem Abruf als aktuell (bisher zählte nur das Datum der letzten Änderung), und in der ersten Stunde nach einem Start wird nicht gewarnt.
 * Heimatmandant konfigurierbar (Migration V130, `platform_home_tenant`): Konten und Plattform-Anmeldung hängen nicht mehr fest am Mandanten `default`. Verhalten unverändert, solange die Einstellung auf `default` steht.
 * Mandantenlöschung: Die Inventur meldet nicht mehr „nicht implementiert“, sondern ob die Löschung in der Installation freigeschaltet ist; `docker-compose.prod.yml` reicht `LC_TENANTS_TEST_PURGE_ENABLED` durch (Standard aus), siehe `docs/tenant-test-purge.md`.

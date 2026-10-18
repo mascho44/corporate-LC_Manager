@@ -47,6 +47,34 @@ public class RuleFactsController {
   audit.recordInTransaction(auth,"LC_RULE_REQUIREMENTS_UPDATED","LETTER_OF_CREDIT",lcId,"Typ "+type+" · SHA-256 vorher="+RuleFacts.fingerprint(before)+" nachher="+RuleFacts.fingerprint(after)+" · "+reset+" Prüfentscheidungen zurückgesetzt");
   return RuleRequirements.read(after).get(type);
  }
+ public record RequirementSuggestion(de.ostms.lc.document.domain.DocumentType documentType,String documentTypeLabel,Field field,String value,String source){}
+ /** What the credit's field 46A demands per document type, minus what is already recorded. */
+ @GetMapping("/rule-requirements/suggestions") @Transactional(readOnly=true)
+ public List<RequirementSuggestion> requirementSuggestions(@PathVariable UUID lcId){
+  var lc=lcs.findById(lcId).orElseThrow();var recorded=RuleRequirements.read(lc.getRuleRequirementsJson());
+  return Mt700Requirements.detect(lc).stream().filter(s->!recorded.getOrDefault(s.documentType(),Map.of()).containsKey(s.field()))
+   .map(s->new RequirementSuggestion(s.documentType(),s.documentType().getDisplayName(),s.field(),s.value(),s.source())).toList();
+ }
+ public record ApplyRequirement(de.ostms.lc.document.domain.DocumentType documentType,Field field){}
+ @PostMapping("/rule-requirements/suggestions/apply") @Transactional
+ public Map<Field,String> applyRequirement(@PathVariable UUID lcId,@RequestBody ApplyRequirement request,Authentication auth){
+  var lc=lcs.findById(lcId).orElseThrow();
+  var suggestion=Mt700Requirements.detect(lc).stream().filter(s->s.documentType()==request.documentType()&&s.field()==request.field()).findFirst()
+   .orElseThrow(()->new IllegalArgumentException("Für diese Angabe liegt kein Vorschlag aus dem Akkreditiv vor."));
+  var current=new EnumMap<Field,String>(Field.class);current.putAll(RuleRequirements.read(lc.getRuleRequirementsJson()).getOrDefault(request.documentType(),Map.of()));
+  current.put(suggestion.field(),suggestion.value());
+  return updateRequirements(lcId,request.documentType(),current,auth);
+ }
+ public record WaiverRequest(boolean waived){}
+ @GetMapping("/rule-facts/waived") @Transactional(readOnly=true)
+ public Set<Field> waived(@PathVariable UUID lcId){return RuleWaivers.read(lcs.findById(lcId).orElseThrow().getRuleWaivedJson());}
+ @PutMapping("/rule-facts/waived/{field}") @Transactional
+ public Set<Field> waive(@PathVariable UUID lcId,@PathVariable Field field,@RequestBody WaiverRequest request,Authentication auth){
+  var lc=lcs.findById(lcId).orElseThrow();
+  lc.setRuleWaivedJson(RuleWaivers.update(lc.getRuleWaivedJson(),field,request.waived()));lcs.save(lc);
+  audit.recordInTransaction(auth,"LC_RULE_FACT_WAIVED","LETTER_OF_CREDIT",lcId,field+(request.waived()?" im Akkreditiv nicht verlangt":" wieder erforderlich"));
+  return RuleWaivers.read(lc.getRuleWaivedJson());
+ }
  @PutMapping("/rule-facts") @Transactional
  public Map<Field,String> saveLc(@PathVariable UUID lcId,jakarta.servlet.http.HttpServletRequest request,Authentication auth)throws java.io.IOException{
   var saved=updateLc(lcId,RuleFacts.decodeRequest(request.getInputStream().readNBytes(RuleFacts.MAX_BYTES+1)),auth);

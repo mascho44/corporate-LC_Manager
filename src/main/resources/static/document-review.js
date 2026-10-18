@@ -29,7 +29,9 @@
   return [...byField.values()].sort((a, b) => b.rules - a.rules);
  }
  const FIELD_LABEL = { LC_PRESENTATION_DATE: 'Vorlagedatum', LC_PRESENTATION_PERIOD_DAYS: 'Vorlagefrist (Tage)', LC_INSURANCE_MIN_PERCENT: 'Mindestdeckung Versicherung (%)', LC_TOLERANCE_PERCENT: 'Toleranz (%)' };
- const fieldLabel = field => FIELD_LABEL[field] || field.replace(/^LC_/, '').toLowerCase().replace(/_/g, ' ');
+ let LOADED_LABELS = {};
+ const setFieldLabels = map => { LOADED_LABELS = { ...LOADED_LABELS, ...(map || {}) }; };
+ const fieldLabel = field => LOADED_LABELS[field] || FIELD_LABEL[field] || field.replace(/^LC_/, '').toLowerCase().replace(/_/g, ' ');
  const TIER_RANK = { blocking: 0, check: 1, hint: 2, done: 3 };
  /** Open and decidable findings over all documents, for the progress bar. */
  function progress(groups) {
@@ -67,7 +69,7 @@
   (groups || []).forEach(g => g.items.forEach(f => { if (f !== finding && f.code === finding.code && f.documentName && f.documentName !== finding.documentName && isOpen(f)) out.push(f); }));
   return out;
  }
- globalThis.LcDocumentReview = { summary, missingField, missingInputs, isPendingApproval, groupFindings, nextOpen, nextGroupWithOpen, isOpen, tierOf, progress, siblingsOf };
+ globalThis.LcDocumentReview = { fieldLabel, setFieldLabels, summary, missingField, missingInputs, isPendingApproval, groupFindings, nextOpen, nextGroupWithOpen, isOpen, tierOf, progress, siblingsOf };
  if (typeof document === 'undefined' || !document.body) return;
 
  /** Draft notice of discrepancies (MT734 and letter) from the confirmed discrepancies; editable and copyable, nothing is sent. */

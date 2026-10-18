@@ -61,3 +61,12 @@ test('the same open finding in other documents is offered for one decision', () 
  assert.equal(siblingsOf(groups, set).length, 0);
  assert.equal(siblingsOf(groups, other).length, 0);
 });
+
+test('field labels: loaded labels win, known ones stay, unknown ones are made readable', () => {
+  assert.equal(api.fieldLabel('LC_PRESENTATION_DATE'), 'Vorlagedatum');
+  assert.equal(api.fieldLabel('LC_SECOND_BENEFICIARY'), 'second beneficiary');
+  api.setFieldLabels({ LC_SECOND_BENEFICIARY: 'Zweiter Begünstigter', LC_COVERAGE_FROM: 'Deckung ab' });
+  assert.equal(api.fieldLabel('LC_SECOND_BENEFICIARY'), 'Zweiter Begünstigter');
+  assert.equal(api.fieldLabel('LC_COVERAGE_FROM'), 'Deckung ab');
+  assert.equal(api.fieldLabel('LC_PRESENTATION_DATE'), 'Vorlagedatum');
+});
