@@ -17,7 +17,7 @@ import java.util.Objects;
   try{saved.setEncryptedMailPayload(cipher.encrypt(saved.getTokenHash(),mapper.writeValueAsString(event)));saved.setNextDeliveryAttempt(Instant.now());invitations.saveAndFlush(saved);}catch(com.fasterxml.jackson.core.JsonProcessingException e){throw new IllegalStateException("Invitation queue serialization failed.");}
  }
  @Transactional(propagation=Propagation.REQUIRES_NEW) public void deliverNext(){
-  try(var home=TenantContext.open(Tenant.DEFAULT_ID)){
+  try(var home=TenantContext.open(Tenant.homeId())){
    // Same home-lock order as resend/revoke/accept; SMTP has bounded timeouts.
    lock.acquire();Instant now=Instant.now();invitations.clearExpiredMail(now);var candidates=invitations.findDue(now,PageRequest.of(0,1));if(candidates.isEmpty())return;var saved=candidates.get(0);
    if(!eligible(saved)){saved.setDeliveryStatus("MAIL_CANCELLED");saved.setDeliveryError("ACCESS_CHANGED");clear(saved);return;}

@@ -29,9 +29,9 @@ public class CredentialSessionFilter extends OncePerRequestFilter {
             boolean withinLifetime=started instanceof Long&&System.currentTimeMillis()-(Long)started<28_800_000;
             var account=users.findByUsernameIgnoreCase(auth.getName()).orElse(null);
             Object selected=session==null?null:session.getAttribute(TENANT);
-            java.util.UUID tenantId=selected instanceof java.util.UUID id?id:de.ostms.lc.tenant.domain.Tenant.DEFAULT_ID;
+            java.util.UUID tenantId=selected instanceof java.util.UUID id?id:de.ostms.lc.tenant.domain.Tenant.homeId();
             boolean valid=withinLifetime&&account!=null&&account.isActive()&&!account.isInvitationPending()&&CredentialStamp.of(account.getPasswordHash()).equals(stamp)&&
-                de.ostms.lc.tenant.domain.Tenant.DEFAULT_ID.equals(account.getTenantId())&&
+                de.ostms.lc.tenant.domain.Tenant.homeId().equals(account.getTenantId())&&
                 (account.getAssignedRole()==null||account.getTenantId().equals(account.getAssignedRole().getTenantId()));
             valid=valid&&(selected==null||selected instanceof java.util.UUID);
             // Enrollment alone never upgrades a concurrent password-only session.

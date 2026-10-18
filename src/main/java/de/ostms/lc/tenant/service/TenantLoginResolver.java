@@ -10,7 +10,7 @@ import java.util.UUID;
  private final TenantRepository tenants;
  public TenantLoginResolver(TenantRepository tenants){this.tenants=tenants;}
  @Transactional(readOnly=true) public UUID resolve(String code){
-  if(code==null||code.isBlank())return Tenant.DEFAULT_ID;
+  if(code==null||code.isBlank())return Tenant.homeId();
   code=code.trim();if(code.length()>100)throw new DisabledException("Login unavailable.");
   return tenants.findByCodeIgnoreCase(code).map(Tenant::getId).orElseThrow(()->new DisabledException("Login unavailable."));
  }

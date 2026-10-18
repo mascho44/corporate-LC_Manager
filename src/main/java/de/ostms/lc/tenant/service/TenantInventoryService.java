@@ -27,7 +27,7 @@ public class TenantInventoryService {
   var categories=store.categories(id);var jobs=store.jobs(id);
   var blockers=new ArrayList<String>(testPurgeEnabled?List.<String>of():List.of("DELETION_DISABLED"));
   blockers.addAll(List.of("RETENTION_NOT_CONFIGURED","HOLDS_NOT_EVALUATED","BACKUPS_NOT_INVENTORIED","TEMPORARY_STORAGE_NOT_INVENTORIED","IN_FLIGHT_WORK_NOT_DRAINED"));
-  boolean protectedTenant=Tenant.DEFAULT_ID.equals(id)||TenantContext.currentId().equals(id);
+  boolean protectedTenant=Tenant.homeId().equals(id)||TenantContext.currentId().equals(id);
   if(protectedTenant)blockers.add("PROTECTED_TENANT");
   if(jobs.inboxExtraction()+jobs.outbox()+jobs.invitationMail()>0)blockers.add("PENDING_JOBS");
   return new Preview(id,tenant.getCode(),tenant.getName(),Instant.now(),true,false,protectedTenant,true,

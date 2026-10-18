@@ -22,7 +22,7 @@ public class TenantInvitationService {
  /** The current tenant, after checking that the caller manages users in it. The bootstrap tenant only homes the accounts and has no invitations. */
  private UUID requireManager(Authentication auth){
   UUID tenant=TenantContext.currentId();
-  if(Tenant.DEFAULT_ID.equals(tenant))throw new AccessDeniedException("Einladungen gibt es nur in Mandanten.");
+  if(Tenant.homeId().equals(tenant))throw new AccessDeniedException("Einladungen gibt es nur in Mandanten.");
   if(auth==null||!auth.isAuthenticated())throw new AccessDeniedException("Anmeldung erforderlich.");
   var user=users.findByUsernameIgnoreCase(auth.getName()).orElseThrow(()->new AccessDeniedException("Konto nicht verfügbar."));
   var access=memberships.requireActiveAccess(user.getId());TenantContext.require(access.tenantId());

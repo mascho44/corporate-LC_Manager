@@ -19,7 +19,7 @@ import java.util.*;
  public void changePassword(@Valid @RequestBody PasswordChange body,Authentication auth){
   service.verifyLiveAccess(auth);
   if(credentials==null)throw new IllegalStateException("Credential service unavailable.");
-  try(var scope=de.ostms.lc.tenant.domain.TenantContext.open(de.ostms.lc.tenant.domain.Tenant.DEFAULT_ID)){
+  try(var scope=de.ostms.lc.tenant.domain.TenantContext.open(de.ostms.lc.tenant.domain.Tenant.homeId())){
    credentials.changeOwnPassword(auth.getName(),body.currentPassword(),body.newPassword());
    audit.record(auth,"PASSWORD_CHANGED","USER",auth.getName(),"Passwort geändert (Plattformverwaltung)");
   }

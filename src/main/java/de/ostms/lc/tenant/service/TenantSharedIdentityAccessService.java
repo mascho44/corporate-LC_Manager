@@ -28,7 +28,7 @@ public class TenantSharedIdentityAccessService {
  }
  @Transactional
  public TenantMembershipService.Membership changeAccess(UUID userId,boolean suspended,Authentication authentication){
-  if(Tenant.DEFAULT_ID.equals(TenantContext.currentId()))throw new AccessDeniedException("Shared identity administration is not enabled in the bootstrap tenant.");
+  if(Tenant.homeId().equals(TenantContext.currentId()))throw new AccessDeniedException("Shared identity administration is not enabled in the bootstrap tenant.");
   if(authentication==null||!authentication.isAuthenticated()||authentication instanceof AnonymousAuthenticationToken)throw new AccessDeniedException("Authenticated tenant administration is required.");
   lock.acquire();
   var actor=users.findByUsernameIgnoreCase(authentication.getName()).orElseThrow(()->new AccessDeniedException("Active tenant administration is required."));

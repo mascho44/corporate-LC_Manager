@@ -35,7 +35,7 @@ public class InboxExtractionQueue {
     @Scheduled(fixedDelayString="${lc.inbox.extraction-interval-ms:2000}")
     public void dispatch(){
         if(!busy.compareAndSet(false,true))return;
-        try{executor.execute(()->{try{if(tenantWorkers!=null)tenantWorkers.forEach(this::processNext);else de.ostms.lc.tenant.service.TenantJobRunner.run(de.ostms.lc.tenant.domain.Tenant.DEFAULT_ID,this::processNext);}catch(Exception failure){log.warn("Inbox extraction worker failed: type={}",failure.getClass().getSimpleName());}finally{busy.set(false);}});}
+        try{executor.execute(()->{try{if(tenantWorkers!=null)tenantWorkers.forEach(this::processNext);else de.ostms.lc.tenant.service.TenantJobRunner.run(de.ostms.lc.tenant.domain.Tenant.homeId(),this::processNext);}catch(Exception failure){log.warn("Inbox extraction worker failed: type={}",failure.getClass().getSimpleName());}finally{busy.set(false);}});}
         catch(RejectedExecutionException stopped){busy.set(false);}
     }
     void processNext(){

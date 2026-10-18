@@ -20,15 +20,15 @@ import java.util.*;
  public PlatformAdministrationService(AppUserRepository users,TenantAdministrationLock lock,AuditService audit){this.users=users;this.lock=lock;this.audit=audit;}
  private Optional<AppUser> administrator(Authentication auth){
   if(auth==null||!auth.isAuthenticated()||auth instanceof AnonymousAuthenticationToken)return Optional.empty();
-  return users.findByUsernameIgnoreCase(auth.getName()).filter(u->Tenant.DEFAULT_ID.equals(u.getTenantId())&&u.isActive()&&!u.isInvitationPending()&&u.isPlatformAdministrator()&&u.isTotpEnabled());
+  return users.findByUsernameIgnoreCase(auth.getName()).filter(u->Tenant.homeId().equals(u.getTenantId())&&u.isActive()&&!u.isInvitationPending()&&u.isPlatformAdministrator()&&u.isTotpEnabled());
  }
  private AppUser require(Authentication auth){return administrator(auth).orElseThrow(()->new AccessDeniedException("An active platform administrator with two-factor authentication is required."));}
- @Transactional(readOnly=true) public boolean enabled(Authentication auth){try(var scope=TenantContext.open(Tenant.DEFAULT_ID)){return administrator(auth).isPresent();}}
+ @Transactional(readOnly=true) public boolean enabled(Authentication auth){try(var scope=TenantContext.open(Tenant.homeId())){return administrator(auth).isPresent();}}
  /** Scalar query also detects revocation when an identity is already managed in this transaction. */
- @Transactional(readOnly=true) public void verifyLiveAccess(Authentication auth){try(var scope=TenantContext.open(Tenant.DEFAULT_ID)){var actor=require(auth);if(!users.hasLivePlatformAccess(actor.getId()))throw new AccessDeniedException("Platform access unavailable.");}}
- @Transactional(readOnly=true) public List<Account> accounts(Authentication auth){try(var scope=TenantContext.open(Tenant.DEFAULT_ID)){require(auth);return users.findAllByOrderByUsernameAsc().stream().map(this::view).toList();}}
+ @Transactional(readOnly=true) public void verifyLiveAccess(Authentication auth){try(var scope=TenantContext.open(Tenant.homeId())){var actor=require(auth);if(!users.hasLivePlatformAccess(actor.getId()))throw new AccessDeniedException("Platform access unavailable.");}}
+ @Transactional(readOnly=true) public List<Account> accounts(Authentication auth){try(var scope=TenantContext.open(Tenant.homeId())){require(auth);return users.findAllByOrderByUsernameAsc().stream().map(this::view).toList();}}
  @Transactional public Account changeAccess(UUID id,boolean active,Authentication auth){
-  try(var scope=TenantContext.open(Tenant.DEFAULT_ID)){
+  try(var scope=TenantContext.open(Tenant.homeId())){
    require(auth);lock.acquire();var actor=require(auth);var target=users.findById(id).orElseThrow(()->new NoSuchElementException("Account not found."));
    if(active&&target.isInvitationPending())throw new IllegalArgumentException("Pending invitations must be accepted before activation.");
    if(!active&&target.getId().equals(actor.getId()))throw new IllegalArgumentException("You cannot suspend your own global account.");
@@ -39,8 +39,8 @@ import java.util.*;
   }
  }
  @Transactional public Account changePlatformGrant(UUID id,boolean granted,Authentication auth){
-  try(var scope=TenantContext.open(Tenant.DEFAULT_ID)){
-   require(auth);lock.acquire();var actor=require(auth);var target=users.findForPasswordReset(id).filter(u->Tenant.DEFAULT_ID.equals(u.getTenantId())).orElseThrow(()->new NoSuchElementException("Account not found."));
+  try(var scope=TenantContext.open(Tenant.homeId())){
+   require(auth);lock.acquire();var actor=require(auth);var target=users.findForPasswordReset(id).filter(u->Tenant.homeId().equals(u.getTenantId())).orElseThrow(()->new NoSuchElementException("Account not found."));
    if(target.isPlatformAdministrator()==granted)return view(target);
    if(granted&&(!target.isActive()||target.isInvitationPending()||!target.isTotpEnabled()))throw new IllegalArgumentException("Platform administrators must be active and enrolled in two-factor authentication.");
    if(!granted&&target.getId().equals(actor.getId()))throw new IllegalArgumentException("You cannot revoke your own platform access.");

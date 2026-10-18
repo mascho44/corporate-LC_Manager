@@ -29,7 +29,7 @@ public class TenantMembershipProvisioningService {
  @Transactional
  public TenantMembershipService.Membership assignExistingIdentity(String username,UUID roleId,Authentication authentication){
   UUID tenantId=TenantContext.currentId();
-  if(Tenant.DEFAULT_ID.equals(tenantId))throw new AccessDeniedException("Provisioning is not enabled in the bootstrap tenant.");
+  if(Tenant.homeId().equals(tenantId))throw new AccessDeniedException("Provisioning is not enabled in the bootstrap tenant.");
   if(authentication==null||!authentication.isAuthenticated()||authentication instanceof AnonymousAuthenticationToken)
    throw new AccessDeniedException("Authenticated tenant administration is required.");
   lock.acquire();

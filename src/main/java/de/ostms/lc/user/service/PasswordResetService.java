@@ -41,7 +41,7 @@ public class PasswordResetService {
         var match=users.findByUsernameIgnoreCase(username);
         if(match.isEmpty())return;
         var user=users.findForPasswordReset(match.get().getId()).orElse(null);
-        if(user!=null&&!de.ostms.lc.tenant.domain.Tenant.DEFAULT_ID.equals(user.getTenantId()))return;
+        if(user!=null&&!de.ostms.lc.tenant.domain.Tenant.homeId().equals(user.getTenantId()))return;
         if(user==null||!user.isActive()||user.isInvitationPending()||user.getEmail()==null||!user.getEmail().equalsIgnoreCase(email))return;
         if(!enabled||from.isBlank()){audit.record(user.getUsername(),"PASSWORD_RESET_MAIL_FAILED","USER",user.getId(),"Reset-Versand nicht eingerichtet",false,null);return;}
         tokens.deleteExpired(clock.instant());tokens.deleteForUser(user.getId());
@@ -61,7 +61,7 @@ public class PasswordResetService {
         String hash=CredentialStamp.of(token);
         var initial=tokens.findById(hash).orElseThrow(PasswordResetService::invalid);
         var user=users.findForPasswordReset(initial.getUserId()).orElseThrow(PasswordResetService::invalid);
-        if(!de.ostms.lc.tenant.domain.Tenant.DEFAULT_ID.equals(user.getTenantId()))throw invalid();
+        if(!de.ostms.lc.tenant.domain.Tenant.homeId().equals(user.getTenantId()))throw invalid();
         if(!tokens.existsById(hash))throw invalid();
         var saved=tokens.findById(hash).orElseThrow(PasswordResetService::invalid);
         if(!user.isActive()||user.isInvitationPending()||!saved.getExpiresAt().isAfter(clock.instant())||!saved.getCredentialStamp().equals(CredentialStamp.of(user.getPasswordHash()))||!saved.getEmail().equals(user.getEmail()))throw invalid();

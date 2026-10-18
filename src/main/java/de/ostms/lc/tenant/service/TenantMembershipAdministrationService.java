@@ -51,7 +51,7 @@ import java.util.*;
  }
  private boolean suspended(UUID userId){return suspensions.findByUserId(userId).map(state->{TenantContext.require(state.getTenantId());return state.isSuspended();}).orElse(false);}
  private TenantMembership one(UUID userId){
-  if(!Tenant.DEFAULT_ID.equals(TenantContext.currentId()))throw new AccessDeniedException("Membership editing is not enabled for this tenant.");
+  if(!Tenant.homeId().equals(TenantContext.currentId()))throw new AccessDeniedException("Membership editing is not enabled for this tenant.");
   var membership=memberships.findByUserId(userId).orElseThrow(()->new NoSuchElementException("Membership not found."));
   TenantContext.require(membership.getTenantId());TenantContext.require(membership.getRole().getTenantId());TenantContext.require(membership.getUser().getTenantId());
   membership.getUser().validateRoleTenant();

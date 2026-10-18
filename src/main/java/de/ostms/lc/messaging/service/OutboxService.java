@@ -46,7 +46,7 @@ public class OutboxService {
     @Scheduled(fixedDelayString = "${app.messaging.outbox-interval-ms:5000}")
     public void dispatch() {
         if(tenantWorkers!=null)tenantWorkers.forEach(this::dispatchCurrentTenant);
-        else de.ostms.lc.tenant.service.TenantJobRunner.run(de.ostms.lc.tenant.domain.Tenant.DEFAULT_ID,this::dispatchCurrentTenant);
+        else de.ostms.lc.tenant.service.TenantJobRunner.run(de.ostms.lc.tenant.domain.Tenant.homeId(),this::dispatchCurrentTenant);
     }
     private void dispatchCurrentTenant(){
         for (OutboxMessage message : repo.findTop50ByStatusAndNextAttemptAtLessThanEqualOrderByCreatedAt("PENDING", LocalDateTime.now())) publish(message);

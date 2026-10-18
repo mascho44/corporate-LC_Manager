@@ -17,8 +17,8 @@ import java.util.*;
  @Transactional public void purge(UUID id,PurgeConfirmation confirmation,Authentication auth){
   require(auth);
   if(!testPurgeEnabled)throw new IllegalArgumentException("Full business-data deletion is disabled. Enable test-purge only for disposable test data; production retention/approval workflow is not implemented.");
-  if(Tenant.DEFAULT_ID.equals(id)||TenantContext.currentId().equals(id))throw new IllegalArgumentException("Default/current tenant cannot be deleted.");
-  try(var home=TenantContext.open(Tenant.DEFAULT_ID)){
+  if(Tenant.homeId().equals(id)||TenantContext.currentId().equals(id))throw new IllegalArgumentException("Default/current tenant cannot be deleted.");
+  try(var home=TenantContext.open(Tenant.homeId())){
    lock.acquire();require(auth);var tenant=tenants.findForAdministration(id).orElseThrow();
    if(tenant.isDeleted())throw new IllegalArgumentException("Tenant is already deleted.");
    if(confirmation==null||!Objects.equals(tenant.getCode(),confirmation.tenantCode())||!confirmation.deleteAllBusinessData()||!confirmation.acknowledgeAuditAndBackupsRetained())throw new IllegalArgumentException("Confirm the exact tenant code, full business-data deletion and retained audit/backups.");
@@ -38,23 +38,23 @@ import java.util.*;
  private View view(Tenant t){return new View(t.getId(),t.getCode(),t.getName(),t.getDefaultLanguage(),t.isActive(),t.isBankEnabled(),t.isCorporateEnabled(),t.isArchived(),t.getArchivedAt(),administrators(t.getId()));}
  @Transactional(readOnly=true) public List<View> list(Authentication auth){require(auth);return tenants.findAll().stream().filter(t->!t.isDeleted()).sorted(Comparator.comparing(Tenant::getName)).map(this::view).toList();}
  @Transactional public TenantWorkspaceService.Workspace create(String code,String name,String language,boolean bank,boolean corporate,Authentication auth){return create(code,name,language,bank,corporate,null,auth);}
- @Transactional public TenantWorkspaceService.Workspace create(String code,String name,String language,boolean bank,boolean corporate,TenantWorkspaceService.AdminInvite admin,Authentication auth){require(auth);try(var home=TenantContext.open(Tenant.DEFAULT_ID)){return workspaces.createForPlatform(code,name,language,bank,corporate,admin,auth);}}
+ @Transactional public TenantWorkspaceService.Workspace create(String code,String name,String language,boolean bank,boolean corporate,TenantWorkspaceService.AdminInvite admin,Authentication auth){require(auth);try(var home=TenantContext.open(Tenant.homeId())){return workspaces.createForPlatform(code,name,language,bank,corporate,admin,auth);}}
  @Transactional public View update(UUID id,boolean active,boolean bank,boolean corporate,Authentication auth){
   UUID selected=TenantContext.currentId();require(auth);
   if(!bank&&!corporate)throw new IllegalArgumentException("Select at least one profile.");
-  if(!active&&(Tenant.DEFAULT_ID.equals(id)||selected.equals(id)))throw new IllegalArgumentException("The default tenant and your current workspace cannot be suspended. Switch workspace first.");
-  try(var home=TenantContext.open(Tenant.DEFAULT_ID)){
+  if(!active&&(Tenant.homeId().equals(id)||selected.equals(id)))throw new IllegalArgumentException("The default tenant and your current workspace cannot be suspended. Switch workspace first.");
+  try(var home=TenantContext.open(Tenant.homeId())){
    lock.acquire();require(auth);var tenant=tenants.findForAdministration(id).orElseThrow(()->new NoSuchElementException("Tenant not found."));
    if(tenant.isArchived())throw new IllegalArgumentException("Restore the archived tenant before changing access or profile.");
    if(tenant.isActive()==active&&tenant.isBankEnabled()==bank&&tenant.isCorporateEnabled()==corporate)return view(tenant);
-   if(PlatformSeparationPolicy.separated()&&active&&!tenant.isActive()&&!Tenant.DEFAULT_ID.equals(id)&&administrators(id)==0)throw new IllegalArgumentException("Der Mandant hat keinen aktiven Mandantenadmin. Bitte zuerst einen Mandantenadmin einladen oder zuweisen.");
+   if(PlatformSeparationPolicy.separated()&&active&&!tenant.isActive()&&!Tenant.homeId().equals(id)&&administrators(id)==0)throw new IllegalArgumentException("Der Mandant hat keinen aktiven Mandantenadmin. Bitte zuerst einen Mandantenadmin einladen oder zuweisen.");
    String before=snapshot(tenant);tenant.setActive(active);tenant.updateProfile(bank,corporate);tenants.saveAndFlush(tenant);
    audit.recordChangeInTransaction(auth,"PLATFORM_TENANT_UPDATED","TENANT",id,"Tenant activation and module profile updated",before,snapshot(tenant));return view(tenant);
   }
  }
  @Transactional public View archive(UUID id,boolean archived,Authentication auth){
-  require(auth);if(Tenant.DEFAULT_ID.equals(id)||TenantContext.currentId().equals(id))throw new IllegalArgumentException("Default/current tenant cannot be archived or restored from this workspace.");
-  try(var home=TenantContext.open(Tenant.DEFAULT_ID)){lock.acquire();require(auth);var tenant=tenants.findForAdministration(id).orElseThrow(()->new NoSuchElementException("Tenant not found."));if(tenant.isArchived()==archived)return view(tenant);
+  require(auth);if(Tenant.homeId().equals(id)||TenantContext.currentId().equals(id))throw new IllegalArgumentException("Default/current tenant cannot be archived or restored from this workspace.");
+  try(var home=TenantContext.open(Tenant.homeId())){lock.acquire();require(auth);var tenant=tenants.findForAdministration(id).orElseThrow(()->new NoSuchElementException("Tenant not found."));if(tenant.isArchived()==archived)return view(tenant);
    String before="{\"active\":"+tenant.isActive()+",\"archived\":"+tenant.isArchived()+"}";
    if(archived)tenant.archive();else tenant.restoreArchive();tenants.saveAndFlush(tenant);
    audit.recordChangeInTransaction(auth,archived?"PLATFORM_TENANT_ARCHIVED":"PLATFORM_TENANT_RESTORED","TENANT",id,"Tenant archive status changed; business data retained",before,"{\"active\":false,\"archived\":"+tenant.isArchived()+"}");return view(tenant);
