@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Datenbank: Row-Level-Security für Kunden, Beschaffung, Gebühren, Vorlagen und Firmenprofil (Migration V124); die Löschfunktion für Mandantendaten läuft jetzt kontextunabhängig.
 * Datenbank: Row-Level-Security für Prüfdaten (Entscheidungen, Notizen, Anforderungszuordnung, Vergleiche, Sanktionsfreigaben; Migration V123).
 * Datenbank: Row-Level-Security auch für `intake_channel` und `inbox_capture_info` (Migration V122).
 * Datenbank: Row-Level-Security für `learned_field_label` und `lc_review_step` (Pilot, Migration V121); die übrigen Mandanten-Tabellen folgen.
