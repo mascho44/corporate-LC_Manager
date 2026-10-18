@@ -198,6 +198,9 @@ public class SanctionsService {
         return "";
     }
 
+    /** Entries such as "APPLICANT" or "TO ORDER" refer to a party screened under its own name; they are not screened as names. */
+    private static String nameOrNull(String value){return PartyReferences.isReference(value)?null:value;}
+
     /** Findings for the review. Without loaded lists one neutral note says that no screening took place. */
     public List<CheckResult> screen(LetterOfCredit lc){return screen(lc,List.of());}
     public List<CheckResult> screen(LetterOfCredit lc,List<de.ostms.lc.document.domain.LcDocument> documents){
@@ -211,11 +214,11 @@ public class SanctionsService {
         parties.put("Eröffnende Bank",lc.getIssuingBank());parties.put("Avisierende Bank",lc.getAdvisingBank());
         parties.put("Bestätigende Partei",lc.getConfirmationParty());parties.put("Remboursbank",lc.getReimbursingBank());
         parties.put("Bezogene Bank",lc.getDraweeBank());parties.put("Benutzbar bei",lc.getAvailableWith());
-        parties.put("Empfänger (Consignee)",lcFacts.get("LC_CONSIGNEE"));parties.put("Notify Party",lcFacts.get("LC_NOTIFY_PARTY"));
+        parties.put("Empfänger (Consignee)",nameOrNull(lcFacts.get("LC_CONSIGNEE")));parties.put("Notify Party",nameOrNull(lcFacts.get("LC_NOTIFY_PARTY")));
         parties.forEach((party,value)->match(party,value).forEach(h->results.add(finding(h,null))));
         for(var doc:documents){
             var f=facts(doc.getRuleFactsJson());String name=doc.getOriginalFilename();
-            Map.of("Empfänger (Consignee)","DOCUMENT_CONSIGNEE","Notify Party","DOCUMENT_NOTIFY_PARTY","Frachtführer","DOCUMENT_CARRIER").forEach((party,key)->match(party,f.get(key)).forEach(h->results.add(finding(h,name))));
+            Map.of("Empfänger (Consignee)","DOCUMENT_CONSIGNEE","Notify Party","DOCUMENT_NOTIFY_PARTY","Frachtführer","DOCUMENT_CARRIER").forEach((party,key)->match(party,nameOrNull(f.get(key))).forEach(h->results.add(finding(h,name))));
             vesselFindings(f.get("DOCUMENT_VESSEL"),name,results);
         }
         applyClearances(results);
