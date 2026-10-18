@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Datenbank: Row-Level-Security für Akten, Dokumente, Änderungen, Aufgaben und deren Kindtabellen (Migration V125).
 * Datenbank: Row-Level-Security für Kunden, Beschaffung, Gebühren, Vorlagen und Firmenprofil (Migration V124); die Löschfunktion für Mandantendaten läuft jetzt kontextunabhängig.
 * Datenbank: Row-Level-Security für Prüfdaten (Entscheidungen, Notizen, Anforderungszuordnung, Vergleiche, Sanktionsfreigaben; Migration V123).
 * Datenbank: Row-Level-Security auch für `intake_channel` und `inbox_capture_info` (Migration V122).
