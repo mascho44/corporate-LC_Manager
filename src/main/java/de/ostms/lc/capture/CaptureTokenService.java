@@ -70,8 +70,12 @@ public class CaptureTokenService {
  }
 
  /** Resolves a presented secret; empty when unknown, revoked or when the tenant is not active. The last use is noted at most once a minute. */
- @Transactional public Optional<Identity> authenticate(String secret){
+ /** The bearer arrives before the tenant is known; the lookup by hash runs in the deliberate platform scope. */
+ public Optional<Identity> authenticate(String secret){
   if(secret==null||!secret.startsWith(PREFIX)||secret.length()>200)return Optional.empty();
+  try(var platform=de.ostms.lc.tenant.domain.TenantContext.openPlatform()){return authenticateByHash(secret);}
+ }
+ @Transactional Optional<Identity> authenticateByHash(String secret){
   var token=tokens.findByTokenHash(hash(secret)).filter(t->!t.isRevoked()).orElse(null);
   if(token==null)return Optional.empty();
   var tenant=tenants.findById(token.getTenantId()).orElse(null);

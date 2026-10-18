@@ -32,6 +32,7 @@ class TenantSessionDataSourceTest {
             new TenantSessionDataSource(target).getConnection().close();
         }
         verify(statement).setString(1, tenant.toString());
+        verify(statement).setString(2, "off");
         verify(statement).execute();
     }
 
@@ -76,5 +77,20 @@ class TenantSessionDataSourceTest {
                 verify(statement, times(1)).setString(1, second.toString());
             }
         }
+    }
+
+    @Test
+    void platformScopeIsReportedAndLeftAgain() throws Exception {
+        var statement = mock(PreparedStatement.class);
+        var target = mock(DataSource.class);
+        var postgres = connection("PostgreSQL", statement);
+        when(target.getConnection()).thenReturn(postgres);
+        var source = new TenantSessionDataSource(target);
+        var connection = source.getConnection();
+        try (var platform = TenantContext.openPlatform()) {
+            verify(statement).setString(2, "on");
+        }
+        verify(statement, times(2)).setString(2, "off");
+        connection.close();
     }
 }

@@ -13,13 +13,14 @@ import org.springframework.jdbc.datasource.DelegatingDataSource;
  */
 public final class TenantSessionDataSource extends DelegatingDataSource {
     public static final String SETTING = "app.tenant_id";
+    public static final String PLATFORM_SETTING = "app.platform";
     private volatile Boolean postgres;
     /** Connections handed out to the current thread and not yet closed, so a tenant switch inside a transaction reaches them. */
     private final ThreadLocal<java.util.List<Connection>> active = ThreadLocal.withInitial(java.util.ArrayList::new);
 
     public TenantSessionDataSource(DataSource target) {
         super(target);
-        TenantContext.onChange(tenant -> rebind());
+        TenantContext.onChange(this::rebind);
     }
 
     @Override public Connection getConnection() throws SQLException { return bind(super.getConnection()); }
@@ -41,8 +42,10 @@ public final class TenantSessionDataSource extends DelegatingDataSource {
     }
 
     private static void apply(Connection connection) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement("select set_config('" + SETTING + "', ?, false)")) {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "select set_config('" + SETTING + "', ?, false), set_config('" + PLATFORM_SETTING + "', ?, false)")) {
             statement.setString(1, TenantContext.currentId().toString());
+            statement.setString(2, TenantContext.platform() ? "on" : "off");
             statement.execute();
         }
     }
