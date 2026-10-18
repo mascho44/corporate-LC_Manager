@@ -320,6 +320,10 @@ const localInventory=await call('/api/platform/tenants/'+created.id+'/inventory'
  await call('/api/platform/tenants/'+created.id+'/archive','PUT',{archived:true});
  await call('/api/platform/tenants/'+created.id,'DELETE',{...purgeBody,tenantCode:'wrong'},400);
  await call('/api/platform/tenants/'+created.id,'DELETE',purgeBody,204);
+ // The code of a deleted tenant is free again (the tombstone only keeps audit attribution).
+ const reused=await call('/api/platform/tenants','POST',{code:'synthetic-smoke',name:'Synthetic smoke workspace again',defaultLanguage:'en',bankEnabled:true,corporateEnabled:true},201);
+ await call('/api/platform/tenants/'+reused.id,'PUT',{active:false,bankEnabled:true,corporateEnabled:true});await call('/api/platform/tenants/'+reused.id+'/archive','PUT',{archived:true});
+ await call('/api/platform/tenants/'+reused.id,'DELETE',purgeBody,204);
  assert.equal((await call('/api/platform/tenants')).some(t=>t.id===created.id),false);
  assert.ok((await call('/api/platform/users')).some(u=>u.id===isolated.id));
  assert.ok((await call('/api/lcs')).some(l=>l.id===homeLc.id));
@@ -331,5 +335,14 @@ const localInventory=await call('/api/platform/tenants/'+created.id+'/inventory'
  const chains=await call('/api/platform/audit/chain');
  assert.ok(chains.length>=2);assert.ok(chains.every(c=>c.ok===true&&c.checked>0&&/^[0-9a-f]{64}$/.test(c.headHash)),JSON.stringify(chains));
  const tenantChain=await call('/api/audit/chain');assert.equal(tenantChain.ok,true);assert.ok(tenantChain.checked>5);
+ // The former default tenant is an ordinary tenant once another tenant is the home tenant: it can be suspended, archived and deleted.
+ await call('/api/tenants/'+homeTarget.id+'/select','POST');csrf=(await call('/api/auth/me')).csrfToken;
+ await call('/api/platform/home-tenant','PUT',{tenantCode:'home-move',acknowledgeAccountMove:true});
+ const platformView=await call('/api/platform/tenants');assert.equal(platformView.find(t=>t.id===home).home,false);assert.equal(platformView.find(t=>t.id===homeTarget.id).home,true);
+ await call('/api/platform/tenants/'+homeTarget.id+'/archive','PUT',{archived:true},400);
+ await call('/api/platform/tenants/'+home,'PUT',{active:false,bankEnabled:true,corporateEnabled:true});
+ await call('/api/platform/tenants/'+home+'/archive','PUT',{archived:true});
+ await call('/api/platform/tenants/'+home,'DELETE',{tenantCode:'default',deleteAllBusinessData:true,acknowledgeAuditAndBackupsRetained:true},204);
+ assert.ok(Array.isArray(await call('/api/platform/tenants')));
  console.log('PASS: tenant lifecycle, isolation, async pretraining, reviewed split/attachment, raster previews, Original/Copy and full disposable business-data purge.');
 })().catch(error=>{console.error(error.message);process.exitCode=1;}).finally(async()=>{if(syntheticSmtp)await syntheticSmtp.close();});

@@ -14,7 +14,7 @@ public class PlatformOverviewStore {
  public PlatformOverviewStore(JdbcTemplate jdbc){this.jdbc=jdbc;}
  public List<Membership> memberships(){
   return jdbc.query("select u.username,u.display_name,u.active,t.code,t.name,t.active,r.name,m.active,coalesce(s.suspended,false),t.id,u.id,r.id,"
-   +"(u.tenant_id<>m.tenant_id and t.archived_at is null and t.code<>'default') "
+   +"(u.tenant_id<>m.tenant_id and t.archived_at is null and t.id<>(select h.tenant_id from platform_home_tenant h)) "
    +"from tenant_membership m join app_user u on u.id=m.user_id join tenant t on t.id=m.tenant_id join app_role r on r.id=m.role_id "
    +"left join tenant_membership_suspension s on s.tenant_id=m.tenant_id and s.user_id=m.user_id "
    +"order by lower(u.username),t.code",(rs,n)->new Membership(rs.getString(1),rs.getString(2),rs.getBoolean(3),rs.getString(4),rs.getString(5),rs.getBoolean(6),rs.getString(7),rs.getBoolean(8),rs.getBoolean(9),rs.getString(10),rs.getString(11),rs.getString(12),rs.getBoolean(13)));
