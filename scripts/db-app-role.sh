@@ -25,5 +25,8 @@ SELECT format('GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA publ
 SELECT format('GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO %I', :'app_user') \gexec
 SELECT format('ALTER DEFAULT PRIVILEGES FOR ROLE lcmanager IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO %I', :'app_user') \gexec
 SELECT format('ALTER DEFAULT PRIVILEGES FOR ROLE lcmanager IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO %I', :'app_user') \gexec
+-- V64/V65 entziehen PUBLIC das Ausfuehrungsrecht der kontrollierten Mitgliedschaftsfunktionen; die App-Rolle braucht es ausdruecklich.
+SELECT format('GRANT EXECUTE ON FUNCTION provision_tenant_membership(uuid,uuid,uuid), update_tenant_membership_role(uuid,uuid,uuid) TO %I', :'app_user') \gexec
+SELECT format('ALTER DEFAULT PRIVILEGES FOR ROLE lcmanager IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO %I', :'app_user') \gexec
 SQL
 echo "Rolle $APP_USER eingerichtet. Danach DB_APP_USER/DB_APP_PASSWORD in .env belassen und die App neu starten."

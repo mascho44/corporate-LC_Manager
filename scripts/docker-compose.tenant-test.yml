@@ -6,6 +6,8 @@ services:
       POSTGRES_DB: lcmanager
       POSTGRES_USER: lcmanager
       POSTGRES_PASSWORD: SyntheticDbOnly
+    volumes:
+      - ./tenant-test-db-init.sql:/docker-entrypoint-initdb.d/10-app-role.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U lcmanager -d lcmanager"]
       interval: 2s
@@ -16,8 +18,10 @@ services:
       context: ..
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/lcmanager
-      DB_USER: lcmanager
-      DB_PASSWORD: SyntheticDbOnly
+      DB_USER: lcmanager_app
+      DB_PASSWORD: SyntheticAppOnly
+      DB_MIGRATION_USER: lcmanager
+      DB_MIGRATION_PASSWORD: SyntheticDbOnly
       ADMIN_USERNAME: admin
       ADMIN_PASSWORD: SyntheticOnly123!
       # The synthetic run uses one identity as platform and tenant administrator; production keeps the separation (default true).

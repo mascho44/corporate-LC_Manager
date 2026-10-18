@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Datenbank: Row-Level-Security für Workflows, Teams, Automatisierung und Mandanten-Einstellungen (Migration V127). Der Mandantenwechsel innerhalb einer Transaktion wirkt jetzt auf die Datenbanksitzung; `scripts/db-app-role.sh` vergibt das Ausführungsrecht für die Mitgliedschaftsfunktionen; die Mandanten-Abnahme der CI läuft mit der eingeschränkten Rolle.
 * Datenbank: Row-Level-Security für Posteingang, Entwürfe und Trainingsdaten (Migration V126).
 * Datenbank: Row-Level-Security für Akten, Dokumente, Änderungen, Aufgaben und deren Kindtabellen (Migration V125).
 * Datenbank: Row-Level-Security für Kunden, Beschaffung, Gebühren, Vorlagen und Firmenprofil (Migration V124); die Löschfunktion für Mandantendaten läuft jetzt kontextunabhängig.

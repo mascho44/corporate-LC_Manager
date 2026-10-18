@@ -29,7 +29,7 @@ class TenantSessionDataSourceTest {
         when(target.getConnection()).thenReturn(postgres);
         var tenant = UUID.randomUUID();
         try (var scope = TenantContext.open(tenant)) {
-            new TenantSessionDataSource(target).getConnection();
+            new TenantSessionDataSource(target).getConnection().close();
         }
         verify(statement).setString(1, tenant.toString());
         verify(statement).execute();
@@ -54,5 +54,27 @@ class TenantSessionDataSourceTest {
         when(target.getConnection()).thenReturn(connection);
         try { new TenantSessionDataSource(target).getConnection(); } catch (java.sql.SQLException expected) { }
         verify(connection).close();
+    }
+
+    @Test
+    void tenantSwitchInsideAnOpenConnectionReachesTheSession() throws Exception {
+        var statement = mock(PreparedStatement.class);
+        var target = mock(DataSource.class);
+        var postgres = connection("PostgreSQL", statement);
+        when(target.getConnection()).thenReturn(postgres);
+        var source = new TenantSessionDataSource(target);
+        var first = UUID.randomUUID();
+        var second = UUID.randomUUID();
+        try (var outer = TenantContext.open(first)) {
+            var connection = source.getConnection();
+            try (var inner = TenantContext.open(second)) {
+                verify(statement).setString(1, second.toString());
+            }
+            verify(statement, times(2)).setString(1, first.toString());
+            connection.close();
+            try (var after = TenantContext.open(second)) {
+                verify(statement, times(1)).setString(1, second.toString());
+            }
+        }
     }
 }
