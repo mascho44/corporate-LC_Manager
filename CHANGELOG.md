@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Datenbank: Row-Level-Security auch für `intake_channel` und `inbox_capture_info` (Migration V122).
 * Datenbank: Row-Level-Security für `learned_field_label` und `lc_review_step` (Pilot, Migration V121); die übrigen Mandanten-Tabellen folgen.
 * Datenbank: Die App meldet PostgreSQL pro Verbindung den aktuellen Mandanten (`app.tenant_id`) – Vorbereitung für Row-Level-Security, noch ohne Richtlinien.
 * Lokale Datenbanksicherungen lassen sich optional verschlüsseln (`BACKUP_PASSPHRASE_FILE`) und auf die neuesten N begrenzen (`BACKUP_KEEP`); der Wiederherstellungstest versteht verschlüsselte Sicherungen.
