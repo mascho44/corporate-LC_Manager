@@ -17,6 +17,7 @@ public class TenantInventoryService {
   long sharedMemberships,long knownBinaryBytes,List<TenantInventoryStore.Category> categories,
   TenantInventoryStore.Jobs jobs,List<String> blockers){}
  private final PlatformAdministrationService platform;private final TenantRepository tenants;private final TenantInventoryStore store;
+  @org.springframework.beans.factory.annotation.Value("${lc.tenants.test-purge-enabled:false}") private boolean testPurgeEnabled;
  public TenantInventoryService(PlatformAdministrationService platform,TenantRepository tenants,TenantInventoryStore store){this.platform=platform;this.tenants=tenants;this.store=store;}
  @Transactional(readOnly=true,isolation=Isolation.REPEATABLE_READ)
  public Preview preview(UUID id,Authentication auth){
@@ -24,7 +25,8 @@ public class TenantInventoryService {
   platform.verifyLiveAccess(auth);
   var tenant=tenants.findById(id).orElseThrow(()->new NoSuchElementException("Tenant not found."));
   var categories=store.categories(id);var jobs=store.jobs(id);
-  var blockers=new ArrayList<>(List.of("DELETION_NOT_IMPLEMENTED","RETENTION_NOT_CONFIGURED","HOLDS_NOT_EVALUATED","BACKUPS_NOT_INVENTORIED","TEMPORARY_STORAGE_NOT_INVENTORIED","IN_FLIGHT_WORK_NOT_DRAINED"));
+  var blockers=new ArrayList<String>(testPurgeEnabled?List.<String>of():List.of("DELETION_DISABLED"));
+  blockers.addAll(List.of("RETENTION_NOT_CONFIGURED","HOLDS_NOT_EVALUATED","BACKUPS_NOT_INVENTORIED","TEMPORARY_STORAGE_NOT_INVENTORIED","IN_FLIGHT_WORK_NOT_DRAINED"));
   boolean protectedTenant=Tenant.DEFAULT_ID.equals(id)||TenantContext.currentId().equals(id);
   if(protectedTenant)blockers.add("PROTECTED_TENANT");
   if(jobs.inboxExtraction()+jobs.outbox()+jobs.invitationMail()>0)blockers.add("PENDING_JOBS");
