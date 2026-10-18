@@ -6,9 +6,16 @@ if [[ $# -ne 1 || ! -s "$1" ]]; then
   exit 1
 fi
 BACKUP_FILE="$1"
+if [[ "$BACKUP_FILE" == *.enc ]]; then
+  : "${BACKUP_PASSPHRASE_FILE:?Fuer .enc-Sicherungen muss BACKUP_PASSPHRASE_FILE gesetzt sein}"
+  PLAIN="$(mktemp)"
+  trap 'rm -f -- "$PLAIN"; docker rm -f "$TEST_NAME" >/dev/null 2>&1 || true' EXIT
+  openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 -pass "file:$BACKUP_PASSPHRASE_FILE" -in "$BACKUP_FILE" -out "$PLAIN"
+  BACKUP_FILE="$PLAIN"
+fi
 TEST_NAME="lc-restore-test-$(date -u +%Y%m%dT%H%M%SZ)-$$"
 cleanup() { docker rm -f "$TEST_NAME" >/dev/null 2>&1 || true; }
-trap cleanup EXIT
+trap 'rm -f -- "${PLAIN:-}"; cleanup' EXIT
 # Kein Port, kein Produktionsvolume, kein Netzwerk; wegwerfbare Testdatenbank.
 docker run -d --name "$TEST_NAME" --network none --memory 512m --cpus 1 \
   --tmpfs /var/lib/postgresql/data:rw,size=512m \

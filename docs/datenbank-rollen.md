@@ -19,4 +19,14 @@ Zurück zum alten Verhalten: `DB_APP_USER` und `DB_APP_PASSWORD` aus `.env` entf
 
 ## Grenzen
 
-Row-Level-Security ist nicht eingerichtet; die Mandantentrennung bleibt in Anwendung, Fremdschlüsseln und Triggern. Lokale Sicherungsdateien sind unverschlüsselt (Rechte 600); verschlüsselt wird erst die externe Sicherung mit restic.
+Row-Level-Security ist nicht eingerichtet; die Mandantentrennung bleibt in Anwendung, Fremdschlüsseln und Triggern. 
+## Lokale Sicherungen verschlüsseln und aufräumen (optional)
+
+`scripts/backup-prod.sh` kennt zwei Umgebungsvariablen:
+
+- `BACKUP_PASSPHRASE_FILE=/pfad/zur/passwortdatei`: Die Sicherung wird mit AES-256 verschlüsselt (`.dump.enc`), die Klartextdatei wird gelöscht. Die Passwortdatei gehört außerhalb des Backup-Ordners abgelegt (Rechte 600) und getrennt von der Sicherung aufbewahrt. **Ohne sie ist die Sicherung nicht wiederherstellbar.**
+- `BACKUP_KEEP=14`: Es bleiben nur die neuesten N lokalen Sicherungen. Ohne die Variable wird nichts gelöscht.
+
+Wiederherstellungstest einer verschlüsselten Sicherung: `BACKUP_PASSPHRASE_FILE=... bash scripts/test-backup-restore.sh /pfad/lcmanager-….dump.enc`.
+
+Ohne die Variablen verhält sich alles wie bisher: unverschlüsselte Dumps mit Rechten 600; verschlüsselt wird dann erst die externe Sicherung mit restic.

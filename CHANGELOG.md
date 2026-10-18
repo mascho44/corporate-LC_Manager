@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Lokale Datenbanksicherungen lassen sich optional verschlüsseln (`BACKUP_PASSPHRASE_FILE`) und auf die neuesten N begrenzen (`BACKUP_KEEP`); der Wiederherstellungstest versteht verschlüsselte Sicherungen.
 * Optionale eingeschränkte Datenbankrolle für die Laufzeit (`DB_APP_USER`): Migrationen laufen weiter mit der Besitzerrolle, die App selbst darf nur Daten lesen und schreiben. Einrichtung mit `scripts/db-app-role.sh`, siehe `docs/datenbank-rollen.md`. Ohne die Variablen ändert sich nichts.
 * Befunde mit Datums- oder Zahlenabweichung erklären die Differenz in Worten (z. B. „3 Tage nach der zulässigen Grenze“, Überschuss über dem Höchstbetrag).
 
