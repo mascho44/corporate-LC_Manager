@@ -22,6 +22,15 @@ Aus der Akte („Dokumentweise prüfen") oder direkt aus der Aktenliste (Knopf *
 
 Bei verletzten Datums- und Zahlenvergleichen steht unter dem Befund eine „Rechnung“ in Worten, zum Beispiel: *Versanddatum 18.09.2026, spätestens zulässiges Versanddatum 15.09.2026: 3 Tage nach der zulässigen Grenze.* Beim Rechnungsbetrag zeigt sie LC-Betrag, Toleranz, Höchstbetrag und den Überschuss. Nur bei lesbaren Werten und einfachen Vergleichen (gleich, höchstens, mindestens); sonst bleibt der Befund wie bisher. Die Erklärung ändert weder Schweregrad noch Prüffingerabdruck.
 
+## Zusatzbedingungen (:47A:)
+
+Die Zusatzbedingungen werden in ihre nummerierten Positionen zerlegt. Zwei häufige Positionen prüft die App je Dokument selbst:
+
+- „Alle Dokumente müssen die Akkreditivnummer zeigen“: Die LC-Referenz (:20:) muss im Dokumenttext vorkommen (Groß-/Kleinschreibung, Leerzeichen und Trennzeichen werden ignoriert). Fehlt sie, ist das eine Abweichung.
+- „Alle Dokumente müssen in englischer Sprache ausgestellt sein“: Eine einfache Spracherkennung über häufige Funktionswörter. Eindeutig andere Sprache ist eine Abweichung, unklare oder zu kurze Texte sind ein Hinweis zum Prüfen.
+
+Alle anderen Positionen bleiben beim Sammelhinweis „Zusatzbedingungen müssen fachlich … geprüft werden“; sind alle Positionen automatisch prüfbar, entfällt der Sammelhinweis. Nicht lesbare Dokumente werden als „nicht prüfbar“ gemeldet.
+
 ## Prüfvermerk mit Vorlagen
 Begründungen werden in einem eigenen Dialog erfasst (auch bei Sammelbestätigungen). **Passend zum Befund** (Partei/Adresse, Ware, Betrag/Menge, Datum, Verladung, Versicherung, Original/Unterschrift) werden Bausteine mit Regelgrundlage vorgeschlagen, z. B. „Adresse abweichend, gleiches Land – zulässig (UCP 600 Art. 14(j))"; die Artikelangaben sind nicht fachlich geprüft und vor der Verwendung zu kontrollieren. Reihenfolge: eigene Vorlagen, passende Bausteine, allgemeine. Die Tasten **1–9** wählen einen Baustein (solange das Feld leer ist), **Enter** speichert, Umschalt+Enter macht eine neue Zeile. Häufige Texte stehen als Vorlagen zum Anklicken bereit („Original geprüft, Angabe im Dokument vorhanden." …); mit **„Als Vorlage merken"** kommen eigene dazu (pro Browser, höchstens 12).
 

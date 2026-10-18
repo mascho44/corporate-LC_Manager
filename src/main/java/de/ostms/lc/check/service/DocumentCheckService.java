@@ -185,7 +185,7 @@ public class DocumentCheckService {
         checkInspectionTiming(lc,uploaded,results);
 
         String additionalConditions=LcConditions.value(lc,LcCondition.ADDITIONAL_CONDITIONS).orElse(null);
-        if(additionalConditions!=null&&!additionalConditions.isBlank())results.add(finding(WARNING,"ADDITIONAL_CONDITIONS_REVIEW","Zusatzbedingungen müssen fachlich gegen den vollständigen Dokumentensatz geprüft werden.","Zusatzbedingungen :47A: "+excerpt(additionalConditions),null,"Automatische Einzelzuordnung zu einem bestimmten Dokument ist nicht zuverlässig möglich."));
+        if(additionalConditions!=null&&!additionalConditions.isBlank())checkAdditionalConditions(lc,uploaded,additionalConditions,results);
 
         uploaded.stream().filter(d -> d.getExtractedDocumentNumber() != null)
                 .collect(java.util.stream.Collectors.groupingBy(d -> d.getExtractedDocumentNumber().toUpperCase(Locale.ROOT)))
@@ -335,6 +335,42 @@ public class DocumentCheckService {
     private String evidence(String text,String value){if(text==null||value==null)return "Keine Fundstelle verfügbar";String compact=value.replaceAll("[^A-Za-z0-9]","");for(String line:text.split("\\R")){String normalized=line.replaceAll("[^A-Za-z0-9]","");if(!compact.isBlank()&&(normalized.toLowerCase(Locale.ROOT).contains(compact.toLowerCase(Locale.ROOT))||compact.toLowerCase(Locale.ROOT).contains(normalized.toLowerCase(Locale.ROOT))))return excerpt(line);}return "Erkannter Wert: "+value;}
     private String partyEvidence(String text,String party){if(text==null)return "Keine Fundstelle verfügbar";for(String token:normalize(party).split(" "))if(token.length()>3)for(String line:text.split("\\R"))if(normalize(line).contains(token))return excerpt(line);return "Partei im Dokumenttext erkannt";}
     private String amountEvidence(String text,String currency,java.math.BigDecimal amount){if(text!=null){String digits=amount.toPlainString().replaceAll("[^0-9]","");for(String line:text.split("\\R")){String normalized=line.replaceAll("[^0-9]","");if((currency!=null&&line.toUpperCase(Locale.ROOT).contains(currency.toUpperCase(Locale.ROOT)))||(!digits.isBlank()&&normalized.contains(digits)))return excerpt(line);}}return (currency==null?"":currency+" ")+amount;}
+    /** Conditions that can be checked mechanically are checked per document; the rest stays one manual notice. */
+    private void checkAdditionalConditions(LetterOfCredit lc,List<de.ostms.lc.document.domain.LcDocument> uploaded,String conditions,List<CheckResult> results){
+        var items=AdditionalConditionsCheck.parse(conditions);
+        var manual=items.stream().filter(item->item.kind()==AdditionalConditionsCheck.Kind.OTHER).toList();
+        int automatic=items.size()-manual.size();
+        for(var item:items){
+            String condition="Zusatzbedingung :47A: "+excerpt(item.text());
+            if(item.kind()==AdditionalConditionsCheck.Kind.CREDIT_NUMBER_ON_ALL_DOCUMENTS){
+                for(var document:uploaded){
+                    String name=document.getOriginalFilename();
+                    if(lc.getReference()==null||lc.getReference().isBlank()){results.add(finding(WARNING,"ADDITIONAL_COND_CREDIT_NUMBER_NOT_CHECKABLE","Die Akkreditivnummer ist nicht erfasst; die Zusatzbedingung kann nicht geprüft werden.",condition,name,"LC-Referenz :20: fehlt"));continue;}
+                    if(!readable(document)){results.add(finding(WARNING,"ADDITIONAL_COND_CREDIT_NUMBER_NOT_CHECKABLE","Dokument nicht lesbar; die Akkreditivnummer kann nicht geprüft werden.",condition,name,"Kein auswertbarer Dokumenttext"));continue;}
+                    boolean shown=AdditionalConditionsCheck.showsReference(document.getExtractedText(),lc.getReference());
+                    results.add(shown
+                        ?finding(OK,"ADDITIONAL_COND_CREDIT_NUMBER_OK","Das Dokument nennt die Akkreditivnummer.",condition,name,"Referenz "+lc.getReference()+" im Dokumenttext gefunden")
+                        :finding(DISCREPANCY,"ADDITIONAL_COND_CREDIT_NUMBER_MISSING","Das Dokument nennt die Akkreditivnummer nicht.",condition,name,"Referenz "+lc.getReference()+" im Dokumenttext nicht gefunden"));
+                }
+            }else if(item.kind()==AdditionalConditionsCheck.Kind.ENGLISH_ON_ALL_DOCUMENTS){
+                for(var document:uploaded){
+                    String name=document.getOriginalFilename();
+                    if(!readable(document)){results.add(finding(WARNING,"ADDITIONAL_COND_ENGLISH_NOT_CHECKABLE","Dokument nicht lesbar; die Sprache kann nicht geprüft werden.",condition,name,"Kein auswertbarer Dokumenttext"));continue;}
+                    var guess=AdditionalConditionsCheck.guess(document.getExtractedText());
+                    String evidence="Erkannte Funktionswörter: englisch "+guess.englishWords()+", "+(guess.detected()==null||"Englisch".equals(guess.detected())?"andere":guess.detected())+" "+guess.otherWords();
+                    switch(guess.language()){
+                        case ENGLISH->results.add(finding(OK,"ADDITIONAL_COND_ENGLISH_OK","Das Dokument ist in englischer Sprache ausgestellt.",condition,name,evidence));
+                        case OTHER->results.add(finding(DISCREPANCY,"ADDITIONAL_COND_ENGLISH_MISSING","Das Dokument scheint nicht in englischer Sprache ausgestellt zu sein (erkannt: "+guess.detected()+").",condition,name,evidence));
+                        default->results.add(finding(WARNING,"ADDITIONAL_COND_ENGLISH_NOT_CHECKABLE","Die Sprache des Dokuments lässt sich nicht sicher bestimmen; bitte prüfen.",condition,name,evidence));
+                    }
+                }
+            }
+        }
+        if(manual.isEmpty()&&!items.isEmpty())return;
+        String shown=manual.isEmpty()?conditions:manual.stream().map(AdditionalConditionsCheck.Item::text).collect(java.util.stream.Collectors.joining(" · "));
+        results.add(finding(WARNING,"ADDITIONAL_CONDITIONS_REVIEW","Zusatzbedingungen müssen fachlich gegen den vollständigen Dokumentensatz geprüft werden.","Zusatzbedingungen :47A: "+excerpt(shown),null,
+            automatic>0?automatic+" Zusatzbedingung"+(automatic==1?"":"en")+" wurde"+(automatic==1?"":"n")+" automatisch je Dokument geprüft (siehe Einzelbefunde); die übrigen sind nicht automatisch zuzuordnen.":"Automatische Einzelzuordnung zu einem bestimmten Dokument ist nicht zuverlässig möglich."));
+    }
     private String excerpt(String line){String value=line.replaceAll("\\s+"," ").trim();return value.length()<=240?value:value.substring(0,237)+"…";}
     private static final java.util.regex.Pattern GOODS_LABEL=java.util.regex.Pattern.compile("(?i)^\\s*(?:description\\s+of\\s+(?:the\\s+)?goods(?:\\s+and/or\\s+services)?|goods\\s+description|description|commodity|warenbeschreibung|warenbezeichnung|beschreibung\\s+der\\s+waren)\\s*[:\\-]\\s*(.+)$");
     /** Goods description of a document in its usual labelled forms ("Description of goods:", "Goods description:", "Description:", "Warenbeschreibung:"). */
