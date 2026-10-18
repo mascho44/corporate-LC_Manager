@@ -21,6 +21,7 @@ spring:
   flyway:
     enabled: true
     # Migrationen laufen mit der Besitzerrolle; die Laufzeit kann eine eingeschraenkte Rolle nutzen (docs/datenbank-rollen.md).
+    url: ${spring.datasource.url}
     user: ${DB_MIGRATION_USER:${DB_USER:lcmanager}}
     password: ${DB_MIGRATION_PASSWORD:${DB_PASSWORD:lcmanager}}
   servlet:

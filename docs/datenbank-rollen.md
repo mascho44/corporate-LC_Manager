@@ -30,3 +30,7 @@ Row-Level-Security ist nicht eingerichtet; die Mandantentrennung bleibt in Anwen
 Wiederherstellungstest einer verschlüsselten Sicherung: `BACKUP_PASSPHRASE_FILE=... bash scripts/test-backup-restore.sh /pfad/lcmanager-….dump.enc`.
 
 Ohne die Variablen verhält sich alles wie bisher: unverschlüsselte Dumps mit Rechten 600; verschlüsselt wird dann erst die externe Sicherung mit restic.
+
+## Mandant in der Datenbanksitzung
+
+Bei jeder Verbindung aus dem Pool setzt die App unter PostgreSQL die Sitzungsvariable `app.tenant_id` auf den aktuellen Mandanten (`TenantSessionDataSource`). Sie ist die Vorbereitung für Row-Level-Security-Richtlinien. Noch gibt es keine Richtlinien, das Verhalten der App ändert sich dadurch nicht.
