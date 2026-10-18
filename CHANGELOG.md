@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Sanktionslisten-Warnung: Zu häufige Mails behoben. Eine unveränderte Liste gilt nach erfolgreichem Abruf als aktuell (bisher zählte nur das Datum der letzten Änderung), und in der ersten Stunde nach einem Start wird nicht gewarnt.
 * Mandantenlöschung: Die Inventur meldet nicht mehr „nicht implementiert“, sondern ob die Löschung in der Installation freigeschaltet ist; `docker-compose.prod.yml` reicht `LC_TENANTS_TEST_PURGE_ENABLED` durch (Standard aus), siehe `docs/tenant-test-purge.md`.
 * Datenbank: Row-Level-Security für Erfassungszugänge (`capture_token`, Migration V129) mit ausdrücklichem Plattform-Scope für die Token-Suche.
 * Datenbank: Row-Level-Security für EBICS, SWIFT, Outbox, E-Mail-Versand und interne Regelpakete (Migration V128).

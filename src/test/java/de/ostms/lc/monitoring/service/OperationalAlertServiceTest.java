@@ -40,4 +40,15 @@ class OperationalAlertServiceTest {
         verify(mail,times(1)).send(any(SimpleMailMessage.class));
         assertThat(new OperationalAlertService(captures,mock(SanctionsService.class),users,mail,false,"lc@example.test","").silentStations(today)).isZero();
     }
+
+    @Test
+    void anUnchangedListThatWasCheckedRecentlyIsNotStale() {
+        var now = java.time.LocalDateTime.of(2026, 10, 18, 17, 0);
+        var status = new SanctionsService.Status(true, false, java.util.List.of(
+            new SanctionsService.SourceStatus("EU", now.minusDays(3), 6000, "a", null, null, now.minusHours(14))));
+        assertThat(OperationalAlertService.sanctionsProblems(status, now)).isEmpty();
+        var neverChecked = new SanctionsService.Status(true, false, java.util.List.of(
+            new SanctionsService.SourceStatus("EU", now.minusDays(3), 6000, "a", null, null)));
+        assertThat(OperationalAlertService.sanctionsProblems(neverChecked, now)).hasSize(1);
+    }
 }

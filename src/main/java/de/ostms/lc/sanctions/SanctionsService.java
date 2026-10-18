@@ -35,7 +35,10 @@ public class SanctionsService {
     private static final String BIC="^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$";
 
     public record Hit(String party,String partyValue,SanctionsListParser.Entry entry,String listedName,double score){}
-    public record SourceStatus(String source,LocalDateTime fetchedAt,int entries,String sha256,String published,String error){}
+    /** fetchedAt is the date of the stored version (it only moves when a list changes); checkedAt is the last successful download, changed or not. */
+    public record SourceStatus(String source,LocalDateTime fetchedAt,int entries,String sha256,String published,String error,LocalDateTime checkedAt){
+        public SourceStatus(String source,LocalDateTime fetchedAt,int entries,String sha256,String published,String error){this(source,fetchedAt,entries,sha256,published,error,null);}
+    }
     public record Status(boolean fetchEnabled,boolean refreshing,List<SourceStatus> sources){}
     private record Indexed(SanctionsListParser.Entry entry,String name,List<String> tokens){}
     private record Loaded(String source,LocalDateTime fetchedAt,String sha256,String published,List<SanctionsListParser.Entry> entries){}
@@ -90,7 +93,7 @@ public class SanctionsService {
                 try{
                     byte[] content=download(urls.get(source));
                     if("OFAC".equals(source))content=bundle(content,download(urls.get("OFAC_ALT")));
-                    store(source,content);errors.remove(source);
+                    store(source,content);errors.remove(source);checked.put(source,LocalDateTime.now());
                 }catch(Exception e){errors.put(source,e.getClass().getSimpleName()+": "+e.getMessage());log.warn("Sanktionsliste {} nicht aktualisiert: {}",source,e.getMessage());}
             }
             try{reload();}catch(Exception e){log.warn("Sanktionslisten konnten nicht neu geladen werden: {}",e.getMessage());}
@@ -317,11 +320,13 @@ public class SanctionsService {
         });
     }
 
+    private final Map<String,LocalDateTime> checked=new java.util.concurrent.ConcurrentHashMap<>();
+
     public Status status(){
         var out=new ArrayList<SourceStatus>();
         for(String source:List.of("EU","UN","OFAC")){
             var l=loaded.get(source);
-            out.add(l==null?new SourceStatus(source,null,0,null,null,errors.get(source)):new SourceStatus(source,l.fetchedAt(),l.entries().size(),l.sha256().substring(0,Math.min(12,l.sha256().length())),l.published(),errors.get(source)));
+            out.add(l==null?new SourceStatus(source,null,0,null,null,errors.get(source),checked.get(source)):new SourceStatus(source,l.fetchedAt(),l.entries().size(),l.sha256().substring(0,Math.min(12,l.sha256().length())),l.published(),errors.get(source),checked.get(source)));
         }
         return new Status(fetchEnabled,refreshing.get(),out);
     }
