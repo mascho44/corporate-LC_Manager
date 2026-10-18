@@ -285,6 +285,7 @@
   "platformTenants.keep": "Abbrechen",
   "platformTenants.homeDone": "Heimatmandant geändert",
   "platformTenants.homeAccounts": "Konten",
+  "tenant.firstAdminHint": "Benutzername eines bestehenden Kontos: Es wird sofort Administrator, Name und E-Mail sind nicht nötig. Sonst Name und E-Mail angeben, dann wird ein neues Konto eingeladen.",
   "inventory.blockers": "Offene Voraussetzungen für den regulären Löschprozess (die Testlöschung ist davon unabhängig)",
   "inventory.blocker.DELETION_DISABLED": "Die Mandantenlöschung ist in dieser Installation nicht freigeschaltet (lc.tenants.test-purge-enabled).",
   "inventory.blocker.RETENTION_NOT_CONFIGURED": "Aufbewahrungsfristen sind nicht konfiguriert.",

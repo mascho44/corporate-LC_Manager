@@ -285,6 +285,7 @@
   "platformTenants.keep": "Cancel",
   "platformTenants.homeDone": "Home tenant changed",
   "platformTenants.homeAccounts": "accounts",
+  "tenant.firstAdminHint": "Username of an existing account: it becomes administrator right away; name and email are not needed. Otherwise name and email are required and a new account is invited.",
   "inventory.blockers": "Open prerequisites for the regular deletion process (test deletion is independent of them)",
   "inventory.blocker.DELETION_DISABLED": "Tenant deletion is not enabled in this installation (lc.tenants.test-purge-enabled).",
   "inventory.blocker.RETENTION_NOT_CONFIGURED": "Retention periods are not configured.",

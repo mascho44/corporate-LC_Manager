@@ -17,3 +17,6 @@ dialog{border:0;border-radius:16px;box-shadow:0 24px 80px #0a142859}
 dialog::backdrop{background:#0f172a8f}
 .empty{color:#7a869e}
 .form-grid>h3.wide{grid-column:1/-1;margin:8px 0 0}
+
+/* Vorerst ausgeblendet (kein Mehrwert im Alltag): Training & Erkennung. Zum Wiedereinblenden diese Regel entfernen. */
+#appNavTraining{display:none!important}

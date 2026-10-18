@@ -6,7 +6,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
 import java.util.*;
 @RestController @RequestMapping("/api/platform/tenants") public class PlatformTenantController {
- public record Administrator(@jakarta.validation.constraints.NotBlank @jakarta.validation.constraints.Size(max=100) String username,@jakarta.validation.constraints.NotBlank @jakarta.validation.constraints.Size(max=255) String displayName,@jakarta.validation.constraints.NotBlank @jakarta.validation.constraints.Email @jakarta.validation.constraints.Size(max=255) String email){}
+ /** Name and email are only needed for a new account that is invited; an existing username needs neither. */
+ public record Administrator(@jakarta.validation.constraints.NotBlank @jakarta.validation.constraints.Size(max=100) String username,@jakarta.validation.constraints.Size(max=255) String displayName,@jakarta.validation.constraints.Email @jakarta.validation.constraints.Size(max=255) String email){}
  public record Create(String code,String name,String defaultLanguage,@NotNull Boolean bankEnabled,@NotNull Boolean corporateEnabled,@Valid Administrator administrator){}
  public record Update(@NotNull Boolean active,@NotNull Boolean bankEnabled,@NotNull Boolean corporateEnabled){}
  public record Archive(@NotNull Boolean archived){}
