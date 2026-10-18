@@ -12,6 +12,7 @@ public class TenantInventoryStore {
  private final JdbcTemplate jdbc;
  public TenantInventoryStore(JdbcTemplate jdbc){this.jdbc=jdbc;}
  public List<Category> categories(UUID tenant){
+  bindTenant(tenant);
   var result=new ArrayList<Category>();
   result.add(count("document_split_training","from document_split_training where tenant_id=?",tenant));
   result.add(count("document_type_example","from document_type_example where tenant_id=?",tenant));
@@ -29,6 +30,11 @@ public class TenantInventoryStore {
   }
   result.add(count("platform_invitation","from platform_invitation where tenant_id=?",tenant));
   return List.copyOf(result);
+ }
+ /** Row-level security hides other tenants' rows; the inventory of tenant X must see X's rows, so bind X for this transaction. */
+ private void bindTenant(UUID tenant){
+  boolean postgres=Boolean.TRUE.equals(jdbc.execute((java.sql.Connection c)->c.getMetaData().getDatabaseProductName().toLowerCase().contains("postgres")));
+  if(postgres)jdbc.query("select set_config('app.tenant_id',?,true)",rs->{},tenant.toString());
  }
  private Category count(String key,String clause,UUID tenant){return new Category(key,number("select count(*) "+clause,tenant),null);}
  private long number(String sql,UUID tenant){return Objects.requireNonNull(jdbc.queryForObject(sql,Long.class,tenant));}

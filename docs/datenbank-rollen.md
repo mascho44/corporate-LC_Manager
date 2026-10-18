@@ -33,4 +33,7 @@ Ohne die Variablen verhält sich alles wie bisher: unverschlüsselte Dumps mit R
 
 ## Mandant in der Datenbanksitzung
 
-Bei jeder Verbindung aus dem Pool setzt die App unter PostgreSQL die Sitzungsvariable `app.tenant_id` auf den aktuellen Mandanten (`TenantSessionDataSource`). Sie ist die Vorbereitung für Row-Level-Security-Richtlinien. Noch gibt es keine Richtlinien, das Verhalten der App ändert sich dadurch nicht.
+Bei jeder Verbindung aus dem Pool setzt die App unter PostgreSQL die Sitzungsvariable `app.tenant_id` auf den aktuellen Mandanten (`TenantSessionDataSource`). Sie ist die Vorbereitung für Row-Level-Security-Richtlinien. 
+## Row-Level-Security (Pilot)
+
+Seit Migration V121 sind `learned_field_label` und `lc_review_step` per Row-Level-Security geschützt: Die Laufzeitrolle sieht und ändert nur Zeilen des Mandanten aus `app.tenant_id`; ohne Variable sieht sie nichts. Der Tabellenbesitzer (Flyway) ist ausgenommen. Die Lösch-Trigger der beiden Tabellen laufen als `SECURITY DEFINER`, damit das Löschen eines Mandanten auch aus einem anderen Mandantenkontext vollständig ist; die Mandanten-Inventur setzt den Mandanten für ihre Transaktion selbst. Die übrigen Mandanten-Tabellen folgen schrittweise.

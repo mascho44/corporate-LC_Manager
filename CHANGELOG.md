@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Datenbank: Row-Level-Security für `learned_field_label` und `lc_review_step` (Pilot, Migration V121); die übrigen Mandanten-Tabellen folgen.
 * Datenbank: Die App meldet PostgreSQL pro Verbindung den aktuellen Mandanten (`app.tenant_id`) – Vorbereitung für Row-Level-Security, noch ohne Richtlinien.
 * Lokale Datenbanksicherungen lassen sich optional verschlüsseln (`BACKUP_PASSPHRASE_FILE`) und auf die neuesten N begrenzen (`BACKUP_KEEP`); der Wiederherstellungstest versteht verschlüsselte Sicherungen.
 * Optionale eingeschränkte Datenbankrolle für die Laufzeit (`DB_APP_USER`): Migrationen laufen weiter mit der Besitzerrolle, die App selbst darf nur Daten lesen und schreiben. Einrichtung mit `scripts/db-app-role.sh`, siehe `docs/datenbank-rollen.md`. Ohne die Variablen ändert sich nichts.
