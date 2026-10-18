@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Mandantenlöschung: Die Inventur meldet nicht mehr „nicht implementiert“, sondern ob die Löschung in der Installation freigeschaltet ist; `docker-compose.prod.yml` reicht `LC_TENANTS_TEST_PURGE_ENABLED` durch (Standard aus), siehe `docs/tenant-test-purge.md`.
 * Datenbank: Row-Level-Security für EBICS, SWIFT, Outbox, E-Mail-Versand und interne Regelpakete (Migration V128).
 * Datenbank: Row-Level-Security für Workflows, Teams, Automatisierung und Mandanten-Einstellungen (Migration V127). Der Mandantenwechsel innerhalb einer Transaktion wirkt jetzt auf die Datenbanksitzung; `scripts/db-app-role.sh` vergibt das Ausführungsrecht für die Mitgliedschaftsfunktionen; die Mandanten-Abnahme der CI läuft mit der eingeschränkten Rolle.
 * Datenbank: Row-Level-Security für Posteingang, Entwürfe und Trainingsdaten (Migration V126).

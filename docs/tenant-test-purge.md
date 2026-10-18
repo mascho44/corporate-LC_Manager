@@ -24,3 +24,7 @@ it is NOT erased. Backups and transient files held by already-running OCR are NO
 erased by this operation. In-flight external messages cannot be unsent. A minimal
 tenant tombstone remains to preserve audit attribution and block late writes; its
 code cannot be reused. This is live business-data deletion, not complete erasure.
+
+## Freischalten auf einem Testsystem
+
+In der Plattform-Verwaltung steht bei einem archivierten Mandanten der Abschnitt „Delete all tenant business data“. Er wirkt nur, wenn die Installation die Testlöschung freigibt. Auf einem Testsystem dazu in der `.env` des Servers `LC_TENANTS_TEST_PURGE_ENABLED=true` setzen und neu deployen (`docker-compose.prod.yml` reicht die Variable durch; Standard ist `false`). Ist die Löschung nicht freigeschaltet, zeigt die Inventur den Hinweis „Die Mandantenlöschung ist in dieser Installation nicht freigeschaltet“. Nicht auf Systemen mit echten Geschäftsdaten aktivieren.
