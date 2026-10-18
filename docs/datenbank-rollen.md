@@ -42,3 +42,7 @@ Seit den Migrationen V121 bis V129 sind `learned_field_label`, `lc_review_step`,
 ## Heimatmandant
 
 Der Heimatmandant hält die globalen Benutzerkonten und die Plattform-Anmeldung. Er steht in `platform_home_tenant` (genau ein Datensatz, Migration V130) und ist standardmäßig der Mandant `default`. Die App liest ihn beim Start (`HomeTenantLoader`) und nutzt ihn überall, wo bisher `default` fest verdrahtet war (`Tenant.homeId()`). Das ist die Grundlage dafür, den alten Standardmandanten später entfernen zu können.
+
+### Heimatmandanten wechseln
+
+`PUT /api/platform/home-tenant` mit `{"tenantCode":"…","acknowledgeAccountMove":true}` (nur Plattform-Administratoren mit Zwei-Faktor) verlegt den Heimatmandanten. Alle Konten des bisherigen Heimatmandanten ziehen mit und behalten ihre Rolle nach Namen; der Zielmandant muss aktiv, nicht archiviert und nicht gelöscht sein und alle diese Rollen besitzen. Der Wechsel läuft in einer Transaktion und bricht ab, wenn dabei Plattform-Administratoren verloren gingen; er ist im Audit vermerkt und lässt sich durch einen Wechsel zurück rückgängig machen. Bestehende Mitgliedschaften der Konten in anderen Mandanten bleiben unberührt.

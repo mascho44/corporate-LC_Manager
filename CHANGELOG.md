@@ -4,6 +4,7 @@
 
 * Zusatzbedingungen (:47A:): „Alle Dokumente müssen die Akkreditivnummer zeigen“ und „in englischer Sprache“ werden je Dokument automatisch geprüft; der Sammelhinweis bleibt nur für die übrigen Positionen.
 * Sanktionsprüfung: Einträge wie „APPLICANT“ oder „TO ORDER“ bei Consignee und Notify Party werden nicht mehr als Name geprüft (falscher Treffer „APPLICANT“ ~ „LLC APPLICATA“); der Auftraggeber wird ohnehin unter seinem echten Namen geprüft.
+* Heimatmandant wechseln (`PUT /api/platform/home-tenant`): Konten und Plattform-Anmeldung lassen sich in einen anderen Mandanten verlegen (Vorbereitung, den alten Standardmandanten zu entfernen). Transaktional, auditiert, umkehrbar.
 * Prüfassistent, Schritt „Fehlende Angaben“: Klartext statt technischer Feldnamen; „Im Akkreditiv nicht verlangt“ je Angabe (Migration V131, Regeln werden nicht anwendbar); Ursprungsland und Einzelpreis werden aus dem MT700 gelesen, Unterschrift, Originalanzahl und Aussteller je Dokumenttyp aus Feld 46A als Vorschlag zum Übernehmen.
 * Sanktionslisten-Warnung: Zu häufige Mails behoben. Eine unveränderte Liste gilt nach erfolgreichem Abruf als aktuell (bisher zählte nur das Datum der letzten Änderung), und in der ersten Stunde nach einem Start wird nicht gewarnt.
 * Heimatmandant konfigurierbar (Migration V130, `platform_home_tenant`): Konten und Plattform-Anmeldung hängen nicht mehr fest am Mandanten `default`. Verhalten unverändert, solange die Einstellung auf `default` steht.
