@@ -45,4 +45,6 @@ Der Heimatmandant hält die globalen Benutzerkonten und die Plattform-Anmeldung.
 
 ### Heimatmandanten wechseln
 
+In der Plattform-Verwaltung bei einem aktiven Mandanten: „Als Heimatmandant festlegen“ (Code eintippen, Umzug bestätigen). Technisch dahinter:
+
 `PUT /api/platform/home-tenant` mit `{"tenantCode":"…","acknowledgeAccountMove":true}` (nur Plattform-Administratoren mit Zwei-Faktor) verlegt den Heimatmandanten. Alle Konten des bisherigen Heimatmandanten ziehen mit und behalten ihre Rolle nach Namen; der Zielmandant muss aktiv, nicht archiviert und nicht gelöscht sein und alle diese Rollen besitzen. Der Wechsel läuft in einer Transaktion und bricht ab, wenn dabei Plattform-Administratoren verloren gingen; er ist im Audit vermerkt und lässt sich durch einen Wechsel zurück rückgängig machen. Bestehende Mitgliedschaften der Konten in anderen Mandanten bleiben unberührt.

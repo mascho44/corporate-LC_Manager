@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Plattform-Verwaltung: Knopf „Als Heimatmandant festlegen“ je aktivem Mandanten (Code eintippen, Umzug aller Konten bestätigen).
 * Zusatzbedingungen (:47A:): „Alle Dokumente müssen die Akkreditivnummer zeigen“ und „in englischer Sprache“ werden je Dokument automatisch geprüft; der Sammelhinweis bleibt nur für die übrigen Positionen.
 * Sanktionsprüfung: Einträge wie „APPLICANT“ oder „TO ORDER“ bei Consignee und Notify Party werden nicht mehr als Name geprüft (falscher Treffer „APPLICANT“ ~ „LLC APPLICATA“); der Auftraggeber wird ohnehin unter seinem echten Namen geprüft.
 * Heimatmandant wechseln (`PUT /api/platform/home-tenant`): Konten und Plattform-Anmeldung lassen sich in einen anderen Mandanten verlegen (Vorbereitung, den alten Standardmandanten zu entfernen). Transaktional, auditiert, umkehrbar.
