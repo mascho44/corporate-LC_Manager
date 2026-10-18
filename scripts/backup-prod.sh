@@ -35,4 +35,23 @@ if [[ -f "$PARTIAL_FILE" ]]; then
 fi
 
 chmod 600 "$BACKUP_FILE"
+
+# Optional: lokale Sicherung verschluesseln (AES-256, Passwortdatei ausserhalb des Backup-Ordners).
+if [[ -n "${BACKUP_PASSPHRASE_FILE:-}" ]]; then
+  if [[ ! -s "$BACKUP_PASSPHRASE_FILE" ]]; then
+    echo "Fehler: BACKUP_PASSPHRASE_FILE fehlt oder ist leer." >&2
+    exit 1
+  fi
+  openssl enc -aes-256-cbc -pbkdf2 -iter 600000 -salt -pass "file:$BACKUP_PASSPHRASE_FILE" \
+    -in "$BACKUP_FILE" -out "$BACKUP_FILE.enc"
+  chmod 600 "$BACKUP_FILE.enc"
+  rm -f -- "$BACKUP_FILE"
+  BACKUP_FILE="$BACKUP_FILE.enc"
+fi
+
+# Optional: nur die neuesten N lokalen Sicherungen behalten (leer = alles behalten).
+if [[ "${BACKUP_KEEP:-}" =~ ^[1-9][0-9]*$ ]]; then
+  ls -1t "$BACKUP_DIR"/lcmanager-*.dump "$BACKUP_DIR"/lcmanager-*.dump.enc 2>/dev/null \
+    | tail -n +"$((BACKUP_KEEP + 1))" | while read -r old; do rm -f -- "$old"; done
+fi
 echo "$BACKUP_FILE"
