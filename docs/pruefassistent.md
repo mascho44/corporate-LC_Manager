@@ -27,3 +27,10 @@ Die Schritte sind im Code fest (keine Konfiguration). Der Fortschritt wird mit d
 
 ## Noch offen
 Eine Checkliste mit Abhaken einzelner Punkte je Schritt, Hinweise zu Fristen nach Arbeitstagen und Feiertagen.
+
+## Fehlende Angaben (Schritt 3)
+
+Der Schritt listet LC-Angaben, ohne die Regeln „nicht prüfbar“ bleiben, mit Klartext-Bezeichnung und der Zahl betroffener Regeln.
+
+- **Aus dem Akkreditiv gelesen:** Ursprungsland und Einzelpreis (Felder 45A/46A/47A) stehen in den LC-Prüfdaten. Unterschrift, Anzahl der Originale und Aussteller gelten je Dokumenttyp; die App liest sie aus den Positionen von Feld 46A („+SIGNED COMMERCIAL INVOICE IN 3 ORIGINALS“) und bietet sie als Vorschlag zum Übernehmen an. Nennen mehrere Positionen desselben Dokuments unterschiedliche Werte, schlägt sie nichts vor.
+- **Im Akkreditiv nicht verlangt:** Pro Angabe lässt sich markieren, dass das Akkreditiv sie nicht verlangt (zum Beispiel zweiter Begünstigter, Deckungszeitraum). Regeln, die nur an dieser Angabe scheitern, gelten dann als nicht anwendbar und verschwinden aus der Liste; die Markierung ist im Audit vermerkt und lässt sich wieder aufheben (`PUT /api/lcs/{id}/rule-facts/waived/{FELD}` mit `waived=false`).

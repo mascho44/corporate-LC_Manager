@@ -35,4 +35,10 @@ class Mt700FactsTest {
  @Test void exceedingNotAllowedSetsToleranceToFalse(){
   assertThat(facts(":39B:NOT EXCEEDING")).containsEntry(Field.LC_AMOUNT_TOLERANCE_ALLOWED,"false");
  }
+ @Test void readsOriginCountryAndUnitPrice(){
+  var f=facts(String.join("\n",
+   ":45A:1000 PCS WIDGETS USD 12.50 PER PCS CIF ROTTERDAM",
+   ":46A:+SIGNED COMMERCIAL INVOICE IN 3 ORIGINALS\n+FULL SET 3/3 ORIGINAL BILLS OF LADING\n+CERTIFICATE OF ORIGIN ISSUED BY CHAMBER OF COMMERCE SHOWING GOODS ORIGIN\n+COUNTRY OF ORIGIN: GERMANY"));
+  assertThat(f).containsEntry(Field.LC_ORIGIN_COUNTRY,"GERMANY").containsEntry(Field.LC_UNIT_PRICE_AMOUNT,"12.50");
+ }
 }

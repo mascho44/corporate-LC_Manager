@@ -7,6 +7,7 @@ public class LetterOfCredit {
  public UUID getTenantId(){return tenantId;}
  @PrePersist @PreUpdate @PreRemove private void validateTenant(){de.ostms.lc.tenant.domain.TenantContext.require(tenantId);}
  @Column(columnDefinition="text") @com.fasterxml.jackson.annotation.JsonIgnore private String ruleFactsJson;
+ @Column(columnDefinition="text") @com.fasterxml.jackson.annotation.JsonIgnore private String ruleWaivedJson;
  @Column(length=16) @com.fasterxml.jackson.annotation.JsonIgnore private String ruleSourceOverride;
  @Column(length=600) @com.fasterxml.jackson.annotation.JsonIgnore private String rulePackIds;
  public String getRuleSourceOverride(){return ruleSourceOverride;}
@@ -14,6 +15,8 @@ public class LetterOfCredit {
  public String getRulePackIds(){return rulePackIds;}
  public void setRulePackIds(String value){rulePackIds=value;}
  public String getRuleFactsJson(){return ruleFactsJson;}
+ public String getRuleWaivedJson(){return ruleWaivedJson;}
+ public void setRuleWaivedJson(String value){ruleWaivedJson=value;}
  @Column(name="auto_rule_facts",columnDefinition="text") @com.fasterxml.jackson.annotation.JsonIgnore private String autoRuleFacts;
  public String getAutoRuleFacts(){return autoRuleFacts;} public void setAutoRuleFacts(String v){autoRuleFacts=v;}
  public void setRuleFactsJson(String value){ruleFactsJson=value;}
