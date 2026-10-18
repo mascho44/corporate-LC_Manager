@@ -45,6 +45,16 @@ function swift(reference){return `:20:${reference}\n:31C:261001\n:31D:271231SYNT
  const homeDocument=await call('/api/lcs/'+homeLc.id+'/documents?type=ANNEX','POST',attachment(homeContent),200,'multipart');
  assert.equal(await call('/api/documents/'+homeDocument.id+'/content','GET',undefined,200,'application/json',true),homeContent);
  const created=await call('/api/platform/tenants','POST',{code:'synthetic-smoke',name:'Synthetic smoke workspace',defaultLanguage:'en',bankEnabled:true,corporateEnabled:true},201);
+ // Home tenant: all accounts move to another tenant, platform access continues, and the move can be undone.
+ const homeTarget=await call('/api/platform/tenants','POST',{code:'home-move',name:'Home move target',defaultLanguage:'en',bankEnabled:true,corporateEnabled:true},201);
+ await call('/api/platform/home-tenant','PUT',{tenantCode:'home-move',acknowledgeAccountMove:false},400);
+ await call('/api/platform/home-tenant','PUT',{tenantCode:'no-such-tenant',acknowledgeAccountMove:true},400);
+ const moved=await call('/api/platform/home-tenant','PUT',{tenantCode:'home-move',acknowledgeAccountMove:true});
+ assert.equal(moved.tenantCode,'home-move');assert.ok(moved.accountsMoved>=1);
+ assert.ok(Array.isArray(await call('/api/platform/tenants')));
+ await call('/api/platform/home-tenant','PUT',{tenantCode:'home-move',acknowledgeAccountMove:true},400);
+ const back=await call('/api/platform/home-tenant','PUT',{tenantCode:'default',acknowledgeAccountMove:true});
+ assert.equal(back.tenantCode,'default');assert.ok(Array.isArray(await call('/api/platform/tenants')));
  await call('/api/tenants/'+created.id+'/select','POST');csrf=(await call('/api/auth/me')).csrfToken;
  assert.equal((await call('/api/tenants')).selectedTenantId,created.id);assert.deepEqual(await call('/api/lcs'),[]);
  const initialRoles=await call('/api/roles');assert.deepEqual(initialRoles.map(r=>r.baseRole).sort(),['ADMIN','EDITOR','VIEWER']);assert.equal(initialRoles.find(r=>r.baseRole==='VIEWER').permissions.length,0);
