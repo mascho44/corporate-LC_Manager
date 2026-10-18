@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Heimatmandant wechseln: Fehlt eine Rolle im Zielmandanten dem Namen nach, ziehen die Konten auf die Standardrolle gleicher Art um (zum Beispiel „Sachbearbeiter“ auf „Editor“).
 * Mandant anlegen: Als erster Mandantenadmin lässt sich ein bestehendes Konto angeben (Benutzername genügt). Der Navigationspunkt „Training & Erkennung“ ist vorerst ausgeblendet.
 * Plattform-Verwaltung: Knopf „Als Heimatmandant festlegen“ je aktivem Mandanten (Code eintippen, Umzug aller Konten bestätigen).
 * Zusatzbedingungen (:47A:): „Alle Dokumente müssen die Akkreditivnummer zeigen“ und „in englischer Sprache“ werden je Dokument automatisch geprüft; der Sammelhinweis bleibt nur für die übrigen Positionen.
