@@ -30,7 +30,7 @@ class DocxTemplateServiceTest {
         lc.setCompanyId(2);
         lc.setTemplateCompany("Vorlagenfirma GmbH");
         org.mockito.Mockito.when(templates.content(DocumentType.COMMERCIAL_INVOICE,2,"Vorlagenfirma GmbH")).thenReturn(java.util.Optional.empty());
-        var companies=mock(de.ostms.lc.company.service.CompanyProfileService.class);var chosen=new de.ostms.lc.company.domain.CompanyProfile();chosen.setLegalName("Selected Company");chosen.setAddressLine("Selected Street");org.mockito.Mockito.when(companies.profile(2)).thenReturn(chosen);
+        var companies=mock(de.ostms.lc.company.service.CompanyProfileService.class);var chosen=new de.ostms.lc.company.domain.CompanyProfile();chosen.setLegalName("Selected Company");chosen.setAddressLine("Selected Street");org.mockito.Mockito.when(companies.profileForLetterhead(org.mockito.ArgumentMatchers.eq(2),org.mockito.ArgumentMatchers.any())).thenReturn(chosen);
         byte[] result = new DocxTemplateService(templates,companies).render(lc, request);
         org.mockito.Mockito.verify(templates).content(DocumentType.COMMERCIAL_INVOICE,2,"Vorlagenfirma GmbH");
 

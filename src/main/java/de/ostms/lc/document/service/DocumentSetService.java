@@ -38,7 +38,7 @@ public class DocumentSetService {
     private static final Pattern NUMBER_WITH_PREFIX = Pattern.compile("^[A-Za-z]{1,6}[-_/]\\s*(.+)$");
 
     public record Requirement(DocumentType documentType, String label, boolean namedInCredit, String originals, boolean signed) {}
-    public record Proposal(LocalDate documentDate, String invoiceNumber, List<GeneratedDocumentItemRequest> items, List<DocumentType> types, List<Requirement> requirements, String currency, BigDecimal maximumInvoiceTotal) {}
+    public record Proposal(LocalDate documentDate, String invoiceNumber, List<GeneratedDocumentItemRequest> items, List<DocumentType> types, List<Requirement> requirements, String currency, BigDecimal maximumInvoiceTotal, boolean companyConfigured) {}
     public record Finding(String severity, String code, String message, String documentName) {}
     public record Result(List<DocumentView> documents, List<String> warnings, BigDecimal total, String currency, List<Finding> findings) {}
 
@@ -46,9 +46,10 @@ public class DocumentSetService {
     private final LcDocumentRepository documents;
     private final GeneratedDocumentService generated;
     private final DocumentCheckService checks;
+    private final de.ostms.lc.company.service.CompanyProfileService companies;
 
-    public DocumentSetService(LetterOfCreditRepository lcs, LcDocumentRepository documents, GeneratedDocumentService generated, DocumentCheckService checks) {
-        this.lcs = lcs; this.documents = documents; this.generated = generated; this.checks = checks;
+    public DocumentSetService(LetterOfCreditRepository lcs, LcDocumentRepository documents, GeneratedDocumentService generated, DocumentCheckService checks, de.ostms.lc.company.service.CompanyProfileService companies) {
+        this.lcs = lcs; this.documents = documents; this.generated = generated; this.checks = checks; this.companies = companies;
     }
 
     // ---- proposal ----------------------------------------------------------------------------------------------------------------------------
@@ -67,7 +68,7 @@ public class DocumentSetService {
             requirements.add(new Requirement(type, type.getDisplayName(), named.contains(type), originals, signed));
         }
         BigDecimal maximum = lc.getAmount() == null ? null : checks.maximumCreditAmount(lc);
-        return new Proposal(LocalDate.now(), nextInvoiceNumber(lcId), proposedItems(lc), types, requirements, lc.getCurrency(), maximum);
+        return new Proposal(LocalDate.now(), nextInvoiceNumber(lcId), proposedItems(lc), types, requirements, lc.getCurrency(), maximum, companies.hasLetterhead(lc.getCompanyId()));
     }
 
     List<DocumentType> typesNamedInCredit(LetterOfCredit lc) {

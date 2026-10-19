@@ -53,7 +53,7 @@ class DocxSamplesTest {
         var templates = mock(DocumentTemplateService.class);
         when(templates.content(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any())).thenReturn(Optional.empty());
         var companies = mock(CompanyProfileService.class);
-        when(companies.profile(1)).thenReturn(company);
+        when(companies.profileForLetterhead(org.mockito.ArgumentMatchers.eq(1), org.mockito.ArgumentMatchers.any())).thenReturn(company);
         var service = new DocxTemplateService(templates, companies);
         var invoiceItems = List.of(
             new GeneratedDocumentItemRequest("1", "CNC milling machine model BM-500, 5-axis, incl. control unit and standard tooling, HS 8459.61", new BigDecimal("2"), "pcs", new BigDecimal("58000.00"), new BigDecimal("116000.00"), null, null, null),

@@ -33,7 +33,7 @@ class GeneratedDocumentTextTest {
         var id = UUID.randomUUID();
         when(lcs.findById(id)).thenReturn(Optional.of(lc));
         var company = new CompanyProfile(); company.setLegalName("Seller GmbH"); company.setCity("Stuttgart"); company.setCountry("Germany");
-        when(companies.profile(1)).thenReturn(company);
+        when(companies.profileForLetterhead(org.mockito.ArgumentMatchers.eq(1), org.mockito.ArgumentMatchers.any())).thenReturn(company);
         when(docx.render(any(), any())).thenReturn(new byte[]{1, 2, 3});
         when(documents.save(any())).thenAnswer(call -> call.getArgument(0));
         var request = new GeneratedDocumentRequest(type, "INV-1", LocalDate.of(2026, 10, 5), "Machine", "2 pcs", null, null, null, "Marks", items);

@@ -31,6 +31,7 @@ class DocumentSetServiceTest {
     private DocumentCheckService checks;
     private DocumentSetService service;
     private LetterOfCredit lc;
+    private de.ostms.lc.company.service.CompanyProfileService companies;
 
     @BeforeEach void setUp() throws Exception {
         lcs = mock(LetterOfCreditRepository.class);
@@ -38,7 +39,9 @@ class DocumentSetServiceTest {
         checks = mock(DocumentCheckService.class);
         var documents = mock(LcDocumentRepository.class);
         when(documents.findByLetterOfCreditIdOrderByUploadedAtDesc(lcId)).thenReturn(List.of());
-        service = new DocumentSetService(lcs, documents, generated, checks);
+        companies = mock(de.ostms.lc.company.service.CompanyProfileService.class);
+        when(companies.hasLetterhead(any())).thenReturn(true);
+        service = new DocumentSetService(lcs, documents, generated, checks, companies);
         lc = new LetterOfCredit();
         lc.setReference("TEST-LC-1"); lc.setCurrency("EUR"); lc.setAmount(new BigDecimal("125000.00")); lc.setExpiryDate(LocalDate.of(2026, 11, 30));
         lc.setRequiredDocuments(List.of("SIGNED COMMERCIAL INVOICE IN 3 ORIGINALS", "PACKING LIST IN 2 COPIES", "CERTIFICATE OF ORIGIN ISSUED BY CHAMBER OF COMMERCE"));
@@ -121,5 +124,11 @@ class DocumentSetServiceTest {
         assertThat(DocumentSetService.suffix("0815")).isEqualTo("0815");
         assertThat(DocumentSetService.suffix("AB/12")).isEqualTo("12");
         assertThat(DocumentSetService.suffix("RECHNUNG-7")).isEqualTo("RECHNUNG-7");
+    }
+
+    @Test void theProposalSaysWhetherALetterheadExists() {
+        assertThat(service.proposal(lcId).companyConfigured()).isTrue();
+        when(companies.hasLetterhead(any())).thenReturn(false);
+        assertThat(service.proposal(lcId).companyConfigured()).isFalse();
     }
 }
