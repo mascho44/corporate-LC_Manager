@@ -69,7 +69,8 @@ public final class Mt700Requirements {
         return items;
     }
 
-    private static DocumentType typeOf(String upper) {
+    /** The document type an item of field 46A is about (first match in the fixed order), or null. */
+    public static DocumentType typeOf(String upper) {
         for (var e : TYPES.entrySet()) if (e.getValue().matcher(upper).find()) return e.getKey();
         return null;
     }

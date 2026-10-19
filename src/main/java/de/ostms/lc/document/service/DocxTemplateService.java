@@ -49,7 +49,7 @@ public class DocxTemplateService {
         data.put("portOfDischarge", value(de.ostms.lc.lc.service.LcConditions.value(lc, de.ostms.lc.lc.domain.LcCondition.PORT_OF_DISCHARGE).or(() -> de.ostms.lc.lc.service.LcConditions.value(lc, de.ostms.lc.lc.domain.LcCondition.FINAL_DESTINATION)).orElse(null)));
         data.put("incoterm", value(incoterm(de.ostms.lc.lc.service.LcConditions.value(lc, de.ostms.lc.lc.domain.LcCondition.GOODS_DESCRIPTION).orElse(""))));
         data.put("paymentTerms", value(paymentTerms(lc.getRawMessage())));
-        var company=companies.profileForLetterhead(lc.getCompanyId(),lc.getBeneficiary());data.put("companyName",value(company.getLegalName()));data.put("companyAddress",value(company.getAddressLine()));data.put("companyPostalCode",value(company.getPostalCode()));data.put("companyCity",value(company.getCity()));data.put("companyCountry",value(company.getCountry()));data.put("companyEmail",value(company.getEmail()));data.put("companyPhone",value(company.getPhone()));data.put("companyTaxId",value(company.getTaxId()));data.put("companyRegistrationNumber",value(company.getRegistrationNumber()));data.put("companyBankName",value(company.getBankName()));data.put("companyIban",value(company.getIban()));data.put("companyBic",value(company.getBic()));data.put("companyContactPerson",value(company.getContactPerson()));data.put("companyLogo",null);if(company.getLogo()!=null)data.put("companyLogo",Pictures.ofBytes(company.getLogo()).size(160,60).create());
+        putCompany(data, lc);
         try (XWPFTemplate compiled = XWPFTemplate.compile(new ByteArrayInputStream(template)).render(data);
              ByteArrayOutputStream output = new ByteArrayOutputStream()) {
             compiled.write(output);
@@ -83,6 +83,52 @@ public class DocxTemplateService {
         boolean any = false;
         for (var item : items) if (item.amount() != null) { sum = sum.add(item.amount()); any = true; }
         return any ? sum : null;
+    }
+
+    private void putCompany(Map<String, Object> data, LetterOfCredit lc) {
+        var company=companies.profileForLetterhead(lc.getCompanyId(),lc.getBeneficiary());data.put("companyName",value(company.getLegalName()));data.put("companyAddress",value(company.getAddressLine()));data.put("companyPostalCode",value(company.getPostalCode()));data.put("companyCity",value(company.getCity()));data.put("companyCountry",value(company.getCountry()));data.put("companyEmail",value(company.getEmail()));data.put("companyPhone",value(company.getPhone()));data.put("companyTaxId",value(company.getTaxId()));data.put("companyRegistrationNumber",value(company.getRegistrationNumber()));data.put("companyBankName",value(company.getBankName()));data.put("companyIban",value(company.getIban()));data.put("companyBic",value(company.getBic()));data.put("companyContactPerson",value(company.getContactPerson()));data.put("companyLogo",null);if(company.getLogo()!=null)data.put("companyLogo",Pictures.ofBytes(company.getLogo()).size(160,60).create());
+    }
+
+    /** One row of the list of presented documents in the cover letter. */
+    public record SubmissionRow(String number, String document, String documentNumber, String date, String originals, String copies, String pages) {}
+    /** What the cover letter to the bank says besides the credit data and the company letterhead. */
+    public record SubmissionLetter(java.time.LocalDate date, String recipient, String ourReference, String remarks, java.util.List<SubmissionRow> rows) {}
+
+    /** The cover letter for presenting documents to the bank, filled from the credit, the company profile and the list of documents. */
+    public byte[] renderSubmissionLetter(LetterOfCredit lc, SubmissionLetter letter) throws IOException {
+        de.ostms.lc.tenant.domain.TenantContext.require(lc.getTenantId());
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("title", "PRESENTATION OF DOCUMENTS");
+        data.put("date", letter.date().format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy", java.util.Locale.ENGLISH)));
+        data.put("recipient", value(letter.recipient()));
+        data.put("ourReference", value(letter.ourReference()));
+        data.put("remarks", value(letter.remarks()));
+        data.put("lcReference", value(lc.getReference()));
+        data.put("applicant", value(lc.getApplicant()));
+        data.put("issuingBank", value(lc.getIssuingBank()));
+        data.put("amount", value(lc.getCurrency()) + " " + (lc.getAmount() == null ? "-" : money(lc.getAmount())));
+        data.put("expiry", lc.getExpiryDate() == null ? "-" : lc.getExpiryDate().format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy", java.util.Locale.ENGLISH)));
+        data.put("latestShipment", lc.getLatestShipmentDate() == null ? "-" : lc.getLatestShipmentDate().format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy", java.util.Locale.ENGLISH)));
+        data.put("documentsTable", submissionTable(letter.rows()));
+        putCompany(data, lc);
+        try (XWPFTemplate compiled = XWPFTemplate.compile(new ByteArrayInputStream(ProfessionalDocxTemplate.buildSubmissionLetter())).render(data);
+             ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            compiled.write(output);
+            return output.toByteArray();
+        }
+    }
+
+    private Object submissionTable(java.util.List<SubmissionRow> rows) {
+        var table = Tables.of().border(border()).width(17.46, new double[]{1.0, 7.0, 4.0, 1.9, 1.7, 1.86});
+        table.addRow(Rows.of("No.", "Document", "Document no. / date", "Originals", "Copies", "Pages").textBold().textColor("FFFFFF").bgColor(ProfessionalDocxTemplate.NAVY).center().create());
+        int n = 0;
+        for (var row : rows) {
+            var cells = new com.deepoove.poi.data.CellRenderData[]{cell(row.number(), false), cell(row.document(), false), cell(row.documentNumber() + (row.date().isBlank() ? "" : "\n" + row.date()), false),
+                    cell(row.originals(), true), cell(row.copies(), true), cell(row.pages(), true)};
+            var builder = Rows.of(cells);
+            table.addRow((n++ % 2 == 1 ? builder.bgColor("F5F7FB") : builder).create());
+        }
+        return table.create();
     }
 
     private static com.deepoove.poi.data.style.BorderStyle border() {

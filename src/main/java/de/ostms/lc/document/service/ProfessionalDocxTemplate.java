@@ -37,6 +37,43 @@ final class ProfessionalDocxTemplate {
         }
     }
 
+    /** The cover letter to the bank when documents are presented under a credit. */
+    static byte[] buildSubmissionLetter() throws IOException {
+        try (XWPFDocument doc = new XWPFDocument(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            page(doc);
+            letterhead(doc);
+            XWPFTable addresses = table(doc, 1, 2, new int[]{58, 42});
+            noBorders(addresses);
+            XWPFTableCell left = addresses.getRow(0).getCell(0), right = addresses.getRow(0).getCell(1);
+            run(first(left), "TO", 7.5, true, GREY);
+            run(left.addParagraph(), "{{recipient}}", 10.5, false, "111827");
+            XWPFParagraph date = first(right);
+            date.setAlignment(ParagraphAlignment.RIGHT);
+            run(date, "{{date}}", 10, true, NAVY);
+            XWPFParagraph ours = right.addParagraph();
+            ours.setAlignment(ParagraphAlignment.RIGHT);
+            run(ours, "Our reference: {{ourReference}}", 9, false, "111827");
+            XWPFParagraph credit = right.addParagraph();
+            credit.setAlignment(ParagraphAlignment.RIGHT);
+            run(credit, "L/C no.: {{lcReference}}", 9, false, "111827");
+            XWPFParagraph subject = paragraph(doc, 260, 120);
+            run(subject, "Presentation of documents under Documentary Credit No. {{lcReference}}", 12.5, true, NAVY);
+            run(paragraph(doc, 0, 100), "Dear Sirs,", 10.5, false, "111827");
+            run(paragraph(doc, 0, 140), "We refer to the above documentary credit issued by {{issuingBank}} for the account of {{applicant}} for {{amount}} (latest date of shipment {{latestShipment}}, expiry {{expiry}}). We hereby present the following documents for examination:", 10.5, false, "111827");
+            heading(doc, "DOCUMENTS PRESENTED");
+            paragraph(doc, 0, 80).createRun().setText("{{#documentsTable}}");
+            XWPFParagraph remarksHeading = paragraph(doc, 140, 20);
+            run(remarksHeading, "REMARKS", 9, true, ACCENT);
+            run(paragraph(doc, 0, 100), "{{remarks}}", 10, false, "111827");
+            run(paragraph(doc, 80, 120), "Please examine the documents in accordance with the terms and conditions of the credit and credit the proceeds on the due date to our account with {{companyBankName}}, IBAN {{companyIban}}, BIC {{companyBic}}.", 10.5, false, "111827");
+            run(paragraph(doc, 80, 60), "Yours faithfully,", 10.5, false, "111827");
+            signature(doc, "date");
+            footer(doc);
+            doc.write(out);
+            return out.toByteArray();
+        }
+    }
+
     // ---- page and sections -------------------------------------------------------------------------------------------------------------------
 
     private static void page(XWPFDocument doc) {
@@ -149,12 +186,14 @@ final class ProfessionalDocxTemplate {
         run(p, text, 9.5, false, "111827");
     }
 
-    private static void signature(XWPFDocument doc) {
+    private static void signature(XWPFDocument doc) { signature(doc, "documentDate"); }
+
+    private static void signature(XWPFDocument doc, String dateKey) {
         paragraph(doc, 200, 0);
         XWPFTable table = table(doc, 1, 2, new int[]{50, 50});
         noBorders(table);
         XWPFTableCell left = table.getRow(0).getCell(0), right = table.getRow(0).getCell(1);
-        run(first(left), "{{companyCity}}, {{documentDate}}", 9.5, false, "111827");
+        run(first(left), "{{companyCity}}, {{" + dateKey + "}}", 9.5, false, "111827");
         XWPFParagraph place = left.addParagraph();
         run(place, "Place, date", 8, false, GREY);
         XWPFParagraph space = first(right);
