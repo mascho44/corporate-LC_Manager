@@ -38,7 +38,7 @@ public class GeneratedDocumentService {
             PDPage page=new PDPage(PDRectangle.A4);pdf.addPage(page);
             var regular=new PDType1Font(Standard14Fonts.FontName.HELVETICA);var bold=new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD);
             try(PDPageContentStream c=new PDPageContentStream(pdf,page)){
-                var company=companies.profile(lc.getCompanyId());
+                var company=companies.profileForLetterhead(lc.getCompanyId(),lc.getBeneficiary());
                 float y=790;
                 if(company.getLogo()!=null){
                     var image=org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject.createFromByteArray(pdf,company.getLogo(),"company-logo");
@@ -82,7 +82,7 @@ public class GeneratedDocumentService {
         else if(r.type()==DocumentType.PACKING_LIST)text.append("\nPackages: ").append(r.packages()==null?0:r.packages()).append("\nNet weight: ").append(weight(r.netWeight())).append("\nGross weight: ").append(weight(r.grossWeight()));
         if(r.items()!=null&&!r.items().isEmpty())for(var item:r.items())text.append("\nPosition ").append(value(item.position())).append(": ").append(value(item.description())).append(" | Quantity ").append(item.quantity()==null?"-":item.quantity()).append(' ').append(value(item.unit())).append(r.type()==DocumentType.PACKING_LIST?" | Packages "+(item.packages()==null?"-":item.packages())+" | Net "+weight(item.netWeight())+" | Gross "+weight(item.grossWeight()):" | Unit price "+(item.unitPrice()==null?"-":item.unitPrice())+" | Amount "+(item.amount()==null?"-":item.amount()));
         // The same details as the printed document: shipment terms and the declaration above the signature, so the automatic check reads what a person reads.
-        var company=companies.profile(lc.getCompanyId());
+        var company=companies.profileForLetterhead(lc.getCompanyId(),lc.getBeneficiary());
         String incoterm=DocxTemplateService.incoterm(de.ostms.lc.lc.service.LcConditions.value(lc,de.ostms.lc.lc.domain.LcCondition.GOODS_DESCRIPTION).orElse(""));
         if(r.type()==DocumentType.COMMERCIAL_INVOICE){
             if(incoterm!=null)text.append("\nIncoterm: ").append(incoterm);

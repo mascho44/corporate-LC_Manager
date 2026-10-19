@@ -70,6 +70,7 @@
    const total = limitMessage(totalOf(lines), proposal.maximumInvoiceTotal, currency);
    dialog.innerHTML = `<div class="dialoghead"><h2>Dokumentensatz erzeugen</h2><button type="button" data-close>Schließen</button></div>` +
     `<p>Aus einer Eingabe entstehen alle gewählten Dokumente mit gleicher Nummer, gleichem Datum und gleichen Positionen. Danach werden sie gegen das Akkreditiv geprüft.</p>` +
+    (proposal.companyConfigured === false ? '<p class="ds-hint" role="status">Für diese Akte ist keine Firma hinterlegt. Der Briefkopf zeigt nur den Begünstigten aus dem Akkreditiv. Anschrift, Logo und Bankverbindung kommen aus dem Firmenprofil (Mandanteneinstellungen → Firma).</p>' : '') +
     `<div class="ds-head"><label>Rechnungsnummer<input data-field="invoiceNumber" value="${esc(proposal.invoiceNumber)}"></label><label>Dokumentdatum<input type="date" data-field="documentDate" value="${esc(proposal.documentDate)}"></label></div>` +
     `<h3>Dokumente</h3><div class="ds-types">${boxes}</div><h3>Positionen</h3>${rows}<button type="button" class="secondary" data-add>+ Position</button><p class="ds-total ds-${total.level}" role="status">${esc(total.text)}</p>` +
     `<label>Hinweise / Markierungen (Marks and numbers)<textarea data-field="notes" rows="2" maxlength="4000"></textarea></label><p data-error role="alert"></p><div class="dialog-actions"><button type="button" data-create>Dokumente erzeugen</button></div>`;
