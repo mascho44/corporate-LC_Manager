@@ -18,4 +18,13 @@ public record DocumentSetRequest(
         @DecimalMin("0.0") BigDecimal netWeight,
         @DecimalMin("0.0") BigDecimal grossWeight,
         @Size(max = 4000) String notes,
-        @NotEmpty Set<DocumentType> types) {}
+        @NotEmpty Set<DocumentType> types,
+        @Pattern(regexp = "(?i)docx|pdf") String format) {
+    public DocumentSetRequest(LocalDate documentDate, String invoiceNumber, List<GeneratedDocumentItemRequest> items, String quantity, Integer packages,
+                              BigDecimal netWeight, BigDecimal grossWeight, String notes, Set<DocumentType> types) {
+        this(documentDate, invoiceNumber, items, quantity, packages, netWeight, grossWeight, notes, types, null);
+    }
+
+    /** Word unless PDF was asked for. */
+    public boolean pdf() { return "pdf".equalsIgnoreCase(format); }
+}

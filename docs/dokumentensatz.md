@@ -16,3 +16,7 @@ In einer Akte erzeugt **Dokumentensatz erzeugen** (neben „Dokument hochladen�
 - Zertifikate zeigen in der Positionstabelle nur Position, Beschreibung, Menge und Einheit (keine Preisspalten).
 
 Schnittstelle: `GET /api/lcs/{id}/document-set/proposal`, `POST /api/lcs/{id}/document-set` (Recht „Dokumente erstellen“).
+
+## Word oder PDF
+
+Im Dialog „Format“ wählen: **Word** (bearbeitbar, nutzt die Mustervorlage der Firma) oder **PDF** (fertig zum Versand, immer das Standardlayout; eigene Word-Vorlagen gelten nur für Word). Das PDF hat dieselben Abschnitte wie die Word-Vorlage. Dasselbe gilt für das Begleitschreiben im Einreichungspaket (`letterFormat`); im ZIP heißt es dann `00-Einreichungsschreiben.pdf`. Schnittstelle: Feld `format` (`docx`|`pdf`) beim Dokumentensatz.
