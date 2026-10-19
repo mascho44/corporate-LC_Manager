@@ -30,18 +30,25 @@ public class DocxTemplateService {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("title", title(request.type()));
         data.put("documentNumber", value(request.documentNumber()));
-        data.put("documentDate", request.documentDate().toString());
+        data.put("documentDate", request.documentDate().format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy", java.util.Locale.ENGLISH)));
         data.put("lcReference", value(lc.getReference()));
         data.put("beneficiary", value(lc.getBeneficiary()));
         data.put("applicant", value(lc.getApplicant()));
         data.put("description", value(request.description()));
         data.put("quantity", value(request.quantity()));
-        data.put("amount", value(lc.getCurrency()) + " " + (lc.getAmount() == null ? "-" : lc.getAmount()));
+        data.put("amount", value(lc.getCurrency()) + " " + (lc.getAmount() == null ? "-" : money(lc.getAmount())));
         data.put("packages", request.packages() == null ? "-" : request.packages().toString());
-        data.put("netWeight", request.netWeight() == null ? "-" : request.netWeight() + " kg");
-        data.put("grossWeight", request.grossWeight() == null ? "-" : request.grossWeight() + " kg");
+        data.put("netWeight", request.netWeight() == null ? "-" : number(request.netWeight()) + " kg");
+        data.put("grossWeight", request.grossWeight() == null ? "-" : number(request.grossWeight()) + " kg");
         data.put("notes", value(request.notes()));
-        data.put("itemsTable", itemsTable(request));
+        data.put("itemsTable", itemsTable(request, lc.getCurrency()));
+        var itemSum = itemSum(request);
+        data.put("totalAmount", itemSum == null ? "-" : value(lc.getCurrency()) + " " + money(itemSum));
+        data.put("amountInWords", itemSum == null ? "-" : AmountInWords.english(itemSum, lc.getCurrency()));
+        data.put("portOfLoading", value(de.ostms.lc.lc.service.LcConditions.value(lc, de.ostms.lc.lc.domain.LcCondition.PORT_OF_LOADING).orElse(null)));
+        data.put("portOfDischarge", value(de.ostms.lc.lc.service.LcConditions.value(lc, de.ostms.lc.lc.domain.LcCondition.PORT_OF_DISCHARGE).or(() -> de.ostms.lc.lc.service.LcConditions.value(lc, de.ostms.lc.lc.domain.LcCondition.FINAL_DESTINATION)).orElse(null)));
+        data.put("incoterm", value(incoterm(de.ostms.lc.lc.service.LcConditions.value(lc, de.ostms.lc.lc.domain.LcCondition.GOODS_DESCRIPTION).orElse(""))));
+        data.put("paymentTerms", value(paymentTerms(lc.getRawMessage())));
         var company=companies.profile(lc.getCompanyId());data.put("companyName",value(company.getLegalName()));data.put("companyAddress",value(company.getAddressLine()));data.put("companyPostalCode",value(company.getPostalCode()));data.put("companyCity",value(company.getCity()));data.put("companyCountry",value(company.getCountry()));data.put("companyEmail",value(company.getEmail()));data.put("companyPhone",value(company.getPhone()));data.put("companyTaxId",value(company.getTaxId()));data.put("companyRegistrationNumber",value(company.getRegistrationNumber()));data.put("companyBankName",value(company.getBankName()));data.put("companyIban",value(company.getIban()));data.put("companyBic",value(company.getBic()));data.put("companyContactPerson",value(company.getContactPerson()));data.put("companyLogo",null);if(company.getLogo()!=null)data.put("companyLogo",Pictures.ofBytes(company.getLogo()).size(160,60).create());
         try (XWPFTemplate compiled = XWPFTemplate.compile(new ByteArrayInputStream(template)).render(data);
              ByteArrayOutputStream output = new ByteArrayOutputStream()) {
@@ -53,59 +60,84 @@ public class DocxTemplateService {
     public byte[] template(DocumentType type) throws IOException {
         if(type==null||!java.util.EnumSet.of(DocumentType.COMMERCIAL_INVOICE,DocumentType.PACKING_LIST,DocumentType.CERTIFICATE_OF_ORIGIN,DocumentType.BENEFICIARY_CERTIFICATE,DocumentType.QUALITY_CERTIFICATE).contains(type))
             throw new IllegalArgumentException("Für diesen Dokumenttyp ist keine Word-Mustervorlage verfügbar.");
-        try (XWPFDocument document = new XWPFDocument(); ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-            XWPFParagraph heading = document.createParagraph();
-            heading.setStyle("Title");
-            heading.createRun().setText("{{title}}");
-            field(document, "Company", "companyName");
-            field(document, "Address", "companyAddress");
-            field(document, "City", "companyCity");
-            document.createParagraph().createRun().setText("{{@companyLogo}}");
-            field(document, "Document No.", "documentNumber");
-            field(document, "Date", "documentDate");
-            field(document, "LC Reference", "lcReference");
-            field(document, "Seller / Beneficiary", "beneficiary");
-            field(document, "Buyer / Applicant", "applicant");
-            XWPFParagraph items = document.createParagraph();
-            items.createRun().setText("{{#itemsTable}}");
-            field(document, "Description", "description");
-            field(document, "Quantity", "quantity");
-            if (type == DocumentType.COMMERCIAL_INVOICE) field(document, "Amount", "amount");
-            else if(type == DocumentType.PACKING_LIST) {
-                field(document, "Packages", "packages");
-                field(document, "Net weight", "netWeight");
-                field(document, "Gross weight", "grossWeight");
-            }
-            field(document, "Notes", "notes");
-            document.createParagraph().createRun().setText("Generated by Corporate LC Manager");
-            document.write(output);
-            return output.toByteArray();
-        }
+        return ProfessionalDocxTemplate.build(type);
     }
 
-    private void field(XWPFDocument document, String label, String key) {
-        XWPFParagraph paragraph = document.createParagraph();
-        paragraph.createRun().setBold(true);
-        paragraph.getRuns().get(0).setText(label + ": ");
-        paragraph.createRun().setText("{{" + key + "}}");
+    private static final java.util.regex.Pattern INCOTERM = java.util.regex.Pattern.compile("\\b(EXW|FCA|FAS|FOB|CFR|CIF|CPT|CIP|DAP|DPU|DDP)\\b([^\\n]{0,60}?)(?=\\s+INCOTERMS|\\s*$|\\n)", java.util.regex.Pattern.CASE_INSENSITIVE);
+    static String incoterm(String goods) {
+        if (goods == null || goods.isBlank()) return null;
+        var m = INCOTERM.matcher(goods.replaceAll("\\s+", " ").trim());
+        return m.find() ? (m.group(1) + m.group(2)).trim().toUpperCase(java.util.Locale.ROOT) : null;
     }
 
-    private Object itemsTable(GeneratedDocumentRequest request) {
+    static String paymentTerms(String rawMessage) {
+        if (rawMessage == null) return null;
+        var m = java.util.regex.Pattern.compile("(?m)^:42C:(.+)$").matcher(rawMessage);
+        return m.find() ? m.group(1).trim() : null;
+    }
+
+    private static java.math.BigDecimal itemSum(GeneratedDocumentRequest request) {
+        var items = request.items();
+        if (items == null || items.isEmpty()) return null;
+        var sum = java.math.BigDecimal.ZERO;
+        boolean any = false;
+        for (var item : items) if (item.amount() != null) { sum = sum.add(item.amount()); any = true; }
+        return any ? sum : null;
+    }
+
+    private static com.deepoove.poi.data.style.BorderStyle border() {
+        var style = new com.deepoove.poi.data.style.BorderStyle();
+        style.setColor(ProfessionalDocxTemplate.LINE); style.setSize(4); style.setType(org.apache.poi.xwpf.usermodel.XWPFTable.XWPFBorderType.SINGLE);
+        return style;
+    }
+
+    private static com.deepoove.poi.data.CellRenderData cell(String text, boolean right) {
+        var builder = com.deepoove.poi.data.Cells.of(text);
+        return (right ? builder.horizontalRight() : builder).create();
+    }
+
+    private static com.deepoove.poi.data.RowRenderData row(String bg, boolean bold, Object... values) {
+        var cells = new com.deepoove.poi.data.CellRenderData[values.length];
+        for (int i = 0; i < values.length; i++) cells[i] = cell(String.valueOf(values[i]), i >= 2 && i != 3);
+        var builder = com.deepoove.poi.data.Rows.of(cells);
+        if (bg != null) builder = builder.bgColor(bg);
+        if (bold) builder = builder.textBold();
+        return builder.create();
+    }
+
+    private Object itemsTable(GeneratedDocumentRequest request, String currency) {
         var items = request.items() == null ? java.util.List.<de.ostms.lc.document.api.GeneratedDocumentItemRequest>of() : request.items();
-        if (items.isEmpty()) return Tables.ofAutoWidth()
-                .addRow(Rows.of("Pos.", "Description", "Quantity", "Unit", "Unit price", "Amount").textBold().bgColor("DCE5F2").create())
-                .addRow(Rows.create("1", value(request.description()), value(request.quantity()), "", "", "")).create();
         boolean packing = request.type() == DocumentType.PACKING_LIST;
-        var table = Tables.ofAutoWidth().addRow(packing
-                ? Rows.of("Pos.", "Description", "Quantity", "Unit", "Packages", "Net kg", "Gross kg").textBold().bgColor("DCE5F2").create()
-                : Rows.of("Pos.", "Description", "Quantity", "Unit", "Unit price", "Amount").textBold().bgColor("DCE5F2").create());
-        for (var item : items) table.addRow(packing
-                ? Rows.create(value(item.position()), value(item.description()), number(item.quantity()), value(item.unit()), number(item.packages()), number(item.netWeight()), number(item.grossWeight()))
-                : Rows.create(value(item.position()), value(item.description()), number(item.quantity()), value(item.unit()), number(item.unitPrice()), number(item.amount())));
+        String cur = currency == null || currency.isBlank() ? "" : " " + currency;
+        var table = Tables.of().border(border()).width(17.46, packing ? new double[]{1.1, 6.2, 1.7, 1.3, 1.9, 2.6, 2.66} : new double[]{1.1, 7.3, 1.9, 1.4, 2.9, 2.86});
+        table.addRow(packing
+                ? Rows.of("Pos.", "Description", "Quantity", "Unit", "Packages", "Net kg", "Gross kg").textBold().textColor("FFFFFF").bgColor(ProfessionalDocxTemplate.NAVY).center().create()
+                : Rows.of("Pos.", "Description", "Quantity", "Unit", "Unit price" + cur, "Amount" + cur).textBold().textColor("FFFFFF").bgColor(ProfessionalDocxTemplate.NAVY).center().create());
+        if (items.isEmpty()) {
+            table.addRow(packing ? row(null, false, "1", value(request.description()), value(request.quantity()), "", "", "", "") : row(null, false, "1", value(request.description()), value(request.quantity()), "", "", ""));
+            return table.create();
+        }
+        int n = 0;
+        for (var item : items) {
+            String bg = n++ % 2 == 1 ? "F5F7FB" : null;
+            table.addRow(packing
+                    ? row(bg, false, value(item.position()), value(item.description()), number(item.quantity()), value(item.unit()), number(item.packages()), number(item.netWeight()), number(item.grossWeight()))
+                    : row(bg, false, value(item.position()), value(item.description()), number(item.quantity()), value(item.unit()), money(item.unitPrice()), money(item.amount())));
+        }
+        var sum = itemSum(request);
+        if (!packing && sum != null) table.addRow(row("DCE5F2", true, "", "Total", "", "", "", money(sum)));
         return table.create();
     }
 
-    private String number(Number value) { return value == null ? "-" : value.toString(); }
+    private static String money(java.math.BigDecimal value) {
+        return value == null ? "-" : new java.text.DecimalFormat("#,##0.00", java.text.DecimalFormatSymbols.getInstance(java.util.Locale.US)).format(value);
+    }
+
+    private String number(Number value) {
+        if (value == null) return "-";
+        var decimal = value instanceof java.math.BigDecimal d ? d : new java.math.BigDecimal(value.toString());
+        return new java.text.DecimalFormat("#,##0.##", java.text.DecimalFormatSymbols.getInstance(java.util.Locale.US)).format(decimal);
+    }
 
     private String value(String value) { return value == null || value.isBlank() ? "-" : value.trim(); }
     private String title(DocumentType type){return switch(type){case COMMERCIAL_INVOICE->"COMMERCIAL INVOICE";case PACKING_LIST->"PACKING LIST";case CERTIFICATE_OF_ORIGIN->"CERTIFICATE OF ORIGIN";case BENEFICIARY_CERTIFICATE->"BENEFICIARY'S CERTIFICATE";case QUALITY_CERTIFICATE->"QUALITY / ANALYSIS CERTIFICATE";default->type.getDisplayName().toUpperCase(java.util.Locale.ROOT);};}
