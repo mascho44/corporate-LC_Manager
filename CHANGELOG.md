@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Einreichungspaket für die Bank: Begleitschreiben (Word, mit Liste der Dokumente, Originalen und Kopien) und die Dokumente in der üblichen Reihenfolge als ZIP, Vorschlag der Zahlen aus dem Akkreditiv, Warnung bei offenen Abweichungen der Vorprüfung, Vorlagedatum wahlweise speichern (`docs/einreichungspaket.md`). Briefköpfe und Fußzeilen lassen fehlende Firmenangaben weg; die Originalanzahl „FULL SET 3/3“ wird erkannt.
 * Anmeldung: Der Heimatmandant (zum Beispiel `platform`) erscheint nicht mehr in der Mandantenauswahl, wenn es andere Mandanten gibt. Der Server markiert ihn mit `home`; der Filter nach dem festen Code `default` war mit dem Wechsel des Heimatmandanten entfallen.
 * Dokumente erzeugen ohne Firmenprofil: Statt „Firma nicht gefunden“ zeigt der Briefkopf den Begünstigten aus dem Akkreditiv; der Dialog „Dokumentensatz erzeugen“ weist darauf hin, dass Anschrift, Logo und Bankverbindung aus dem Firmenprofil kommen (Mandanteneinstellungen → Firma).
 * Dokumentensatz erzeugen: Rechnung, Packliste und Zertifikate aus einer Eingabe mit gleichen Nummern, Daten, Positionen und Summen, Vorschlag aus dem Akkreditiv, Warnung über dem Höchstbetrag und Ergebnis der automatischen Prüfung (`docs/dokumentensatz.md`).

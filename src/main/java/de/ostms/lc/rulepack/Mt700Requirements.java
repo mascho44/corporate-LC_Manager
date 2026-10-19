@@ -14,6 +14,8 @@ public final class Mt700Requirements {
     public record Suggestion(DocumentType documentType, Field field, String value, String source) {}
 
     private static final Pattern FRACTION = Pattern.compile("\\b(\\d)\\s*/\\s*(\\d)\\s*(?:SET|ORIGINALS?|ORIG)\\b");
+    /** "FULL SET 3/3 CLEAN ON BOARD ...": the same digit twice names the whole set; only in an item that talks about a set or originals. */
+    private static final Pattern FULL_SET_FRACTION = Pattern.compile("\\b(\\d)\\s*/\\s*\\1\\b");
     private static final Pattern NUMBER = Pattern.compile("\\b(\\d|ONE|TWO|THREE|FOUR|FIVE)\\s*(?:\\(\\d\\)\\s*)?ORIGINALS?\\b");
     private static final Pattern ISSUED_BY = Pattern.compile("\\bISSUED\\s+BY\\s+([A-Z][A-Z &.\\-]{3,60}?)(?=[.,;\\n\\r]|\\s+(?:AND|SHOWING|STATING|EVIDENCING|CERTIFYING|IN)\\b|$)");
     /** Order matters: an item that mentions several documents belongs to the first one named here. */
@@ -44,6 +46,8 @@ public final class Mt700Requirements {
             var counts = new LinkedHashSet<Integer>();
             var fraction = FRACTION.matcher(upper);
             while (fraction.find()) counts.add(Integer.parseInt(fraction.group(2)));
+            var whole = FULL_SET_FRACTION.matcher(upper);
+            if (upper.contains("SET") || upper.contains("ORIGINAL")) while (whole.find()) counts.add(Integer.parseInt(whole.group(1)));
             var number = NUMBER.matcher(upper);
             while (number.find()) counts.add(toNumber(number.group(1)));
             if (counts.size() == 1) out.add(new Suggestion(type, Field.LC_REQUIRED_ORIGINAL_COUNT, String.valueOf(counts.iterator().next()), "Feld :46A:"));
@@ -69,7 +73,8 @@ public final class Mt700Requirements {
         return items;
     }
 
-    private static DocumentType typeOf(String upper) {
+    /** The document type an item of field 46A is about (first match in the fixed order), or null. */
+    public static DocumentType typeOf(String upper) {
         for (var e : TYPES.entrySet()) if (e.getValue().matcher(upper).find()) return e.getKey();
         return null;
     }

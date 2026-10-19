@@ -39,4 +39,10 @@ class Mt700RequirementsTest {
         assertThat(s).hasSize(1);
         assertThat(detect(":45A:ONLY GOODS")).isEmpty();
     }
+
+    @Test void aFullSetFractionWithoutTheWordOriginalsIsRead() {
+        var s = detect(":46A:+FULL SET 3/3 CLEAN ON BOARD OCEAN BILLS OF LADING MARKED FREIGHT PREPAID\n+PACKING LIST IN 2/3 SHEETS");
+        assertThat(has(s, DocumentType.BILL_OF_LADING, Field.LC_REQUIRED_ORIGINAL_COUNT, "3")).isTrue();
+        assertThat(s).noneMatch(x -> x.documentType() == DocumentType.PACKING_LIST && x.field() == Field.LC_REQUIRED_ORIGINAL_COUNT);
+    }
 }
