@@ -18,3 +18,17 @@ test('advice without credit text offers the cover letter data as an editable for
  const body = api.coverRequest({ reference: ' ABC1 ', amount: '1.000,50'.replace('.', ''), currency: 'EUR', expiryDate: '2026-11-30', beneficiary: '' });
  assert.equal(body.reference, 'ABC1'); assert.equal(body.amount, 1000.5); assert.equal(body.beneficiary, null); assert.equal(body.documentType, 'ADVISING_LETTER'); assert.equal(body.expiryDate, '2026-11-30');
 });
+
+test('annex choice: empty without partners, listed with reason, selection and escaping', () => {
+  assert.equal(api.annexHtml([], null), '');
+  assert.equal(api.annexHtml(undefined, null), '');
+  const partners = [{ id: 'a-1', filename: 'anlage <1>.pdf', reason: 'kam mit derselben E-Mail' }, { id: 'a-2', filename: 'zweite.pdf', reason: 'enthält einen Akkreditivtext' }];
+  const html = api.annexHtml(partners, 'a-2');
+  assert.match(html, /<select data-annex>/);
+  assert.match(html, /keine – nur dieses Dokument/);
+  assert.match(html, /anlage &lt;1&gt;\.pdf · kam mit derselben E-Mail/);
+  assert.match(html, /<option value="a-2" selected>/);
+  assert.doesNotMatch(html, /<option value="a-1" selected>/);
+  assert.match(html, /Der Akkreditivtext wird aus der Anlage gelesen/);
+  assert.doesNotMatch(api.annexHtml(partners, null), /Der Akkreditivtext wird aus der Anlage gelesen/);
+});

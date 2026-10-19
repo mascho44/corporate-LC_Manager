@@ -14,6 +14,13 @@
    (messages ? `<ul class="avis-messages" role="status">${messages}</ul>` : '') +
    `<p class="avis-note"><small>Die Angaben stammen aus dem Text des Avis und sind unbestätigt. Bitte mit dem Original vergleichen; beim Anlegen werden alle Felder des Akkreditivtextes übernommen.</small></p>`;
  }
+ /** Choice of the annex file (credit text) that belongs to the letter; empty when the inbox holds no other file with a credit text. */
+ function annexHtml(partners, selected) {
+  if (!partners?.length) return '';
+  const options = partners.map(p => `<option value="${esc(p.id)}"${p.id === selected ? ' selected' : ''}>${esc(p.filename)} · ${esc(p.reason)}</option>`).join('');
+  return `<label class="avis-annex">Anlage mit dem Akkreditivtext<select data-annex><option value="">keine – nur dieses Dokument</option>${options}</select></label>` +
+   (selected ? '<p class="avis-note"><small>Der Akkreditivtext wird aus der Anlage gelesen. Das Schreiben und die Anlage werden beide in der neuen Akte abgelegt.</small></p>' : '');
+ }
  const COVER_FIELDS = [['reference', 'Akkreditivnummer *'], ['applicant', 'Auftraggeber (Applicant)'], ['beneficiary', 'Begünstigter'], ['amount', 'Betrag'], ['currency', 'Währung'], ['expiryDate', 'Gültig bis'], ['expiryPlace', 'Ort'], ['issuingBank', 'Eröffnende Bank'], ['ownBankReference', 'Referenz eigene Bank'], ['foreignBankReference', 'Referenz Fremdbank']];
  /** Advice without credit text of its own: the data of the cover letter as an editable form to create the LC file from. */
  function coverFormHtml(cover) {
@@ -32,24 +39,31 @@
  }
  /** Inbox suggestion that means a SWIFT message (MT700 and related). */
  const isSwift = type => /^SWIFT_/.test(String(type || ''));
- globalThis.LcAvisCase = { previewHtml, coverFormHtml, coverRequest, isSwift };
+ globalThis.LcAvisCase = { previewHtml, coverFormHtml, coverRequest, isSwift, annexHtml };
  if (typeof document === 'undefined' || !document.body) return;
 
  async function open(id, name, swift = false) {
   const dialog = document.createElement('dialog'); dialog.className = 'wide-dialog avis-dialog'; document.body.append(dialog); dialog.onclose = () => dialog.remove();
   dialog.innerHTML = `<div class="dialoghead"><h2>Avis einlesen</h2><button type="button" data-close>Schließen</button></div><p role="status">${esc(name)} wird gelesen …</p>`;
   dialog.querySelector('[data-close]').onclick = () => dialog.close(); dialog.showModal();
-  try {
-   const result = await json(`/api/inbox/${encodeURIComponent(id)}/avis-preview`);
+  let partners = [], annexId = null;
+  try { partners = await json(`/api/inbox/${encodeURIComponent(id)}/avis-partners`); } catch (error) { partners = []; }
+  const show = async () => {
+   const query = annexId ? `?annex=${encodeURIComponent(annexId)}` : '';
+   const result = await json(`/api/inbox/${encodeURIComponent(id)}/avis-preview${query}`);
+   // The letter has no credit text of its own but a likely annex is in the inbox: read that one together with it.
+   if (!annexId && !result.creditTextFound && partners.length) { annexId = partners[0].id; return show(); }
    const cover = !result.creditTextFound && result.cover?.fields?.reference ? result.cover : null;
    const ok = result.creditTextFound && result.credit?.valid;
    const amendment = result.credit?.messageType === 'MT707';
    const title = swift ? 'SWIFT-Nachricht importieren' : 'Avis einlesen';
    const action = cover ? 'LC-Akte aus Anschreiben anlegen' : amendment ? 'Änderung (MT707) zur Akte übernehmen' : swift ? 'LC-Akte aus SWIFT-Nachricht anlegen' : 'LC-Akte aus Avis anlegen';
    const partyBox = !cover && ok && globalThis.LcPartyReference ? LcPartyReference.html(LcPartyReference.corrections(result.credit)) : '';
-   dialog.innerHTML = `<div class="dialoghead"><h2>${title}</h2><button type="button" data-close>Schließen</button></div><p>${esc(name)}${result.credit?.messageType ? ' · ' + esc(result.credit.messageType) : ''}</p>${cover ? coverFormHtml(cover) : previewHtml(result)}${partyBox}` +
+   dialog.innerHTML = `<div class="dialoghead"><h2>${title}</h2><button type="button" data-close>Schließen</button></div><p>${esc(name)}${result.credit?.messageType ? ' · ' + esc(result.credit.messageType) : ''}</p>${annexHtml(partners, annexId)}${cover ? coverFormHtml(cover) : previewHtml(result)}${partyBox}` +
     `<p data-error role="alert"></p><div class="dialog-actions"><button type="button" data-create${ok || cover ? '' : ' disabled'}>${action}</button></div>`;
    dialog.querySelector('[data-close]').onclick = () => dialog.close();
+   const annexSelect = dialog.querySelector('[data-annex]');
+   if (annexSelect) annexSelect.onchange = async () => { annexId = annexSelect.value || null; try { await show(); } catch (error) { dialog.querySelector('[data-error]').textContent = error.message; } };
    dialog.querySelector('[data-create]').onclick = async event => {
     const button = event.currentTarget; button.disabled = true;
     try {
@@ -62,7 +76,7 @@
     } else {
       const box = dialog.querySelector('[data-party-correction]'), party = box ? LcPartyReference.read(box) : null;
       if (party?.missing.length) throw new Error(`Bitte ${party.missing.join(' und ')} ergänzen – die Nachricht verweist nur auf ein anderes Feld.`);
-      created = await json(`/api/inbox/${encodeURIComponent(id)}/avis-case`, party ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ applicant: party.applicant, beneficiary: party.beneficiary }) } : { method: 'POST' });
+      created = await json(`/api/inbox/${encodeURIComponent(id)}/avis-case${annexId ? '?annex=' + encodeURIComponent(annexId) : ''}`, party ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ applicant: party.applicant, beneficiary: party.beneficiary }) } : { method: 'POST' });
      }
      dialog.close();
      const message = document.querySelector('#inboxMessage');
@@ -70,7 +84,8 @@
      if (typeof load === 'function') await load(); if (typeof loadInbox === 'function') await loadInbox();
     } catch (error) { dialog.querySelector('[data-error]').textContent = error.message; button.disabled = false; }
    };
-  } catch (error) { dialog.querySelector('[role=status]').textContent = error.message; }
+  };
+  try { await show(); } catch (error) { dialog.querySelector('[role=status]').textContent = error.message; }
  }
 
  function enhance() {

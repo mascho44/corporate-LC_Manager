@@ -180,16 +180,20 @@ public class DocumentInboxController {
     @Autowired private de.ostms.lc.document.service.InboxAvisService avis;
 
     @GetMapping("/{id}/avis-preview")
-    public de.ostms.lc.document.service.InboxAvisService.Preview avisPreview(@PathVariable UUID id){ return avis.preview(id); }
+    public de.ostms.lc.document.service.InboxAvisService.Preview avisPreview(@PathVariable UUID id,@RequestParam(name="annex",required=false) UUID annex){ return avis.preview(id,annex); }
+
+    /** Other inbox files with a credit text that probably belong to this advice letter (same e-mail, same credit number). */
+    @GetMapping("/{id}/avis-partners")
+    public java.util.List<de.ostms.lc.document.service.InboxAvisService.Partner> avisPartners(@PathVariable UUID id){ return avis.partners(id); }
 
     /** Corrections of applicant/beneficiary when :50:/:59: only refer to another field ("SEE 47A"). */
     public record PartyCorrection(@jakarta.validation.constraints.Size(max=2000) String applicant,@jakarta.validation.constraints.Size(max=2000) String beneficiary){}
     @PostMapping("/{id}/avis-case")
-    public de.ostms.lc.document.service.InboxAvisService.Created avisCase(@PathVariable UUID id,@jakarta.validation.Valid @RequestBody(required=false) PartyCorrection correction,Authentication authentication){
+    public de.ostms.lc.document.service.InboxAvisService.Created avisCase(@PathVariable UUID id,@RequestParam(name="annex",required=false) UUID annex,@jakarta.validation.Valid @RequestBody(required=false) PartyCorrection correction,Authentication authentication){
         if(authentication.getAuthorities().stream().noneMatch(a->a.getAuthority().equals("PERM_LC_EDIT")))throw new org.springframework.security.access.AccessDeniedException("Keine Berechtigung zur Aktenanlage.");
-        var created=correction==null?avis.create(id):avis.create(id,correction.applicant(),correction.beneficiary());
+        var created=annex!=null?avis.create(id,annex,correction==null?null:correction.applicant(),correction==null?null:correction.beneficiary()):correction==null?avis.create(id):avis.create(id,correction.applicant(),correction.beneficiary());
         audit.record(authentication,"LC_CREATED","LETTER_OF_CREDIT",created.lcId(),"Neue Akte aus Avis · "+created.reference());
-        audit.record(authentication,"DOCUMENT_INBOX_ATTACHED","LETTER_OF_CREDIT",created.lcId(),"Avis aus Posteingang "+id);
+        audit.record(authentication,"DOCUMENT_INBOX_ATTACHED","LETTER_OF_CREDIT",created.lcId(),"Avis aus Posteingang "+id+(annex==null?"":" · Anlage aus Posteingang "+annex));
         return created;
     }
 

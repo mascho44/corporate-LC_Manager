@@ -76,6 +76,12 @@ public class DocumentInboxService {
         return items.stream().map(item->DocumentInboxItemView.from(item,candidates.get(item.getId()))).toList();
     }
 
+    /** The open inbox files themselves (newest first, at most 100), for services that read their text. */
+    @Transactional(readOnly = true)
+    public List<DocumentInboxItem> openEntities() {
+        return inbox.findTop100ByStatusOrderByReceivedAtDesc("OPEN");
+    }
+
     @Transactional(readOnly = true)
     public DocumentInboxItem openItem(UUID id) {
         DocumentInboxItem item = inbox.findById(id).orElseThrow(() -> new NoSuchElementException("Inbox-Datei nicht gefunden."));
