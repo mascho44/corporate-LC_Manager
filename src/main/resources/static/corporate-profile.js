@@ -85,10 +85,10 @@
   apply();
  }
 
- /** Bank-only review tools are not offered to corporate-only tenants. */
+ /** Bank-only review tools (examination assistant, document-by-document review, review decisions) are not offered to corporate-only tenants: they get the quick check (pre-check and submission card). */
  function hideBankTools() {
   if (!corporateOnly()) return;
-  document.querySelectorAll('[data-rule-source-open],[data-simulation-open]').forEach(button => { button.hidden = true; });
+  document.querySelectorAll('[data-rule-source-open],[data-simulation-open],[data-review-assistant],[data-document-review],[data-review-history]').forEach(button => { button.hidden = true; });
  }
 
  let lastBlock = null, scheduled = false;
