@@ -108,13 +108,18 @@ public class DocxTemplateService {
     private Object itemsTable(GeneratedDocumentRequest request, String currency) {
         var items = request.items() == null ? java.util.List.<de.ostms.lc.document.api.GeneratedDocumentItemRequest>of() : request.items();
         boolean packing = request.type() == DocumentType.PACKING_LIST;
+        boolean priced = request.type() == DocumentType.COMMERCIAL_INVOICE;
         String cur = currency == null || currency.isBlank() ? "" : " " + currency;
-        var table = Tables.of().border(border()).width(17.46, packing ? new double[]{1.1, 6.2, 1.7, 1.3, 1.9, 2.6, 2.66} : new double[]{1.1, 7.3, 1.9, 1.4, 2.9, 2.86});
-        table.addRow(packing
-                ? Rows.of("Pos.", "Description", "Quantity", "Unit", "Packages", "Net kg", "Gross kg").textBold().textColor("FFFFFF").bgColor(ProfessionalDocxTemplate.NAVY).center().create()
-                : Rows.of("Pos.", "Description", "Quantity", "Unit", "Unit price" + cur, "Amount" + cur).textBold().textColor("FFFFFF").bgColor(ProfessionalDocxTemplate.NAVY).center().create());
+        double[] widths = packing ? new double[]{1.1, 6.2, 1.7, 1.3, 1.9, 2.6, 2.66} : priced ? new double[]{1.1, 7.3, 1.9, 1.4, 2.9, 2.86} : new double[]{1.1, 11.2, 2.8, 2.36};
+        var table = Tables.of().border(border()).width(17.46, widths);
+        var header = packing ? Rows.of("Pos.", "Description", "Quantity", "Unit", "Packages", "Net kg", "Gross kg")
+                : priced ? Rows.of("Pos.", "Description", "Quantity", "Unit", "Unit price" + cur, "Amount" + cur)
+                : Rows.of("Pos.", "Description", "Quantity", "Unit");
+        table.addRow(header.textBold().textColor("FFFFFF").bgColor(ProfessionalDocxTemplate.NAVY).center().create());
         if (items.isEmpty()) {
-            table.addRow(packing ? row(null, false, "1", value(request.description()), value(request.quantity()), "", "", "", "") : row(null, false, "1", value(request.description()), value(request.quantity()), "", "", ""));
+            table.addRow(packing ? row(null, false, "1", value(request.description()), value(request.quantity()), "", "", "", "")
+                    : priced ? row(null, false, "1", value(request.description()), value(request.quantity()), "", "", "")
+                    : row(null, false, "1", value(request.description()), value(request.quantity()), ""));
             return table.create();
         }
         int n = 0;
@@ -122,10 +127,11 @@ public class DocxTemplateService {
             String bg = n++ % 2 == 1 ? "F5F7FB" : null;
             table.addRow(packing
                     ? row(bg, false, value(item.position()), value(item.description()), number(item.quantity()), value(item.unit()), number(item.packages()), number(item.netWeight()), number(item.grossWeight()))
-                    : row(bg, false, value(item.position()), value(item.description()), number(item.quantity()), value(item.unit()), money(item.unitPrice()), money(item.amount())));
+                    : priced ? row(bg, false, value(item.position()), value(item.description()), number(item.quantity()), value(item.unit()), money(item.unitPrice()), money(item.amount()))
+                    : row(bg, false, value(item.position()), value(item.description()), number(item.quantity()), value(item.unit())));
         }
         var sum = itemSum(request);
-        if (!packing && sum != null) table.addRow(row("DCE5F2", true, "", "Total", "", "", "", money(sum)));
+        if (priced && sum != null) table.addRow(row("DCE5F2", true, "", "Total", "", "", "", money(sum)));
         return table.create();
     }
 

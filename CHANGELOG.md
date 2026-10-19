@@ -2,6 +2,8 @@
 
 ## 0.5.1 – in Arbeit
 
+* Dokumentensatz erzeugen: Rechnung, Packliste und Zertifikate aus einer Eingabe mit gleichen Nummern, Daten, Positionen und Summen, Vorschlag aus dem Akkreditiv, Warnung über dem Höchstbetrag und Ergebnis der automatischen Prüfung (`docs/dokumentensatz.md`).
+* Erzeugte Rechnungen speichern die Summe der Positionen statt des Akkreditivbetrags (die Betragsprüfung schlug dort nie an); der Prüftext erzeugter Dokumente enthält Incoterm, Häfen, Zahlungsbedingung und Erklärung.
 * Avis: Schreiben und Anlage als zwei Dateien einlesen (Auswahl der Anlage im Dialog, gleiche E-Mail und Akkreditivnummer werden vorgeschlagen; beide Dokumente landen in der neuen Akte).
 * **Fehler behoben:** „LC-Akte aus Avis anlegen“ scheiterte seit 15.10.2026 mit Serverfehler 500 (unveränderliche Listen aus dem Parser in der Akte). Betrifft den Avis-Weg im Posteingang, nicht den SWIFT-Import-Dialog.
 * Avis einlesen: Akkreditivtexte ohne SWIFT-Feldnummern (Bankportal-Ausdrucke, Handelsfinanzsysteme) werden anhand der Feldnamen auf Englisch und Deutsch gelesen; Daten und Beträge werden in die MT700-Form umgewandelt; die Anlage hinter dem Begleitschreiben wird nicht mehr durch die Grußformel abgeschnitten (`docs/avis-einlesen.md`).

@@ -131,14 +131,19 @@ final class ProfessionalDocxTemplate {
         run(paragraph(doc, 0, 100), "{{notes}}", 10, false, "111827");
     }
 
-    private static void declaration(XWPFDocument doc, DocumentType type) {
-        String text = switch (type) {
+    /** The declaration printed above the signature, with placeholders; empty for documents without one. */
+    static String declarationText(DocumentType type) {
+        return switch (type) {
             case CERTIFICATE_OF_ORIGIN -> "We hereby certify that the goods described above originate in {{companyCountry}} and were shipped under documentary credit {{lcReference}}.";
             case BENEFICIARY_CERTIFICATE -> "We hereby certify that the goods and documents comply with all terms of documentary credit {{lcReference}} issued for {{applicant}}.";
             case QUALITY_CERTIFICATE -> "We hereby certify that the goods described above conform to the agreed specification and quality requirements of documentary credit {{lcReference}}.";
             case COMMERCIAL_INVOICE -> "We certify that this invoice is true and correct and that the goods are of the origin stated in documentary credit {{lcReference}}.";
             default -> "";
         };
+    }
+
+    private static void declaration(XWPFDocument doc, DocumentType type) {
+        String text = declarationText(type);
         if (text.isEmpty()) return;
         XWPFParagraph p = paragraph(doc, 100, 120);
         run(p, text, 9.5, false, "111827");
