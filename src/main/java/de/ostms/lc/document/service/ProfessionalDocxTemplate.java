@@ -59,13 +59,13 @@ final class ProfessionalDocxTemplate {
             XWPFParagraph subject = paragraph(doc, 260, 120);
             run(subject, "Presentation of documents under Documentary Credit No. {{lcReference}}", 12.5, true, NAVY);
             run(paragraph(doc, 0, 100), "Dear Sirs,", 10.5, false, "111827");
-            run(paragraph(doc, 0, 140), "We refer to the above documentary credit issued by {{issuingBank}} for the account of {{applicant}} for {{amount}} (latest date of shipment {{latestShipment}}, expiry {{expiry}}). We hereby present the following documents for examination:", 10.5, false, "111827");
+            run(paragraph(doc, 0, 140), "{{intro}}", 10.5, false, "111827");
             heading(doc, "DOCUMENTS PRESENTED");
             paragraph(doc, 0, 80).createRun().setText("{{#documentsTable}}");
             XWPFParagraph remarksHeading = paragraph(doc, 140, 20);
             run(remarksHeading, "REMARKS", 9, true, ACCENT);
             run(paragraph(doc, 0, 100), "{{remarks}}", 10, false, "111827");
-            run(paragraph(doc, 80, 120), "Please examine the documents in accordance with the terms and conditions of the credit and credit the proceeds on the due date to our account with {{companyBankName}}, IBAN {{companyIban}}, BIC {{companyBic}}.", 10.5, false, "111827");
+            run(paragraph(doc, 80, 120), "{{paymentRequest}}", 10.5, false, "111827");
             run(paragraph(doc, 80, 60), "Yours faithfully,", 10.5, false, "111827");
             signature(doc, "date");
             footer(doc);
@@ -97,9 +97,9 @@ final class ProfessionalDocxTemplate {
         XWPFParagraph name = first(left);
         run(name, "{{companyName}}", 16, true, NAVY);
         XWPFParagraph address = left.addParagraph();
-        run(address, "{{companyAddress}}, {{companyPostalCode}} {{companyCity}}, {{companyCountry}}", 8.5, false, GREY);
+        run(address, "{{companyAddressLine}}", 8.5, false, GREY);
         XWPFParagraph contact = left.addParagraph();
-        run(contact, "Tel. {{companyPhone}}  ·  {{companyEmail}}  ·  Contact: {{companyContactPerson}}", 8.5, false, GREY);
+        run(contact, "{{companyContactLine}}", 8.5, false, GREY);
         XWPFParagraph logo = first(right);
         logo.setAlignment(ParagraphAlignment.RIGHT);
         logo.createRun().setText("{{@companyLogo}}");
@@ -155,9 +155,7 @@ final class ProfessionalDocxTemplate {
             XWPFParagraph words = paragraph(doc, 0, 80);
             words.setAlignment(ParagraphAlignment.RIGHT);
             run(words, "SAY: {{amountInWords}}", 8.5, false, GREY);
-            XWPFParagraph bank = paragraph(doc, 60, 20);
-            run(bank, "Payment to: ", 9, true, NAVY);
-            run(bank, "{{companyBankName}}  ·  IBAN {{companyIban}}  ·  BIC {{companyBic}}", 9, false, "111827");
+            run(paragraph(doc, 60, 20), "{{paymentInstruction}}", 9, false, "111827");
         } else if (type == DocumentType.PACKING_LIST) {
             XWPFParagraph total = paragraph(doc, 100, 20);
             total.setAlignment(ParagraphAlignment.RIGHT);
@@ -193,7 +191,7 @@ final class ProfessionalDocxTemplate {
         XWPFTable table = table(doc, 1, 2, new int[]{50, 50});
         noBorders(table);
         XWPFTableCell left = table.getRow(0).getCell(0), right = table.getRow(0).getCell(1);
-        run(first(left), "{{companyCity}}, {{" + dateKey + "}}", 9.5, false, "111827");
+        run(first(left), "{{placeDate}}", 9.5, false, "111827");
         XWPFParagraph place = left.addParagraph();
         run(place, "Place, date", 8, false, GREY);
         XWPFParagraph space = first(right);
@@ -212,9 +210,11 @@ final class ProfessionalDocxTemplate {
         XWPFFooter footer = doc.createFooter(HeaderFooterType.DEFAULT);
         XWPFParagraph bank = footer.createParagraph();
         border(bank, LINE, 6, true);
-        run(bank, "{{companyName}}  ·  {{companyAddress}}, {{companyPostalCode}} {{companyCity}}", 7.5, false, GREY);
+        run(bank, "{{companyName}}  ·  {{companyAddressLine}}", 7.5, false, GREY);
         XWPFParagraph legal = footer.createParagraph();
-        run(legal, "VAT ID {{companyTaxId}}  ·  Reg. {{companyRegistrationNumber}}  ·  {{companyBankName}}  ·  IBAN {{companyIban}}  ·  BIC {{companyBic}}", 7.5, false, GREY);
+        run(legal, "{{companyLegalLine}}", 7.5, false, GREY);
+        XWPFParagraph accounts = footer.createParagraph();
+        run(accounts, "{{companyBankLine}}", 7.5, false, GREY);
         XWPFParagraph pages = footer.createParagraph();
         pages.setAlignment(ParagraphAlignment.RIGHT);
         run(pages, "Page ", 7.5, false, GREY);

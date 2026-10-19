@@ -141,7 +141,7 @@ public class SubmissionPackageService {
             var entry = counts.get(document.getId());
             Integer pages = pages(document);
             rows.add(new DocxTemplateService.SubmissionRow(String.valueOf(n++), document.getDocumentType() == null ? "Document" : document.getDocumentType().getDisplayName(),
-                blankToDash(document.getExtractedDocumentNumber()), document.getDocumentDate() == null ? "" : document.getDocumentDate().toString(),
+                blankToDash(document.getExtractedDocumentNumber()), document.getDocumentDate() == null ? "" : document.getDocumentDate().format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH)),
                 String.valueOf(entry.originals()), String.valueOf(entry.copies()), pages == null ? "–" : String.valueOf(pages)));
         }
         byte[] letter = letters.renderSubmissionLetter(lc, new DocxTemplateService.SubmissionLetter(request.date(), request.recipient().trim(), blank(request.ourReference()), blank(request.remarks()), rows));

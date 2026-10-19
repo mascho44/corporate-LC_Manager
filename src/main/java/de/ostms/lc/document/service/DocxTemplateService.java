@@ -50,6 +50,9 @@ public class DocxTemplateService {
         data.put("incoterm", value(incoterm(de.ostms.lc.lc.service.LcConditions.value(lc, de.ostms.lc.lc.domain.LcCondition.GOODS_DESCRIPTION).orElse(""))));
         data.put("paymentTerms", value(paymentTerms(lc.getRawMessage())));
         putCompany(data, lc);
+        data.put("placeDate", joined(", ", (String) data.get("companyCityOnly"), (String) data.get("documentDate")));
+        String bank = (String) data.get("companyBankLine");
+        data.put("paymentInstruction", bank.isEmpty() ? "" : "Payment to: " + bank);
         try (XWPFTemplate compiled = XWPFTemplate.compile(new ByteArrayInputStream(template)).render(data);
              ByteArrayOutputStream output = new ByteArrayOutputStream()) {
             compiled.write(output);
@@ -87,6 +90,12 @@ public class DocxTemplateService {
 
     private void putCompany(Map<String, Object> data, LetterOfCredit lc) {
         var company=companies.profileForLetterhead(lc.getCompanyId(),lc.getBeneficiary());data.put("companyName",value(company.getLegalName()));data.put("companyAddress",value(company.getAddressLine()));data.put("companyPostalCode",value(company.getPostalCode()));data.put("companyCity",value(company.getCity()));data.put("companyCountry",value(company.getCountry()));data.put("companyEmail",value(company.getEmail()));data.put("companyPhone",value(company.getPhone()));data.put("companyTaxId",value(company.getTaxId()));data.put("companyRegistrationNumber",value(company.getRegistrationNumber()));data.put("companyBankName",value(company.getBankName()));data.put("companyIban",value(company.getIban()));data.put("companyBic",value(company.getBic()));data.put("companyContactPerson",value(company.getContactPerson()));data.put("companyLogo",null);if(company.getLogo()!=null)data.put("companyLogo",Pictures.ofBytes(company.getLogo()).size(160,60).create());
+        // Lines built from what exists, so a missing detail leaves no "-" or empty separators in the letterhead and footer.
+        data.put("companyAddressLine",joined(", ",company.getAddressLine(),joined(" ",company.getPostalCode(),company.getCity()),company.getCountry()));
+        data.put("companyContactLine",joined("  ·  ",prefixed("Tel. ",company.getPhone()),company.getEmail(),prefixed("Contact: ",company.getContactPerson())));
+        data.put("companyLegalLine",joined("  ·  ",prefixed("VAT ID ",company.getTaxId()),prefixed("Reg. ",company.getRegistrationNumber())));
+        data.put("companyBankLine",joined("  ·  ",company.getBankName(),prefixed("IBAN ",company.getIban()),prefixed("BIC ",company.getBic())));
+        data.put("companyCityOnly",company.getCity()==null?"":company.getCity().trim());
     }
 
     /** One row of the list of presented documents in the cover letter. */
@@ -111,6 +120,18 @@ public class DocxTemplateService {
         data.put("latestShipment", lc.getLatestShipmentDate() == null ? "-" : lc.getLatestShipmentDate().format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy", java.util.Locale.ENGLISH)));
         data.put("documentsTable", submissionTable(letter.rows()));
         putCompany(data, lc);
+        String bank = (String) data.get("companyBankLine");
+        var intro = new StringBuilder("We refer to the above documentary credit");
+        if (lc.getIssuingBank() != null && !lc.getIssuingBank().isBlank()) intro.append(" issued by ").append(oneLine(lc.getIssuingBank()));
+        if (lc.getApplicant() != null && !lc.getApplicant().isBlank()) intro.append(" for the account of ").append(oneLine(lc.getApplicant()));
+        if (lc.getAmount() != null) intro.append(" for ").append(data.get("amount"));
+        var terms = new java.util.ArrayList<String>();
+        if (lc.getLatestShipmentDate() != null) terms.add("latest date of shipment " + data.get("latestShipment"));
+        if (lc.getExpiryDate() != null) terms.add("expiry " + data.get("expiry"));
+        if (!terms.isEmpty()) intro.append(" (").append(String.join(", ", terms)).append(")");
+        data.put("intro", intro.append(". We hereby present the following documents for examination:").toString());
+        data.put("paymentRequest", "Please examine the documents in accordance with the terms and conditions of the credit and credit the proceeds on the due date" + (bank.isEmpty() ? "." : " to our account with " + bank + "."));
+        data.put("placeDate", joined(", ", (String) data.get("companyCityOnly"), (String) data.get("date")));
         try (XWPFTemplate compiled = XWPFTemplate.compile(new ByteArrayInputStream(ProfessionalDocxTemplate.buildSubmissionLetter())).render(data);
              ByteArrayOutputStream output = new ByteArrayOutputStream()) {
             compiled.write(output);
@@ -179,6 +200,23 @@ public class DocxTemplateService {
         var sum = itemSum(request);
         if (priced && sum != null) table.addRow(row("DCE5F2", true, "", "Total", "", "", "", money(sum)));
         return table.create();
+    }
+
+    /** The non-empty parts joined by the separator; empty when there are none. */
+    static String joined(String separator, String... parts) {
+        var kept = new java.util.ArrayList<String>();
+        for (String part : parts) if (part != null && !part.isBlank()) kept.add(part.trim());
+        return String.join(separator, kept);
+    }
+
+    private static String prefixed(String prefix, String value) { return value == null || value.isBlank() ? null : prefix + value.trim(); }
+
+    /** Several lines of an address on one line: "A\nB\nC" -> "A, B, C". */
+    static String oneLine(String multiline) {
+        if (multiline == null) return "";
+        var lines = new java.util.ArrayList<String>();
+        for (String line : multiline.split("\\R")) if (!line.isBlank()) lines.add(line.trim());
+        return String.join(", ", lines);
     }
 
     private static String money(java.math.BigDecimal value) {

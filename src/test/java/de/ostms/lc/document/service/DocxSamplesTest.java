@@ -71,5 +71,12 @@ class DocxSamplesTest {
             Files.write(dir.resolve("vorlage-" + type.name().toLowerCase().replace('_', '-') + ".docx"), service.template(type));
             assertThat(rendered.length).isGreaterThan(5000);
         }
+        lc.setIssuingBank("TESTBANK DUBAI"); lc.setExpiryDate(LocalDate.of(2026, 11, 30)); lc.setLatestShipmentDate(LocalDate.of(2026, 10, 10));
+        Files.write(dir.resolve("muster-einreichungsschreiben.docx"), service.renderSubmissionLetter(lc, new DocxTemplateService.SubmissionLetter(LocalDate.of(2026, 10, 19),
+            "Musterbank AG\nTrade Finance\nMusterstrasse 1\n60311 Frankfurt am Main", "HB-4711", "Original bills of lading follow by courier.", List.of(
+                new DocxTemplateService.SubmissionRow("1", "Commercial Invoice", "INV-2026-0815", "05 Oct 2026", "3", "0", "1"),
+                new DocxTemplateService.SubmissionRow("2", "Packing List", "PL-2026-0815", "05 Oct 2026", "1", "2", "1"),
+                new DocxTemplateService.SubmissionRow("3", "Bill of Lading", "BL-77", "05 Oct 2026", "3", "2", "2"),
+                new DocxTemplateService.SubmissionRow("4", "Certificate of Origin", "COO-2026-0815", "04 Oct 2026", "1", "0", "–")))));
     }
 }
