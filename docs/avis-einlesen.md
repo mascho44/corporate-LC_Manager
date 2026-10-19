@@ -1,20 +1,26 @@
-# Avis der Bank einlesen und LC-Akte anlegen
+# Avisierungsschreiben und Akkreditivtext einlesen
 
-Ein Avis besteht aus dem **Anschreiben der Bank** und dem **Akkreditivtext**. Im Posteingang gibt es bei PDFs den Knopf **Als Avis einlesen …**.
+Ein Avis der Bank besteht aus einem Begleitschreiben und dem Text des Akkreditivs. Im Dokumenteneingang legt die App daraus eine neue Akte an (Aktion „Als Akkreditiv einlesen“). Der Akkreditivtext kann in vier Darstellungen stehen:
 
-1. Der Text der PDF (Texterkennung ist abgeschlossen) wird auf die gedruckten SWIFT-Felder des Akkreditivs durchsucht: Felder in der Form
-   `:20:…`, `:32B:…` oder als Tabelle (`20 Documentary Credit Number …`). Das Anschreiben davor und die Grußformel danach (z. B. „Mit freundlichen Grüßen",
-   „Best regards") werden ignoriert.
-2. Die Vorschau zeigt Referenz, Auftraggeber, Begünstigten, Betrag, Ablauf und die geforderten Dokumente. Es gelten dieselben Prüfungen wie beim
-   SWIFT-Import (Pflichtfelder :31D: und :32B:, Referenz noch nicht vorhanden). Fehler sperren das Anlegen.
-3. **LC-Akte aus Avis anlegen** erzeugt die Akte aus allen Feldern des Akkreditivtextes (wie ein MT700-Import, inkl. Dokumentenanforderungen, spätester
-   Versand, Warenbeschreibung) und legt den Avis in der Akte als Dokument „Avisierungsschreiben" ab. Beides geschieht in einer Transaktion.
+1. **SWIFT mit Doppelpunkt:** `:20:LC-1`, `:32B:EUR125000,00`.
+2. **Tabelle mit Feldnummer:** `20  Documentary Credit Number` mit dem Wert darunter, auch mit Texterkennungsfehlern in der Nummer.
+3. **Mit Feldnamen ohne Feldnummer (neu):** Ausdrucke aus Bankportalen und Handelsfinanzsystemen, auf Englisch oder Deutsch, zum Beispiel „Documentary Credit Number: LC-1“, „Akkreditivnummer   LC-1“, „Betrag: EUR 125.000,00“. Der Name darf am Zeilenanfang stehen, mit Doppelpunkt oder zwei Leerzeichen dahinter, oder allein in der Zeile mit dem Wert in den folgenden Zeilen.
+4. **Nur das Begleitschreiben:** Dann liest die App Referenz, Betrag, Ablauf, Banken und Auftraggeber aus dem Schreiben selbst und schlägt sie vor.
 
-Die Funktion steht Bank- und Corporate-Mandanten zur Verfügung (Recht „LC bearbeiten" und „Dokumente hochladen"). Erkannte Angaben sind Vorschläge; bitte mit
-dem Original vergleichen. Enthält ein Avis den Akkreditivtext nicht in dieser Form, meldet die Vorschau das, und die Akte wird manuell angelegt.
+## Was bei Ausdrucken ohne Feldnummer erkannt wird
 
-## Avis ohne Akkreditivtext (nur Anschreiben)
-Steht im Avis nur das Anschreiben („Den Inhalt entnehmen Sie bitte der beigefügten Kopie"), zeigt „Als Avis einlesen" die erkannten Angaben des Anschreibens (Akkreditivnummer, Betrag, Währung, Gültig bis und Ort, eröffnende Bank, Auftraggeber, Begünstigter aus der Anschrift) als änderbares Formular und legt daraus die LC-Akte an („LC-Akte aus Anschreiben anlegen"); das Anschreiben wird als Avisierungsschreiben in der Akte abgelegt. Geforderte Dokumente fehlen dann und sind später nachzutragen (oder die Kopie des Akkreditivtextes einzuspielen).
+Akkreditivnummer, Ausstellungs- und Verfallsdatum mit Ort, Betrag mit Währung, Auftraggeber, Begünstigter, eröffnende und avisierende Bank, Teilverladungen, Umladung, Verlade- und Entladehafen, spätester Verladetag, Warenbeschreibung, geforderte Dokumente, zusätzliche Bedingungen, Vorlagefrist, Bestätigung, Art des Akkreditivs und Regelwerk. Englische und deutsche Bezeichnungen sind hinterlegt (`LabelledCreditNormalizer`).
 
-## SWIFT-Nachrichten im Posteingang (Stand 15.10.2026)
-Erkennt der Posteingang eine Datei als SWIFT-Nachricht (MT700), heißt der Knopf **„Als SWIFT-Nachricht importieren …"** (auch bei TXT/FIN-Dateien). Er nutzt denselben Import wie der SWIFT-Dialog, einschließlich der Bank-Druckansicht „27: SEQUENCE OF TOTAL" mit Wert darunter. Eine MT700 legt die Akte an und die Datei als „SWIFT MT700" ab (beim Avis mit Anschreiben weiterhin als Avisierungsschreiben). Eine **MT707** wird als offene Änderung der vorhandenen Akte übernommen (dort annehmen oder ablehnen); die Nachricht liegt als Dokument in der Akte. Ein Anschreiben mit Grußformel vor den Feldern schneidet den Akkreditivtext nicht mehr ab.
+Daten (`05.10.2026`, `5. Oktober 2026`, `October 5, 2026`, `2026-10-05`, `05/10/26`) und Beträge (`EUR 125.000,00`, `125,000.50 USD`, `CHF 1'250'000`) werden in die MT700-Form umgewandelt. Zahlenangaben mit Punkt und Komma, Leerzeichen oder Apostroph als Tausendertrenner sind erlaubt; Datumsangaben mit Schrägstrich lesen wir tagesvoran.
+
+## Sicherungen
+
+- Der Text zählt nur als Akkreditiv, wenn Akkreditivnummer und Betrag und mindestens zwei weitere Felder gefunden werden. Ein Begleitschreiben mit „Referenz“ und „Betrag“ wird nicht fälschlich als Akkreditiv gelesen.
+- Kommt eine Bezeichnung ein zweites Mal vor (zum Beispiel in einer Zusammenfassung), gilt die erste Lesung.
+- Seitenköpfe und -fußer („Seite 2 von 3“, „Page 2 of 3“) werden entfernt, auch mitten in einem Feld.
+- Das Begleitschreiben vor dem Akkreditivtext endet mit einer Grußformel. Der Text wird deshalb auch zwischen den Grußformeln gelesen; es gewinnt die Lesung mit den meisten Feldern, sodass die Anlage hinter dem Schreiben nicht abgeschnitten wird.
+- Alles wird vor dem Anlegen wie ein MT700-Import geprüft und in der Vorschau angezeigt.
+
+## Grenzen
+
+Zwei getrennte Dateien (Schreiben und Anlage) werden noch jeweils für sich eingelesen. Die Beispiele zum Testen liegen unter `src/test/resources/avis/` (alle Firmen und Zahlen sind erfunden).

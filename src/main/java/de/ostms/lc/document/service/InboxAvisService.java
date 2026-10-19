@@ -6,6 +6,7 @@ import de.ostms.lc.imports.api.SwiftImportPreview;
 import de.ostms.lc.imports.api.SwiftImportRequest;
 import de.ostms.lc.imports.service.SwiftImportService;
 import de.ostms.lc.lc.domain.LetterOfCredit;
+import de.ostms.lc.swift.LabelledCreditNormalizer;
 import de.ostms.lc.swift.PrintedSwiftNormalizer;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,7 +46,21 @@ public class InboxAvisService {
         int first = firstFieldOffset(text);
         while (closing.find()) if (closing.start() > first) { text = text.substring(0, closing.start()); break; }
         String raw = normalizer.normalize(text);
-        return HAS_CREDIT_FIELDS.matcher(raw).find() ? raw : "";
+        if (HAS_CREDIT_FIELDS.matcher(raw).find()) return raw;
+        return labelled(extracted);
+    }
+
+    /**
+     * A credit printed with field names but without tag numbers. The cover letter before it ends with a greeting, so the text is also read
+     * in the parts between the greetings; the reading with the most fields wins.
+     */
+    static String labelled(String extracted) {
+        String best = LabelledCreditNormalizer.normalize(extracted);
+        for (String part : CLOSING.split(extracted)) {
+            String candidate = LabelledCreditNormalizer.normalize(part);
+            if (candidate.lines().count() > best.lines().count()) best = candidate;
+        }
+        return best;
     }
     /** Offset of the first line that opens a SWIFT field in any printed form the normalizer understands (":20:", "20 Label", "27: LABEL", OCR variants). */
     static int firstFieldOffset(String text) {
