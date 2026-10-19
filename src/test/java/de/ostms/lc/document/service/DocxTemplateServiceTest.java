@@ -35,10 +35,13 @@ class DocxTemplateServiceTest {
         org.mockito.Mockito.verify(templates).content(DocumentType.COMMERCIAL_INVOICE,2,"Vorlagenfirma GmbH");
 
         try (XWPFDocument document = new XWPFDocument(new ByteArrayInputStream(result))) {
-            String text = document.getParagraphs().stream().map(paragraph -> paragraph.getText()).reduce("", (a, b) -> a + "\n" + b);
-            assertThat(text).contains("Selected Company","Selected Street","COMMERCIAL INVOICE", "LC-4711", "Seller GmbH", "EUR 1250.00");
-            assertThat(document.getTables()).isNotEmpty();
-            assertThat(document.getTables().get(0).getText()).contains("Product A", "1250");
+            String text = document.getParagraphs().stream().map(paragraph -> paragraph.getText()).reduce("", (a, b) -> a + "\n" + b)
+                    + "\n" + document.getTables().stream().map(table -> table.getText()).reduce("", (a, b) -> a + "\n" + b);
+            assertThat(text).contains("Selected Company","Selected Street","COMMERCIAL INVOICE", "LC-4711", "Seller GmbH", "Buyer GmbH", "Product A", "1,250.00", "Total amount: EUR 1,250.00", "SAY: EUR ONE THOUSAND TWO HUNDRED FIFTY ONLY");
+            assertThat(document.getTables()).hasSizeGreaterThanOrEqualTo(4);
+            assertThat(text).doesNotContain("{{");
+            assertThat(document.getFooterList()).isNotEmpty();
+            assertThat(document.getFooterList().get(0).getText()).contains("Selected Company");
         }
     }
 }
