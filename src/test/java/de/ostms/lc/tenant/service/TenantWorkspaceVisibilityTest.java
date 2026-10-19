@@ -12,4 +12,5 @@ class TenantWorkspaceVisibilityTest {
  @Test void hidesPlatformHomeWhenOtherWorkspacesExist(){assertEquals(List.of(firma),TenantWorkspaceService.withoutPlatformHome(List.of(home,firma),firma.id()));}
  @Test void keepsItWhenItIsTheOnlyChoice(){assertEquals(List.of(home),TenantWorkspaceService.withoutPlatformHome(List.of(home),firma.id()));}
  @Test void keepsItWhileSelected(){assertEquals(List.of(home,firma),TenantWorkspaceService.withoutPlatformHome(List.of(home,firma),Tenant.DEFAULT_ID));}
+ @Test void aWorkspaceWithoutTheHomeFlagIsNotTheHomeTenant(){assertEquals(false,new TenantWorkspaceService.Workspace(java.util.UUID.randomUUID(),"x","X").home());assertEquals(true,new TenantWorkspaceService.Workspace(java.util.UUID.randomUUID(),"x","X",true).home());}
 }

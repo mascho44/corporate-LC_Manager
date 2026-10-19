@@ -3,6 +3,8 @@ let secondFactor=false,busy=false;
 async function platformAccess(){
   try{const response=await fetch('/api/platform/access');if(!response.ok)return {};return await response.json();}catch{return {};}
 }
+/** The home tenant only holds the accounts (the server marks it with home): offer it only when nothing else is available. */
+function visibleWorkspaces(all){return all.length>1?all.filter(workspace=>workspace.home!==true):all;}
 async function chooseWorkspace(){
   // A platform administrator belongs to no tenant: straight to the platform area, never a workspace chooser (a platform-only session could not even list workspaces).
   const access=await platformAccess();
@@ -12,8 +14,8 @@ async function chooseWorkspace(){
   const platform=access.enabled===true;
   if(!response.ok&&!platform)throw Error(overview.error||'Mandanten konnten nicht geladen werden.');
   const all=response.ok&&Array.isArray(overview.workspaces)?overview.workspaces:[];
-  // The home tenant only holds the accounts; the server already leaves it out once real workspaces exist.
-  const workspaces=all;
+  // The home tenant only holds the accounts (the server marks it with home); offer it only when nothing else is available.
+  const workspaces=visibleWorkspaces(all);
   if(!workspaces.length){if(platform){location.replace('/platform.html');return;}throw Error('Kein berechtigter Mandant verfügbar.');}
   if(workspaces.length===1&&!platform){location.replace('/');return;}
   form.replaceChildren();

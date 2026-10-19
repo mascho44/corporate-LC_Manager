@@ -13,7 +13,10 @@ import java.util.*;
 
 @Service
 public class TenantWorkspaceService {
- public record Workspace(UUID id,String code,String name){}
+ /** home marks the tenant that only holds the accounts; the sign-in form leaves it out once real workspaces exist. */
+ public record Workspace(UUID id,String code,String name,boolean home){
+  public Workspace(UUID id,String code,String name){this(id,code,name,false);}
+ }
  public record Overview(UUID selectedTenantId,List<Workspace> workspaces,boolean creationEnabled){}
  private final TenantRepository tenants;private final TenantMembershipRepository memberships;
  private final AppUserRepository users;private final AppRoleRepository roles;
@@ -33,7 +36,7 @@ public class TenantWorkspaceService {
    if(user.isPlatformAdministrator()&&user.isTotpEnabled()&&!user.isInvitationPending())return new Overview(TenantContext.currentId(),List.of(),false);
    throw denied;
   }
-  var choices=memberships.findWorkspaceMemberships(user.getId()).stream().map(m->tenants.findById(m.getTenantId()).orElseThrow()).filter(Tenant::isActive).map(t->new Workspace(t.getId(),t.getCode(),t.getName())).sorted(Comparator.comparing(Workspace::name)).toList();
+  var choices=memberships.findWorkspaceMemberships(user.getId()).stream().map(m->tenants.findById(m.getTenantId()).orElseThrow()).filter(Tenant::isActive).map(t->new Workspace(t.getId(),t.getCode(),t.getName(),t.getId().equals(Tenant.homeId()))).sorted(Comparator.comparing(Workspace::name)).toList();
   return new Overview(TenantContext.currentId(),withoutPlatformHome(choices,TenantContext.currentId()),false);
  }
  /** The bootstrap tenant is the identity home of all accounts, not a workspace to work in: hide it once real workspaces exist (unless it is the selected one). */
