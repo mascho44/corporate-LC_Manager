@@ -18,7 +18,7 @@
  }
  /** Request body for POST /submission-package: only the chosen rows. */
  function requestBody(form) {
-  return { date: form.date, recipient: String(form.recipient || '').trim(), ourReference: text(form.ourReference), remarks: text(form.remarks),
+  return { date: form.date, recipient: String(form.recipient || '').trim(), ourReference: text(form.ourReference), remarks: text(form.remarks), letterFormat: form.letterFormat === 'pdf' ? 'pdf' : 'docx',
    documents: (form.rows || []).filter(r => r.included).map(r => ({ documentId: r.documentId, originals: count(r.originals), copies: count(r.copies) })) };
  }
  /** Notice above the form: open discrepancies of the pre-check, or nothing. */
@@ -40,7 +40,7 @@
   dialog.querySelector('[data-close]').onclick = () => dialog.close(); dialog.showModal();
   let plan;
   try { plan = await json(`/api/lcs/${encodeURIComponent(lcId)}/submission-package/plan`); } catch (error) { dialog.querySelector('[role=status]').textContent = error.message; return; }
-  const state = { date: plan.date, recipient: plan.recipient || '', ourReference: plan.ourReference || '', remarks: '', savePresentationDate: true };
+  const state = { date: plan.date, recipient: plan.recipient || '', ourReference: plan.ourReference || '', remarks: '', letterFormat: 'docx', savePresentationDate: true };
   const rows = plan.documents.map(d => ({ documentId: d.documentId, filename: d.filename, typeLabel: d.typeLabel, documentNumber: d.documentNumber, documentDate: d.documentDate, pages: d.pages, included: d.included, originals: d.originals, copies: d.copies }));
   const render = () => {
    const table = rows.length ? `<table class="sp-table"><thead><tr><th></th><th>Dokument</th><th>Nummer / Datum</th><th>Seiten</th><th>Originale</th><th>Kopien</th></tr></thead><tbody>` +
@@ -51,6 +51,7 @@
     `<div class="sp-head"><label>Datum<input type="date" data-field="date"></label><label>Unsere Referenz<input data-field="ourReference" maxlength="100"></label></div>` +
     `<label>Empfänger (Bank)<textarea data-field="recipient" rows="3" maxlength="1000"></textarea></label><h3>Dokumente</h3>${table || '<p>Keine Dokumente zum Einreichen in der Akte.</p>'}` +
     `<label>Bemerkungen im Schreiben<textarea data-field="remarks" rows="2" maxlength="2000"></textarea></label>` +
+    `<label>Format des Begleitschreibens<select data-field="letterFormat"><option value="docx">Word (bearbeitbar)</option><option value="pdf">PDF</option></select></label>` +
     `<label class="sp-check"><input type="checkbox" data-field="savePresentationDate"${state.savePresentationDate ? ' checked' : ''}> Datum als Vorlagedatum in der Akte speichern</label>` +
     `<p data-error role="alert"></p><div class="dialog-actions"><button type="button" data-create${rows.length ? '' : ' disabled'}>Paket herunterladen</button></div>`;
    dialog.querySelector('[data-close]').onclick = () => dialog.close();

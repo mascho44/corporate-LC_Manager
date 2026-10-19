@@ -27,8 +27,32 @@ public class DocxTemplateService {
         de.ostms.lc.tenant.domain.TenantContext.require(lc.getTenantId());
         var customTemplate = templates.content(request.type(),lc.getCompanyId(),lc.getTemplateCompany()==null||lc.getTemplateCompany().isBlank()?lc.getBeneficiary():lc.getTemplateCompany());
         byte[] template = customTemplate.isPresent() ? customTemplate.get() : template(request.type());
+        Map<String, Object> data = documentData(lc, request);
+        data.put("itemsTable", itemsTable(request, lc.getCurrency()));
+        try (XWPFTemplate compiled = XWPFTemplate.compile(new ByteArrayInputStream(template)).render(data);
+             ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            compiled.write(output);
+            return output.toByteArray();
+        }
+    }
+
+    /** The same document as {@link #render} but as PDF in the same layout. */
+    public byte[] renderPdf(LetterOfCredit lc, GeneratedDocumentRequest request) throws IOException {
+        de.ostms.lc.tenant.domain.TenantContext.require(lc.getTenantId());
+        return ProfessionalPdf.document(documentData(lc, request), request);
+    }
+
+    /** The cover letter as PDF. */
+    public byte[] renderSubmissionLetterPdf(LetterOfCredit lc, SubmissionLetter letter) throws IOException {
+        de.ostms.lc.tenant.domain.TenantContext.require(lc.getTenantId());
+        return ProfessionalPdf.letter(letterData(lc, letter), letter.rows());
+    }
+
+    /** All values of a generated document by placeholder name, shared by the Word and the PDF output. */
+    Map<String, Object> documentData(LetterOfCredit lc, GeneratedDocumentRequest request) {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("title", title(request.type()));
+        data.put("currency", lc.getCurrency() == null ? "" : lc.getCurrency());
         data.put("documentNumber", value(request.documentNumber()));
         data.put("documentDate", request.documentDate().format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy", java.util.Locale.ENGLISH)));
         data.put("lcReference", value(lc.getReference()));
@@ -41,7 +65,6 @@ public class DocxTemplateService {
         data.put("netWeight", request.netWeight() == null ? "-" : number(request.netWeight()) + " kg");
         data.put("grossWeight", request.grossWeight() == null ? "-" : number(request.grossWeight()) + " kg");
         data.put("notes", value(request.notes()));
-        data.put("itemsTable", itemsTable(request, lc.getCurrency()));
         var itemSum = itemSum(request);
         data.put("totalAmount", itemSum == null ? "-" : value(lc.getCurrency()) + " " + money(itemSum));
         data.put("amountInWords", itemSum == null ? "-" : AmountInWords.english(itemSum, lc.getCurrency()));
@@ -53,11 +76,7 @@ public class DocxTemplateService {
         data.put("placeDate", joined(", ", (String) data.get("companyCityOnly"), (String) data.get("documentDate")));
         String bank = (String) data.get("companyBankLine");
         data.put("paymentInstruction", bank.isEmpty() ? "" : "Payment to: " + bank);
-        try (XWPFTemplate compiled = XWPFTemplate.compile(new ByteArrayInputStream(template)).render(data);
-             ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-            compiled.write(output);
-            return output.toByteArray();
-        }
+        return data;
     }
 
     public byte[] template(DocumentType type) throws IOException {
@@ -89,7 +108,7 @@ public class DocxTemplateService {
     }
 
     private void putCompany(Map<String, Object> data, LetterOfCredit lc) {
-        var company=companies.profileForLetterhead(lc.getCompanyId(),lc.getBeneficiary());data.put("companyName",value(company.getLegalName()));data.put("companyAddress",value(company.getAddressLine()));data.put("companyPostalCode",value(company.getPostalCode()));data.put("companyCity",value(company.getCity()));data.put("companyCountry",value(company.getCountry()));data.put("companyEmail",value(company.getEmail()));data.put("companyPhone",value(company.getPhone()));data.put("companyTaxId",value(company.getTaxId()));data.put("companyRegistrationNumber",value(company.getRegistrationNumber()));data.put("companyBankName",value(company.getBankName()));data.put("companyIban",value(company.getIban()));data.put("companyBic",value(company.getBic()));data.put("companyContactPerson",value(company.getContactPerson()));data.put("companyLogo",null);if(company.getLogo()!=null)data.put("companyLogo",Pictures.ofBytes(company.getLogo()).size(160,60).create());
+        var company=companies.profileForLetterhead(lc.getCompanyId(),lc.getBeneficiary());data.put("companyName",value(company.getLegalName()));data.put("companyAddress",value(company.getAddressLine()));data.put("companyPostalCode",value(company.getPostalCode()));data.put("companyCity",value(company.getCity()));data.put("companyCountry",value(company.getCountry()));data.put("companyEmail",value(company.getEmail()));data.put("companyPhone",value(company.getPhone()));data.put("companyTaxId",value(company.getTaxId()));data.put("companyRegistrationNumber",value(company.getRegistrationNumber()));data.put("companyBankName",value(company.getBankName()));data.put("companyIban",value(company.getIban()));data.put("companyBic",value(company.getBic()));data.put("companyContactPerson",value(company.getContactPerson()));data.put("companyLogo",null);if(company.getLogo()!=null){data.put("companyLogo",Pictures.ofBytes(company.getLogo()).size(160,60).create());data.put("companyLogoBytes",company.getLogo());}
         // Lines built from what exists, so a missing detail leaves no "-" or empty separators in the letterhead and footer.
         data.put("companyAddressLine",joined(", ",company.getAddressLine(),joined(" ",company.getPostalCode(),company.getCity()),company.getCountry()));
         data.put("companyContactLine",joined("  ·  ",prefixed("Tel. ",company.getPhone()),company.getEmail(),prefixed("Contact: ",company.getContactPerson())));
@@ -106,6 +125,17 @@ public class DocxTemplateService {
     /** The cover letter for presenting documents to the bank, filled from the credit, the company profile and the list of documents. */
     public byte[] renderSubmissionLetter(LetterOfCredit lc, SubmissionLetter letter) throws IOException {
         de.ostms.lc.tenant.domain.TenantContext.require(lc.getTenantId());
+        Map<String, Object> data = letterData(lc, letter);
+        data.put("documentsTable", submissionTable(letter.rows()));
+        try (XWPFTemplate compiled = XWPFTemplate.compile(new ByteArrayInputStream(ProfessionalDocxTemplate.buildSubmissionLetter())).render(data);
+             ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            compiled.write(output);
+            return output.toByteArray();
+        }
+    }
+
+    /** All values of the cover letter by placeholder name, shared by the Word and the PDF output. */
+    Map<String, Object> letterData(LetterOfCredit lc, SubmissionLetter letter) {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("title", "PRESENTATION OF DOCUMENTS");
         data.put("date", letter.date().format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy", java.util.Locale.ENGLISH)));
@@ -118,7 +148,6 @@ public class DocxTemplateService {
         data.put("amount", value(lc.getCurrency()) + " " + (lc.getAmount() == null ? "-" : money(lc.getAmount())));
         data.put("expiry", lc.getExpiryDate() == null ? "-" : lc.getExpiryDate().format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy", java.util.Locale.ENGLISH)));
         data.put("latestShipment", lc.getLatestShipmentDate() == null ? "-" : lc.getLatestShipmentDate().format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy", java.util.Locale.ENGLISH)));
-        data.put("documentsTable", submissionTable(letter.rows()));
         putCompany(data, lc);
         String bank = (String) data.get("companyBankLine");
         var intro = new StringBuilder("We refer to the above documentary credit");
@@ -132,11 +161,7 @@ public class DocxTemplateService {
         data.put("intro", intro.append(". We hereby present the following documents for examination:").toString());
         data.put("paymentRequest", "Please examine the documents in accordance with the terms and conditions of the credit and credit the proceeds on the due date" + (bank.isEmpty() ? "." : " to our account with " + bank + "."));
         data.put("placeDate", joined(", ", (String) data.get("companyCityOnly"), (String) data.get("date")));
-        try (XWPFTemplate compiled = XWPFTemplate.compile(new ByteArrayInputStream(ProfessionalDocxTemplate.buildSubmissionLetter())).render(data);
-             ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-            compiled.write(output);
-            return output.toByteArray();
-        }
+        return data;
     }
 
     private Object submissionTable(java.util.List<SubmissionRow> rows) {
@@ -219,16 +244,16 @@ public class DocxTemplateService {
         return String.join(", ", lines);
     }
 
-    private static String money(java.math.BigDecimal value) {
+    static String money(java.math.BigDecimal value) {
         return value == null ? "-" : new java.text.DecimalFormat("#,##0.00", java.text.DecimalFormatSymbols.getInstance(java.util.Locale.US)).format(value);
     }
 
-    private String number(Number value) {
+    static String number(Number value) {
         if (value == null) return "-";
         var decimal = value instanceof java.math.BigDecimal d ? d : new java.math.BigDecimal(value.toString());
         return new java.text.DecimalFormat("#,##0.##", java.text.DecimalFormatSymbols.getInstance(java.util.Locale.US)).format(decimal);
     }
 
-    private String value(String value) { return value == null || value.isBlank() ? "-" : value.trim(); }
+    static String value(String value) { return value == null || value.isBlank() ? "-" : value.trim(); }
     private String title(DocumentType type){return switch(type){case COMMERCIAL_INVOICE->"COMMERCIAL INVOICE";case PACKING_LIST->"PACKING LIST";case CERTIFICATE_OF_ORIGIN->"CERTIFICATE OF ORIGIN";case BENEFICIARY_CERTIFICATE->"BENEFICIARY'S CERTIFICATE";case QUALITY_CERTIFICATE->"QUALITY / ANALYSIS CERTIFICATE";default->type.getDisplayName().toUpperCase(java.util.Locale.ROOT);};}
 }

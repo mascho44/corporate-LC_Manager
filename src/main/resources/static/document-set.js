@@ -30,7 +30,7 @@
  function requestBody(form) {
   const text = v => (v == null || String(v).trim() === '') ? null : String(v).trim();
   return {
-   documentDate: form.documentDate, invoiceNumber: String(form.invoiceNumber || '').trim(), notes: text(form.notes), types: form.types,
+   documentDate: form.documentDate, invoiceNumber: String(form.invoiceNumber || '').trim(), notes: text(form.notes), types: form.types, format: form.format === 'pdf' ? 'pdf' : 'docx',
    quantity: null, packages: form.packages == null || form.packages === '' ? null : Math.round(num(form.packages)),
    netWeight: num(form.netWeight), grossWeight: num(form.grossWeight),
    items: (form.lines || []).filter(l => text(l.description) || num(l.quantity) != null).map((l, i) => ({
@@ -73,9 +73,9 @@
     (proposal.companyConfigured === false ? '<p class="ds-hint" role="status">Für diese Akte ist keine Firma hinterlegt. Der Briefkopf zeigt nur den Begünstigten aus dem Akkreditiv. Anschrift, Logo und Bankverbindung kommen aus dem Firmenprofil (Mandanteneinstellungen → Firma).</p>' : '') +
     `<div class="ds-head"><label>Rechnungsnummer<input data-field="invoiceNumber" value="${esc(proposal.invoiceNumber)}"></label><label>Dokumentdatum<input type="date" data-field="documentDate" value="${esc(proposal.documentDate)}"></label></div>` +
     `<h3>Dokumente</h3><div class="ds-types">${boxes}</div><h3>Positionen</h3>${rows}<button type="button" class="secondary" data-add>+ Position</button><p class="ds-total ds-${total.level}" role="status">${esc(total.text)}</p>` +
-    `<label>Hinweise / Markierungen (Marks and numbers)<textarea data-field="notes" rows="2" maxlength="4000"></textarea></label><p data-error role="alert"></p><div class="dialog-actions"><button type="button" data-create>Dokumente erzeugen</button></div>`;
+    `<label>Hinweise / Markierungen (Marks and numbers)<textarea data-field="notes" rows="2" maxlength="4000"></textarea></label><label>Format<select data-field="format"><option value="docx">Word (bearbeitbar)</option><option value="pdf">PDF (fertig zum Versand)</option></select></label><p data-error role="alert"></p><div class="dialog-actions"><button type="button" data-create>Dokumente erzeugen</button></div>`;
    dialog.querySelector('[data-close]').onclick = () => dialog.close();
-   dialog.querySelector('[data-field=invoiceNumber]').value = state.invoiceNumber; dialog.querySelector('[data-field=documentDate]').value = state.documentDate; dialog.querySelector('[data-field=notes]').value = state.notes;
+   dialog.querySelector('[data-field=invoiceNumber]').value = state.invoiceNumber; dialog.querySelector('[data-field=documentDate]').value = state.documentDate; dialog.querySelector('[data-field=notes]').value = state.notes; dialog.querySelector('[data-field=format]').value = state.format;
    dialog.querySelectorAll('[data-field]').forEach(el => el.oninput = () => { state[el.dataset.field] = el.value; });
    dialog.querySelectorAll('[data-type]').forEach(el => el.onchange = () => { if (el.checked) chosen.add(el.dataset.type); else chosen.delete(el.dataset.type); });
    dialog.querySelectorAll('.ds-line').forEach(box => {
@@ -96,7 +96,7 @@
     } catch (error) { dialog.querySelector('[data-error]').textContent = error.message; button.disabled = false; }
    };
   };
-  const state = { invoiceNumber: proposal.invoiceNumber, documentDate: proposal.documentDate, notes: '', packages: '', netWeight: '', grossWeight: '' };
+  const state = { format: 'docx', invoiceNumber: proposal.invoiceNumber, documentDate: proposal.documentDate, notes: '', packages: '', netWeight: '', grossWeight: '' };
   render();
  }
 

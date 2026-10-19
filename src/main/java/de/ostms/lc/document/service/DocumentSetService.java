@@ -128,7 +128,7 @@ public class DocumentSetService {
             var single = new GeneratedDocumentRequest(type, number, request.documentDate(), description(items), quantity(request, items),
                     packages(request, items), weight(request.netWeight(), items, GeneratedDocumentItemRequest::netWeight), weight(request.grossWeight(), items, GeneratedDocumentItemRequest::grossWeight),
                     request.notes(), items);
-            created.add(generated.createDocx(lcId, single));
+            created.add(request.pdf() ? generated.create(lcId, single) : generated.createDocx(lcId, single));
         }
         var names = new HashSet<String>();
         created.forEach(view -> names.add(view.originalFilename()));

@@ -70,13 +70,30 @@ class DocxSamplesTest {
             Files.write(dir.resolve("muster-" + type.name().toLowerCase().replace('_', '-') + ".docx"), rendered);
             Files.write(dir.resolve("vorlage-" + type.name().toLowerCase().replace('_', '-') + ".docx"), service.template(type));
             assertThat(rendered.length).isGreaterThan(5000);
+            byte[] pdf = service.renderPdf(lc, request);
+            String base = "muster-" + type.name().toLowerCase().replace('_', '-');
+            Files.write(dir.resolve(base + ".pdf"), pdf);
+            try (var document = org.apache.pdfbox.Loader.loadPDF(pdf)) {
+                String text = new org.apache.pdfbox.text.PDFTextStripper().getText(document);
+                assertThat(text).contains("Beispiel Maschinenbau GmbH", "INV-2026-0815", "TEST-LC-2026-001", "Page 1 of");
+                if (type == DocumentType.COMMERCIAL_INVOICE) assertThat(text).contains("125,000.00", "CIF JEBEL ALI", "Total amount");
+                var renderer = new org.apache.pdfbox.rendering.PDFRenderer(document);
+                for (int page = 0; page < document.getNumberOfPages(); page++) ImageIO.write(renderer.renderImageWithDPI(page, 80), "png", dir.resolve(base + "-" + (page + 1) + ".png").toFile());
+            }
         }
         lc.setIssuingBank("TESTBANK DUBAI"); lc.setExpiryDate(LocalDate.of(2026, 11, 30)); lc.setLatestShipmentDate(LocalDate.of(2026, 10, 10));
-        Files.write(dir.resolve("muster-einreichungsschreiben.docx"), service.renderSubmissionLetter(lc, new DocxTemplateService.SubmissionLetter(LocalDate.of(2026, 10, 19),
+        var letter = new DocxTemplateService.SubmissionLetter(LocalDate.of(2026, 10, 19),
             "Musterbank AG\nTrade Finance\nMusterstrasse 1\n60311 Frankfurt am Main", "HB-4711", "Original bills of lading follow by courier.", List.of(
                 new DocxTemplateService.SubmissionRow("1", "Commercial Invoice", "INV-2026-0815", "05 Oct 2026", "3", "0", "1"),
                 new DocxTemplateService.SubmissionRow("2", "Packing List", "PL-2026-0815", "05 Oct 2026", "1", "2", "1"),
                 new DocxTemplateService.SubmissionRow("3", "Bill of Lading", "BL-77", "05 Oct 2026", "3", "2", "2"),
-                new DocxTemplateService.SubmissionRow("4", "Certificate of Origin", "COO-2026-0815", "04 Oct 2026", "1", "0", "–")))));
+                new DocxTemplateService.SubmissionRow("4", "Certificate of Origin", "COO-2026-0815", "04 Oct 2026", "1", "0", "–")));
+        Files.write(dir.resolve("muster-einreichungsschreiben.docx"), service.renderSubmissionLetter(lc, letter));
+        byte[] letterPdf = service.renderSubmissionLetterPdf(lc, letter);
+        Files.write(dir.resolve("muster-einreichungsschreiben.pdf"), letterPdf);
+        try (var document = org.apache.pdfbox.Loader.loadPDF(letterPdf)) {
+            assertThat(new org.apache.pdfbox.text.PDFTextStripper().getText(document)).contains("Presentation of documents", "Musterbank AG", "Bill of Lading", "HB-4711");
+            ImageIO.write(new org.apache.pdfbox.rendering.PDFRenderer(document).renderImageWithDPI(0, 80), "png", dir.resolve("muster-einreichungsschreiben-1.png").toFile());
+        }
     }
 }

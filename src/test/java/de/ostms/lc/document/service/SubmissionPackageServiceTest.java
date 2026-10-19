@@ -108,6 +108,19 @@ class SubmissionPackageServiceTest {
         assertThat(SubmissionPackageService.requiredCopies(lc)).doesNotContainKey(DocumentType.PACKING_LIST);
     }
 
+    @Test void theLetterCanBeAPdf() throws Exception {
+        var request = new SubmissionPackageRequest(LocalDate.of(2026, 10, 19), "Musterbank AG\nFrankfurt", "HB-4711", null, List.of(new SubmissionPackageRequest.Entry(id("inv.docx"), 3, 0)), "pdf");
+        var result = service.build(lcId, request);
+        byte[] letter = null;
+        try (var zip = new ZipInputStream(new ByteArrayInputStream(result.content()))) {
+            for (var entry = zip.getNextEntry(); entry != null; entry = zip.getNextEntry()) if (entry.getName().equals("00-Einreichungsschreiben.pdf")) letter = zip.readAllBytes();
+        }
+        assertThat(letter).isNotNull();
+        try (var pdf = org.apache.pdfbox.Loader.loadPDF(letter)) {
+            assertThat(new org.apache.pdfbox.text.PDFTextStripper().getText(pdf)).contains("Presentation of documents under Documentary Credit No. TEST-LC-1", "Musterbank AG", "INV-1");
+        }
+    }
+
     @Test void thePackageHoldsTheLetterAndTheNumberedDocumentsInOrder() throws Exception {
         var request = new SubmissionPackageRequest(LocalDate.of(2026, 10, 19), "Musterbank AG\nFrankfurt", "HB-4711", "Please credit on due date.", List.of(
             new SubmissionPackageRequest.Entry(id("coo.docx"), 1, 0), new SubmissionPackageRequest.Entry(id("inv.docx"), 3, 0),

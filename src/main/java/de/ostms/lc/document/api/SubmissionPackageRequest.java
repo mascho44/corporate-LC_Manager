@@ -12,6 +12,14 @@ public record SubmissionPackageRequest(
         @NotBlank @Size(max = 1000) String recipient,
         @Size(max = 100) String ourReference,
         @Size(max = 2000) String remarks,
-        @NotEmpty @Size(max = 100) List<@Valid Entry> documents) {
+        @NotEmpty @Size(max = 100) List<@Valid Entry> documents,
+        @Pattern(regexp = "(?i)docx|pdf") String letterFormat) {
+    public SubmissionPackageRequest(LocalDate date, String recipient, String ourReference, String remarks, List<Entry> documents) {
+        this(date, recipient, ourReference, remarks, documents, null);
+    }
+
+    /** The cover letter is Word unless PDF was asked for. */
+    public boolean pdf() { return "pdf".equalsIgnoreCase(letterFormat); }
+
     public record Entry(@NotNull UUID documentId, @Min(0) @Max(99) int originals, @Min(0) @Max(99) int copies) {}
 }

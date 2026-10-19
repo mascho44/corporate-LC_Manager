@@ -144,9 +144,10 @@ public class SubmissionPackageService {
                 blankToDash(document.getExtractedDocumentNumber()), document.getDocumentDate() == null ? "" : document.getDocumentDate().format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.ENGLISH)),
                 String.valueOf(entry.originals()), String.valueOf(entry.copies()), pages == null ? "–" : String.valueOf(pages)));
         }
-        byte[] letter = letters.renderSubmissionLetter(lc, new DocxTemplateService.SubmissionLetter(request.date(), request.recipient().trim(), blank(request.ourReference()), blank(request.remarks()), rows));
+        var letterData = new DocxTemplateService.SubmissionLetter(request.date(), request.recipient().trim(), blank(request.ourReference()), blank(request.remarks()), rows);
+        byte[] letter = request.pdf() ? letters.renderSubmissionLetterPdf(lc, letterData) : letters.renderSubmissionLetter(lc, letterData);
         try (var output = new ByteArrayOutputStream(); var zip = new ZipOutputStream(output, StandardCharsets.UTF_8)) {
-            put(zip, "00-Einreichungsschreiben.docx", letter);
+            put(zip, request.pdf() ? "00-Einreichungsschreiben.pdf" : "00-Einreichungsschreiben.docx", letter);
             int number = 1;
             var used = new HashSet<String>();
             for (LcDocument document : chosen) {
