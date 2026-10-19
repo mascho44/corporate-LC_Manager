@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Anmeldung: Der Heimatmandant (zum Beispiel `platform`) erscheint nicht mehr in der Mandantenauswahl, wenn es andere Mandanten gibt. Der Server markiert ihn mit `home`; der Filter nach dem festen Code `default` war mit dem Wechsel des Heimatmandanten entfallen.
 * Dokumentensatz erzeugen: Rechnung, Packliste und Zertifikate aus einer Eingabe mit gleichen Nummern, Daten, Positionen und Summen, Vorschlag aus dem Akkreditiv, Warnung über dem Höchstbetrag und Ergebnis der automatischen Prüfung (`docs/dokumentensatz.md`).
 * Erzeugte Rechnungen speichern die Summe der Positionen statt des Akkreditivbetrags (die Betragsprüfung schlug dort nie an); der Prüftext erzeugter Dokumente enthält Incoterm, Häfen, Zahlungsbedingung und Erklärung.
 * Avis: Schreiben und Anlage als zwei Dateien einlesen (Auswahl der Anlage im Dialog, gleiche E-Mail und Akkreditivnummer werden vorgeschlagen; beide Dokumente landen in der neuen Akte).
