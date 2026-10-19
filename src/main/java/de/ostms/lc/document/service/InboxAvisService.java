@@ -6,6 +6,7 @@ import de.ostms.lc.imports.api.SwiftImportPreview;
 import de.ostms.lc.imports.api.SwiftImportRequest;
 import de.ostms.lc.imports.service.SwiftImportService;
 import de.ostms.lc.lc.domain.LetterOfCredit;
+import de.ostms.lc.swift.LabelledCreditNormalizer;
 import de.ostms.lc.swift.PrintedSwiftNormalizer;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,9 +33,77 @@ public class InboxAvisService {
     private final DocumentInboxService inbox;
     private final PrintedSwiftNormalizer normalizer;
     private final SwiftImportService swift;
+    private final de.ostms.lc.capture.InboxCaptureInfoRepository origins;
 
-    public InboxAvisService(DocumentInboxService inbox, PrintedSwiftNormalizer normalizer, SwiftImportService swift) {
-        this.inbox = inbox; this.normalizer = normalizer; this.swift = swift;
+    public InboxAvisService(DocumentInboxService inbox, PrintedSwiftNormalizer normalizer, SwiftImportService swift, de.ostms.lc.capture.InboxCaptureInfoRepository origins) {
+        this.inbox = inbox; this.normalizer = normalizer; this.swift = swift; this.origins = origins;
+    }
+
+    /** A file in the inbox that carries a credit text and probably belongs to the advice letter. */
+    public record Partner(UUID id, String filename, String reason, int score) {}
+
+    /**
+     * Other open inbox files with a credit text, the likeliest first: same e-mail (same origin reference), the credit number of the letter in the text,
+     * otherwise any file with a credit text. The letter and its annex often arrive as two files.
+     */
+    @Transactional(readOnly = true)
+    public List<Partner> partners(UUID letterId) {
+        var letter = inbox.openItem(letterId);
+        String reference = AdvisingLetterExtractor.extract(letter.getExtractedText()).fields().get("reference");
+        String origin = originOf(letterId);
+        var out = new java.util.ArrayList<Partner>();
+        for (var other : inbox.openEntities()) {
+            if (other.getId().equals(letterId) || other.getContent() == null) continue;
+            if (creditText(normalizer, other.getExtractedText()).isEmpty()) continue;
+            int score = 1; String reason = "enthält einen Akkreditivtext";
+            if (origin != null && origin.equals(originOf(other.getId()))) { score += 4; reason = "kam mit derselben E-Mail"; }
+            else if (mentions(other.getExtractedText(), reference)) { score += 3; reason = "nennt die Akkreditivnummer " + reference; }
+            out.add(new Partner(other.getId(), other.getOriginalFilename(), reason, score));
+        }
+        out.sort(java.util.Comparator.comparingInt(Partner::score).reversed().thenComparing(Partner::filename, String.CASE_INSENSITIVE_ORDER));
+        return out;
+    }
+
+    private String originOf(UUID itemId) {
+        return origins.byInboxItem(itemId).map(info -> info.getOriginReference()).filter(value -> value != null && !value.isBlank()).orElse(null);
+    }
+
+    static boolean mentions(String text, String reference) {
+        if (text == null || reference == null) return false;
+        String wanted = reference.replaceAll("[^A-Za-z0-9]", "").toUpperCase(java.util.Locale.ROOT);
+        return wanted.length() >= 4 && text.replaceAll("[^A-Za-z0-9]", "").toUpperCase(java.util.Locale.ROOT).contains(wanted);
+    }
+
+    /** Preview of the letter (cover data) together with the credit text of its annex. */
+    @Transactional(readOnly = true)
+    public Preview preview(UUID letterId, UUID annexId) {
+        if (annexId == null) return preview(letterId);
+        var letter = inbox.openItem(letterId);
+        var annex = inbox.openItem(annexId);
+        String raw = creditText(normalizer, annex.getExtractedText());
+        if (raw.isEmpty()) return new Preview(null, false, AdvisingLetterExtractor.extract(letter.getExtractedText()));
+        return new Preview(swift.preview(new SwiftImportRequest(annex.getOriginalFilename(), raw)), true, null);
+    }
+
+    /** Creates the file from the credit text of the annex; the letter is filed as advising letter and the annex next to it. */
+    @Transactional
+    public Created create(UUID letterId, UUID annexId, String applicant, String beneficiary) {
+        if (annexId == null) return create(letterId, applicant, beneficiary);
+        var annex = inbox.openItem(annexId);
+        inbox.openItem(letterId);
+        String raw = creditText(normalizer, annex.getExtractedText());
+        if (raw.isEmpty()) throw new IllegalArgumentException("In der Anlage wurde kein Akkreditivtext erkannt (Felder wie :20:, :32B:, :31D: oder Feldnamen wie Akkreditivnummer, Betrag).");
+        Object imported = swift.execute(new SwiftImportRequest(annex.getOriginalFilename(), raw, applicant, beneficiary));
+        if (imported instanceof de.ostms.lc.lc.domain.Amendment amendment) {
+            var lc = amendment.getLetterOfCredit();
+            inbox.attach(annexId, new DocumentInboxAttachRequest(lc.getId(), DocumentType.OTHER, null, null));
+            inbox.attach(letterId, new DocumentInboxAttachRequest(lc.getId(), DocumentType.ADVISING_LETTER, null, null));
+            return new Created(lc.getId(), lc.getReference(), "MT707");
+        }
+        if (!(imported instanceof LetterOfCredit lc)) throw new IllegalArgumentException("Der Text ist keine importierbare SWIFT-Nachricht (MT700, MT707, MT760).");
+        inbox.attach(annexId, new DocumentInboxAttachRequest(lc.getId(), swiftMessage(annex) ? DocumentType.SWIFT_MT700 : DocumentType.ANNEX, null, null));
+        inbox.attach(letterId, new DocumentInboxAttachRequest(lc.getId(), DocumentType.ADVISING_LETTER, null, null));
+        return new Created(lc.getId(), lc.getReference(), "MT700");
     }
 
     /** The credit text of the advice as MT700 fields; the closing of the letter after the last field is cut off. */
@@ -45,7 +114,21 @@ public class InboxAvisService {
         int first = firstFieldOffset(text);
         while (closing.find()) if (closing.start() > first) { text = text.substring(0, closing.start()); break; }
         String raw = normalizer.normalize(text);
-        return HAS_CREDIT_FIELDS.matcher(raw).find() ? raw : "";
+        if (HAS_CREDIT_FIELDS.matcher(raw).find()) return raw;
+        return labelled(extracted);
+    }
+
+    /**
+     * A credit printed with field names but without tag numbers. The cover letter before it ends with a greeting, so the text is also read
+     * in the parts between the greetings; the reading with the most fields wins.
+     */
+    static String labelled(String extracted) {
+        String best = LabelledCreditNormalizer.normalize(extracted);
+        for (String part : CLOSING.split(extracted)) {
+            String candidate = LabelledCreditNormalizer.normalize(part);
+            if (candidate.lines().count() > best.lines().count()) best = candidate;
+        }
+        return best;
     }
     /** Offset of the first line that opens a SWIFT field in any printed form the normalizer understands (":20:", "20 Label", "27: LABEL", OCR variants). */
     static int firstFieldOffset(String text) {

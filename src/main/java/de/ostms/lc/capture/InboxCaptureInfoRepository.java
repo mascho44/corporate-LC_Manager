@@ -12,6 +12,8 @@ public interface InboxCaptureInfoRepository extends TenantScopedRepository<Inbox
  Optional<InboxCaptureInfo> findById(@Param("id") UUID id);
  @Override @Query("select e from InboxCaptureInfo e where "+OWNED)
  List<InboxCaptureInfo> findAll();
+ @Query("select e from InboxCaptureInfo e where e.inboxItemId=:item and "+OWNED)
+ Optional<InboxCaptureInfo> byInboxItem(@Param("item") UUID item);
  @Query("select e from InboxCaptureInfo e where e.sha256=:sha and "+OWNED)
  Optional<InboxCaptureInfo> bySha(@Param("sha") String sha);
 }

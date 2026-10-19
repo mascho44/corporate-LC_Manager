@@ -18,3 +18,24 @@ Steht im Avis nur das Anschreiben („Den Inhalt entnehmen Sie bitte der beigef�
 
 ## SWIFT-Nachrichten im Posteingang (Stand 15.10.2026)
 Erkennt der Posteingang eine Datei als SWIFT-Nachricht (MT700), heißt der Knopf **„Als SWIFT-Nachricht importieren …"** (auch bei TXT/FIN-Dateien). Er nutzt denselben Import wie der SWIFT-Dialog, einschließlich der Bank-Druckansicht „27: SEQUENCE OF TOTAL" mit Wert darunter. Eine MT700 legt die Akte an und die Datei als „SWIFT MT700" ab (beim Avis mit Anschreiben weiterhin als Avisierungsschreiben). Eine **MT707** wird als offene Änderung der vorhandenen Akte übernommen (dort annehmen oder ablehnen); die Nachricht liegt als Dokument in der Akte. Ein Anschreiben mit Grußformel vor den Feldern schneidet den Akkreditivtext nicht mehr ab.
+
+## Akkreditivtext mit Feldnamen, aber ohne SWIFT-Feldnummern (Stand 19.10.2026)
+Ausdrucke aus Bankportalen und Handelsfinanzsystemen tragen oft nur die Feldnamen, auf Englisch oder Deutsch, zum Beispiel „Documentary Credit Number: LC-1", „Akkreditivnummer   LC-1" oder „Betrag: EUR 125.000,00". Auch diese Texte werden gelesen (`LabelledCreditNormalizer`), wenn der Text mit Feldnummern nichts ergibt:
+
+- Der Name steht am Zeilenanfang, mit Doppelpunkt oder zwei Leerzeichen dahinter, oder allein in der Zeile; der Wert steht dahinter oder in den folgenden Zeilen.
+- Erkannt werden Akkreditivnummer, Ausstellungs- und Verfallsdatum mit Ort, Betrag mit Währung, Auftraggeber, Begünstigter, eröffnende und avisierende Bank, Teilverladungen, Umladung, Verlade- und Entladehafen, spätester Verladetag, Warenbeschreibung, geforderte Dokumente, zusätzliche Bedingungen, Vorlagefrist, Bestätigung, Art des Akkreditivs und Regelwerk.
+- Daten (`05.10.2026`, `5. Oktober 2026`, `October 5, 2026`, `2026-10-05`, `05/10/26`, Schrägstrich-Daten tagesvoran) und Beträge (`EUR 125.000,00`, `125,000.50 USD`, `CHF 1'250'000`) werden in die MT700-Form umgewandelt.
+- Sicherungen: Der Text zählt nur als Akkreditiv, wenn Akkreditivnummer und Betrag und mindestens zwei weitere Felder gefunden werden (ein Anschreiben mit „Referenz" und „Betrag" wird nicht fälschlich als Akkreditiv gelesen). Kommt ein Name ein zweites Mal vor, gilt die erste Lesung. Seitenköpfe und -fußer („Seite 2 von 3", „Page 2 of 3") werden auch mitten in einem Feld entfernt. Steht die Anlage hinter einem Anschreiben mit Grußformel, wird auch der Text zwischen den Grußformeln gelesen und die Lesung mit den meisten Feldern gewählt, damit die Anlage nicht abgeschnitten wird.
+
+Synthetische Beispiele zum Testen: `src/test/resources/avis/` (alle Firmen und Zahlen erfunden).
+
+## Schreiben und Anlage als zwei Dateien (Stand 19.10.2026)
+Kommen das Avisierungsschreiben und der Akkreditivtext als zwei Dateien (zum Beispiel zwei Mail-Anhänge), öffnet **Als Avis einlesen …** am Schreiben eine Auswahl **„Anlage mit dem Akkreditivtext"**:
+
+- Angeboten werden die anderen offenen Dateien des Posteingangs, in denen ein Akkreditivtext steht. Vorn stehen Dateien, die **mit derselben E-Mail** kamen, danach Dateien, die **die Akkreditivnummer des Schreibens nennen**, dann alle übrigen.
+- Hat das Schreiben selbst keinen Akkreditivtext, wird die wahrscheinlichste Anlage vorausgewählt; die Vorschau zeigt dann den Text der Anlage. „keine" liest nur das Schreiben (Angaben aus dem Anschreiben).
+- Beim Anlegen entsteht die Akte aus dem Text der Anlage. **Das Schreiben wird als Avisierungsschreiben und die Anlage als „Annex / Anlage" (oder „SWIFT MT700", wenn es eine SWIFT-Nachricht ist) in der Akte abgelegt.** Eine MT707 wird als Änderung der vorhandenen Akte übernommen.
+- Schnittstelle: `GET /api/inbox/{id}/avis-partners`, `GET /api/inbox/{id}/avis-preview?annex={id}`, `POST /api/inbox/{id}/avis-case?annex={id}`.
+
+## Fehler behoben: Akte aus Avis anlegen scheiterte mit 500 (seit 15.10.2026)
+Seit der automatischen Übernahme der Prüfdaten (15.10.2026) scheiterte „LC-Akte aus Avis anlegen" mit Serverfehler 500, weil die Liste der geforderten Dokumente unveränderlich aus dem Parser in die Akte übernommen und beim zweiten Speichern in derselben Transaktion von Hibernate geleert werden sollte. Der SWIFT-Import über den Dialog war nicht betroffen (eigene Transaktion). Die Akte kopiert jetzt geforderte Dokumente und zusätzliche Felder in eigene, veränderliche Sammlungen.
