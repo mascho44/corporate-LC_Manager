@@ -28,3 +28,19 @@
 .submission-ok{color:#14602b}.submission-no{color:#a11d1d}
 .submission-folded{display:none!important}
 .plan-hint{color:#5b6573}
+/* Narrow windows: the plan table would squeeze the document name word by word and push the target date out of view. Give the document column room,
+   and below 680px of table width show each row as a small card (light and target date on top, then document and status). */
+.plan-scroll{container-type:inline-size}
+.plan-scroll .plan-table td:nth-child(2){min-width:11rem}
+@container (max-width:680px){
+ .plan-scroll .plan-table thead{display:none}
+ .plan-scroll .plan-table,.plan-scroll .plan-table tbody{display:block}
+ .plan-scroll .plan-table tr{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;padding:10px 0;border-top:1px solid var(--line,#d5dbe5)}
+ .plan-scroll .plan-table td{border:0;padding:0;min-width:0}
+ .plan-scroll .plan-table td:nth-child(1){grid-column:1;grid-row:1}
+ .plan-scroll .plan-table td:nth-child(4){grid-column:2;grid-row:1;text-align:right}
+ .plan-scroll .plan-table td:nth-child(2){grid-column:1/-1;grid-row:2;min-width:0}
+ .plan-scroll .plan-table td:nth-child(3){grid-column:1/-1;grid-row:3}
+ .plan-scroll .plan-table td:nth-child(4)::before{content:attr(data-label)": ";color:#5b6573;font-size:12px}
+ .plan-scroll .plan-table td:nth-child(3) :is(select,input[type=text]){max-width:100%;width:100%}
+}

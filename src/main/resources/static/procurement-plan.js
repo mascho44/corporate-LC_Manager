@@ -23,8 +23,8 @@
    `<br><input type="text" data-plan-note maxlength="500" placeholder="Notiz" value="${esc(item.note || '')}" aria-label="Notiz zum Dokument">`;
  }
  function itemRow(item, editable) {
-  return `<tr class="plan-row plan-row-${item.risk.toLowerCase()}"><td>${badge(item.risk)}</td><td><b>${esc(item.documentName || 'Nicht erkannt')}</b><br><small>${esc(item.requirement)}</small>${item.hint ? `<br><small class="plan-hint">${esc(item.hint)}</small>` : ''}</td>` +
-   `<td>${statusCell(item, editable)}</td><td>${item.dueDate ? date(item.dueDate) + '<br><small>' + when(item.daysLeft) + '</small>' : '–'}</td></tr>`;
+  return `<tr class="plan-row plan-row-${item.risk.toLowerCase()}"><td data-label="Ampel">${badge(item.risk)}</td><td data-label="Dokument"><b>${esc(item.documentName || 'Nicht erkannt')}</b><br><small>${esc(item.requirement)}</small>${item.hint ? `<br><small class="plan-hint">${esc(item.hint)}</small>` : ''}</td>` +
+   `<td data-label="Stand">${statusCell(item, editable)}</td><td data-label="Zieltermin">${item.dueDate ? date(item.dueDate) + '<br><small>' + when(item.daysLeft) + '</small>' : '–'}</td></tr>`;
  }
  function planHtml(plan, options = {}) {
   if (!plan || !plan.items) return '';
