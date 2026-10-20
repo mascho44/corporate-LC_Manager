@@ -3,6 +3,7 @@
 ## 0.5.1 – in Arbeit
 
 * Layout: Die Dialoge „Dokumentensatz erzeugen“, „Entwurf prüfen“, „Änderung beantragen“ und „Einreichungspaket“ haben Innenabstand und scrollen im Dialog; Felder ragen nicht mehr über den Rand (ein globaler seitlicher Feldabstand ließ Beschreibungsfelder überstehen).
+* Schrift: Der Inhalt verwendet jetzt eine kleinere Grundschrift (13,5 statt 16 Pixel), eine straffere Zeilenhöhe, dunkleren Text und geglättete Darstellung; kleine Hinweistexte sind einheitlich 12 Pixel. Das Menü bleibt unverändert. Größe und Zeilenhöhe stehen als Variablen am Anfang von `typography.css` (`--content-font-size`, `--content-line-height`).
 * Englische Oberfläche, vierter Teil: Aktenansicht (Bereichsnavigation, LC-Cockpit, letzte Aktivitäten, Dokumentenliste mit Bereichen und Aktionen, Aufgaben, Verlauf und Notizen, Fristenmonitor) ist zweisprachig.
 * Englische Oberfläche, dritter Teil: Die Befundliste der Akte (Ampel, Zähler, Filter, Befunde, Belegfelder, Entscheidungen, Tastenkürzel) ist zweisprachig; Befunde zeigen dort auch den Korrekturvorschlag.
 * Englische Oberfläche, zweiter Teil: Befunde und Korrekturvorschläge erscheinen in der englischen Oberfläche auf Englisch (neue Felder `messageEn` und `adviceEn` am Befund). Die englischen Befundtexte nennen Prüfpunkt und Ergebnis je Befundcode; die konkreten Werte stehen weiter in Bedingung und Fundstelle. Unbekannte Codes zeigen den deutschen Text.
