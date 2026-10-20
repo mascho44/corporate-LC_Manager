@@ -3,7 +3,7 @@
  * rows, tables and item lists use the small size. Loaded last, so it wins over the page-specific sizes it replaces.
  * Excluded on purpose: navigation, tabs, icon ("ghost") buttons, thumbnails and the zoom handle.
  */
-:root{--control-height:36px;--control-height-sm:30px;--control-radius:8px;--control-font:14px;--control-font-sm:13px;--control-pad-x:14px;--control-pad-x-sm:10px}
+:root{--control-height:32px;--control-height-sm:28px;--control-radius:8px;--control-font:14px;--control-font-sm:13px;--control-pad-x:14px;--control-pad-x-sm:10px}
 
 html body :is(button,a.button-link):not(.ghost):not(.pu-open):not(.pu-tab):not(.snippet-zoom):not(.app-nav button):not(.dossier-nav button){
  min-height:var(--control-height);height:auto;box-sizing:border-box;padding:6px var(--control-pad-x);font-size:var(--control-font);font-weight:600;line-height:1.25;border-radius:var(--control-radius)}

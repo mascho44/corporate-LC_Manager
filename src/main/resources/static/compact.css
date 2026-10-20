@@ -1,0 +1,12 @@
+/* Denser spacing so that more information fits on the screen: smaller card, section and row spacing, flatter tabs and fields.
+   Control heights are set in ui-system.css (--control-height). Loaded before ui-system.css. */
+html body .card{padding:11px 12px}
+html body .grid{gap:8px}
+html body .sectionhead{margin:18px 0 8px}
+html body .dossier-content{padding:16px}
+html body .dossier-nav{padding:6px 14px}
+body .dossier-nav>button{min-height:34px;padding:6px 12px}
+html body .timeline-list>*{padding-bottom:12px}
+html body .document-row{padding:9px 12px}
+html body p{margin-block:.6em}
+html body input:not([type=checkbox]):not([type=radio]),html body select{min-height:30px}
