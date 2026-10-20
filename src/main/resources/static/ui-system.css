@@ -291,3 +291,7 @@ html[data-profile="bank"] #appNavEbics{display:none!important}
 .party-correction small{color:#5c4a1a}
 .inbox-ready-dialog>p,.inbox-ready-dialog>table,.inbox-ready-dialog>.actions{margin:12px 24px}.inbox-ready-dialog>table{width:calc(100% - 48px)}.inbox-ready-dialog>.actions{display:flex;justify-content:flex-end;margin-bottom:20px}
 .auto-fact{border-color:#f5a524 !important;background:#fffaf0}.auto-fact-badge{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:99px;background:#fff1d6;color:#7a4b00;font-size:11px;font-weight:600}.auto-fact-note{color:#7a4b00}
+.kpi-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.5rem;margin:.5rem 0}
+.kpi{border:1px solid var(--line,#c9d1de);border-radius:8px;padding:.5rem .7rem;background:var(--panel,transparent)}
+.kpi b{display:block;font-size:1.15rem;overflow-wrap:anywhere}.kpi small{color:var(--muted,#6b7280)}
+.kpi-hot{border-color:#c2410c}.kpi-hot b{color:#c2410c}
