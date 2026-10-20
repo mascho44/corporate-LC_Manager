@@ -6,3 +6,4 @@
 .document-set-dialog .ds-hint,.document-set-dialog .ds-warning{color:#92400e}.document-set-dialog ul.ds-docs,.document-set-dialog ul.ds-notes{padding-left:1.2rem}
 .document-set-dialog .ds-line textarea,.document-set-dialog label>textarea{height:3.6rem;min-height:0;resize:vertical;width:100%;box-sizing:border-box}.document-set-dialog .ds-line input{width:100%;box-sizing:border-box}
 .document-set-dialog .ds-base{display:flex;flex-direction:column;gap:.35rem;margin:.5rem 0}.document-set-dialog .ds-check{display:flex;gap:.4rem;align-items:flex-start;overflow-wrap:anywhere}
+.draft-check-dialog label{display:flex;flex-direction:column;gap:.25rem;margin:.5rem 0}.draft-check-dialog .dc-ok{color:#166534}.draft-check-dialog .dc-bad,.draft-check-dialog .dc-discrepancy{color:#9a3412}.draft-check-dialog .dc-warning{color:#854d0e}.draft-check-dialog .dc-findings{padding-left:1.2rem}.draft-check-dialog li{margin:.35rem 0;overflow-wrap:anywhere}
