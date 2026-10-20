@@ -100,3 +100,4 @@
 .doc-review-explanation{margin:.25rem 0;font-style:italic;overflow-wrap:anywhere}
 .doc-review-advice,.submission-advice{margin:.25rem 0;color:var(--muted,#4b5563);overflow-wrap:anywhere}
 .doc-review-advice{border-left:3px solid #2f6db5;padding-left:.5rem}
+.amendment-impact ul{margin:.4rem 0;padding-left:1.1rem}.amendment-impact li{margin:.3rem 0;overflow-wrap:anywhere}.impact-action{color:#9a3412}.impact-warning{color:#854d0e}
