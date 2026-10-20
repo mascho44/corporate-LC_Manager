@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Englische Oberfläche, zweiter Teil: Befunde und Korrekturvorschläge erscheinen in der englischen Oberfläche auf Englisch (neue Felder `messageEn` und `adviceEn` am Befund). Die englischen Befundtexte nennen Prüfpunkt und Ergebnis je Befundcode; die konkreten Werte stehen weiter in Bedingung und Fundstelle. Unbekannte Codes zeigen den deutschen Text.
 * Englische Oberfläche, erster Teil: Der Corporate-Arbeitsablauf ist zweisprachig (Dokumentensatz, Einreichungspaket, Entwurf prüfen, Änderung beantragen, Akte kopieren, Kennzahlen, Einreichungskarte und Rolle in der Akte). Befund- und Fehlertexte vom Server bleiben vorerst deutsch.
 * Dokumentensatz korrigiert neu erzeugen: Jeder erzeugte Satz speichert seine Eingabe. Im Dialog „Dokumentensatz erzeugen“ lässt sich ein früherer Satz als Ausgangsbasis laden, korrigieren und neu erzeugen; wahlweise werden die alten Dokumente dieses Satzes dabei ersetzt (Recht „Dokumente löschen“, im Audit-Protokoll vermerkt). Neue Schnittstelle `GET /api/lcs/{id}/document-set/previous`, Feld `replaceSetId`.
 * Entwurf prüfen: Entwürfe Dritter (Konnossement, Luftfrachtbrief, Versicherung, Ursprungszeugnis und andere) lassen sich vor der Ausstellung des Originals gegen das Akkreditiv und die vorhandenen Dokumente prüfen, mit Korrekturvorschlägen. Der Entwurf wird nicht gespeichert, nur die Prüfung im Audit-Protokoll vermerkt. Schnittstelle `POST /api/lcs/{id}/draft-check` (Recht „Dokumente hochladen“).

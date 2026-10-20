@@ -3,6 +3,7 @@
 (() => {
  const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
  const tr = (key, de, values = {}) => { const i = globalThis.LcI18n, s = i?.t ? i.t(key, values) : null; return s && s !== key ? s : String(de).replace(/\{(\w+)\}/g, (_, n) => String(values[n] ?? `{${n}}`)); };
+ const english = () => globalThis.LcI18n?.language?.() === 'en';
  const TYPES = [['BILL_OF_LADING', 'Konnossement (Bill of Lading)'], ['AIR_WAYBILL', 'Luftfrachtbrief (AWB)'], ['ROAD_CONSIGNMENT_NOTE', 'CMR-Frachtbrief'],
   ['SEA_WAYBILL', 'Seefrachtbrief'], ['MULTIMODAL_TRANSPORT_DOCUMENT', 'Multimodales Transportdokument'], ['INSURANCE_CERTIFICATE', 'Versicherungszertifikat'],
   ['CERTIFICATE_OF_ORIGIN', 'Ursprungszeugnis'], ['INSPECTION_CERTIFICATE', 'Inspektionszertifikat'], ['QUALITY_CERTIFICATE', 'Qualitätszertifikat'],
@@ -17,8 +18,8 @@
   const head = result.discrepancies
    ? `<p class="dc-bad"><b>✗ ${result.discrepancies === 1 ? tr('dc.oneDiscrepancy', '1 Abweichung') : tr('dc.discrepancies', '{n} Abweichungen', { n: result.discrepancies })}</b> – ${tr('dc.fixBefore', 'vor der Ausstellung des Originals korrigieren lassen.')}</p>`
    : `<p class="dc-ok"><b>✓ ${tr('dc.clean', 'Keine Abweichung gefunden')}</b>${result.warnings ? ' · ' + (result.warnings === 1 ? tr('dc.checkWarning', '1 Hinweis bitte prüfen') : tr('dc.checkWarnings', '{n} Hinweise bitte prüfen', { n: result.warnings })) : ''}.</p>`;
-  const items = (result.findings || []).map(f => `<li class="dc-${esc(String(f.severity).toLowerCase())}"><b>${f.severity === 'DISCREPANCY' ? tr('dc.discrepancy', 'Abweichung') : tr('dc.warning', 'Hinweis')}:</b> ${esc(f.message)}` +
-   (f.advice ? `<br><small>${tr('corp.fix', 'So beheben')}: ${esc(f.advice)}</small>` : '') + (f.lcCondition ? `<br><small>${tr('dc.credit', 'Akkreditiv')}: ${esc(f.lcCondition)}</small>` : '') + '</li>').join('');
+  const items = (result.findings || []).map(f => `<li class="dc-${esc(String(f.severity).toLowerCase())}"><b>${f.severity === 'DISCREPANCY' ? tr('dc.discrepancy', 'Abweichung') : tr('dc.warning', 'Hinweis')}:</b> ${esc(english() && f.messageEn ? f.messageEn : f.message)}` +
+   (f.advice ? `<br><small>${tr('corp.fix', 'So beheben')}: ${esc(english() && f.adviceEn ? f.adviceEn : f.advice)}</small>` : '') + (f.lcCondition ? `<br><small>${tr('dc.credit', 'Akkreditiv')}: ${esc(f.lcCondition)}</small>` : '') + '</li>').join('');
   return head + read + (items ? `<ul class="dc-findings">${items}</ul>` : '') +
    `<p class="dc-note"><small>${tr('dc.note', 'Automatische Vorprüfung des Entwurfs gegen das Akkreditiv und die vorhandenen Dokumente. Der Entwurf wurde nicht gespeichert.')}</small></p>`;
  }

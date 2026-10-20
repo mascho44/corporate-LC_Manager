@@ -24,7 +24,7 @@ public class DraftCheckService {
     static final String PREFIX = "Entwurf: ";
     private static final long MAX_SIZE = 10L * 1024 * 1024;
 
-    public record Finding(String severity, String code, String message, String advice, String lcCondition, String evidence) {}
+    public record Finding(String severity, String code, String message, String advice, String lcCondition, String evidence, String messageEn, String adviceEn) {}
     public record Result(String filename, DocumentType type, boolean textFound, String extractedReference, LocalDate extractedDate, BigDecimal extractedAmount, String extractedCurrency,
                          long discrepancies, long warnings, List<Finding> findings) {}
 
@@ -58,7 +58,7 @@ public class DraftCheckService {
         var findings = new ArrayList<Finding>();
         for (CheckResult result : checks.simulate(lcId, lc, set).results())
             if (name.equals(result.documentName()) && result.severity() != CheckResult.Severity.OK)
-                findings.add(new Finding(result.severity().name(), result.code(), result.message(), result.advice(), result.lcCondition(), result.documentEvidence()));
+                findings.add(new Finding(result.severity().name(), result.code(), result.message(), result.advice(), result.lcCondition(), result.documentEvidence(), result.messageEn(), result.adviceEn()));
         findings.sort((a, b) -> a.severity().equals(b.severity()) ? 0 : "DISCREPANCY".equals(a.severity()) ? -1 : 1);
         String text = draft.getExtractedText();
         return new Result(name, type, text != null && !text.isBlank(), draft.getExtractedReference(), draft.getDocumentDate(), draft.getExtractedAmount(), draft.getExtractedCurrency(),

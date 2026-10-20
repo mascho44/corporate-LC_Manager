@@ -22,6 +22,11 @@ public record CheckResult(Severity severity, String code, String message,
     /** What to do about an open finding, see {@link de.ostms.lc.check.service.CorrectionAdvice}. */
     @com.fasterxml.jackson.annotation.JsonProperty("advice")
     public String advice(){return de.ostms.lc.check.service.CorrectionAdvice.forFinding(code,severity);}
+    /** English wording of the finding and of its advice, for the English interface (null when there is none). */
+    @com.fasterxml.jackson.annotation.JsonProperty("messageEn")
+    public String messageEn(){return de.ostms.lc.check.service.FindingText.english(code,severity);}
+    @com.fasterxml.jackson.annotation.JsonProperty("adviceEn")
+    public String adviceEn(){return de.ostms.lc.check.service.CorrectionAdvice.forFindingEnglish(code,severity);}
     @com.fasterxml.jackson.annotation.JsonProperty("ruleCatalogVersion")
     public String ruleCatalogVersion(){return de.ostms.lc.check.service.RuleCatalog.VERSION;}
 }

@@ -34,3 +34,13 @@ test('the submission card and the key figures read in English when English is ch
  assert.equal(ds.limitMessage(null, null, 'EUR').text, 'Total: line amounts are still missing.');
  assert.match(load('draft-check', 'en').LcDraftCheck.resultHtml({ textFound: true, discrepancies: 0, warnings: 2, findings: [] }), /No discrepancy found<\/b> · 2 notes to check/);
 });
+
+test('findings from the server show their English wording in English and the German one otherwise', () => {
+ const finding = { severity: 'DISCREPANCY', code: 'MISSING_DOCUMENT', message: 'Packliste fehlt', messageEn: 'A document required by the credit has not been presented.', advice: 'hochladen', adviceEn: 'upload it' };
+ const en = load('corporate-profile', 'en').LcCorporateProfile, de = load('corporate-profile', 'de').LcCorporateProfile;
+ assert.match(en.checkHtml(en.submissionCheck({ results: [finding] }), false), /has not been presented[\s\S]*How to fix: upload it/);
+ assert.match(de.checkHtml(de.submissionCheck({ results: [finding] }), false), /Packliste fehlt[\s\S]*So beheben: hochladen/);
+ assert.match(en.checkHtml(en.submissionCheck({ results: [{ ...finding, messageEn: null, adviceEn: null }] }), false), /Packliste fehlt[\s\S]*How to fix: hochladen/);
+ const dc = load('draft-check', 'en').LcDraftCheck;
+ assert.match(dc.resultHtml({ textFound: true, discrepancies: 1, warnings: 0, findings: [finding] }), /has not been presented[\s\S]*How to fix: upload it/);
+});
