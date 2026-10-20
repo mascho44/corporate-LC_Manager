@@ -46,6 +46,48 @@ public class LetterOfCreditService {
         return repo.save(guarantee);
     }
 
+    /**
+     * A new file with the terms of an existing one (same parties, banks, goods, required documents and conditions) under a new reference.
+     * Dates, status, assignment, documents, review decisions and rule facts are not copied: they belong to the individual credit.
+     */
+    @Transactional
+    public LetterOfCredit copyOf(UUID sourceId, String newReference) {
+        String reference = newReference == null ? "" : newReference.trim();
+        if (reference.isEmpty() || reference.length() > 100) throw new IllegalArgumentException("Bitte eine Referenz für die neue Akte angeben (höchstens 100 Zeichen).");
+        if (repo.existsByReference(reference)) throw new IllegalArgumentException("Eine Akte mit dieser Referenz existiert bereits: " + reference);
+        LetterOfCredit source = one(sourceId);
+        LetterOfCredit copy = new LetterOfCredit();
+        copy.setReference(reference);
+        copy.setInstrumentType(source.getInstrumentType()); copy.setPartyRole(source.getPartyRole()); copy.setCompanyId(source.getCompanyId()); copy.setTemplateCompany(source.getTemplateCompany());
+        copy.setCustomerId(source.getCustomerId());
+        copy.setApplicant(source.getApplicant()); copy.setBeneficiary(source.getBeneficiary()); copy.setIssuingBank(source.getIssuingBank()); copy.setAdvisingBank(source.getAdvisingBank());
+        copy.setAmount(source.getAmount()); copy.setCurrency(source.getCurrency()); copy.setExpiryPlace(source.getExpiryPlace());
+        copy.setSequenceOfTotal(source.getSequenceOfTotal()); copy.setFormOfCredit(source.getFormOfCredit()); copy.setAvailableWith(source.getAvailableWith()); copy.setDraweeBank(source.getDraweeBank());
+        copy.setDraftsAt(source.getDraftsAt()); copy.setMixedPaymentDetails(source.getMixedPaymentDetails()); copy.setDeferredPaymentDetails(source.getDeferredPaymentDetails());
+        copy.setConfirmationInstructions(source.getConfirmationInstructions()); copy.setReimbursingBank(source.getReimbursingBank()); copy.setConfirmationParty(source.getConfirmationParty());
+        copy.setCharges(source.getCharges()); copy.setBankInstructions(source.getBankInstructions());
+        copy.setRequiredDocuments(new java.util.ArrayList<>(source.getRequiredDocuments() == null ? List.of() : source.getRequiredDocuments()));
+        copy.setAdditionalFields(new java.util.LinkedHashMap<>(source.getAdditionalFields() == null ? java.util.Map.of() : source.getAdditionalFields()));
+        if (source.getConditions() != null) copy.setConditions(new java.util.EnumMap<>(source.getConditions().isEmpty() ? new java.util.EnumMap<>(de.ostms.lc.lc.domain.LcCondition.class) : source.getConditions()));
+        copy.setRawMessage(withoutDates(source.getRawMessage(), source.getReference(), reference));
+        return repo.save(copy);
+    }
+
+    /** The SWIFT text of the source for the copy: new :20: and without the date and shipment period lines, which differ per credit. */
+    static String withoutDates(String raw, String oldReference, String newReference) {
+        if (raw == null || raw.isBlank()) return raw;
+        var text = new StringBuilder();
+        boolean skip = false;
+        for (String line : raw.split("\\R", -1)) {
+            boolean field = line.matches("^:[0-9]{2}[A-Z]?:.*");
+            if (field) skip = line.startsWith(":31C:") || line.startsWith(":31D:") || line.startsWith(":44C:") || line.startsWith(":44D:");
+            if (skip) continue;
+            if (line.startsWith(":20:")) line = ":20:" + newReference;
+            text.append(line).append('\n');
+        }
+        return text.toString().stripTrailing();
+    }
+
     public List<LetterOfCredit> all() {
         return repo.findAll();
     }
