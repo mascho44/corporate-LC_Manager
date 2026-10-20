@@ -19,7 +19,7 @@ test('review submission sends the displayed finding fingerprint',async()=>{
 });
 test('review actions carry fingerprints, respect rights and do not confirm stale notices',()=>{
   const start=source.indexOf('function renderReview('),end=source.indexOf('\n',start);
-  const context=vm.createContext({can:()=>true,esc:value=>String(value||''),reviewGate:()=>'',findingShortcutHelp:()=>'',label:value=>value,renderFindingEvidence:()=>'',renderRuleMetadata:()=>''});
+  const context=vm.createContext({can:()=>true,esc:value=>String(value||''),reviewGate:()=>'',findingShortcutHelp:()=>'',label:value=>value,renderFindingEvidence:()=>'',renderRuleMetadata:()=>'',tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(_,n)=>String(values[n]??'')),findingMessage:r=>r.message});
   vm.runInContext(source.slice(start,end),context);
   const finding={severity:'WARNING',code:'DATE_NOT_CAPTURED',message:'Datum prüfen',reviewFingerprint:'a'.repeat(64)};
   const review={discrepancies:0,warnings:2,passed:0,results:[finding,{...finding,code:'REVIEW_STALE'}]};
