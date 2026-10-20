@@ -33,5 +33,5 @@ test('without new proposals the user is told so and nothing is posted',async()=>
 });
 test('the dossier review offers the button only to users who may edit documents',()=>{
  const app=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/app.js'),'utf8');
- assert.match(app,/can\('DOCUMENT_UPLOAD'\)\?' <button type="button" class="secondary" data-apply-suggestions>Erkannte Prüfdaten übernehmen<\/button>':''/);
+ assert.match(app,/can\('DOCUMENT_UPLOAD'\)\?` <button type="button" class="secondary" data-apply-suggestions>\$\{tx\('rv\.applySuggestions','Erkannte Prüfdaten übernehmen'\)\}<\/button>`:''/);
 });

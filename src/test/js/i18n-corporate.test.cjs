@@ -1,13 +1,13 @@
 const test = require('node:test'), assert = require('node:assert/strict'), fs = require('node:fs'), vm = require('node:vm');
 const dir = 'src/main/resources/static/';
-const FILES = ['corporate-profile', 'kpis', 'akte-copy', 'draft-check', 'amendment-request', 'document-set', 'submission-package'];
+const FILES = ['app', 'corporate-profile', 'kpis', 'akte-copy', 'draft-check', 'amendment-request', 'document-set', 'submission-package'];
 const en = JSON.parse(fs.readFileSync(dir + 'language-en.json', 'utf8')), de = JSON.parse(fs.readFileSync(dir + 'language-de.json', 'utf8'));
 const placeholders = text => [...String(text).matchAll(/\{(\w+)\}/g)].map(m => m[1]).sort().join(',');
 
 test('every text of the corporate workflow has German and English with the same placeholders', () => {
  for (const file of FILES) {
   const source = fs.readFileSync(dir + file + '.js', 'utf8');
-  for (const [, key, german] of source.matchAll(/tr\('([\w.]+)',\s*'((?:[^'\\]|\\.)*)'/g)) {
+  for (const [, key, german] of source.matchAll(/(?:tr|tx)\('([\w.]+)',\s*'((?:[^'\\]|\\.)*)'/g)) {
    assert.ok(key in en, `${file}: ${key} fehlt im englischen Paket`);
    assert.ok(key in de, `${file}: ${key} fehlt im deutschen Paket`);
    assert.equal(placeholders(en[key]), placeholders(german), `${file}: Platzhalter von ${key}`);

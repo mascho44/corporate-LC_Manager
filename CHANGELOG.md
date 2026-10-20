@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Englische Oberfläche, dritter Teil: Die Befundliste der Akte (Ampel, Zähler, Filter, Befunde, Belegfelder, Entscheidungen, Tastenkürzel) ist zweisprachig; Befunde zeigen dort auch den Korrekturvorschlag.
 * Englische Oberfläche, zweiter Teil: Befunde und Korrekturvorschläge erscheinen in der englischen Oberfläche auf Englisch (neue Felder `messageEn` und `adviceEn` am Befund). Die englischen Befundtexte nennen Prüfpunkt und Ergebnis je Befundcode; die konkreten Werte stehen weiter in Bedingung und Fundstelle. Unbekannte Codes zeigen den deutschen Text.
 * Englische Oberfläche, erster Teil: Der Corporate-Arbeitsablauf ist zweisprachig (Dokumentensatz, Einreichungspaket, Entwurf prüfen, Änderung beantragen, Akte kopieren, Kennzahlen, Einreichungskarte und Rolle in der Akte). Befund- und Fehlertexte vom Server bleiben vorerst deutsch.
 * Dokumentensatz korrigiert neu erzeugen: Jeder erzeugte Satz speichert seine Eingabe. Im Dialog „Dokumentensatz erzeugen“ lässt sich ein früherer Satz als Ausgangsbasis laden, korrigieren und neu erzeugen; wahlweise werden die alten Dokumente dieses Satzes dabei ersetzt (Recht „Dokumente löschen“, im Audit-Protokoll vermerkt). Neue Schnittstelle `GET /api/lcs/{id}/document-set/previous`, Feld `replaceSetId`.
