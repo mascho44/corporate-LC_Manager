@@ -11,13 +11,13 @@
   const blocking = results.filter(r => r.severity === 'DISCREPANCY' && open(r));
   const warnings = results.filter(r => r.severity === 'WARNING' && open(r));
   const missing = blocking.filter(r => r.code === 'MISSING_DOCUMENT').length;
-  return { ready: blocking.length === 0, blocking: blocking.map(r => r.message), missing, warnings: warnings.length, total: results.length };
+  return { ready: blocking.length === 0, blocking: blocking.map(r => r.message), advice: blocking.map(r => r.advice || null), missing, warnings: warnings.length, total: results.length };
  }
  function checkHtml(check, showAll) {
   const head = check.ready
    ? '<b class="submission-ok">✓ Einreichungsbereit</b><p>Die einfache Prüfung hat keine offene Abweichung gefunden.</p>'
    : `<b class="submission-no">✗ Noch nicht einreichungsbereit</b><p>${check.blocking.length} Punkt${check.blocking.length === 1 ? ' muss' : 'e müssen'} vorher geklärt werden${check.missing ? ` (davon ${check.missing} fehlende${check.missing === 1 ? 's' : ''} Dokument${check.missing === 1 ? '' : 'e'})` : ''}:</p>` +
-     `<ul>${check.blocking.slice(0, MAX_LISTED).map(m => `<li>${esc(m)}</li>`).join('')}${check.blocking.length > MAX_LISTED ? `<li>… und ${check.blocking.length - MAX_LISTED} weitere (unter „Alle Befunde")</li>` : ''}</ul>`;
+     `<ul>${check.blocking.slice(0, MAX_LISTED).map((m, i) => `<li>${esc(m)}${check.advice?.[i] ? `<br><small class="submission-advice">So beheben: ${esc(check.advice[i])}</small>` : ''}</li>`).join('')}${check.blocking.length > MAX_LISTED ? `<li>… und ${check.blocking.length - MAX_LISTED} weitere (unter „Alle Befunde")</li>` : ''}</ul>`;
   const warn = check.warnings ? `<p>${check.warnings} Hinweis${check.warnings === 1 ? '' : 'e'} zur Kenntnis, kein Hindernis.</p>` : '';
   return `${head}${warn}<p class="submission-note"><small>Oberflächliche Vorprüfung auf offene Abweichungen. Die endgültige Prüfung liegt bei der Bank.</small></p>` +
    `<button type="button" class="secondary" data-submission-all aria-pressed="${showAll}">${showAll ? 'Befundliste ausblenden' : `Alle Befunde anzeigen (${check.total})`}</button>`;

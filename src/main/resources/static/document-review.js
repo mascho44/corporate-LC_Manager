@@ -241,6 +241,7 @@
     const badge = document.createElement('b'); badge.className = 'doc-review-badge ' + String(finding.severity || '').toLowerCase(); badge.textContent = SEVERITY[finding.severity] || finding.severity;
     head.append(badge, document.createTextNode(' ' + (finding.message || ''))); card.append(head);
     if (finding.lcCondition) { const c = document.createElement('small'); c.textContent = 'LC-Bedingung: ' + finding.lcCondition; card.append(c); }
+    if (finding.advice) { const a = document.createElement('p'); a.className = 'doc-review-advice'; a.textContent = 'So beheben: ' + finding.advice; card.append(a); }
     if (finding.explanation) { const e = document.createElement('p'); e.className = 'doc-review-explanation'; e.textContent = 'Rechnung: ' + finding.explanation; card.append(e); }
     if (finding.documentEvidence) { const q = document.createElement('blockquote'); q.textContent = globalThis.readableEvidence ? readableEvidence(finding.documentEvidence) : finding.documentEvidence; card.append(q); }
     if (isOpen(finding)) {

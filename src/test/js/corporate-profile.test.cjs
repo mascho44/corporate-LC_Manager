@@ -22,3 +22,11 @@ test('card text: verdict, listed points escaped, warnings, note and the toggle',
  assert.match(html, /Betrag &lt;b&gt; weicht ab/); assert.match(html, /1 Hinweis zur Kenntnis/); assert.match(html, /Alle Befunde anzeigen \(5\)/); assert.match(html, /Die endgültige Prüfung liegt bei der Bank/);
  assert.match(api.checkHtml(api.submissionCheck({ results: [] }), true), /✓ Einreichungsbereit[\s\S]*Befundliste ausblenden/);
 });
+
+test('the submission card shows how to fix each blocking point', () => {
+ const check = plain(api.submissionCheck({ results: [{ severity: 'DISCREPANCY', code: 'MISSING_DOCUMENT', message: 'Fehlt', advice: 'Dokument hochladen & <fertig>' }, { severity: 'DISCREPANCY', code: 'X', message: 'Ohne Rat' }] }));
+ assert.deepStrictEqual(check.advice, ['Dokument hochladen & <fertig>', null]);
+ const html = api.checkHtml(check, false);
+ assert.match(html, /So beheben: Dokument hochladen &amp; &lt;fertig&gt;/);
+ assert.equal((html.match(/So beheben/g) || []).length, 1);
+});
