@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Fristen-Erinnerungen: Die Kalenderdatei (.ics) enthält jetzt Erinnerungen (Ablauf 7 Tage und 1 Tag vorher, Vorlagefrist 3 Tage und 1 Tag, spätester Versand 7 und 2 Tage, Beschaffung und Fälligkeit 3 Tage, Aufgaben und Wiedervorlage am Morgen). Neu: Fristen einer einzelnen Akte als Kalenderdatei im Fristenmonitor der Akte (`GET /api/lcs/{id}/calendar.ics`).
 * MT707-Änderungen: Bei einer offenen Änderung zeigt die Akte jetzt die Auswirkung auf die vorhandenen Dokumente („Auswirkung auf die Akte“): neuer Betrag gegen die Rechnungen, neuer Ablauf und letzter Verladetag gegen die Dokumentdaten, geänderte Warenbeschreibung und Dokumentenanforderungen mit den betroffenen Dokumenten. Neue Schnittstelle `GET /api/lcs/{id}/amendments/{id}/impact`.
 * Korrekturvorschläge: Jede offene Abweichung und jeder Hinweis nennt jetzt den konkreten Schritt („So beheben“), zum Beispiel Rechnung auf den verfügbaren Betrag begrenzen, Akkreditivnummer ergänzen, Dokument unterschreiben oder beim Käufer eine Änderung beantragen. Sichtbar in der Einreichungskarte und in der dokumentweisen Prüfung; neues Feld `advice` am Befund.
 * Wahlweise PDF statt Word: Dokumentensatz (Rechnung, Packliste, Zertifikate) und Einreichungs-Begleitschreiben lassen sich im Dialog als PDF erzeugen, im selben professionellen Layout wie die Word-Vorlagen (Briefkopf mit Logo, Positionstabelle mit wiederholter Kopfzeile, Summe, Erklärung, Unterschrift, Fußzeile mit Seitenzahl); auch „PDF erstellen“ einzelner Dokumente nutzt das neue Layout.

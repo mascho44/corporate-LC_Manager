@@ -18,6 +18,12 @@ public class LcCalendarController {
         audit.record(authentication,"CALENDAR_EXPORTED","CALENDAR",null,"Umfang: "+scope);
         return ResponseEntity.ok().contentType(MediaType.parseMediaType("text/calendar;charset=UTF-8")).header(HttpHeaders.CONTENT_DISPOSITION,"attachment; filename=LC-Fristen.ics").contentLength(content.length).body(content);
     }
+    @GetMapping(value="/api/lcs/{lcId}/calendar.ics",produces="text/calendar")
+    public ResponseEntity<byte[]> exportLc(@PathVariable java.util.UUID lcId, Authentication authentication){
+        byte[] content=calendar.export("all",authentication.getName(),lcId);
+        audit.record(authentication,"CALENDAR_EXPORTED","LETTER_OF_CREDIT",lcId,"Fristen einer Akte");
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType("text/calendar;charset=UTF-8")).header(HttpHeaders.CONTENT_DISPOSITION,"attachment; filename=LC-Akte-Fristen.ics").contentLength(content.length).body(content);
+    }
     @GetMapping("/api/calendar/events")
     public java.util.List<LcCalendarService.CalendarEvent> events(@RequestParam(defaultValue="all") String scope,@RequestParam java.time.LocalDate from,@RequestParam java.time.LocalDate to,Authentication authentication){
         if(!scope.equals("all")&&!scope.equals("mine")&&!scope.equals("unassigned"))throw new IllegalArgumentException("Unbekannter Kalenderumfang.");

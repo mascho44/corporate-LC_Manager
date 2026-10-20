@@ -53,11 +53,26 @@ public class LcCalendarService {
         return events(scope, username).stream().filter(e -> !e.date().isBefore(from) && !e.date().isAfter(to)).sorted(Comparator.comparing(CalendarEvent::date)).toList();
     }
 
-    public byte[] export(String scope, String username) {
+    public byte[] export(String scope, String username) { return export(scope, username, null); }
+
+    /** The calendar file with a reminder per event; with an LC id only that file's dates. */
+    public byte[] export(String scope, String username, UUID lcId) {
         StringBuilder out = new StringBuilder("BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//OSTMS//Corporate LC Manager//DE\r\nCALSCALE:GREGORIAN\r\nMETHOD:PUBLISH\r\nX-WR-CALNAME:Corporate LC Manager\r\n");
-        events(scope, username).forEach(e -> event(out, e.uid(), e.date(), ("task".equals(e.kind()) ? "LC-Aufgabe – " : "LC "+e.reference()+" – ")+e.title(), e.description()));
+        events(scope, username).stream().filter(e -> lcId == null || lcId.equals(e.lcId())).forEach(e ->
+            event(out, e.uid(), e.date(), ("task".equals(e.kind()) ? "LC-Aufgabe – " : "LC "+e.reference()+" – ")+e.title(), e.description(), e.kind()));
         out.append("END:VCALENDAR\r\n");
         return out.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    /** When to remind before an all-day event, as iCalendar durations: early enough to act, once more shortly before. */
+    static List<String> reminders(String kind) {
+        return switch (kind == null ? "" : kind) {
+            case "expiry" -> List.of("-P7D", "-P1D");
+            case "presentation" -> List.of("-P3D", "-P1D");
+            case "shipment" -> List.of("-P7D", "-P2D");
+            case "maturity", "procurement" -> List.of("-P3D");
+            default -> List.of("PT9H");
+        };
     }
 
     private void add(List<CalendarEvent> out, LetterOfCredit lc, String kind, String uid, LocalDate date, String title, String description) {
@@ -67,10 +82,12 @@ public class LcCalendarService {
     private boolean active(LetterOfCredit lc) { return lc.getStatus()!=LetterOfCreditStatus.CLOSED && lc.getStatus()!=LetterOfCreditStatus.EXPIRED; }
     private boolean visible(String scope, String username, String assignedTo) { return "mine".equals(scope) ? assignedTo!=null && assignedTo.equalsIgnoreCase(username) : !"unassigned".equals(scope) || assignedTo==null; }
     private String party(LetterOfCredit lc) { return "Applicant: "+Objects.toString(lc.getApplicant(), "–")+" | Beneficiary: "+Objects.toString(lc.getBeneficiary(), "–"); }
-    private void event(StringBuilder out, Object uid, LocalDate date, String summary, String description) {
+    private void event(StringBuilder out, Object uid, LocalDate date, String summary, String description, String kind) {
         if (date==null) return;
         String stamp=DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'").withZone(ZoneOffset.UTC).format(Instant.now()), day=date.format(DateTimeFormatter.BASIC_ISO_DATE), end=date.plusDays(1).format(DateTimeFormatter.BASIC_ISO_DATE);
-        out.append("BEGIN:VEVENT\r\nUID:").append(uid).append("@lc.example.com\r\nDTSTAMP:").append(stamp).append("\r\nDTSTART;VALUE=DATE:").append(day).append("\r\nDTEND;VALUE=DATE:").append(end).append("\r\nSUMMARY:").append(escape(summary)).append("\r\nDESCRIPTION:").append(escape(description)).append("\r\nEND:VEVENT\r\n");
+        out.append("BEGIN:VEVENT\r\nUID:").append(uid).append("@lc.example.com\r\nDTSTAMP:").append(stamp).append("\r\nDTSTART;VALUE=DATE:").append(day).append("\r\nDTEND;VALUE=DATE:").append(end).append("\r\nSUMMARY:").append(escape(summary)).append("\r\nDESCRIPTION:").append(escape(description)).append("\r\n");
+        for (String trigger : reminders(kind)) out.append("BEGIN:VALARM\r\nACTION:DISPLAY\r\nDESCRIPTION:").append(escape(summary)).append("\r\nTRIGGER:").append(trigger).append("\r\nEND:VALARM\r\n");
+        out.append("END:VEVENT\r\n");
     }
     private String escape(String value) { return value.replace("\\","\\\\").replace(";","\\;").replace(",","\\,").replace("\r","").replace("\n","\\n"); }
 }
