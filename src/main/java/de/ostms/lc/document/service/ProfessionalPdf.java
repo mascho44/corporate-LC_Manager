@@ -89,6 +89,36 @@ final class ProfessionalPdf {
         }
     }
 
+    /** Request to amend a credit: letterhead, recipient, subject, a table of current and requested terms, reason and signature. */
+    static byte[] amendmentRequest(Map<String, Object> data, List<AmendmentRequestService.Change> changes) throws IOException {
+        try (PdfComposer pdf = new PdfComposer()) {
+            letterhead(pdf, data);
+            float top = pdf.y;
+            pdf.textAt(LEFT, top + 8, BOLD, 7.5f, GREY, "TO");
+            pdf.y = top + 13;
+            pdf.paragraph(REGULAR, 10.5f, INK, s(data, "recipient"), LEFT, 280, 0);
+            float after = pdf.y;
+            pdf.textRight(LEFT + WIDTH, top + 10, BOLD, 10, NAVY, s(data, "date"));
+            pdf.textRight(LEFT + WIDTH, top + 24, REGULAR, 9, INK, "Our reference: " + s(data, "ourReference"));
+            pdf.textRight(LEFT + WIDTH, top + 36, REGULAR, 9, INK, "L/C no.: " + s(data, "lcReference"));
+            pdf.y = Math.max(after, top + 40) + 20;
+            pdf.paragraph(BOLD, 12.5f, NAVY, "Request for amendment of Documentary Credit No. " + s(data, "lcReference"), 8);
+            pdf.paragraph(REGULAR, 10.5f, INK, "Dear Sirs,", 6);
+            pdf.paragraph(REGULAR, 10.5f, INK, s(data, "intro"), 10);
+            heading(pdf, "REQUESTED AMENDMENTS");
+            List<String[]> rows = new ArrayList<>();
+            for (var c : changes) rows.add(new String[]{c.field() + (c.tag().isEmpty() ? "" : " (" + c.tag() + ")"), c.current(), c.requested()});
+            pdf.table(new float[]{4.2f, 5.5f, 7.8f}, new String[]{"Term", "Currently", "Amended to"}, rows, null, null);
+            pdf.y += 12;
+            if (!s(data, "reason").isBlank()) { heading(pdf, "REASON"); pdf.paragraph(REGULAR, 10, INK, s(data, "reason"), 8); }
+            pdf.paragraph(REGULAR, 10.5f, INK, "All other terms and conditions of the credit remain unchanged. Please confirm the amendment at your earliest convenience.", 8);
+            pdf.paragraph(REGULAR, 10.5f, INK, "Yours faithfully,", 0);
+            signature(pdf, data, s(data, "placeDate"));
+            footer(pdf, data);
+            return pdf.bytes();
+        }
+    }
+
     private static void letterhead(PdfComposer pdf, Map<String, Object> data) throws IOException {
         float top = pdf.y;
         float logo = pdf.image((byte[]) data.get("companyLogoBytes"), LEFT + WIDTH - 130, top, 130, 50, true);

@@ -73,6 +73,7 @@ import de.ostms.lc.user.service.AppUserDetailsService; import jakarta.servlet.ht
    .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/lcs/*/rule-facts/waived/*").hasAuthority("PERM_LC_EDIT")
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/lcs/*/copy").hasAuthority("PERM_LC_EDIT")
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/lcs/*/draft-check").hasAuthority("PERM_DOCUMENT_UPLOAD")
+   .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/lcs/*/amendment-request","/api/lcs/*/amendment-request/text").hasAuthority("PERM_DOCUMENT_GENERATE")
    .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/lcs/*/rule-requirements/*").hasAuthority("PERM_LC_EDIT")
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/lcs/*/rule-requirements/suggestions/apply").hasAuthority("PERM_LC_EDIT")
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/lcs/*/documents/*/re-recognition","/api/lcs/*/documents/*/re-recognition/apply").hasAuthority("PERM_DOCUMENT_UPLOAD")
