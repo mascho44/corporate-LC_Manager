@@ -41,6 +41,11 @@
   const today = new Date().toISOString().slice(0, 10), content = html(kpis(data, today));
   if (strip.dataset.sig !== content) { strip.dataset.sig = content; strip.innerHTML = content; }
  }
+ // The buttons of the corporate workflow carry their text from the moment they were added; on a language change they are rebuilt by their observers.
+ document.addEventListener('lc-language-changed', () => {
+  document.querySelectorAll('#documentSetBtn,#submissionPackageBtn,#draftCheckBtn,#amendmentRequestBtn,#copyLcBtn').forEach(button => button.remove());
+  try { render(); } catch (ignored) { }
+ });
  let scheduled = false;
  new MutationObserver(() => { if (!scheduled) { scheduled = true; setTimeout(() => { scheduled = false; try { render(); } catch (ignored) { } }, 120); } }).observe(document.body, { childList: true, subtree: true });
  render();
