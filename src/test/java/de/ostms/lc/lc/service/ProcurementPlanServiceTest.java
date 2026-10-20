@@ -56,4 +56,13 @@ class ProcurementPlanServiceTest {
         assertThat(planned).contains(DocumentType.CERTIFICATE_OF_ORIGIN, DocumentType.PACKING_LIST)
                 .doesNotContain(DocumentType.BILL_OF_LADING, DocumentType.AIR_WAYBILL, DocumentType.SWIFT_MT700);
     }
+
+    @Test void theHintAlsoComesInEnglish() {
+        var lead = new ProcurementPlanService.Item("CERTIFICATE OF ORIGIN", de.ostms.lc.document.domain.DocumentType.CERTIFICATE_OF_ORIGIN, "Certificate of Origin", false, java.time.LocalDate.of(2026, 10, 20), 7, 0,
+            ProcurementPlanService.Risk.CRITICAL, "Vorlauf 7 Arbeitstage vor dem spätesten Versanddatum.", de.ostms.lc.lc.domain.ProcurementItemStatus.Status.NOT_STARTED, null);
+        var transport = new ProcurementPlanService.Item("BILL OF LADING", de.ostms.lc.document.domain.DocumentType.BILL_OF_LADING, "Bill of Lading", false, java.time.LocalDate.of(2026, 10, 29), 0, 9,
+            ProcurementPlanService.Risk.SOON, "Ware muss bis zum spätesten Versanddatum verladen sein; dieses Dokument liegt dann vor.", de.ostms.lc.lc.domain.ProcurementItemStatus.Status.NOT_STARTED, null);
+        org.assertj.core.api.Assertions.assertThat(lead.hintEn()).isEqualTo("Lead time 7 working days before the latest shipment date.");
+        org.assertj.core.api.Assertions.assertThat(transport.hintEn()).startsWith("Goods must be shipped by the latest shipment date");
+    }
 }

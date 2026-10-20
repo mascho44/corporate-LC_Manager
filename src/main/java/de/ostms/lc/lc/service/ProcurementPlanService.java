@@ -22,7 +22,15 @@ import java.util.*;
 @Service
 public class ProcurementPlanService {
     public enum Risk { DONE, OVERDUE, CRITICAL, SOON, OK, UNKNOWN }
-    public record Item(String requirement, DocumentType documentType, String documentName, boolean present, LocalDate dueDate, int leadWorkingDays, Integer daysLeft, Risk risk, String hint, ProcurementItemStatus.Status status, String note) {}
+    public record Item(String requirement, DocumentType documentType, String documentName, boolean present, LocalDate dueDate, int leadWorkingDays, Integer daysLeft, Risk risk, String hint, ProcurementItemStatus.Status status, String note) {
+        /** English wording of the hint for the English interface. */
+        @com.fasterxml.jackson.annotation.JsonProperty("hintEn")
+        public String hintEn() {
+            return documentType != null && isTransport(documentType)
+                ? "Goods must be shipped by the latest shipment date; this document is then available."
+                : "Lead time " + leadWorkingDays + " working days before the latest shipment date.";
+        }
+    }
     public record LeadTime(DocumentType documentType, String documentName, int workingDays, int defaultDays, boolean custom) {}
     public record Plan(LocalDate latestShipment, LocalDate expiry, Integer daysToShipment, Risk shipmentRisk, long open, long overdue, long critical, List<Item> items) {}
 

@@ -1,6 +1,6 @@
 const test = require('node:test'), assert = require('node:assert/strict'), fs = require('node:fs'), vm = require('node:vm');
 const dir = 'src/main/resources/static/';
-const FILES = ['app', 'corporate-profile', 'kpis', 'akte-copy', 'draft-check', 'amendment-request', 'document-set', 'submission-package'];
+const FILES = ['app', 'procurement-plan', 'corporate-profile', 'kpis', 'akte-copy', 'draft-check', 'amendment-request', 'document-set', 'submission-package'];
 const en = JSON.parse(fs.readFileSync(dir + 'language-en.json', 'utf8')), de = JSON.parse(fs.readFileSync(dir + 'language-de.json', 'utf8'));
 const placeholders = text => [...String(text).matchAll(/\{(\w+)\}/g)].map(m => m[1]).sort().join(',');
 
@@ -55,4 +55,27 @@ test('the document list and the deadline monitor read in English', () => {
  const html = context.renderDocuments([{ documentType: 'COMMERCIAL_INVOICE' }, { documentType: 'BILL_OF_LADING' }]);
  assert.match(html, /2 documents in this LC file/); assert.match(html, /2 sections/); assert.match(html, /Commercial documents[\s\S]*Transport documents/);
  assert.match(context.renderDocuments([]), /No documents in this LC file yet/);
+});
+
+test('the procurement plan and the status names read in English', () => {
+ const plan = load('procurement-plan', 'en').LcProcurementPlan;
+ const html = plan.planHtml({ latestShipment: '2026-10-29', daysToShipment: 9, shipmentRisk: 'SOON', open: 2, overdue: 0, critical: 1, items: [
+  { risk: 'CRITICAL', documentName: 'Certificate of Origin', requirement: 'CERTIFICATE OF ORIGIN', hint: 'Vorlauf 7 Arbeitstage vor dem spätesten Versanddatum.', hintEn: 'Lead time 7 working days before the latest shipment date.', present: false, documentType: 'CERTIFICATE_OF_ORIGIN', status: 'NOT_STARTED', dueDate: '2026-10-20', daysLeft: 0 }] });
+ assert.match(html, /Procurement plan/); assert.match(html, /Latest shipment 29\/10\/2026 \(in 9 days\)/); assert.match(html, /Lead time 7 working days/); assert.doesNotMatch(html, /Vorlauf/);
+ assert.match(html, /1 critical/); assert.match(html, /Still missing/); assert.match(html, /Target date/);
+ const de = load('procurement-plan', 'de').LcProcurementPlan;
+ assert.match(de.planHtml({ latestShipment: '2026-10-29', daysToShipment: 9, shipmentRisk: 'SOON', open: 0, overdue: 0, critical: 0, items: [] }), /Beschaffungsplan/);
+ assert.match(plan.chipHtml({ shipmentRisk: 'OK', daysToShipment: 3, open: 2, nextDocument: 'Packing List', nextDue: '2026-10-25' }), /Shipment in 3 days · 2 documents missing · next: Packing List by 25\/10\/2026/);
+});
+
+test('the status names read in English and the header buttons use the language packs', () => {
+ const source = fs.readFileSync(dir + 'app.js', 'utf8');
+ const pick = name => { const start = source.indexOf(`function ${name}(`); return source.slice(start, source.indexOf('\n', start)); };
+ for (const [language, expected] of [['en', 'Documents presented'], ['de', 'Dokumente eingereicht']]) {
+  const pack = language === 'en' ? en : de;
+  const context = vm.createContext({ LcI18n: { language: () => language, t: (key, values = {}) => String(pack[key] ?? key).replace(/\{(\w+)\}/g, (_, n) => String(values[n] ?? '')) } });
+  vm.runInContext([pick('tx'), pick('statusLabel')].join('\n'), context);
+  assert.equal(context.statusLabel('DOCUMENTS_PRESENTED'), expected); assert.equal(context.statusLabel('UNKNOWN_STATUS'), 'UNKNOWN_STATUS');
+ }
+ assert.equal(en['lc.conditions'], 'LC conditions'); assert.equal(de['lc.charges'], 'Gebühren & Provisionen');
 });
