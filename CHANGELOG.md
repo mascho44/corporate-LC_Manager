@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Dokumentensatz korrigiert neu erzeugen: Jeder erzeugte Satz speichert seine Eingabe. Im Dialog „Dokumentensatz erzeugen“ lässt sich ein früherer Satz als Ausgangsbasis laden, korrigieren und neu erzeugen; wahlweise werden die alten Dokumente dieses Satzes dabei ersetzt (Recht „Dokumente löschen“, im Audit-Protokoll vermerkt). Neue Schnittstelle `GET /api/lcs/{id}/document-set/previous`, Feld `replaceSetId`.
 * Datensicherung: `backup-prod.sh` und `test-backup-restore.sh` verwenden automatisch die Passwortdatei `~/.lcm-backup-passphrase`, wenn sie vorhanden ist; die Sicherungen werden dann verschlüsselt (`.dump.enc`), auch beim Deploy und im Offsite-Lauf.
 * Kennzahlen über der Aktenliste: offene Akten, offenes Volumen je Währung, Ablauf und Verladung in den nächsten 14 Tagen, überschrittener Ablauf, fällige Wiedervorlagen, nicht zugewiesene Akten und Akten, die auf den Kunden warten. Berechnet aus der geladenen Liste, ohne zusätzliche Abfrage.
 * Akte als Vorlage kopieren: Neue Akte mit denselben Beteiligten, Banken, Beträgen, Warenbeschreibung, Dokumentenanforderungen und Bedingungen unter neuer Referenz (Knopf „Als Vorlage kopieren“ in der Akte). Daten, Dokumente, Zuweisung und Prüfergebnisse werden nicht übernommen. Schnittstelle `POST /api/lcs/{id}/copy` (Recht „LC bearbeiten“).

@@ -25,6 +25,11 @@ public class LcDocument {
     @Column(columnDefinition="text") @JsonIgnore private String classificationHistoryJson;
     public String getClassificationHistoryJson(){return classificationHistoryJson;}
     public void setClassificationHistoryJson(String value){classificationHistoryJson=value;}
+    /** Documents created together by "Dokumentensatz erzeugen" share this id; the input is kept to create a corrected set. */
+    @Column(name="generation_set_id") private UUID generationSetId;
+    @Column(name="generation_input",columnDefinition="text") @JsonIgnore private String generationInput;
+    public UUID getGenerationSetId(){return generationSetId;} public void setGenerationSetId(UUID value){generationSetId=value;}
+    public String getGenerationInput(){return generationInput;} public void setGenerationInput(String value){generationInput=value;}
     @Column(columnDefinition="text") @JsonIgnore private String ocrEvidenceJson;
     public String getOcrEvidenceJson(){return ocrEvidenceJson;}
     public void setOcrEvidenceJson(String value){ocrEvidenceJson=value;}

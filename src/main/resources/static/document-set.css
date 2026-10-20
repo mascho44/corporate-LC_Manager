@@ -5,3 +5,4 @@
 .document-set-dialog .ds-total{margin:.5rem 0;font-weight:600}.document-set-dialog .ds-error,.document-set-dialog .ds-discrepancy{color:#b91c1c}.document-set-dialog .ds-ok{color:#166534}
 .document-set-dialog .ds-hint,.document-set-dialog .ds-warning{color:#92400e}.document-set-dialog ul.ds-docs,.document-set-dialog ul.ds-notes{padding-left:1.2rem}
 .document-set-dialog .ds-line textarea,.document-set-dialog label>textarea{height:3.6rem;min-height:0;resize:vertical;width:100%;box-sizing:border-box}.document-set-dialog .ds-line input{width:100%;box-sizing:border-box}
+.document-set-dialog .ds-base{display:flex;flex-direction:column;gap:.35rem;margin:.5rem 0}.document-set-dialog .ds-check{display:flex;gap:.4rem;align-items:flex-start;overflow-wrap:anywhere}

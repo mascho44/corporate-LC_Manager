@@ -21,9 +21,16 @@ public class DocumentSetController {
     @GetMapping("/proposal")
     public DocumentSetService.Proposal proposal(@PathVariable UUID lcId) { return service.proposal(lcId); }
 
+    /** Earlier sets with their input, to create a corrected set. */
+    @GetMapping("/previous")
+    public java.util.List<DocumentSetService.PreviousSet> previous(@PathVariable UUID lcId) { return service.previousSets(lcId); }
+
     @PostMapping
     public DocumentSetService.Result create(@PathVariable UUID lcId, @Valid @RequestBody DocumentSetRequest request, Authentication authentication) throws IOException {
+        if (request.replaceSetId() != null && authentication.getAuthorities().stream().noneMatch(a -> "PERM_DOCUMENT_DELETE".equals(a.getAuthority())))
+            throw new org.springframework.security.access.AccessDeniedException("Zum Ersetzen eines Satzes ist das Recht „Dokumente löschen“ nötig.");
         var result = service.create(lcId, request);
+        for (String name : result.replaced()) audit.record(authentication, "DOCUMENT_DELETED", "LETTER_OF_CREDIT", lcId, name + " · durch korrigierten Dokumentensatz ersetzt");
         audit.record(authentication, "DOCUMENT_SET_GENERATED", "LETTER_OF_CREDIT", lcId,
             result.documents().size() + " Dokumente erzeugt (" + request.invoiceNumber() + ") · Hinweise " + result.warnings().size() + " · Befunde " + result.findings().size());
         return result;

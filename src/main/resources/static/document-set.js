@@ -30,7 +30,7 @@
  function requestBody(form) {
   const text = v => (v == null || String(v).trim() === '') ? null : String(v).trim();
   return {
-   documentDate: form.documentDate, invoiceNumber: String(form.invoiceNumber || '').trim(), notes: text(form.notes), types: form.types, format: form.format === 'pdf' ? 'pdf' : 'docx',
+   documentDate: form.documentDate, invoiceNumber: String(form.invoiceNumber || '').trim(), notes: text(form.notes), types: form.types, format: form.format === 'pdf' ? 'pdf' : 'docx', replaceSetId: form.replaceSetId || null,
    quantity: null, packages: form.packages == null || form.packages === '' ? null : Math.round(num(form.packages)),
    netWeight: num(form.netWeight), grossWeight: num(form.grossWeight),
    items: (form.lines || []).filter(l => text(l.description) || num(l.quantity) != null).map((l, i) => ({
@@ -48,7 +48,22 @@
    (warnings ? `<h3>Hinweise</h3><ul class="ds-notes">${warnings}</ul>` : '') +
    (findings ? `<h3>Ergebnis der automatischen Prüfung</h3><ul class="ds-notes">${findings}</ul>` : '<p class="ds-ok">Die automatische Prüfung findet an den neuen Dokumenten nichts Auffälliges.</p>');
  }
- globalThis.LcDocumentSet = { lineAmount, totalOf, limitMessage, requestBody, resultHtml };
+ /** Form state from the stored input of an earlier set, so a corrected set starts from what was entered then. */
+ function fromPrevious(request) {
+  const value = v => v == null ? '' : String(v);
+  return {
+   state: { format: request.format === 'pdf' ? 'pdf' : 'docx', invoiceNumber: value(request.invoiceNumber), documentDate: value(request.documentDate), notes: value(request.notes),
+    packages: value(request.packages), netWeight: value(request.netWeight), grossWeight: value(request.grossWeight) },
+   lines: (request.items || []).map(i => ({ description: value(i.description), quantity: value(i.quantity), unit: value(i.unit), unitPrice: value(i.unitPrice), amount: value(i.amount),
+    packages: value(i.packages), netWeight: value(i.netWeight), grossWeight: value(i.grossWeight) })),
+   types: [...(request.types || [])]
+  };
+ }
+ function previousLabel(set) {
+  const when = set.createdAt ? new Date(set.createdAt).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }) : '';
+  return `Satz vom ${when} · Rechnung ${set.request?.invoiceNumber || '–'} · ${set.documents.length} Dokument${set.documents.length === 1 ? '' : 'e'}`;
+ }
+ globalThis.LcDocumentSet = { lineAmount, totalOf, limitMessage, requestBody, resultHtml, fromPrevious, previousLabel };
  if (typeof document === 'undefined' || !document.body) return;
 
  const LINE_FIELDS = [['description', 'Beschreibung', 'wide'], ['quantity', 'Menge'], ['unit', 'Einheit'], ['unitPrice', 'Einzelpreis'], ['amount', 'Betrag'], ['packages', 'Packstücke'], ['netWeight', 'Netto kg'], ['grossWeight', 'Brutto kg']];
@@ -61,9 +76,12 @@
   dialog.querySelector('[data-close]').onclick = () => dialog.close(); dialog.showModal();
   let proposal;
   try { proposal = await json(`/api/lcs/${encodeURIComponent(lcId)}/document-set/proposal`); } catch (error) { dialog.querySelector('[role=status]').textContent = error.message; return; }
+  const previous = await json(`/api/lcs/${encodeURIComponent(lcId)}/document-set/previous`).catch(() => []);
+  const mayReplace = typeof can === 'function' && can('DOCUMENT_DELETE');
+  let base = '';
   const currency = proposal.currency || '';
-  const lines = proposal.items.map(i => ({ description: i.description || '', quantity: i.quantity ?? '', unit: i.unit || '', unitPrice: i.unitPrice ?? '', amount: i.amount ?? '', packages: '', netWeight: '', grossWeight: '' }));
-  const chosen = new Set(proposal.types);
+  let lines = proposal.items.map(i => ({ description: i.description || '', quantity: i.quantity ?? '', unit: i.unit || '', unitPrice: i.unitPrice ?? '', amount: i.amount ?? '', packages: '', netWeight: '', grossWeight: '' }));
+  let chosen = new Set(proposal.types);
   const render = () => {
    const rows = lines.map((line, i) => `<div class="ds-line" data-line="${i}">${LINE_FIELDS.map(([key, label, wide]) => `<label class="${wide || ''}">${esc(label)}${key === 'description' ? `<textarea data-key="${key}" rows="2">${esc(line[key])}</textarea>` : `<input data-key="${key}" value="${esc(line[key])}" inputmode="decimal">`}</label>`).join('')}${lines.length > 1 ? '<button type="button" class="secondary" data-remove>Entfernen</button>' : ''}</div>`).join('');
    const boxes = proposal.requirements.map(r => `<label class="ds-type"><input type="checkbox" data-type="${esc(r.documentType)}"${chosen.has(r.documentType) ? ' checked' : ''}> ${esc(r.label)}${r.namedInCredit ? ' <small>(im Akkreditiv verlangt)</small>' : ''}${r.originals ? ` <small>· ${esc(r.originals)} Originale</small>` : ''}${r.signed ? ' <small>· unterschrieben</small>' : ''}</label>`).join('');
@@ -71,10 +89,21 @@
    dialog.innerHTML = `<div class="dialoghead"><h2>Dokumentensatz erzeugen</h2><button type="button" data-close>Schließen</button></div>` +
     `<p>Aus einer Eingabe entstehen alle gewählten Dokumente mit gleicher Nummer, gleichem Datum und gleichen Positionen. Danach werden sie gegen das Akkreditiv geprüft.</p>` +
     (proposal.companyConfigured === false ? '<p class="ds-hint" role="status">Für diese Akte ist keine Firma hinterlegt. Der Briefkopf zeigt nur den Begünstigten aus dem Akkreditiv. Anschrift, Logo und Bankverbindung kommen aus dem Firmenprofil (Mandanteneinstellungen → Firma).</p>' : '') +
+    (previous.length ? `<div class="ds-base"><label>Ausgangsbasis<select data-base><option value="">Neu aus dem Akkreditiv</option>${previous.map((p, i) => `<option value="${i}"${String(i) === base ? ' selected' : ''}>${esc(previousLabel(p))}</option>`).join('')}</select></label>` +
+     (base !== '' && mayReplace ? `<label class="ds-check"><input type="checkbox" data-replace${state.replaceSetId ? ' checked' : ''}> Alte Dokumente dieses Satzes ersetzen (werden gelöscht: ${esc(previous[Number(base)].documents.join(', '))})</label>` : '') + '</div>' : '') +
     `<div class="ds-head"><label>Rechnungsnummer<input data-field="invoiceNumber" value="${esc(proposal.invoiceNumber)}"></label><label>Dokumentdatum<input type="date" data-field="documentDate" value="${esc(proposal.documentDate)}"></label></div>` +
     `<h3>Dokumente</h3><div class="ds-types">${boxes}</div><h3>Positionen</h3>${rows}<button type="button" class="secondary" data-add>+ Position</button><p class="ds-total ds-${total.level}" role="status">${esc(total.text)}</p>` +
     `<label>Hinweise / Markierungen (Marks and numbers)<textarea data-field="notes" rows="2" maxlength="4000"></textarea></label><label>Format<select data-field="format"><option value="docx">Word (bearbeitbar)</option><option value="pdf">PDF (fertig zum Versand)</option></select></label><p data-error role="alert"></p><div class="dialog-actions"><button type="button" data-create>Dokumente erzeugen</button></div>`;
    dialog.querySelector('[data-close]').onclick = () => dialog.close();
+   const baseSelect = dialog.querySelector('[data-base]');
+   if (baseSelect) baseSelect.onchange = () => {
+    base = baseSelect.value; state.replaceSetId = null;
+    if (base === '') { Object.assign(state, { invoiceNumber: proposal.invoiceNumber, documentDate: proposal.documentDate, notes: '', packages: '', netWeight: '', grossWeight: '' }); lines = proposal.items.map(i => ({ description: i.description || '', quantity: i.quantity ?? '', unit: i.unit || '', unitPrice: i.unitPrice ?? '', amount: i.amount ?? '', packages: '', netWeight: '', grossWeight: '' })); chosen = new Set(proposal.types); }
+    else { const loaded = fromPrevious(previous[Number(base)].request); Object.assign(state, loaded.state); lines = loaded.lines; chosen = new Set(loaded.types); }
+    render();
+   };
+   const replace = dialog.querySelector('[data-replace]');
+   if (replace) replace.onchange = () => { state.replaceSetId = replace.checked ? previous[Number(base)].setId : null; };
    dialog.querySelector('[data-field=invoiceNumber]').value = state.invoiceNumber; dialog.querySelector('[data-field=documentDate]').value = state.documentDate; dialog.querySelector('[data-field=notes]').value = state.notes; dialog.querySelector('[data-field=format]').value = state.format;
    dialog.querySelectorAll('[data-field]').forEach(el => el.oninput = () => { state[el.dataset.field] = el.value; });
    dialog.querySelectorAll('[data-type]').forEach(el => el.onchange = () => { if (el.checked) chosen.add(el.dataset.type); else chosen.delete(el.dataset.type); });
@@ -91,7 +120,7 @@
      if (!body.items.length) throw new Error('Bitte mindestens eine Position angeben.');
      if (!body.types.length) throw new Error('Bitte mindestens ein Dokument wählen.');
      const result = await json(`/api/lcs/${encodeURIComponent(lcId)}/document-set`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-     dialog.innerHTML = `<div class="dialoghead"><h2>Dokumentensatz erzeugt</h2><button type="button" data-close>Schließen</button></div>${resultHtml(result)}`;
+     dialog.innerHTML = `<div class="dialoghead"><h2>Dokumentensatz erzeugt</h2><button type="button" data-close>Schließen</button></div>${resultHtml(result)}${(result.replaced || []).length ? `<p class="ds-hint">Ersetzt und gelöscht: ${esc(result.replaced.join(', '))}</p>` : ''}`;
      dialog.querySelector('[data-close]').onclick = async () => { dialog.close(); if (typeof show === 'function') { try { await show(lcId); } catch (ignored) { /* the list refreshes on the next visit */ } } };
     } catch (error) { dialog.querySelector('[data-error]').textContent = error.message; button.disabled = false; }
    };

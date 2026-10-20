@@ -6,6 +6,7 @@ import de.ostms.lc.document.api.DocumentView;
 import de.ostms.lc.document.api.GeneratedDocumentItemRequest;
 import de.ostms.lc.document.api.GeneratedDocumentRequest;
 import de.ostms.lc.document.domain.DocumentType;
+import de.ostms.lc.document.domain.LcDocument;
 import de.ostms.lc.document.repository.LcDocumentRepository;
 import de.ostms.lc.lc.domain.LetterOfCredit;
 import de.ostms.lc.lc.repository.LetterOfCreditRepository;
@@ -40,7 +41,12 @@ public class DocumentSetService {
     public record Requirement(DocumentType documentType, String label, boolean namedInCredit, String originals, boolean signed) {}
     public record Proposal(LocalDate documentDate, String invoiceNumber, List<GeneratedDocumentItemRequest> items, List<DocumentType> types, List<Requirement> requirements, String currency, BigDecimal maximumInvoiceTotal, boolean companyConfigured) {}
     public record Finding(String severity, String code, String message, String documentName) {}
-    public record Result(List<DocumentView> documents, List<String> warnings, BigDecimal total, String currency, List<Finding> findings) {}
+    public record Result(List<DocumentView> documents, List<String> warnings, BigDecimal total, String currency, List<Finding> findings, List<String> replaced) {
+        public Result(List<DocumentView> documents, List<String> warnings, BigDecimal total, String currency, List<Finding> findings) { this(documents, warnings, total, currency, findings, List.of()); }
+    }
+    /** An earlier set of this file: its input (to start a corrected set from) and the documents it produced. */
+    public record PreviousSet(UUID setId, java.time.LocalDateTime createdAt, DocumentSetRequest request, List<String> documents) {}
+    private static final com.fasterxml.jackson.databind.ObjectMapper JSON = new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules();
 
     private final LetterOfCreditRepository lcs;
     private final LcDocumentRepository documents;
@@ -122,13 +128,22 @@ public class DocumentSetService {
             warnings.add("Für die Packliste fehlt das Bruttogewicht.");
 
         String suffix = suffix(request.invoiceNumber().trim());
+        UUID setId = UUID.randomUUID();
+        String input = inputJson(request);
         var created = new ArrayList<DocumentView>();
         for (DocumentType type : types) {
             String number = type == DocumentType.COMMERCIAL_INVOICE ? request.invoiceNumber().trim() : PREFIX.get(type) + suffix;
             var single = new GeneratedDocumentRequest(type, number, request.documentDate(), description(items), quantity(request, items),
                     packages(request, items), weight(request.netWeight(), items, GeneratedDocumentItemRequest::netWeight), weight(request.grossWeight(), items, GeneratedDocumentItemRequest::grossWeight),
                     request.notes(), items);
-            created.add(request.pdf() ? generated.create(lcId, single) : generated.createDocx(lcId, single));
+            var view = request.pdf() ? generated.create(lcId, single) : generated.createDocx(lcId, single);
+            created.add(view);
+            if (view != null) documents.findById(view.id()).ifPresent(document -> { document.setGenerationSetId(setId); document.setGenerationInput(input); documents.save(document); });
+        }
+        var replaced = new ArrayList<String>();
+        if (request.replaceSetId() != null) for (LcDocument old : documents.findByLetterOfCreditIdAndGenerationSetId(lcId, request.replaceSetId())) {
+            replaced.add(old.getOriginalFilename());
+            documents.delete(old);
         }
         var names = new HashSet<String>();
         created.forEach(view -> names.add(view.originalFilename()));
@@ -136,7 +151,30 @@ public class DocumentSetService {
         for (var result : checks.precheck(lcId).results())
             if (result.documentName() != null && names.contains(result.documentName()) && result.severity() != de.ostms.lc.check.api.CheckResult.Severity.OK)
                 findings.add(new Finding(result.severity().name(), result.code(), result.message(), result.documentName()));
-        return new Result(created, warnings, total, lc.getCurrency(), findings);
+        return new Result(created, warnings, total, lc.getCurrency(), findings, replaced);
+    }
+
+    private static String inputJson(DocumentSetRequest request) {
+        var kept = new DocumentSetRequest(request.documentDate(), request.invoiceNumber(), request.items(), request.quantity(), request.packages(), request.netWeight(),
+            request.grossWeight(), request.notes(), request.types(), request.format(), null);
+        try { return JSON.writeValueAsString(kept); } catch (com.fasterxml.jackson.core.JsonProcessingException impossible) { throw new IllegalStateException(impossible); }
+    }
+
+    /** The latest sets of the file, newest first, each with the input it was made from (sets whose documents were all deleted disappear). */
+    @Transactional(readOnly = true)
+    public List<PreviousSet> previousSets(UUID lcId) {
+        var sets = new java.util.LinkedHashMap<UUID, List<LcDocument>>();
+        for (LcDocument d : documents.findByLetterOfCreditIdOrderByUploadedAtDesc(lcId))
+            if (d.getGenerationSetId() != null && d.getGenerationInput() != null) sets.computeIfAbsent(d.getGenerationSetId(), id -> new ArrayList<>()).add(d);
+        var out = new ArrayList<PreviousSet>();
+        for (var entry : sets.entrySet()) {
+            if (out.size() == 5) break;
+            var first = entry.getValue().get(0);
+            try {
+                out.add(new PreviousSet(entry.getKey(), first.getUploadedAt(), JSON.readValue(first.getGenerationInput(), DocumentSetRequest.class), entry.getValue().stream().map(LcDocument::getOriginalFilename).toList()));
+            } catch (com.fasterxml.jackson.core.JsonProcessingException unreadable) { /* an unreadable input only hides this set */ }
+        }
+        return out;
     }
 
     private void invoiceWarnings(LetterOfCredit lc, BigDecimal total, List<String> warnings) {
