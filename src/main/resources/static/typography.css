@@ -1,5 +1,5 @@
 /* Content typography: a smaller base size and clearer rendering so that more fits on the screen. The navigation keeps its size and spacing.
-   Loaded last. Change --content-font-size (and --content-line-height) here to make the text larger or smaller everywhere in the content.
+   Loaded just before ui-system.css, which keeps the last word on controls. Change --content-font-size (and --content-line-height) here to make the text larger or smaller everywhere in the content.
    Sizes set explicitly elsewhere (small labels, buttons) are not touched, except plain <small>, which is fixed at 12px for legibility. */
 :root{--content-font-size:13.5px;--content-line-height:1.3;--content-ink:#101828}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
