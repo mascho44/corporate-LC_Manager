@@ -6,6 +6,9 @@ if [[ $# -ne 1 || ! -s "$1" ]]; then
   exit 1
 fi
 BACKUP_FILE="$1"
+if [[ -z "${BACKUP_PASSPHRASE_FILE+set}" && -s "${HOME:-/nonexistent}/.lcm-backup-passphrase" ]]; then
+  BACKUP_PASSPHRASE_FILE="$HOME/.lcm-backup-passphrase"
+fi
 if [[ "$BACKUP_FILE" == *.enc ]]; then
   : "${BACKUP_PASSPHRASE_FILE:?Fuer .enc-Sicherungen muss BACKUP_PASSPHRASE_FILE gesetzt sein}"
   PLAIN="$(mktemp)"
