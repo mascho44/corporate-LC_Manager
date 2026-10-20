@@ -3,6 +3,7 @@
 (() => {
  const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
  const MAX_LISTED = 8;
+ const tr = (key, de, values = {}) => { const i = globalThis.LcI18n, s = i?.t ? i.t(key, values) : null; return s && s !== key ? s : String(de).replace(/\{(\w+)\}/g, (_, n) => String(values[n] ?? `{${n}}`)); };
 
  /** Verdict from the review result: open discrepancies and missing documents block, warnings are only mentioned. */
  function submissionCheck(review) {
@@ -15,12 +16,12 @@
  }
  function checkHtml(check, showAll) {
   const head = check.ready
-   ? '<b class="submission-ok">✓ Einreichungsbereit</b><p>Die einfache Prüfung hat keine offene Abweichung gefunden.</p>'
-   : `<b class="submission-no">✗ Noch nicht einreichungsbereit</b><p>${check.blocking.length} Punkt${check.blocking.length === 1 ? ' muss' : 'e müssen'} vorher geklärt werden${check.missing ? ` (davon ${check.missing} fehlende${check.missing === 1 ? 's' : ''} Dokument${check.missing === 1 ? '' : 'e'})` : ''}:</p>` +
-     `<ul>${check.blocking.slice(0, MAX_LISTED).map((m, i) => `<li>${esc(m)}${check.advice?.[i] ? `<br><small class="submission-advice">So beheben: ${esc(check.advice[i])}</small>` : ''}</li>`).join('')}${check.blocking.length > MAX_LISTED ? `<li>… und ${check.blocking.length - MAX_LISTED} weitere (unter „Alle Befunde")</li>` : ''}</ul>`;
-  const warn = check.warnings ? `<p>${check.warnings} Hinweis${check.warnings === 1 ? '' : 'e'} zur Kenntnis, kein Hindernis.</p>` : '';
-  return `${head}${warn}<p class="submission-note"><small>Oberflächliche Vorprüfung auf offene Abweichungen. Die endgültige Prüfung liegt bei der Bank.</small></p>` +
-   `<button type="button" class="secondary" data-submission-all aria-pressed="${showAll}">${showAll ? 'Befundliste ausblenden' : `Alle Befunde anzeigen (${check.total})`}</button>`;
+   ? `<b class="submission-ok">✓ ${tr('corp.ready', 'Einreichungsbereit')}</b><p>${tr('corp.readyText', 'Die einfache Prüfung hat keine offene Abweichung gefunden.')}</p>`
+   : `<b class="submission-no">✗ ${tr('corp.notReady', 'Noch nicht einreichungsbereit')}</b><p>${check.blocking.length === 1 ? tr('corp.blockingOne', '1 Punkt muss vorher geklärt werden') : tr('corp.blockingMany', '{n} Punkte müssen vorher geklärt werden', { n: check.blocking.length })}${check.missing === 1 ? ' ' + tr('corp.missingDocOne', '(davon 1 fehlendes Dokument)') : check.missing ? ' ' + tr('corp.missingDocsMany', '(davon {n} fehlende Dokumente)', { n: check.missing }) : ''}:</p>` +
+     `<ul>${check.blocking.slice(0, MAX_LISTED).map((m, i) => `<li>${esc(m)}${check.advice?.[i] ? `<br><small class="submission-advice">${tr('corp.fix', 'So beheben')}: ${esc(check.advice[i])}</small>` : ''}</li>`).join('')}${check.blocking.length > MAX_LISTED ? `<li>${tr('corp.more', '… und {n} weitere (unter „Alle Befunde“)', { n: check.blocking.length - MAX_LISTED })}</li>` : ''}</ul>`;
+  const warn = check.warnings ? `<p>${(check.warnings === 1 ? tr('corp.warningOne', '1 Hinweis zur Kenntnis, kein Hindernis.') : tr('corp.warningsMany', '{n} Hinweise zur Kenntnis, kein Hindernis.', { n: check.warnings }))}</p>` : '';
+  return `${head}${warn}<p class="submission-note"><small>${tr('corp.note', 'Oberflächliche Vorprüfung auf offene Abweichungen. Die endgültige Prüfung liegt bei der Bank.')}</small></p>` +
+   `<button type="button" class="secondary" data-submission-all aria-pressed="${showAll}">${showAll ? tr('corp.hideAll', 'Befundliste ausblenden') : tr('corp.showAll', 'Alle Befunde anzeigen ({n})', { n: check.total })}</button>`;
  }
  globalThis.LcCorporateProfile = { submissionCheck, checkHtml };
  if (typeof document === 'undefined' || !document.body) return;
@@ -36,30 +37,30 @@
   overview.querySelector('.party-role')?.remove();
   const current = activeLc?.partyRole === 'APPLICANT' ? 'APPLICANT' : 'BENEFICIARY';
   const bar = document.createElement('div'); bar.className = 'party-role';
-  bar.innerHTML = `<label>Unsere Rolle in dieser Akte <select data-party-role${can_('LC_EDIT') ? '' : ' disabled'}><option value="BENEFICIARY"${current === 'BENEFICIARY' ? ' selected' : ''}>Begünstigter (Exporteur)</option><option value="APPLICANT"${current === 'APPLICANT' ? ' selected' : ''}>Antragsteller (Importeur)</option></select></label>` +
-   `<small>${current === 'BENEFICIARY' ? 'Wir liefern die Dokumente: Beschaffungsplan, Fristen und Einreichungs-Check gelten.' : 'Wir eröffnen das Akkreditiv: Es gibt keinen Beschaffungsplan; eingehende Dokumente werden vollständig geprüft.'}</small>`;
+  bar.innerHTML = `<label>${tr('corp.role', 'Unsere Rolle in dieser Akte')} <select data-party-role${can_('LC_EDIT') ? '' : ' disabled'}><option value="BENEFICIARY"${current === 'BENEFICIARY' ? ' selected' : ''}>${tr('corp.beneficiary', 'Begünstigter (Exporteur)')}</option><option value="APPLICANT"${current === 'APPLICANT' ? ' selected' : ''}>${tr('corp.applicant', 'Antragsteller (Importeur)')}</option></select></label>` +
+   `<small>${current === 'BENEFICIARY' ? tr('corp.beneficiaryText', 'Wir liefern die Dokumente: Beschaffungsplan, Fristen und Einreichungs-Check gelten.') : tr('corp.applicantText', 'Wir eröffnen das Akkreditiv: Es gibt keinen Beschaffungsplan; eingehende Dokumente werden vollständig geprüft.')}</small>`;
   const customerLabel = document.createElement('label'); customerLabel.className = 'lc-customer';
-  customerLabel.append('Kunde dieser Akte ');
+  customerLabel.append(tr('corp.customer', 'Kunde dieser Akte') + ' ');
   const customerSelect = document.createElement('select'); customerSelect.dataset.lcCustomer = ''; customerSelect.disabled = !can_('LC_EDIT');
-  customerSelect.innerHTML = '<option value="">– nicht verknüpft –</option>'; customerLabel.append(customerSelect);
+  customerSelect.innerHTML = `<option value="">${tr('corp.noCustomer', '– nicht verknüpft –')}</option>`; customerLabel.append(customerSelect);
   bar.append(customerLabel);
   overview.prepend(bar);
   json('/api/customers').then(list => {
-   customerSelect.innerHTML = '<option value="">– nicht verknüpft –</option>' + (list || []).map(c => `<option value="${esc(c.id)}"${activeLc?.customerId === c.id ? ' selected' : ''}>${esc(c.name)}${c.customerNumber ? ' · ' + esc(c.customerNumber) : ''}</option>`).join('');
+   customerSelect.innerHTML = `<option value="">${tr('corp.noCustomer', '– nicht verknüpft –')}</option>` + (list || []).map(c => `<option value="${esc(c.id)}"${activeLc?.customerId === c.id ? ' selected' : ''}>${esc(c.name)}${c.customerNumber ? ' · ' + esc(c.customerNumber) : ''}</option>`).join('');
   }).catch(() => { customerLabel.hidden = true; });
   customerSelect.onchange = async event => {
    const previous = activeLc?.customerId || '';
    try {
     await json(`/api/lcs/${encodeURIComponent(id)}/customer`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ customerId: event.target.value || null }) });
     if (activeLc) activeLc.customerId = event.target.value || null;
-   } catch (error) { alert('Kunde konnte nicht gespeichert werden: ' + error.message); event.target.value = previous; }
+   } catch (error) { alert(tr('corp.customerFailed', 'Kunde konnte nicht gespeichert werden') + ': ' + error.message); event.target.value = previous; }
   };
   bar.querySelector('select').onchange = async event => {
    try {
     await json(`/api/lcs/${encodeURIComponent(id)}/party-role`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role: event.target.value }) });
     if (activeLc) activeLc.partyRole = event.target.value;
     await (typeof showKeepingView === 'function' ? showKeepingView(id) : show(id));
-   } catch (error) { alert('Rolle konnte nicht gespeichert werden: ' + error.message); event.target.value = current; }
+   } catch (error) { alert(tr('corp.roleFailed', 'Rolle konnte nicht gespeichert werden') + ': ' + error.message); event.target.value = current; }
   };
  }
 
@@ -81,7 +82,7 @@
   const card = document.createElement('section'); card.className = 'submission-check'; card.innerHTML = checkHtml(submissionCheck(review), showAll);
   summary.before(card);
   const apply = () => foldFindings();
-  card.querySelector('[data-submission-all]').onclick = event => { showAll = !showAll; event.currentTarget.textContent = showAll ? 'Befundliste ausblenden' : `Alle Befunde anzeigen (${review.results.length})`; event.currentTarget.setAttribute('aria-pressed', String(showAll)); apply(); };
+  card.querySelector('[data-submission-all]').onclick = event => { showAll = !showAll; event.currentTarget.textContent = showAll ? tr('corp.hideAll', 'Befundliste ausblenden') : tr('corp.showAll', 'Alle Befunde anzeigen ({n})', { n: review.results.length }); event.currentTarget.setAttribute('aria-pressed', String(showAll)); apply(); };
   apply();
  }
 

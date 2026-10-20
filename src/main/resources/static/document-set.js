@@ -2,9 +2,10 @@
    certificates the credit names, then shows the notes and the findings of the automatic check. */
 (() => {
  const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+ const tr = (key, de, values = {}) => { const i = globalThis.LcI18n, s = i?.t ? i.t(key, values) : null; return s && s !== key ? s : String(de).replace(/\{(\w+)\}/g, (_, n) => String(values[n] ?? `{${n}}`)); };
  const num = value => { const n = Number(String(value ?? '').trim().replace(',', '.')); return String(value ?? '').trim() === '' || !Number.isFinite(n) ? null : n; };
- const money = (value, currency) => value == null ? '–' : `${Number(value).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${currency ? ' ' + currency : ''}`;
- const SEVERITY = { DISCREPANCY: 'Abweichung', WARNING: 'Hinweis', OK: 'in Ordnung' };
+ const money = (value, currency) => value == null ? '–' : `${Number(value).toLocaleString(globalThis.LcI18n?.language?.() === 'en' ? 'en-GB' : 'de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${currency ? ' ' + currency : ''}`;
+ const severity = s => ({ DISCREPANCY: tr('dc.discrepancy', 'Abweichung'), WARNING: tr('dc.warning', 'Hinweis'), OK: tr('ds.ok', 'in Ordnung') }[s] || s);
 
  /** Amount of one goods line: the entered amount, otherwise quantity times unit price (two decimals). */
  function lineAmount(line) {
@@ -21,10 +22,10 @@
  }
  /** Message under the totals: over the highest allowed invoice total, or how much room is left. */
  function limitMessage(total, maximum, currency) {
-  if (total == null) return { level: 'hint', text: 'Summe: Beträge der Positionen fehlen noch.' };
-  if (maximum == null) return { level: 'ok', text: `Summe: ${money(total, currency)}` };
-  if (total > maximum + 0.0001) return { level: 'error', text: `Summe ${money(total, currency)} liegt ${money(total - maximum, currency)} über dem zulässigen Höchstbetrag ${money(maximum, currency)}.` };
-  return { level: 'ok', text: `Summe ${money(total, currency)} · zulässig bis ${money(maximum, currency)}` };
+  if (total == null) return { level: 'hint', text: tr('ds.sumMissing', 'Summe: Beträge der Positionen fehlen noch.') };
+  if (maximum == null) return { level: 'ok', text: tr('ds.sum', 'Summe: {v}', { v: money(total, currency) }) };
+  if (total > maximum + 0.0001) return { level: 'error', text: tr('ds.sumOver', 'Summe {v} liegt {over} über dem zulässigen Höchstbetrag {max}.', { v: money(total, currency), over: money(total - maximum, currency), max: money(maximum, currency) }) };
+  return { level: 'ok', text: tr('ds.sumOk', 'Summe {v} · zulässig bis {max}', { v: money(total, currency), max: money(maximum, currency) }) };
  }
  /** The request for POST /document-set from the form values. */
  function requestBody(form) {
@@ -42,11 +43,11 @@
  function resultHtml(result) {
   const docs = (result.documents || []).map(d => `<li><a href="${esc(d.downloadUrl)}">${esc(d.originalFilename)}</a> <small>${esc(d.typeLabel)}</small></li>`).join('');
   const warnings = (result.warnings || []).map(w => `<li class="ds-warning">${esc(w)}</li>`).join('');
-  const findings = (result.findings || []).map(f => `<li class="ds-${esc(String(f.severity).toLowerCase())}"><b>${esc(SEVERITY[f.severity] || f.severity)}</b> ${esc(f.message)} <small>${esc(f.documentName)}</small></li>`).join('');
-  return `<h3>${(result.documents || []).length} Dokumente erzeugt</h3><ul class="ds-docs">${docs}</ul>` +
-   (result.total != null ? `<p>Rechnungssumme: <b>${esc(money(result.total, result.currency))}</b></p>` : '') +
-   (warnings ? `<h3>Hinweise</h3><ul class="ds-notes">${warnings}</ul>` : '') +
-   (findings ? `<h3>Ergebnis der automatischen Prüfung</h3><ul class="ds-notes">${findings}</ul>` : '<p class="ds-ok">Die automatische Prüfung findet an den neuen Dokumenten nichts Auffälliges.</p>');
+  const findings = (result.findings || []).map(f => `<li class="ds-${esc(String(f.severity).toLowerCase())}"><b>${esc(severity(f.severity))}</b> ${esc(f.message)} <small>${esc(f.documentName)}</small></li>`).join('');
+  return `<h3>${tr('ds.created', '{n} Dokumente erzeugt', { n: (result.documents || []).length })}</h3><ul class="ds-docs">${docs}</ul>` +
+   (result.total != null ? `<p>${tr('ds.invoiceTotal', 'Rechnungssumme')}: <b>${esc(money(result.total, result.currency))}</b></p>` : '') +
+   (warnings ? `<h3>${tr('ds.notes', 'Hinweise')}</h3><ul class="ds-notes">${warnings}</ul>` : '') +
+   (findings ? `<h3>${tr('ds.checkResult', 'Ergebnis der automatischen Prüfung')}</h3><ul class="ds-notes">${findings}</ul>` : `<p class="ds-ok">${tr('ds.checkClean', 'Die automatische Prüfung findet an den neuen Dokumenten nichts Auffälliges.')}</p>`);
  }
  /** Form state from the stored input of an earlier set, so a corrected set starts from what was entered then. */
  function fromPrevious(request) {
@@ -60,19 +61,20 @@
   };
  }
  function previousLabel(set) {
-  const when = set.createdAt ? new Date(set.createdAt).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }) : '';
-  return `Satz vom ${when} · Rechnung ${set.request?.invoiceNumber || '–'} · ${set.documents.length} Dokument${set.documents.length === 1 ? '' : 'e'}`;
+  const when = set.createdAt ? new Date(set.createdAt).toLocaleString(globalThis.LcI18n?.language?.() === 'en' ? 'en-GB' : 'de-DE', { dateStyle: 'short', timeStyle: 'short' }) : '';
+  return tr(set.documents.length === 1 ? 'ds.previousOne' : 'ds.previousMany', set.documents.length === 1 ? 'Satz vom {when} · Rechnung {inv} · 1 Dokument' : 'Satz vom {when} · Rechnung {inv} · {n} Dokumente', { when, inv: set.request?.invoiceNumber || '–', n: set.documents.length });
  }
  globalThis.LcDocumentSet = { lineAmount, totalOf, limitMessage, requestBody, resultHtml, fromPrevious, previousLabel };
  if (typeof document === 'undefined' || !document.body) return;
 
  const LINE_FIELDS = [['description', 'Beschreibung', 'wide'], ['quantity', 'Menge'], ['unit', 'Einheit'], ['unitPrice', 'Einzelpreis'], ['amount', 'Betrag'], ['packages', 'Packstücke'], ['netWeight', 'Netto kg'], ['grossWeight', 'Brutto kg']];
+ const fieldLabel = (key, de) => tr('ds.field.' + key, de);
 
  async function open() {
   if (typeof activeLc === 'undefined' || !activeLc) return;
   const lcId = activeLc.id;
   const dialog = document.createElement('dialog'); dialog.className = 'wide-dialog document-set-dialog'; document.body.append(dialog); dialog.onclose = () => dialog.remove();
-  dialog.innerHTML = '<div class="dialoghead"><h2>Dokumentensatz erzeugen</h2><button type="button" data-close>Schließen</button></div><p role="status">Wird vorbereitet …</p>';
+  dialog.innerHTML = `<div class="dialoghead"><h2>${tr('ds.title', 'Dokumentensatz erzeugen')}</h2><button type="button" data-close>${tr('common.close', 'Schließen')}</button></div><p role="status">${tr('common.preparing', 'Wird vorbereitet …')}</p>`;
   dialog.querySelector('[data-close]').onclick = () => dialog.close(); dialog.showModal();
   let proposal;
   try { proposal = await json(`/api/lcs/${encodeURIComponent(lcId)}/document-set/proposal`); } catch (error) { dialog.querySelector('[role=status]').textContent = error.message; return; }
@@ -83,17 +85,17 @@
   let lines = proposal.items.map(i => ({ description: i.description || '', quantity: i.quantity ?? '', unit: i.unit || '', unitPrice: i.unitPrice ?? '', amount: i.amount ?? '', packages: '', netWeight: '', grossWeight: '' }));
   let chosen = new Set(proposal.types);
   const render = () => {
-   const rows = lines.map((line, i) => `<div class="ds-line" data-line="${i}">${LINE_FIELDS.map(([key, label, wide]) => `<label class="${wide || ''}">${esc(label)}${key === 'description' ? `<textarea data-key="${key}" rows="2">${esc(line[key])}</textarea>` : `<input data-key="${key}" value="${esc(line[key])}" inputmode="decimal">`}</label>`).join('')}${lines.length > 1 ? '<button type="button" class="secondary" data-remove>Entfernen</button>' : ''}</div>`).join('');
-   const boxes = proposal.requirements.map(r => `<label class="ds-type"><input type="checkbox" data-type="${esc(r.documentType)}"${chosen.has(r.documentType) ? ' checked' : ''}> ${esc(r.label)}${r.namedInCredit ? ' <small>(im Akkreditiv verlangt)</small>' : ''}${r.originals ? ` <small>· ${esc(r.originals)} Originale</small>` : ''}${r.signed ? ' <small>· unterschrieben</small>' : ''}</label>`).join('');
+   const rows = lines.map((line, i) => `<div class="ds-line" data-line="${i}">${LINE_FIELDS.map(([key, label, wide]) => `<label class="${wide || ''}">${esc(fieldLabel(key, label))}${key === 'description' ? `<textarea data-key="${key}" rows="2">${esc(line[key])}</textarea>` : `<input data-key="${key}" value="${esc(line[key])}" inputmode="decimal">`}</label>`).join('')}${lines.length > 1 ? `<button type="button" class="secondary" data-remove>${tr('ds.remove', 'Entfernen')}</button>` : ''}</div>`).join('');
+   const boxes = proposal.requirements.map(r => `<label class="ds-type"><input type="checkbox" data-type="${esc(r.documentType)}"${chosen.has(r.documentType) ? ' checked' : ''}> ${esc(r.label)}${r.namedInCredit ? ` <small>${tr('ds.named', '(im Akkreditiv verlangt)')}</small>` : ''}${r.originals ? ` <small>· ${tr('ds.originals', '{n} Originale', { n: esc(r.originals) })}</small>` : ''}${r.signed ? ` <small>· ${tr('ds.signed', 'unterschrieben')}</small>` : ''}</label>`).join('');
    const total = limitMessage(totalOf(lines), proposal.maximumInvoiceTotal, currency);
-   dialog.innerHTML = `<div class="dialoghead"><h2>Dokumentensatz erzeugen</h2><button type="button" data-close>Schließen</button></div>` +
-    `<p>Aus einer Eingabe entstehen alle gewählten Dokumente mit gleicher Nummer, gleichem Datum und gleichen Positionen. Danach werden sie gegen das Akkreditiv geprüft.</p>` +
-    (proposal.companyConfigured === false ? '<p class="ds-hint" role="status">Für diese Akte ist keine Firma hinterlegt. Der Briefkopf zeigt nur den Begünstigten aus dem Akkreditiv. Anschrift, Logo und Bankverbindung kommen aus dem Firmenprofil (Mandanteneinstellungen → Firma).</p>' : '') +
-    (previous.length ? `<div class="ds-base"><label>Ausgangsbasis<select data-base><option value="">Neu aus dem Akkreditiv</option>${previous.map((p, i) => `<option value="${i}"${String(i) === base ? ' selected' : ''}>${esc(previousLabel(p))}</option>`).join('')}</select></label>` +
-     (base !== '' && mayReplace ? `<label class="ds-check"><input type="checkbox" data-replace${state.replaceSetId ? ' checked' : ''}> Alte Dokumente dieses Satzes ersetzen (werden gelöscht: ${esc(previous[Number(base)].documents.join(', '))})</label>` : '') + '</div>' : '') +
-    `<div class="ds-head"><label>Rechnungsnummer<input data-field="invoiceNumber" value="${esc(proposal.invoiceNumber)}"></label><label>Dokumentdatum<input type="date" data-field="documentDate" value="${esc(proposal.documentDate)}"></label></div>` +
-    `<h3>Dokumente</h3><div class="ds-types">${boxes}</div><h3>Positionen</h3>${rows}<button type="button" class="secondary" data-add>+ Position</button><p class="ds-total ds-${total.level}" role="status">${esc(total.text)}</p>` +
-    `<label>Hinweise / Markierungen (Marks and numbers)<textarea data-field="notes" rows="2" maxlength="4000"></textarea></label><label>Format<select data-field="format"><option value="docx">Word (bearbeitbar)</option><option value="pdf">PDF (fertig zum Versand)</option></select></label><p data-error role="alert"></p><div class="dialog-actions"><button type="button" data-create>Dokumente erzeugen</button></div>`;
+   dialog.innerHTML = `<div class="dialoghead"><h2>${tr('ds.title', 'Dokumentensatz erzeugen')}</h2><button type="button" data-close>${tr('common.close', 'Schließen')}</button></div>` +
+    `<p>${tr('ds.intro', 'Aus einer Eingabe entstehen alle gewählten Dokumente mit gleicher Nummer, gleichem Datum und gleichen Positionen. Danach werden sie gegen das Akkreditiv geprüft.')}</p>` +
+    (proposal.companyConfigured === false ? `<p class="ds-hint" role="status">${tr('ds.noCompany', 'Für diese Akte ist keine Firma hinterlegt. Der Briefkopf zeigt nur den Begünstigten aus dem Akkreditiv. Anschrift, Logo und Bankverbindung kommen aus dem Firmenprofil (Mandanteneinstellungen → Firma).')}</p>` : '') +
+    (previous.length ? `<div class="ds-base"><label>${tr('ds.base', 'Ausgangsbasis')}<select data-base><option value="">${tr('ds.baseNew', 'Neu aus dem Akkreditiv')}</option>${previous.map((p, i) => `<option value="${i}"${String(i) === base ? ' selected' : ''}>${esc(previousLabel(p))}</option>`).join('')}</select></label>` +
+     (base !== '' && mayReplace ? `<label class="ds-check"><input type="checkbox" data-replace${state.replaceSetId ? ' checked' : ''}> ${tr('ds.replace', 'Alte Dokumente dieses Satzes ersetzen (werden gelöscht: {list})', { list: esc(previous[Number(base)].documents.join(', ')) })}</label>` : '') + '</div>' : '') +
+    `<div class="ds-head"><label>${tr('ds.invoiceNumber', 'Rechnungsnummer')}<input data-field="invoiceNumber" value="${esc(proposal.invoiceNumber)}"></label><label>${tr('ds.documentDate', 'Dokumentdatum')}<input type="date" data-field="documentDate" value="${esc(proposal.documentDate)}"></label></div>` +
+    `<h3>${tr('ds.documents', 'Dokumente')}</h3><div class="ds-types">${boxes}</div><h3>${tr('ds.lines', 'Positionen')}</h3>${rows}<button type="button" class="secondary" data-add>${tr('ds.addLine', '+ Position')}</button><p class="ds-total ds-${total.level}" role="status">${esc(total.text)}</p>` +
+    `<label>${tr('ds.marks', 'Hinweise / Markierungen (Marks and numbers)')}<textarea data-field="notes" rows="2" maxlength="4000"></textarea></label><label>${tr('ds.format', 'Format')}<select data-field="format"><option value="docx">${tr('ds.word', 'Word (bearbeitbar)')}</option><option value="pdf">${tr('ds.pdf', 'PDF (fertig zum Versand)')}</option></select></label><p data-error role="alert"></p><div class="dialog-actions"><button type="button" data-create>${tr('ds.create', 'Dokumente erzeugen')}</button></div>`;
    dialog.querySelector('[data-close]').onclick = () => dialog.close();
    const baseSelect = dialog.querySelector('[data-base]');
    if (baseSelect) baseSelect.onchange = () => {
@@ -117,10 +119,10 @@
     const button = event.currentTarget; button.disabled = true;
     try {
      const body = requestBody({ ...state, lines, types: [...chosen] });
-     if (!body.items.length) throw new Error('Bitte mindestens eine Position angeben.');
-     if (!body.types.length) throw new Error('Bitte mindestens ein Dokument wählen.');
+     if (!body.items.length) throw new Error(tr('ds.needLine', 'Bitte mindestens eine Position angeben.'));
+     if (!body.types.length) throw new Error(tr('ds.needType', 'Bitte mindestens ein Dokument wählen.'));
      const result = await json(`/api/lcs/${encodeURIComponent(lcId)}/document-set`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-     dialog.innerHTML = `<div class="dialoghead"><h2>Dokumentensatz erzeugt</h2><button type="button" data-close>Schließen</button></div>${resultHtml(result)}${(result.replaced || []).length ? `<p class="ds-hint">Ersetzt und gelöscht: ${esc(result.replaced.join(', '))}</p>` : ''}`;
+     dialog.innerHTML = `<div class="dialoghead"><h2>${tr('ds.done', 'Dokumentensatz erzeugt')}</h2><button type="button" data-close>${tr('common.close', 'Schließen')}</button></div>${resultHtml(result)}${(result.replaced || []).length ? `<p class="ds-hint">${tr('ds.replaced', 'Ersetzt und gelöscht')}: ${esc(result.replaced.join(', '))}</p>` : ''}`;
      dialog.querySelector('[data-close]').onclick = async () => { dialog.close(); if (typeof show === 'function') { try { await show(lcId); } catch (ignored) { /* the list refreshes on the next visit */ } } };
     } catch (error) { dialog.querySelector('[data-error]').textContent = error.message; button.disabled = false; }
    };
@@ -134,7 +136,7 @@
   const upload = document.querySelector('#uploadBtn');
   if (!upload || document.querySelector('#documentSetBtn')) return;
   const button = document.createElement('button'); button.type = 'button'; button.id = 'documentSetBtn'; button.className = 'secondary';
-  button.textContent = 'Dokumentensatz erzeugen'; button.title = 'Rechnung, Packliste und Zertifikate aus einer Eingabe erzeugen und gegen das Akkreditiv prüfen';
+  button.textContent = tr('ds.title', 'Dokumentensatz erzeugen'); button.title = tr('ds.buttonTitle', 'Rechnung, Packliste und Zertifikate aus einer Eingabe erzeugen und gegen das Akkreditiv prüfen');
   button.onclick = open; upload.before(button);
  }
  let scheduled = false;

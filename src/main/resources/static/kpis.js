@@ -2,6 +2,7 @@
 (() => {
  const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
  const OPEN = lc => lc.status !== 'CLOSED' && lc.status !== 'EXPIRED';
+ const tr = (key, de, values = {}) => { const i = globalThis.LcI18n, s = i?.t ? i.t(key, values) : null; return s && s !== key ? s : String(de).replace(/\{(\w+)\}/g, (_, n) => String(values[n] ?? `{${n}}`)); };
  const days = (date, today) => date ? Math.round((new Date(date + 'T00:00:00') - new Date(today + 'T00:00:00')) / 86400000) : null;
 
  /** The figures for the given files; today as yyyy-mm-dd. Closed and expired files count only as such. */
@@ -23,10 +24,10 @@
  function html(k) {
   const tile = (label, value, hot, hint) => `<div class="kpi${hot ? ' kpi-hot' : ''}" title="${esc(hint || '')}"><b>${esc(value)}</b><small>${esc(label)}</small></div>`;
   const volume = Object.entries(k.volume).sort((a, b) => b[1] - a[1]).map(([currency, amount]) => money(amount, currency)).join(' · ') || '–';
-  return tile('Offene Akten', k.open, false, `${k.closed} abgeschlossen oder abgelaufen`) + tile('Volumen offen', volume, false, 'Summe der Akkreditivbeträge offener Akten je Währung') +
-   tile(`Ablauf in ${k.horizon} Tagen`, k.expiring, k.expiring > 0) + tile(`Verladung in ${k.horizon} Tagen`, k.shipping, k.shipping > 0) +
-   tile('Ablauf überschritten', k.overdueExpiry, k.overdueExpiry > 0, 'Offene Akten, deren Ablaufdatum vorbei ist') + tile('Wiedervorlage fällig', k.followUps, k.followUps > 0) +
-   tile('Nicht zugewiesen', k.unassigned, false) + (k.waiting ? tile('Wartet auf Kunde', k.waiting, false) : '');
+  return tile(tr('kpi.open', 'Offene Akten'), k.open, false, tr('kpi.closed', '{n} abgeschlossen oder abgelaufen', { n: k.closed })) + tile(tr('kpi.volume', 'Volumen offen'), volume, false, tr('kpi.volumeHint', 'Summe der Akkreditivbeträge offener Akten je Währung')) +
+   tile(tr('kpi.expiring', 'Ablauf in {n} Tagen', { n: k.horizon }), k.expiring, k.expiring > 0) + tile(tr('kpi.shipping', 'Verladung in {n} Tagen', { n: k.horizon }), k.shipping, k.shipping > 0) +
+   tile(tr('kpi.overdue', 'Ablauf überschritten'), k.overdueExpiry, k.overdueExpiry > 0, tr('kpi.overdueHint', 'Offene Akten, deren Ablaufdatum vorbei ist')) + tile(tr('kpi.followUps', 'Wiedervorlage fällig'), k.followUps, k.followUps > 0) +
+   tile(tr('kpi.unassigned', 'Nicht zugewiesen'), k.unassigned, false) + (k.waiting ? tile(tr('kpi.waiting', 'Wartet auf Kunde'), k.waiting, false) : '');
  }
  globalThis.LcKpis = { kpis, html };
  if (typeof document === 'undefined' || !document.body) return;
@@ -35,11 +36,16 @@
   const list = document.querySelector('#list');
   if (!list || typeof data === 'undefined' || !Array.isArray(data)) return;
   let strip = document.querySelector('#kpiStrip');
-  if (!strip) { strip = document.createElement('section'); strip.id = 'kpiStrip'; strip.className = 'kpi-strip'; strip.setAttribute('aria-label', 'Kennzahlen'); list.before(strip); }
+  if (!strip) { strip = document.createElement('section'); strip.id = 'kpiStrip'; strip.className = 'kpi-strip'; strip.setAttribute('aria-label', tr('kpi.label', 'Kennzahlen')); list.before(strip); }
   strip.hidden = data.length === 0;
   const today = new Date().toISOString().slice(0, 10), content = html(kpis(data, today));
   if (strip.dataset.sig !== content) { strip.dataset.sig = content; strip.innerHTML = content; }
  }
+ // The buttons of the corporate workflow carry their text from the moment they were added; on a language change they are rebuilt by their observers.
+ document.addEventListener('lc-language-changed', () => {
+  document.querySelectorAll('#documentSetBtn,#submissionPackageBtn,#draftCheckBtn,#amendmentRequestBtn,#copyLcBtn').forEach(button => button.remove());
+  try { render(); } catch (ignored) { }
+ });
  let scheduled = false;
  new MutationObserver(() => { if (!scheduled) { scheduled = true; setTimeout(() => { scheduled = false; try { render(); } catch (ignored) { } }, 120); } }).observe(document.body, { childList: true, subtree: true });
  render();
