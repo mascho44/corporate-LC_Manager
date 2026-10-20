@@ -43,3 +43,13 @@ test('the result lists documents, notes and findings, escaped', () => {
   assert.match(html, /1 Dokumente erzeugt/); assert.match(html, /inv &lt;1&gt;\.docx/); assert.match(html, /125\.000,00 EUR/); assert.match(html, /Summe &lt;zu hoch&gt;/); assert.match(html, /Abweichung/);
   assert.match(api.resultHtml({ documents: [], warnings: [], findings: [] }), /nichts Auffälliges/);
 });
+
+test('an earlier set fills the form with what was entered then', () => {
+ const loaded = JSON.parse(JSON.stringify(api.fromPrevious({ invoiceNumber: 'INV-7', documentDate: '2026-10-05', notes: null, format: 'pdf', packages: 3, types: ['COMMERCIAL_INVOICE'],
+  items: [{ description: 'Machine', quantity: 2, unit: 'pcs', unitPrice: 50, amount: 100, packages: null }] })));
+ assert.deepStrictEqual(loaded.state, { format: 'pdf', invoiceNumber: 'INV-7', documentDate: '2026-10-05', notes: '', packages: '3', netWeight: '', grossWeight: '' });
+ assert.deepStrictEqual(loaded.lines[0], { description: 'Machine', quantity: '2', unit: 'pcs', unitPrice: '50', amount: '100', packages: '', netWeight: '', grossWeight: '' });
+ assert.deepStrictEqual(loaded.types, ['COMMERCIAL_INVOICE']);
+ assert.match(api.previousLabel({ createdAt: '2026-10-20T09:00:00', request: { invoiceNumber: 'INV-7' }, documents: ['a', 'b'] }), /Rechnung INV-7 · 2 Dokumente/);
+ assert.equal(api.requestBody({ invoiceNumber: 'X', types: [], lines: [], replaceSetId: 'abc' }).replaceSetId, 'abc');
+});

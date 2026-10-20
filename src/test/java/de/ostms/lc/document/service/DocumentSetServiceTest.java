@@ -30,6 +30,7 @@ class DocumentSetServiceTest {
     private GeneratedDocumentService generated;
     private DocumentCheckService checks;
     private DocumentSetService service;
+    private LcDocumentRepository documents;
     private LetterOfCredit lc;
     private de.ostms.lc.company.service.CompanyProfileService companies;
 
@@ -37,7 +38,7 @@ class DocumentSetServiceTest {
         lcs = mock(LetterOfCreditRepository.class);
         generated = mock(GeneratedDocumentService.class);
         checks = mock(DocumentCheckService.class);
-        var documents = mock(LcDocumentRepository.class);
+        documents = mock(LcDocumentRepository.class);
         when(documents.findByLetterOfCreditIdOrderByUploadedAtDesc(lcId)).thenReturn(List.of());
         companies = mock(de.ostms.lc.company.service.CompanyProfileService.class);
         when(companies.hasLetterhead(any())).thenReturn(true);
@@ -130,5 +131,47 @@ class DocumentSetServiceTest {
         assertThat(service.proposal(lcId).companyConfigured()).isTrue();
         when(companies.hasLetterhead(any())).thenReturn(false);
         assertThat(service.proposal(lcId).companyConfigured()).isFalse();
+    }
+
+    @Test void aSetKeepsItsInputAndACorrectedSetReplacesTheOldOne() throws Exception {
+        var stored = new java.util.HashMap<UUID, de.ostms.lc.document.domain.LcDocument>();
+        when(documents.findById(any())).thenAnswer(call -> {
+            var d = stored.computeIfAbsent(call.getArgument(0), id -> { var doc = new de.ostms.lc.document.domain.LcDocument(); doc.setOriginalFilename("neu-" + stored.size() + ".docx"); return doc; });
+            return Optional.of(d);
+        });
+        var request = new DocumentSetRequest(LocalDate.of(2026, 10, 5), "INV-1", List.of(line("1", "100", null)), null, null, null, null, "Marks",
+            EnumSet.of(DocumentType.COMMERCIAL_INVOICE), "pdf");
+        when(generated.create(eq(lcId), any())).thenAnswer(call -> {
+            GeneratedDocumentRequest r = call.getArgument(1);
+            return new DocumentView(UUID.randomUUID(), r.type(), r.type().getDisplayName(), "inv.pdf", "application/pdf", 1, r.documentDate(), null, null, null, null, "GENERATED", null, r.documentNumber(), null, null, null);
+        });
+        service.create(lcId, request);
+        var saved = stored.values().iterator().next();
+        assertThat(saved.getGenerationSetId()).isNotNull();
+        assertThat(saved.getGenerationInput()).contains("\"invoiceNumber\":\"INV-1\"").contains("\"format\":\"pdf\"");
+
+        var old = new de.ostms.lc.document.domain.LcDocument(); old.setOriginalFilename("alt.pdf");
+        UUID oldSet = UUID.randomUUID();
+        when(documents.findByLetterOfCreditIdAndGenerationSetId(lcId, oldSet)).thenReturn(List.of(old));
+        var corrected = new DocumentSetRequest(LocalDate.of(2026, 10, 5), "INV-1", List.of(line("1", "90", null)), null, null, null, null, "Marks",
+            EnumSet.of(DocumentType.COMMERCIAL_INVOICE), "pdf", oldSet);
+        var result = service.create(lcId, corrected);
+        assertThat(result.replaced()).containsExactly("alt.pdf");
+        verify(documents).delete(old);
+    }
+
+    @Test void previousSetsComeBackWithTheirInput() {
+        UUID set = UUID.randomUUID();
+        var a = new de.ostms.lc.document.domain.LcDocument(); a.setOriginalFilename("inv.pdf"); a.setGenerationSetId(set);
+        a.setGenerationInput("{\"documentDate\":\"2026-10-05\",\"invoiceNumber\":\"INV-7\",\"items\":[],\"types\":[\"COMMERCIAL_INVOICE\"],\"format\":\"docx\"}");
+        var b = new de.ostms.lc.document.domain.LcDocument(); b.setOriginalFilename("upload.pdf");
+        var broken = new de.ostms.lc.document.domain.LcDocument(); broken.setOriginalFilename("x.pdf"); broken.setGenerationSetId(UUID.randomUUID()); broken.setGenerationInput("{kaputt");
+        when(documents.findByLetterOfCreditIdOrderByUploadedAtDesc(lcId)).thenReturn(List.of(a, b, broken));
+        var sets = service.previousSets(lcId);
+        assertThat(sets).singleElement().satisfies(p -> {
+            assertThat(p.setId()).isEqualTo(set);
+            assertThat(p.request().invoiceNumber()).isEqualTo("INV-7");
+            assertThat(p.documents()).containsExactly("inv.pdf");
+        });
     }
 }
