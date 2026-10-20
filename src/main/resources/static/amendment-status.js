@@ -43,7 +43,7 @@
   show = async function (id) {
    await showBase(id);
    try {
-    const history = [...document.querySelectorAll('#detail .docs')].find(section => section.querySelector('h3')?.textContent === 'Amendment-Historie');
+    const history = [...document.querySelectorAll('#detail .docs')].find(section => (typeof sectionKey === 'function' ? sectionKey(section) === 'amendments' : section.querySelector('h3')?.textContent === 'Amendment-Historie'));
     if (!history) return;
     const amendments = await json(`/api/lcs/${encodeURIComponent(id)}/amendments`).catch(() => []);
     const cards = history.querySelectorAll('.card');

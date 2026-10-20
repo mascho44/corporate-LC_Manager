@@ -72,7 +72,7 @@
   const edit=document.querySelector('#editLc');
   if(!edit||document.querySelector('[data-lc-tool]')||!activeLc)return;
   const id=activeLc.id,currency=activeLc.currency;
-  for(const [label,action] of [['LC-Bedingungen',()=>openConditions(id)],['Gebühren & Provisionen',()=>openCharges(id,currency)]]){
+  for(const [label,action] of [[tx('lc.conditions','LC-Bedingungen'),()=>openConditions(id)],[tx('lc.charges','Gebühren & Provisionen'),()=>openCharges(id,currency)]]){
    const button=document.createElement('button');button.type='button';button.className='secondary';button.dataset.lcTool='true';button.textContent=label;button.onclick=action;edit.before(button);
   }
  });
