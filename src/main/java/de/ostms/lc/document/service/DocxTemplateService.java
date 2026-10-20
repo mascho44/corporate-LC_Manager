@@ -107,6 +107,14 @@ public class DocxTemplateService {
         return any ? sum : null;
     }
 
+    /** Letterhead and footer values of the company behind the credit, for letters drawn elsewhere. */
+    Map<String, Object> companyData(LetterOfCredit lc) {
+        de.ostms.lc.tenant.domain.TenantContext.require(lc.getTenantId());
+        Map<String, Object> data = new LinkedHashMap<>();
+        putCompany(data, lc);
+        return data;
+    }
+
     private void putCompany(Map<String, Object> data, LetterOfCredit lc) {
         var company=companies.profileForLetterhead(lc.getCompanyId(),lc.getBeneficiary());data.put("companyName",value(company.getLegalName()));data.put("companyAddress",value(company.getAddressLine()));data.put("companyPostalCode",value(company.getPostalCode()));data.put("companyCity",value(company.getCity()));data.put("companyCountry",value(company.getCountry()));data.put("companyEmail",value(company.getEmail()));data.put("companyPhone",value(company.getPhone()));data.put("companyTaxId",value(company.getTaxId()));data.put("companyRegistrationNumber",value(company.getRegistrationNumber()));data.put("companyBankName",value(company.getBankName()));data.put("companyIban",value(company.getIban()));data.put("companyBic",value(company.getBic()));data.put("companyContactPerson",value(company.getContactPerson()));data.put("companyLogo",null);if(company.getLogo()!=null){data.put("companyLogo",Pictures.ofBytes(company.getLogo()).size(160,60).create());data.put("companyLogoBytes",company.getLogo());}
         // Lines built from what exists, so a missing detail leaves no "-" or empty separators in the letterhead and footer.
