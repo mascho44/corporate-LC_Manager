@@ -26,6 +26,7 @@ Row-Level-Security ist nicht eingerichtet; die Mandantentrennung bleibt in Anwen
 `scripts/backup-prod.sh` kennt zwei Umgebungsvariablen:
 
 - `BACKUP_PASSPHRASE_FILE=/pfad/zur/passwortdatei`: Die Sicherung wird mit AES-256 verschlüsselt (`.dump.enc`), die Klartextdatei wird gelöscht. Die Passwortdatei gehört außerhalb des Backup-Ordners abgelegt (Rechte 600) und getrennt von der Sicherung aufbewahrt. **Ohne sie ist die Sicherung nicht wiederherstellbar.**
+- Ohne gesetzte Variable verwendet das Skript automatisch die Datei `~/.lcm-backup-passphrase` des ausführenden Benutzers, falls sie existiert und nicht leer ist. Mit `BACKUP_PASSPHRASE_FILE=` (leer) lässt sich die Verschlüsselung für einen Lauf abschalten. Anlegen: `install -m 600 /dev/null ~/.lcm-backup-passphrase && openssl rand -base64 48 > ~/.lcm-backup-passphrase`; das Passwort zusätzlich getrennt vom Server ablegen.
 - `BACKUP_KEEP=14`: Es bleiben nur die neuesten N lokalen Sicherungen. Ohne die Variable wird nichts gelöscht.
 
 Wiederherstellungstest einer verschlüsselten Sicherung: `BACKUP_PASSPHRASE_FILE=... bash scripts/test-backup-restore.sh /pfad/lcmanager-….dump.enc`.

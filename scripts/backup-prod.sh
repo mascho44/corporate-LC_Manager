@@ -36,6 +36,10 @@ fi
 
 chmod 600 "$BACKUP_FILE"
 
+# Ohne gesetzte Variable gilt die Standard-Passwortdatei im Home-Verzeichnis, falls vorhanden (BACKUP_PASSPHRASE_FILE= leer schaltet die Verschluesselung ab).
+if [[ -z "${BACKUP_PASSPHRASE_FILE+set}" && -s "${HOME:-/nonexistent}/.lcm-backup-passphrase" ]]; then
+  BACKUP_PASSPHRASE_FILE="$HOME/.lcm-backup-passphrase"
+fi
 # Optional: lokale Sicherung verschluesseln (AES-256, Passwortdatei ausserhalb des Backup-Ordners).
 if [[ -n "${BACKUP_PASSPHRASE_FILE:-}" ]]; then
   if [[ ! -s "$BACKUP_PASSPHRASE_FILE" ]]; then
