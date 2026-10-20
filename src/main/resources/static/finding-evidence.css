@@ -98,3 +98,5 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .assistant-step{background:#1d2939;border-color:#475467;color:#f2f4f7}:root:not([data-theme="light"]) .assistant-step.active{background:#1e3a8a}:root:not([data-theme="light"]) .assistant-recorded{background:#1d2939}:root:not([data-theme="light"]) .assistant-cards .card{border-color:#475467}}
 :root[data-theme="dark"] .assistant-step{background:#1d2939;border-color:#475467;color:#f2f4f7}:root[data-theme="dark"] .assistant-step.active{background:#1e3a8a}:root[data-theme="dark"] .assistant-recorded{background:#1d2939}:root[data-theme="dark"] .assistant-cards .card{border-color:#475467}
 .doc-review-explanation{margin:.25rem 0;font-style:italic;overflow-wrap:anywhere}
+.doc-review-advice,.submission-advice{margin:.25rem 0;color:var(--muted,#4b5563);overflow-wrap:anywhere}
+.doc-review-advice{border-left:3px solid #2f6db5;padding-left:.5rem}

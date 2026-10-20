@@ -19,6 +19,9 @@ public record CheckResult(Severity severity, String code, String message,
     public String reviewFingerprint(){return de.ostms.lc.check.service.ReviewFingerprint.of(this);}
     @com.fasterxml.jackson.annotation.JsonProperty("rule")
     public RuleDefinition rule(){return importedRule!=null?importedRule:de.ostms.lc.check.service.RuleCatalog.forFinding(code);}
+    /** What to do about an open finding, see {@link de.ostms.lc.check.service.CorrectionAdvice}. */
+    @com.fasterxml.jackson.annotation.JsonProperty("advice")
+    public String advice(){return de.ostms.lc.check.service.CorrectionAdvice.forFinding(code,severity);}
     @com.fasterxml.jackson.annotation.JsonProperty("ruleCatalogVersion")
     public String ruleCatalogVersion(){return de.ostms.lc.check.service.RuleCatalog.VERSION;}
 }

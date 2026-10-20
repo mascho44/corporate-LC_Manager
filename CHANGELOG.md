@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Korrekturvorschläge: Jede offene Abweichung und jeder Hinweis nennt jetzt den konkreten Schritt („So beheben“), zum Beispiel Rechnung auf den verfügbaren Betrag begrenzen, Akkreditivnummer ergänzen, Dokument unterschreiben oder beim Käufer eine Änderung beantragen. Sichtbar in der Einreichungskarte und in der dokumentweisen Prüfung; neues Feld `advice` am Befund.
 * Wahlweise PDF statt Word: Dokumentensatz (Rechnung, Packliste, Zertifikate) und Einreichungs-Begleitschreiben lassen sich im Dialog als PDF erzeugen, im selben professionellen Layout wie die Word-Vorlagen (Briefkopf mit Logo, Positionstabelle mit wiederholter Kopfzeile, Summe, Erklärung, Unterschrift, Fußzeile mit Seitenzahl); auch „PDF erstellen“ einzelner Dokumente nutzt das neue Layout.
 * Corporate-Mandanten: Die Dokumentenprüfung wie bei einer Bank (Prüfungsassistent, Dokumentweise prüfen, Prüfentscheidungen) wird nicht mehr angeboten; es bleibt die Schnellprüfung (Vorprüfung und Einreichungskarte). Gilt für Mandanten mit nur dem Corporate-Modul.
 * Einreichungspaket für die Bank: Begleitschreiben (Word, mit Liste der Dokumente, Originalen und Kopien) und die Dokumente in der üblichen Reihenfolge als ZIP, Vorschlag der Zahlen aus dem Akkreditiv, Warnung bei offenen Abweichungen der Vorprüfung, Vorlagedatum wahlweise speichern (`docs/einreichungspaket.md`). Briefköpfe und Fußzeilen lassen fehlende Firmenangaben weg; die Originalanzahl „FULL SET 3/3“ wird erkannt.
