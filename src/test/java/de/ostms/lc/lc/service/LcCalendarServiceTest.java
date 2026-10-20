@@ -29,6 +29,19 @@ class LcCalendarServiceTest {
   when(tasks.findByCompletedFalseOrderByDueDateAscCreatedAtAsc()).thenReturn(List.of());
   assertThat(new String(service.export("all","x"))).contains("SUMMARY:LC A – Ablauf").contains("DTSTART;VALUE=DATE:20261020");
  }
+ @Test void everyEventCarriesRemindersAndOneFileCanBeExportedAlone(){
+  var a=lc("A",null,LocalDate.of(2026,10,20));var b=lc("B",null,LocalDate.of(2026,11,20));var idA=java.util.UUID.randomUUID();
+  org.springframework.test.util.ReflectionTestUtils.setField(a,"id",idA);org.springframework.test.util.ReflectionTestUtils.setField(b,"id",java.util.UUID.randomUUID());
+  when(lcs.findAll()).thenReturn(List.of(a,b));
+  when(tasks.findByCompletedFalseOrderByDueDateAscCreatedAtAsc()).thenReturn(List.of());
+  String all=new String(service.export("all","x"));
+  assertThat(all).contains("BEGIN:VALARM").contains("TRIGGER:-P7D").contains("TRIGGER:-P1D");
+  assertThat(all.split("BEGIN:VEVENT",-1).length-1).isEqualTo(2);
+  String one=new String(service.export("all","x",idA));
+  assertThat(one).contains("SUMMARY:LC A – Ablauf").doesNotContain("LC B");
+  assertThat(LcCalendarService.reminders("task")).containsExactly("PT9H");
+  assertThat(LcCalendarService.reminders("presentation")).containsExactly("-P3D","-P1D");
+ }
  @Test void corporateTenantsAlsoSeeTargetDatesOfMissingDocuments(){
   var plans=mock(ProcurementPlanService.class);var tenants=mock(de.ostms.lc.tenant.repository.TenantRepository.class);
   var tenant=new de.ostms.lc.tenant.domain.Tenant();tenant.updateProfile(false,true);
