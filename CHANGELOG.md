@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Beschaffungsplan bei schmalem Fenster: Unter 680 Pixel Tabellenbreite erscheint jede Zeile als kleine Karte (Ampel und Zieltermin oben, darunter Dokument und Stand) statt einer abgeschnittenen Tabelle; bei breitem Fenster bekommt die Dokumentspalte eine Mindestbreite.
 * Kompaktere Abstände: Karten, Abschnittsköpfe, Dokumentzeilen, Verlauf, Reiter sowie Knöpfe und Eingabefelder sind etwas niedriger (Knopfhöhe 32 statt 36 Pixel), damit mehr auf den Bildschirm passt. Die Aktenbereiche werden dadurch noch einmal um rund 5 Prozent niedriger. Neu: `compact.css`.
 * Layout: Die Dialoge „Dokumentensatz erzeugen“, „Entwurf prüfen“, „Änderung beantragen“ und „Einreichungspaket“ haben Innenabstand und scrollen im Dialog; Felder ragen nicht mehr über den Rand (ein globaler seitlicher Feldabstand ließ Beschreibungsfelder überstehen).
 * Schrift: Der Inhalt verwendet jetzt eine kleinere Grundschrift (13,5 statt 16 Pixel), eine straffere Zeilenhöhe, dunkleren Text und geglättete Darstellung; kleine Hinweistexte sind einheitlich 12 Pixel. Das Menü bleibt unverändert. Größe und Zeilenhöhe stehen als Variablen am Anfang von `typography.css` (`--content-font-size`, `--content-line-height`).
