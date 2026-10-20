@@ -9,7 +9,7 @@ test('refresh replaces deadlines without duplicating tabs and retains selection'
  const end=source.indexOf("    if(examinationWorkspacePanel",start);
  const nodes=()=>{const items=[{remove(){items.splice(items.indexOf(this),1);}}];return {items,querySelectorAll(){return [...items];},querySelector(){return {};},append(value){value.remove=()=>items.splice(items.indexOf(value),1);items.push(value);}};};
  const content=nodes(),nav=nodes();let activations=0;
- const context=vm.createContext({$:selector=>selector.includes('content')?content:nav,document:{createElement:()=>({dataset:{}})},deadlineSection:{},activateDossierSection:name=>{assert.equal(name,'deadlines');activations++;}});
+ const context=vm.createContext({$:selector=>selector.includes('content')?content:nav,document:{createElement:()=>({dataset:{}})},deadlineSection:{},activateDossierSection:name=>{assert.equal(name,'deadlines');activations++;},tx:(key,de)=>de});
  for(let i=0;i<3;i++)vm.runInContext('{'+source.slice(start,end)+'}',context);
  assert.equal(content.items.length,1);assert.equal(nav.items.length,1);assert.equal(nav.items[0].textContent,'Fristen');assert.equal(activations,3);
 });

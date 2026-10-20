@@ -44,3 +44,15 @@ test('findings from the server show their English wording in English and the Ger
  const dc = load('draft-check', 'en').LcDraftCheck;
  assert.match(dc.resultHtml({ textFound: true, discrepancies: 1, warnings: 0, findings: [finding] }), /has not been presented[\s\S]*How to fix: upload it/);
 });
+
+test('the document list and the deadline monitor read in English', () => {
+ const source = fs.readFileSync(dir + 'app.js', 'utf8');
+ const pick = name => { const start = source.indexOf(`function ${name}(`); return source.slice(start, source.indexOf('\n', start)); };
+ const context = vm.createContext({ LcI18n: { language: () => 'en', t: (key, values = {}) => String(en[key] ?? key).replace(/\{(\w+)\}/g, (_, n) => String(values[n] ?? '')) }, currentUser: { role: 'VIEWER' }, can: () => false,
+  esc: v => String(v ?? ''), documentRow: () => '<row>' });
+ context.globalThis = context;
+ vm.runInContext([pick('tx'), pick('documentCategory'), pick('renderDocuments')].join('\n'), context);
+ const html = context.renderDocuments([{ documentType: 'COMMERCIAL_INVOICE' }, { documentType: 'BILL_OF_LADING' }]);
+ assert.match(html, /2 documents in this LC file/); assert.match(html, /2 sections/); assert.match(html, /Commercial documents[\s\S]*Transport documents/);
+ assert.match(context.renderDocuments([]), /No documents in this LC file yet/);
+});
