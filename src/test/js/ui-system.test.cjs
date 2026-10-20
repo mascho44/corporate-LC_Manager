@@ -1,10 +1,10 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const root=path.resolve(__dirname,'../../main/resources/static/');
 const read=f=>fs.readFileSync(path.join(root,f),'utf8');
-test('the shared control sizes are defined once: 36px standard, 30px small, one radius and two type sizes',()=>{
+test('the shared control sizes are defined once: 32px standard, 28px small, one radius and two type sizes',()=>{
  const css=read('ui-system.css');
- for(const token of ['--control-height:36px','--control-height-sm:30px','--control-radius:8px','--control-font:14px','--control-font-sm:13px'])assert.ok(css.includes(token),token);
- assert.ok(read('controls.css').includes('--control-height:36px'),'controls.css must not keep an older height');
+ for(const token of ['--control-height:32px','--control-height-sm:28px','--control-radius:8px','--control-font:14px','--control-font-sm:13px'])assert.ok(css.includes(token),token);
+ assert.ok(read('controls.css').includes('--control-height:32px'),'controls.css must not keep an older height');
 });
 test('every page that loads the base controls loads the control system last',()=>{
  for(const page of ['index.html','platform.html']){

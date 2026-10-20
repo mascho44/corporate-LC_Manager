@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Kompaktere Abstände: Karten, Abschnittsköpfe, Dokumentzeilen, Verlauf, Reiter sowie Knöpfe und Eingabefelder sind etwas niedriger (Knopfhöhe 32 statt 36 Pixel), damit mehr auf den Bildschirm passt. Die Aktenbereiche werden dadurch noch einmal um rund 5 Prozent niedriger. Neu: `compact.css`.
 * Layout: Die Dialoge „Dokumentensatz erzeugen“, „Entwurf prüfen“, „Änderung beantragen“ und „Einreichungspaket“ haben Innenabstand und scrollen im Dialog; Felder ragen nicht mehr über den Rand (ein globaler seitlicher Feldabstand ließ Beschreibungsfelder überstehen).
 * Schrift: Der Inhalt verwendet jetzt eine kleinere Grundschrift (13,5 statt 16 Pixel), eine straffere Zeilenhöhe, dunkleren Text und geglättete Darstellung; kleine Hinweistexte sind einheitlich 12 Pixel. Das Menü bleibt unverändert. Größe und Zeilenhöhe stehen als Variablen am Anfang von `typography.css` (`--content-font-size`, `--content-line-height`).
 * Englische Oberfläche, vierter Teil: Aktenansicht (Bereichsnavigation, LC-Cockpit, letzte Aktivitäten, Dokumentenliste mit Bereichen und Aktionen, Aufgaben, Verlauf und Notizen, Fristenmonitor) ist zweisprachig.
