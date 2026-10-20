@@ -72,6 +72,14 @@ public class LetterOfCreditController {
         return result;
     }
 
+    /** A new file with the terms of this one under a new reference. */
+    @PostMapping("/{id}/copy")
+    public LetterOfCredit copy(@PathVariable UUID id, @RequestBody java.util.Map<String, String> body, Authentication authentication) {
+        LetterOfCredit lc = service.copyOf(id, body == null ? null : body.get("reference"));
+        audit.record(authentication, "LC_COPIED", "LETTER_OF_CREDIT", lc.getId(), lc.getReference() + " aus Akte " + service.one(id).getReference());
+        return lc;
+    }
+
     @PutMapping("/{id}")
     public LetterOfCredit update(@PathVariable UUID id, @Valid @RequestBody LetterOfCreditUpdateRequest request, Authentication authentication) {
         String previous=auditState(service.one(id));
