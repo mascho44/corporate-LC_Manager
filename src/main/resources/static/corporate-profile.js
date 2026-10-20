@@ -4,6 +4,7 @@
  const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
  const MAX_LISTED = 8;
  const tr = (key, de, values = {}) => { const i = globalThis.LcI18n, s = i?.t ? i.t(key, values) : null; return s && s !== key ? s : String(de).replace(/\{(\w+)\}/g, (_, n) => String(values[n] ?? `{${n}}`)); };
+ const english = () => globalThis.LcI18n?.language?.() === 'en';
 
  /** Verdict from the review result: open discrepancies and missing documents block, warnings are only mentioned. */
  function submissionCheck(review) {
@@ -12,7 +13,7 @@
   const blocking = results.filter(r => r.severity === 'DISCREPANCY' && open(r));
   const warnings = results.filter(r => r.severity === 'WARNING' && open(r));
   const missing = blocking.filter(r => r.code === 'MISSING_DOCUMENT').length;
-  return { ready: blocking.length === 0, blocking: blocking.map(r => r.message), advice: blocking.map(r => r.advice || null), missing, warnings: warnings.length, total: results.length };
+  return { ready: blocking.length === 0, blocking: blocking.map(r => english() && r.messageEn ? r.messageEn : r.message), advice: blocking.map(r => (english() && r.adviceEn ? r.adviceEn : r.advice) || null), missing, warnings: warnings.length, total: results.length };
  }
  function checkHtml(check, showAll) {
   const head = check.ready

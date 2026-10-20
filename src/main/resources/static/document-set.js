@@ -3,6 +3,7 @@
 (() => {
  const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
  const tr = (key, de, values = {}) => { const i = globalThis.LcI18n, s = i?.t ? i.t(key, values) : null; return s && s !== key ? s : String(de).replace(/\{(\w+)\}/g, (_, n) => String(values[n] ?? `{${n}}`)); };
+ const english = () => globalThis.LcI18n?.language?.() === 'en';
  const num = value => { const n = Number(String(value ?? '').trim().replace(',', '.')); return String(value ?? '').trim() === '' || !Number.isFinite(n) ? null : n; };
  const money = (value, currency) => value == null ? '–' : `${Number(value).toLocaleString(globalThis.LcI18n?.language?.() === 'en' ? 'en-GB' : 'de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${currency ? ' ' + currency : ''}`;
  const severity = s => ({ DISCREPANCY: tr('dc.discrepancy', 'Abweichung'), WARNING: tr('dc.warning', 'Hinweis'), OK: tr('ds.ok', 'in Ordnung') }[s] || s);
@@ -43,7 +44,7 @@
  function resultHtml(result) {
   const docs = (result.documents || []).map(d => `<li><a href="${esc(d.downloadUrl)}">${esc(d.originalFilename)}</a> <small>${esc(d.typeLabel)}</small></li>`).join('');
   const warnings = (result.warnings || []).map(w => `<li class="ds-warning">${esc(w)}</li>`).join('');
-  const findings = (result.findings || []).map(f => `<li class="ds-${esc(String(f.severity).toLowerCase())}"><b>${esc(severity(f.severity))}</b> ${esc(f.message)} <small>${esc(f.documentName)}</small></li>`).join('');
+  const findings = (result.findings || []).map(f => `<li class="ds-${esc(String(f.severity).toLowerCase())}"><b>${esc(severity(f.severity))}</b> ${esc(english() && f.messageEn ? f.messageEn : f.message)} <small>${esc(f.documentName)}</small></li>`).join('');
   return `<h3>${tr('ds.created', '{n} Dokumente erzeugt', { n: (result.documents || []).length })}</h3><ul class="ds-docs">${docs}</ul>` +
    (result.total != null ? `<p>${tr('ds.invoiceTotal', 'Rechnungssumme')}: <b>${esc(money(result.total, result.currency))}</b></p>` : '') +
    (warnings ? `<h3>${tr('ds.notes', 'Hinweise')}</h3><ul class="ds-notes">${warnings}</ul>` : '') +

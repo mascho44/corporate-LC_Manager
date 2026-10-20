@@ -1,6 +1,7 @@
 /* Document-wise review: one dialog per document of the LC file. The PDF stays on the right, all findings of that document are listed on the left and can be
    confirmed one after the other (with a marked evidence instead of a comment); after the last open finding the dialog moves on to the next document. */
 (() => {
+ const english = () => globalThis.LcI18n?.language?.() === 'en';
  const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
  // REVIEW_STALE only says that an earlier decision no longer applies; it cannot be decided itself (the original finding next to it is the one to confirm again).
  const isOpen = finding => !finding.reviewDecision && finding.severity !== 'OK' && finding.code !== 'REVIEW_STALE';
@@ -239,9 +240,9 @@
     const card = document.createElement('article'); card.className = 'doc-review-finding' + (index === active ? ' active' : '') + (isOpen(finding) ? '' : ' decided'); card.dataset.index = index;
     const head = document.createElement('p'); head.className = 'doc-review-head';
     const badge = document.createElement('b'); badge.className = 'doc-review-badge ' + String(finding.severity || '').toLowerCase(); badge.textContent = SEVERITY[finding.severity] || finding.severity;
-    head.append(badge, document.createTextNode(' ' + (finding.message || ''))); card.append(head);
+    head.append(badge, document.createTextNode(' ' + ((english() && finding.messageEn) || finding.message || ''))); card.append(head);
     if (finding.lcCondition) { const c = document.createElement('small'); c.textContent = 'LC-Bedingung: ' + finding.lcCondition; card.append(c); }
-    if (finding.advice) { const a = document.createElement('p'); a.className = 'doc-review-advice'; a.textContent = 'So beheben: ' + finding.advice; card.append(a); }
+    if (finding.advice) { const a = document.createElement('p'); a.className = 'doc-review-advice'; a.textContent = english() ? 'How to fix: ' + (finding.adviceEn || finding.advice) : 'So beheben: ' + finding.advice; card.append(a); }
     if (finding.explanation) { const e = document.createElement('p'); e.className = 'doc-review-explanation'; e.textContent = 'Rechnung: ' + finding.explanation; card.append(e); }
     if (finding.documentEvidence) { const q = document.createElement('blockquote'); q.textContent = globalThis.readableEvidence ? readableEvidence(finding.documentEvidence) : finding.documentEvidence; card.append(q); }
     if (isOpen(finding)) {

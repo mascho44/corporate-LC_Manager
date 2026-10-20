@@ -40,7 +40,7 @@ public class DocumentSetService {
 
     public record Requirement(DocumentType documentType, String label, boolean namedInCredit, String originals, boolean signed) {}
     public record Proposal(LocalDate documentDate, String invoiceNumber, List<GeneratedDocumentItemRequest> items, List<DocumentType> types, List<Requirement> requirements, String currency, BigDecimal maximumInvoiceTotal, boolean companyConfigured) {}
-    public record Finding(String severity, String code, String message, String documentName) {}
+    public record Finding(String severity, String code, String message, String documentName, String messageEn) {}
     public record Result(List<DocumentView> documents, List<String> warnings, BigDecimal total, String currency, List<Finding> findings, List<String> replaced) {
         public Result(List<DocumentView> documents, List<String> warnings, BigDecimal total, String currency, List<Finding> findings) { this(documents, warnings, total, currency, findings, List.of()); }
     }
@@ -150,7 +150,7 @@ public class DocumentSetService {
         var findings = new ArrayList<Finding>();
         for (var result : checks.precheck(lcId).results())
             if (result.documentName() != null && names.contains(result.documentName()) && result.severity() != de.ostms.lc.check.api.CheckResult.Severity.OK)
-                findings.add(new Finding(result.severity().name(), result.code(), result.message(), result.documentName()));
+                findings.add(new Finding(result.severity().name(), result.code(), result.message(), result.documentName(), result.messageEn()));
         return new Result(created, warnings, total, lc.getCurrency(), findings, replaced);
     }
 
