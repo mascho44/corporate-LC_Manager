@@ -169,3 +169,14 @@ test('audit events are labelled in both languages, including actions without an 
  const missing = [...new Set(keys)].filter(key => !key.endsWith('.') && (!(key in en) || !(key in de))); // keys that end with a dot are completed at run time
  assert.deepEqual(missing, [], 'Schlüssel ohne Übersetzung in app.js');
 });
+
+test('the document buttons are grouped into two menus with translated labels', () => {
+ for (const [language, pack, create, check] of [['en', en, 'Create', 'Check & submit'], ['de', de, 'Erzeugen', 'Prüfen & einreichen']]) {
+  const context = vm.createContext({ LcI18n: { language: () => language, t: (key, values = {}) => String(pack[key] ?? key) } });
+  context.globalThis = context;
+  vm.runInContext(fs.readFileSync(dir + 'action-menus.js', 'utf8'), context);
+  const groups = JSON.parse(JSON.stringify(context.LcActionMenus.GROUPS()));
+  assert.deepEqual(groups.map(g => g.id), ['create', 'check']); assert.deepEqual(groups.map(g => g.label), [create, check]);
+  assert.deepEqual(groups[0].items, ['[data-doc-create]', '#documentSetBtn']); assert.deepEqual(groups[1].items, ['#draftCheckBtn', '#submissionPackageBtn', '#amendmentRequestBtn']);
+ }
+});
