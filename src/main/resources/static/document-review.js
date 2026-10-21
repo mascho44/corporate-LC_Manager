@@ -32,7 +32,9 @@
  const FIELD_LABEL = { LC_PRESENTATION_DATE: 'Vorlagedatum', LC_PRESENTATION_PERIOD_DAYS: 'Vorlagefrist (Tage)', LC_INSURANCE_MIN_PERCENT: 'Mindestdeckung Versicherung (%)', LC_TOLERANCE_PERCENT: 'Toleranz (%)' };
  let LOADED_LABELS = {};
  const setFieldLabels = map => { LOADED_LABELS = { ...LOADED_LABELS, ...(map || {}) }; };
- const fieldLabel = field => LOADED_LABELS[field] || FIELD_LABEL[field] || field.replace(/^LC_/, '').toLowerCase().replace(/_/g, ' ');
+ /** Readable fallback from the field code ("LC_REQUIRED_ORIGINAL_COUNT" -> "required original count"); the server labels are German only, so English shows this. */
+ const humanField = field => field.replace(/^LC_/, '').toLowerCase().replace(/_/g, ' ');
+ const fieldLabel = field => (globalThis.LcI18n?.language?.() === 'en' ? null : LOADED_LABELS[field] || FIELD_LABEL[field]) || humanField(field);
  const TIER_RANK = { blocking: 0, check: 1, hint: 2, done: 3 };
  /** Open and decidable findings over all documents, for the progress bar. */
  function progress(groups) {
@@ -101,6 +103,7 @@
   dialog.querySelector('[data-close]').onclick = () => dialog.close(); dialog.showModal();
   let groups, missing = [], gi = 0, active = -1, busy = false;
   const load = async () => {
+   if (!Object.keys(LOADED_LABELS).length) { const defs = await json(`/api/lcs/${lcId}/rule-facts/definitions`).catch(() => null); if (defs?.lc) setFieldLabels(Object.fromEntries([...defs.lc, ...(defs.requirements || [])].map(d => [d.field, d.label]))); }
    const [review, documents] = await Promise.all([json(`/api/lcs/${lcId}/document-checks`), json(`/api/lcs/${lcId}/documents`).catch(() => [])]);
    groups = groupFindings(review.results, documents); missing = missingInputs(review.results);
   };
