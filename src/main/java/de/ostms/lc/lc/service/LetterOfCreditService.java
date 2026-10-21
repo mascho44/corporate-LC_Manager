@@ -115,12 +115,13 @@ public class LetterOfCreditService {
     @Transactional
     public RequirementReparse reparse(UUID id){
         var preview=reparsePreview(id);
-        if(!preview.changed())return preview;
         LetterOfCredit lc=one(id);
-        lc.getRequiredDocuments().clear();lc.getRequiredDocuments().addAll(preview.proposed());
-        repo.save(lc);
+        if(preview.changed()){lc.getRequiredDocuments().clear();lc.getRequiredDocuments().addAll(preview.proposed());}
+        boolean filled=autoFacts!=null&&autoFacts.applyWithDocuments(lc)>0;
+        if(preview.changed()||filled)repo.save(lc);
         return preview;
     }
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private de.ostms.lc.rulepack.AutoRuleFacts autoFacts;
 
     @Transactional
     public LetterOfCredit update(UUID id, LetterOfCreditUpdateRequest request) {

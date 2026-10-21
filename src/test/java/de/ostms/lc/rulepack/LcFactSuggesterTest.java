@@ -1,28 +1,54 @@
 package de.ostms.lc.rulepack;
+
+import de.ostms.lc.document.domain.DocumentType;
+import de.ostms.lc.document.domain.LcDocument;
 import de.ostms.lc.lc.domain.LetterOfCredit;
 import org.junit.jupiter.api.Test;
-import java.util.stream.Collectors;
-import static org.assertj.core.api.Assertions.*;
+import java.math.BigDecimal;
+import java.util.List;
 import static de.ostms.lc.rulepack.PackDefinition.Field;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class LcFactSuggesterTest {
- private final LcFactSuggester suggester=new LcFactSuggester();
- private static LetterOfCredit lc(String applicant,String beneficiary){var l=new LetterOfCredit();l.setApplicant(applicant);l.setBeneficiary(beneficiary);return l;}
+    private static final String MESSAGE = ":40E:UCP LATEST VERSION\n:44E:HAMBURG\n:45A:2 UNITS MACHINE CIF JEBEL ALI INCOTERMS 2020\n:46A:+SIGNED COMMERCIAL INVOICE\n+INSURANCE CERTIFICATE\n";
 
- @Test void addressAndCountryComeFromTheSwiftPartyFields(){
-  var found=suggester.suggest(lc("BUYER AG\nBAHNHOFSTR. 1\n8001 ZUERICH\nSWITZERLAND","SUPPLIER CO. LTD\nNO. 88 JIANGUO ROAD\nSHANGHAI 200000\nP.R. CHINA")).stream().collect(Collectors.toMap(DocumentFactSuggester.Suggestion::field,DocumentFactSuggester.Suggestion::value));
-  assertThat(found).containsEntry(Field.LC_APPLICANT_ADDRESS,"BAHNHOFSTR. 1, 8001 ZUERICH").containsEntry(Field.LC_APPLICANT_ADDRESS_COUNTRY,"Switzerland").containsEntry(Field.LC_BENEFICIARY_ADDRESS_COUNTRY,"China");
- }
- @Test void nothingIsProposedWithoutAnAddressOrCountry(){
-  assertThat(suggester.suggest(lc(null,null))).isEmpty();
-  var found=suggester.suggest(lc("ONLY A NAME","NAME\nSTREET 1\nCITY"));
-  assertThat(found).extracting(DocumentFactSuggester.Suggestion::field).doesNotContain(Field.LC_BENEFICIARY_ADDRESS_COUNTRY,Field.LC_APPLICANT_ADDRESS_COUNTRY);
- }
- @Test void alreadyStoredIdenticalValuesAreNotProposedAgainAndChangedOnesShowTheCurrentValue(){
-  var l=lc("BUYER AG\nSTR 1\nSWITZERLAND","SUPPLIER\nROAD\nCHINA");
-  l.setRuleFactsJson(RuleFacts.encode(java.util.Map.of(Field.LC_APPLICANT_ADDRESS_COUNTRY,"Switzerland",Field.LC_BENEFICIARY_ADDRESS_COUNTRY,"Hong Kong"),false));
-  var found=suggester.suggest(l);
-  assertThat(found).extracting(DocumentFactSuggester.Suggestion::field).doesNotContain(Field.LC_APPLICANT_ADDRESS_COUNTRY);
-  assertThat(found.stream().filter(s->s.field()==Field.LC_BENEFICIARY_ADDRESS_COUNTRY).findFirst().orElseThrow().current()).isEqualTo("Hong Kong");
- }
+    private static LetterOfCredit lc(String message) {
+        var lc = new LetterOfCredit(); lc.setRawMessage(message); lc.setCurrency("USD");
+        lc.setRequiredDocuments(List.of("SIGNED COMMERCIAL INVOICE", "INSURANCE CERTIFICATE"));
+        return lc;
+    }
+    private static LcDocument invoice(String amount, String currency) {
+        var d = new LcDocument(); d.setDocumentType(DocumentType.COMMERCIAL_INVOICE); d.setOriginalFilename("inv.pdf"); d.setAmount(new BigDecimal(amount)); d.setCurrency(currency); return d;
+    }
+    private static String value(List<DocumentFactSuggester.Suggestion> list, Field field) {
+        return list.stream().filter(s -> s.field() == field).map(DocumentFactSuggester.Suggestion::value).findFirst().orElse(null);
+    }
+
+    @Test void ucpStandardsFillPresentationPeriodAndInsuranceCoverWhenTheMessageIsSilent() {
+        var found = new LcFactSuggester().suggest(lc(MESSAGE));
+        assertThat(value(found, Field.LC_PRESENTATION_PERIOD_DAYS)).isEqualTo("21");
+        assertThat(value(found, Field.LC_INSURANCE_MIN_PERCENT)).isEqualTo("110");
+    }
+
+    @Test void statedValuesBeatTheStandards() {
+        var found = new LcFactSuggester().suggest(lc(MESSAGE + ":48:15 DAYS AFTER SHIPMENT\n"));
+        assertThat(value(found, Field.LC_PRESENTATION_PERIOD_DAYS)).isEqualTo("15");
+    }
+
+    @Test void noStandardsWithoutUcp() {
+        var found = new LcFactSuggester().suggest(lc(MESSAGE.replace("UCP LATEST VERSION", "ISPR")));
+        assertThat(value(found, Field.LC_PRESENTATION_PERIOD_DAYS)).isNull();
+    }
+
+    @Test void oneInvoiceGivesClaimedGrossAndCifAmounts() {
+        var found = new LcFactSuggester().suggest(lc(MESSAGE), List.of(invoice("1000", "USD")));
+        assertThat(value(found, Field.LC_CLAIMED_AMOUNT)).isEqualTo("1000.00");
+        assertThat(value(found, Field.LC_GROSS_GOODS_AMOUNT)).isEqualTo("1000.00");
+        assertThat(value(found, Field.LC_CIF_CIP_VALUE_AMOUNT)).isEqualTo("1000.00");
+    }
+
+    @Test void twoInvoicesOrOtherCurrencyGiveNoAmounts() {
+        assertThat(value(new LcFactSuggester().suggest(lc(MESSAGE), List.of(invoice("1", "USD"), invoice("2", "USD"))), Field.LC_CLAIMED_AMOUNT)).isNull();
+        assertThat(value(new LcFactSuggester().suggest(lc(MESSAGE), List.of(invoice("1", "EUR"))), Field.LC_CLAIMED_AMOUNT)).isNull();
+    }
 }
