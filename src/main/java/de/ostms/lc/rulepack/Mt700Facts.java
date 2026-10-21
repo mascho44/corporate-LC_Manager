@@ -21,6 +21,9 @@ public final class Mt700Facts {
   allowed(out,tags,"43T",Field.LC_TRANSSHIPMENT_ALLOWED);
   place(out,tags,"44A",Field.LC_PLACE_OF_RECEIPT);place(out,tags,"44E",Field.LC_LOADING_PORT);
   place(out,tags,"44F",Field.LC_DISCHARGE_PORT);place(out,tags,"44B",Field.LC_PLACE_OF_FINAL_DESTINATION);
+  String t40a=tags.get("40A");
+  // Only a credit marked TRANSFERABLE can be transferred; without the mark there is no transfer and no second beneficiary. Whether a transferable credit really was transferred stays a decision of the examiner.
+  if(t40a!=null&&!t40a.toUpperCase(Locale.ROOT).contains("TRANSFERABLE"))out.add(new Fact(Field.LC_TRANSFERRED,"false","Feld :40A: (nicht als übertragbar gekennzeichnet)"));
   String t48=tags.get("48");
   if(t48!=null){var m=Pattern.compile("(?i)\\b(\\d{1,3})\\s*DAYS?\\b").matcher(t48);if(m.find())out.add(new Fact(Field.LC_PRESENTATION_PERIOD_DAYS,m.group(1),"Feld :48:"));}
   String t39a=tags.get("39A");

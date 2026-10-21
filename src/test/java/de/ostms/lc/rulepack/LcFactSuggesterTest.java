@@ -51,4 +51,13 @@ class LcFactSuggesterTest {
         assertThat(value(new LcFactSuggester().suggest(lc(MESSAGE), List.of(invoice("1", "USD"), invoice("2", "USD"))), Field.LC_CLAIMED_AMOUNT)).isNull();
         assertThat(value(new LcFactSuggester().suggest(lc(MESSAGE), List.of(invoice("1", "EUR"))), Field.LC_CLAIMED_AMOUNT)).isNull();
     }
+
+    @Test void creditWithoutTransferableMarkIsNotTransferred() {
+        assertThat(value(new LcFactSuggester().suggest(lc(":40A:IRREVOCABLE\n" + MESSAGE)), Field.LC_TRANSFERRED)).isEqualTo("false");
+    }
+
+    @Test void transferableCreditLeavesTheActualTransferOpen() {
+        assertThat(value(new LcFactSuggester().suggest(lc(":40A:IRREVOCABLE TRANSFERABLE\n" + MESSAGE)), Field.LC_TRANSFERRED)).isNull();
+        assertThat(value(new LcFactSuggester().suggest(lc(MESSAGE)), Field.LC_TRANSFERRED)).isNull();
+    }
 }
