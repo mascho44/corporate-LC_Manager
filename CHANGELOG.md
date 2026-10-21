@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Englische Oberfläche, sechster Teil: Die Dialoge „LC-Bedingungen“ und „Gebühren & Provisionen“ (Bedingungsnamen, Tarifprofile, Schätzungen) sowie der Bereich „Dokumententwürfe“ (Status, Freigabe-Ablauf, Knöpfe, Meldungen) sind zweisprachig.
 * Englische Oberfläche, fünfter Teil: Beschaffungsplan (Ampeln, Stände, Zieltermine, Vorlaufzeiten, Hinweise; neues Feld `hintEn` am Planpunkt), Status der Akte, Kopf der Akte mit Aktionen, Überschriften der Aktenbereiche, Menüeinträge Fristenkalender, EBICS-Bankanbindung und Gruppeninbox sowie der Arbeitsplatz-Block. Die Aktenbereiche werden nicht mehr am deutschen Überschriftentext erkannt, sondern an einem festen Schlüssel (`data-sect`).
 * Beschaffungsplan bei schmalem Fenster: Unter 680 Pixel Tabellenbreite erscheint jede Zeile als kleine Karte (Ampel und Zieltermin oben, darunter Dokument und Stand) statt einer abgeschnittenen Tabelle; bei breitem Fenster bekommt die Dokumentspalte eine Mindestbreite.
 * Kompaktere Abstände: Karten, Abschnittsköpfe, Dokumentzeilen, Verlauf, Reiter sowie Knöpfe und Eingabefelder sind etwas niedriger (Knopfhöhe 32 statt 36 Pixel), damit mehr auf den Bildschirm passt. Die Aktenbereiche werden dadurch noch einmal um rund 5 Prozent niedriger. Neu: `compact.css`.
