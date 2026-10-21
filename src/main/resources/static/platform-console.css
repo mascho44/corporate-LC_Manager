@@ -70,3 +70,12 @@ body.platform-shell>.platform-header{position:static;display:flex;align-items:ce
 .server-log-line.error{color:#fca5a5}
 .server-log-line.warn{color:#fcd34d}
 .server-log-line.debug{color:#94a3b8}
+
+/* Plattform-Protokoll als kompakte Tabelle */
+.platform-audit-table{width:100%;border-collapse:collapse;font-size:13px}
+.platform-audit-table th{text-align:left;padding:6px 10px;border-bottom:2px solid #d0d5dd;color:#475467;font-weight:600}
+.platform-audit-table td{padding:5px 10px;border-bottom:1px solid #eef0f3;vertical-align:baseline}
+.platform-audit-table td.time{white-space:nowrap;color:#475467}
+.platform-audit-table td.muted{color:#98a2b3}
+.platform-audit-table tr.failed td{background:#fff5f5}
+.platform-audit-table tr:hover td{background:#f8fafc}

@@ -21,6 +21,13 @@ class AccessDenialLogTest {
   log.record(403,"GET","/api/other","markus","t","1.1.1.1","Berechtigung fehlt");log.record(403,"GET","/api/lcs/"+java.util.UUID.randomUUID(),"anna","t","1.1.1.1","Berechtigung fehlt");
   assertThat(log.recent()).hasSize(3);
  }
+ @Test void anAnonymousVisitOfTheStartPageIsNotARefusal(){
+  var log=new AccessDenialLog();
+  log.record(401,"GET","/","-","-","1.1.1.1","nicht angemeldet");log.record(401,"GET","/index.html",null,null,"1.1.1.1","nicht angemeldet");
+  assertThat(log.recent()).isEmpty();
+  log.record(401,"GET","/api/lcs","-","-","1.1.1.1","nicht angemeldet");log.record(401,"GET","/","markus","t","1.1.1.1","Sitzung beendet");
+  assertThat(log.recent()).hasSize(2);
+ }
  @Test void theMemoryIsBounded(){
   var log=new AccessDenialLog();
   for(int i=0;i<500;i++)log.record(401,"GET","/p"+i+"/x","u"+i,null,"a","r");
