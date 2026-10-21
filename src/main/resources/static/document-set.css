@@ -18,3 +18,11 @@
 .submission-dialog .sp-table{display:block;overflow-x:auto;max-width:100%}
 .document-set-dialog textarea,.document-set-dialog input:not([type=checkbox]),.document-set-dialog select,.draft-check-dialog input,.draft-check-dialog select,.amendment-request-dialog textarea,.amendment-request-dialog input:not([type=checkbox]),.amendment-request-dialog select,.submission-dialog textarea,.submission-dialog input:not([type=checkbox]),.submission-dialog select{margin-left:0;margin-right:0}
 .document-set-dialog>.dialoghead,.draft-check-dialog>.dialoghead,.amendment-request-dialog>.dialoghead,.submission-dialog>.dialoghead{padding:0 0 .5rem}
+
+/* Action menus of the document row: a normal secondary button opens a short list of the grouped buttons. */
+.action-menu{position:relative;display:inline-block}
+.action-menu-toggle::after{content:" ▾";font-size:.85em}
+.action-menu-list{position:absolute;z-index:30;left:0;top:calc(100% + 4px);min-width:15rem;max-width:min(24rem,90vw);display:flex;flex-direction:column;gap:2px;padding:.35rem;background:#fff;border:1px solid #c9d1de;border-radius:10px;box-shadow:0 8px 24px rgba(16,24,40,.14)}
+.action-menu-list[hidden]{display:none}
+html body .action-menu-list>button.action-menu-item{width:100%;justify-content:flex-start;text-align:left;border-color:transparent;background:transparent;box-shadow:none}
+html body .action-menu-list>button.action-menu-item:hover,html body .action-menu-list>button.action-menu-item:focus-visible{background:#eef4fc}

@@ -1192,5 +1192,7 @@
   "kpi.viewAttention": "Needs attention",
   "kpi.reset": "Clear filter",
   "kpi.filtered": "Filtered: {name}",
-  "kpi.clickHint": "Click to filter the list"
+  "kpi.clickHint": "Click to filter the list",
+  "am.create": "Create",
+  "am.checkSubmit": "Check & submit"
 }

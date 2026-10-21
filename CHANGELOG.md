@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Bedienung: Die Knöpfe der Dokumentenakte sind in zwei Menüs gruppiert („Erzeugen“: Dokumentarten und Dokumentensatz; „Prüfen & einreichen“: Entwurf prüfen, Einreichungspaket, Änderung beantragen); daneben bleibt „Dokument hochladen“. Statt vier Knopfreihen bleibt eine. „Als Vorlage kopieren“ steht jetzt in der Kopfzeile der Akte neben Bearbeiten. Menüs schließen per Klick daneben, Auswahl oder Esc und folgen dem Sprachwechsel. Neu: `action-menus.js`.
 * Bedienung: Die Kennzahlen über der Aktenliste sind anklickbar und filtern die Liste (Offene, Ablauf bald, Verladung bald, Ablauf überschritten, Wiedervorlage fällig, nicht zugewiesen, wartet auf Kunde); ein zweiter Klick hebt den Filter auf, auch mit der Tastatur (Enter/Leertaste). Dazu vier feste Ansichten: Alle Akten, Meine Akten, Läuft bald ab und Braucht Aufmerksamkeit (Ablauf oder Verladung in 7 Tagen, Wiedervorlage fällig oder rote Prüfampel). Der aktive Filter wird angezeigt und lässt sich zurücksetzen.
 * Dokumentation: `datenbank-rollen.md` beschreibt den tatsächlichen Stand der Row-Level-Security (nicht mehr „nicht eingerichtet“) und den Betriebshinweis, dass sie nur mit der eingeschränkten Laufzeitrolle wirkt; derselbe Hinweis steht im Erstinstallations-Leitfaden.
 * Entwicklung: Leitfaden `docs/mehrsprachigkeit.md` (neue Texte immer zweisprachig, Muster für Frontend und Server) und Schutz-Test `i18n-guard.test.cjs`, der Schlüsselgleichheit der Sprachpakete prüft und verhindert, dass in den übersetzten Skripten deutscher Klartext ohne Übersetzung hinzukommt.
