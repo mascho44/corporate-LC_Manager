@@ -20,6 +20,7 @@ public class AutoRuleFacts {
     private static final ObjectMapper JSON = new ObjectMapper();
     @Autowired(required = false) private DocumentFactSuggester documents;
     @Autowired(required = false) private LcFactSuggester letters;
+    @Autowired(required = false) private de.ostms.lc.document.repository.LcDocumentRepository documentRepository;
 
     /** Merges suggestions into empty fields; returns the names of the fields filled. */
     public static List<String> merge(Map<Field, String> facts, List<DocumentFactSuggester.Suggestion> suggestions) {
@@ -57,11 +58,21 @@ public class AutoRuleFacts {
     }
 
     /** For a file right after import (parties, ports, goods from the message). */
-    public int apply(LetterOfCredit lc) {
+    public int apply(LetterOfCredit lc) { return apply(lc, List.of()); }
+
+    /** The file's own facts including what the documents already in the file tell (amounts of the invoice); the caller saves the file when the result is above zero. */
+    public int applyWithDocuments(LetterOfCredit lc) {
+        if (lc == null) return 0;
+        List<de.ostms.lc.document.domain.LcDocument> docs = List.of();
+        try { if (documentRepository != null && lc.getId() != null) docs = documentRepository.findByLetterOfCreditIdOrderByUploadedAtDesc(lc.getId()); } catch (RuntimeException unavailable) { /* amounts are only a convenience */ }
+        return apply(lc, docs);
+    }
+
+    public int apply(LetterOfCredit lc, List<de.ostms.lc.document.domain.LcDocument> docs) {
         if (letters == null || lc == null) return 0;
         try {
             var facts = new EnumMap<Field, String>(Field.class); facts.putAll(RuleFacts.read(lc.getRuleFactsJson()));
-            var filled = merge(facts, safe(letters.suggest(lc)));
+            var filled = merge(facts, safe(letters.suggest(lc, docs)));
             if (filled.isEmpty()) return 0;
             lc.setRuleFactsJson(RuleFacts.encode(facts, false));
             var auto = read(lc.getAutoRuleFacts()); auto.addAll(filled); lc.setAutoRuleFacts(write(auto));

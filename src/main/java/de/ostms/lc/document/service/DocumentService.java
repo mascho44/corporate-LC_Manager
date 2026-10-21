@@ -67,6 +67,7 @@ public class DocumentService {
         if (document.getCurrency() == null) document.setCurrency(document.getExtractedCurrency());
         if(autoFacts!=null)autoFacts.apply(document);
         var savedDocument = documents.save(document);
+        if(autoFacts!=null&&autoFacts.applyWithDocuments(lc)>0)lcs.save(lc);
         if(previews!=null)previews.prewarm(document.getContent(),document.getContentType());
         if (lc.releaseWaitingForCustomer()) { de.ostms.lc.rulepack.PresentationDate.stamp(lc, java.time.LocalDate.now()); lcs.save(lc); }
         return DocumentView.from(savedDocument);
