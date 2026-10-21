@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Fehlerbehebung: Die Plattformadministration, die Seite „Open-Source-Bibliotheken“ und die Regelpaket-Seite liefen nach den letzten Übersetzungsteilen nicht mehr, weil dort die Textfunktion `tx()` fehlte. `tx()` steht jetzt in `i18n.js` und (für Seiten ohne `i18n.js`) in `tx-fallback.js`; ein Test prüft, dass jede Seite eine Definition lädt.
 * Englische Oberfläche, dreizehnter Teil: Regelpakete, Änderungsstatus, Packlisten-Import, Löschen von Trainingsvorlagen, Neuerfassung, Profil, Erfassungszugänge, Arbeitsvorrat, Dokumentenvergleich, Parteikorrektur, Fortschrittsanzeigen, Audit-Kette und -Suche, Fristenkalender, Simulation, Regelquelle, KI- und Scan-Profil-Einstellungen, Workflows, Erfassungsinfo, Miniaturen, OCR-Toleranz u. a.
 * Englische Oberfläche, zwölfter Teil: EBICS, Einladungen, Plattform-Benutzer und -Reiter, Mitgliederseite (Rechte-Matrix, Sammelaktionen), Regel-Fakten, Befund-Nachweise und Übersicht, Avis-Einlesen, Avisierungs-Training, KI-Einstellungen, Sammel-PDF-Qualität, Kunden, Eingangskanäle, Gruppeninbox, neue Akte aus dem Posteingang (rund 600 Texte).
 * Sprache: Beim Start wird die Sprache des Benutzers geladen, bevor Menü und Einstellungsseiten aufgebaut werden. Bisher entstanden diese Teile in der Standardsprache (Englisch) und blieben nach dem Laden der deutschen Sprache zum Teil englisch.
