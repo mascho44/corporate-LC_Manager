@@ -1,7 +1,7 @@
 /* Plattformadministration: Tabs statt einer langen Seite.
    Übersicht (Kennzahlen, Hinweise) · Mandanten · Konten & Einladungen · Protokoll · Mein Konto (über den Kopf erreichbar). */
 (() => {
- const TABS = [['overview', tx('ptl.5d1261','Übersicht')], ['tenants', tx('ptl.2f1127','Mandanten')], ['accounts', tx('ptl.a17085','Konten & Einladungen')], ['log', tx('ptl.d1fd5d','Protokoll')]];
+ const TABS = [['overview', tx('ptl.5d1261','Übersicht')], ['tenants', tx('ptl.2f1127','Mandanten')], ['accounts', tx('ptl.a17085','Konten & Einladungen')], ['log', tx('ptl.d1fd5d','Protokoll')], ['serverlog', tx('sl.tab', 'Server-Log')]];
 
  /** Kennzahlen und Hinweise aus den vorhandenen Listen; reine Funktion. */
  function summarize(tenants = [], accounts = [], invitations = []) {
@@ -58,7 +58,7 @@
    [...tabs.children].forEach(b => { const on = b.dataset.tab === active; b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on)); });
    Object.entries(panes).forEach(([key, pane]) => { pane.hidden = key !== active; });
   };
-  const show = key => { if (!panes[key]) return; active = key; paint(); if (key === 'overview') renderOverview(); };
+  const show = key => { if (!panes[key]) return; active = key; paint(); if (key === 'overview') renderOverview(); if (key === 'serverlog') globalThis.LcServerLog?.render?.(panes.serverlog); };
   TABS.forEach(([key, label]) => { const b = node('button', label, 'platform-tab'); b.type = 'button'; b.dataset.tab = key; b.setAttribute('role', 'tab'); b.onclick = () => show(key); tabs.append(b); });
   panes.account.prepend(node('h3', tx('ptl.c0192b','Mein Konto')));
   section.append(head, tabs, ...Object.values(panes));
