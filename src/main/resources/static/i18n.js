@@ -32,4 +32,4 @@ document.addEventListener('DOMContentLoaded',()=>{
 });
 
 /* Shared text helper for all scripts (also on pages without app.js): translated text with {name} placeholders, German fallback. */
-if(false)globalThis.tx=(key,de,values={})=>{const s=globalThis.LcI18n?.t?globalThis.LcI18n.t(key,values):null;return s&&s!==key?s:String(de).replace(/\{(\w+)\}/g,(_,n)=>String(values[n]??`{${n}}`));};
+if(typeof globalThis.tx!=='function')globalThis.tx=(key,de,values={})=>{const s=globalThis.LcI18n?.t?globalThis.LcI18n.t(key,values):null;return s&&s!==key?s:String(de).replace(/\{(\w+)\}/g,(_,n)=>String(values[n]??`{${n}}`));};
