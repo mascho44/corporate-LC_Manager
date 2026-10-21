@@ -63,3 +63,7 @@ html body .global-search li{display:flex;gap:10px;align-items:baseline;padding:7
 html body .global-search li span{color:#667085;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 html body .global-search li[aria-selected="true"],html body .global-search li:hover{background:#eaf1ff}
 html body .global-search small{display:block;color:#667085;margin-top:6px}
+
+/* Erste Schritte */
+html body .first-steps{flex:1 0 100%;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0 0;padding:8px 12px;border:1px dashed #b9d0fb;border-radius:8px;background:#f8fbff}
+html body .first-steps button.done{opacity:.6}

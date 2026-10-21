@@ -188,3 +188,10 @@ test('global search finds files by reference and parties, best reference match f
   assert.deepEqual(JSON.parse(JSON.stringify(context.LcSearch.search(list, 'acme').map(x => x.reference))), ['ACME-1', 'LC-2']);
   assert.equal(context.LcSearch.search(list, '').length, 0);
 });
+
+test('first steps checklist marks done steps from readiness and file count', () => {
+  const context = vm.createContext({ globalThis: null }); context.globalThis = context;
+  vm.runInContext(fs.readFileSync(dir + 'first-steps.js', 'utf8'), context);
+  const done = JSON.parse(JSON.stringify(context.LcFirstSteps.steps({ companies: 1, templates: 0, activeMembers: 1 }, 2).map(s => s.done)));
+  assert.deepEqual(done, [true, false, false, true]);
+});
