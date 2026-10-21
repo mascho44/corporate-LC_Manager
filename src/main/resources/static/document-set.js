@@ -68,8 +68,8 @@
  globalThis.LcDocumentSet = { lineAmount, totalOf, limitMessage, requestBody, resultHtml, fromPrevious, previousLabel };
  if (typeof document === 'undefined' || !document.body) return;
 
- const LINE_FIELDS = [['description', 'Beschreibung', 'wide'], ['quantity', 'Menge'], ['unit', 'Einheit'], ['unitPrice', 'Einzelpreis'], ['amount', 'Betrag'], ['packages', 'Packstücke'], ['netWeight', 'Netto kg'], ['grossWeight', 'Brutto kg']];
- const fieldLabel = (key, de) => tr('ds.field.' + key, de);
+ /** The fields of one goods line; the labels are translated when the list is read. */
+ const LINE_FIELDS = () => [['description', tr('ds.field.description', 'Beschreibung'), 'wide'], ['quantity', tr('ds.field.quantity', 'Menge')], ['unit', tr('ds.field.unit', 'Einheit')], ['unitPrice', tr('ds.field.unitPrice', 'Einzelpreis')], ['amount', tr('ds.field.amount', 'Betrag')], ['packages', tr('ds.field.packages', 'Packstücke')], ['netWeight', tr('ds.field.netWeight', 'Netto kg')], ['grossWeight', tr('ds.field.grossWeight', 'Brutto kg')]];
 
  async function open() {
   if (typeof activeLc === 'undefined' || !activeLc) return;
@@ -86,7 +86,7 @@
   let lines = proposal.items.map(i => ({ description: i.description || '', quantity: i.quantity ?? '', unit: i.unit || '', unitPrice: i.unitPrice ?? '', amount: i.amount ?? '', packages: '', netWeight: '', grossWeight: '' }));
   let chosen = new Set(proposal.types);
   const render = () => {
-   const rows = lines.map((line, i) => `<div class="ds-line" data-line="${i}">${LINE_FIELDS.map(([key, label, wide]) => `<label class="${wide || ''}">${esc(fieldLabel(key, label))}${key === 'description' ? `<textarea data-key="${key}" rows="2">${esc(line[key])}</textarea>` : `<input data-key="${key}" value="${esc(line[key])}" inputmode="decimal">`}</label>`).join('')}${lines.length > 1 ? `<button type="button" class="secondary" data-remove>${tr('ds.remove', 'Entfernen')}</button>` : ''}</div>`).join('');
+   const rows = lines.map((line, i) => `<div class="ds-line" data-line="${i}">${LINE_FIELDS().map(([key, label, wide]) => `<label class="${wide || ''}">${esc(label)}${key === 'description' ? `<textarea data-key="${key}" rows="2">${esc(line[key])}</textarea>` : `<input data-key="${key}" value="${esc(line[key])}" inputmode="decimal">`}</label>`).join('')}${lines.length > 1 ? `<button type="button" class="secondary" data-remove>${tr('ds.remove', 'Entfernen')}</button>` : ''}</div>`).join('');
    const boxes = proposal.requirements.map(r => `<label class="ds-type"><input type="checkbox" data-type="${esc(r.documentType)}"${chosen.has(r.documentType) ? ' checked' : ''}> ${esc(r.label)}${r.namedInCredit ? ` <small>${tr('ds.named', '(im Akkreditiv verlangt)')}</small>` : ''}${r.originals ? ` <small>· ${tr('ds.originals', '{n} Originale', { n: esc(r.originals) })}</small>` : ''}${r.signed ? ` <small>· ${tr('ds.signed', 'unterschrieben')}</small>` : ''}</label>`).join('');
    const total = limitMessage(totalOf(lines), proposal.maximumInvoiceTotal, currency);
    dialog.innerHTML = `<div class="dialoghead"><h2>${tr('ds.title', 'Dokumentensatz erzeugen')}</h2><button type="button" data-close>${tr('common.close', 'Schließen')}</button></div>` +
