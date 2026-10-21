@@ -63,3 +63,10 @@ body.platform-shell>.platform-header{position:static;display:flex;align-items:ce
 .platform-tile b{font-size:30px;line-height:1.1}.platform-tile span{font-weight:600}.platform-tile small{color:#52607a}
 .platform-ok{color:#166534;margin:0}
 .platform-sanctions table{margin-bottom:10px}.platform-sanctions small{display:block;margin-top:8px;color:#52607a}
+
+/* Server-Log der Plattformadministration */
+.server-log-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
+.server-log-output{max-height:60vh;overflow:auto;background:#0f172a;color:#e2e8f0;border-radius:8px;padding:10px 12px;font:12px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;word-break:break-word}
+.server-log-line.error{color:#fca5a5}
+.server-log-line.warn{color:#fcd34d}
+.server-log-line.debug{color:#94a3b8}

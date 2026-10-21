@@ -233,3 +233,10 @@ test('review assistant steps and note templates follow the language', () => {
   assert.equal(context.LcReviewSteps.STEPS.at(-1).label, 'Completion');
   assert.match(context.LcReviewNote.DEFAULTS.ACCEPTED[0], /^Original checked/);
 });
+
+test('server log text lines and download content', () => {
+  const context = vm.createContext({ globalThis: null, LcI18n: { language: () => 'en' } }); context.globalThis = context;
+  vm.runInContext(fs.readFileSync(dir + 'platform-serverlog.js', 'utf8'), context);
+  const text = context.LcServerLog.asText([{ time: '2026-10-21T10:00:00Z', level: 'WARN', logger: 'Demo', message: 'something happened' }]);
+  assert.match(text, /WARN {3}\[Demo\] {2}something happened\n$/);
+});
