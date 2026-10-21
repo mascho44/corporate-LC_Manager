@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Dokumentweise Prüfung: Fehlende LC-Angaben erscheinen mit den deutschen Feldbezeichnungen (die Bezeichnungen wurden nur im Prüfungsassistenten geladen, sonst stand der englische Feldcode da); in der englischen Oberfläche steht der lesbar gemachte Feldcode.
 * Prüfungsassistent: Ein als „erledigt“ vermerkter Schritt mit wieder offenen Punkten wird als Warnung angezeigt (statt als Häkchen), der Abschluss-Schritt nennt die Schritte mit offenen Punkten als Sprungknöpfe; „1 Befund“ statt „1 Befunde“.
 * Dokumentweise Prüfung: Die fehlenden LC-Angaben stehen in einer eingeklappten Liste (bei mehr als drei) mit einem gemeinsamen Knopf „In den LC-Prüfdaten erfassen“ statt einem Knopf je Zeile; das Vorlagedatum bleibt sichtbar.
 * Papierkorb für Dokumente: Gelöschte Dokumente werden nur markiert (Migration V134), bleiben 30 Tage im Papierkorb der Akte (Knopf „Papierkorb“, Wiederherstellen mit dem Recht zum Löschen, Audit-Ereignis `DOCUMENT_RESTORED`) und werden danach täglich endgültig entfernt. Zweisprachig.
