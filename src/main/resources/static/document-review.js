@@ -2,16 +2,17 @@
    confirmed one after the other (with a marked evidence instead of a comment); after the last open finding the dialog moves on to the next document. */
 (() => {
  const english = () => globalThis.LcI18n?.language?.() === 'en';
+ const tr = (key, de, values = {}) => { const i = globalThis.LcI18n, s = i?.t ? i.t(key, values) : null; return s && s !== key ? s : String(de).replace(/\{(\w+)\}/g, (m, k) => values[k] ?? m); };
  const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
  // REVIEW_STALE only says that an earlier decision no longer applies; it cannot be decided itself (the original finding next to it is the one to confirm again).
  const isOpen = finding => !finding.reviewDecision && finding.severity !== 'OK' && finding.code !== 'REVIEW_STALE';
- const SEVERITY = { DISCREPANCY: 'Abweichung', WARNING: 'Hinweis', OK: 'in Ordnung' };
+ const SEVERITY = () => ({ DISCREPANCY: tr('dr.sev.disc', 'Abweichung'), WARNING: tr('dr.sev.warn', 'Hinweis'), OK: tr('dr.sev.ok', 'in Ordnung') });
  // Amount, expiry and presentation period, shipment date, missing document and signature stop a presentation; they are reviewed first.
  const BLOCKING = /SANCTION|EMBARGO|EXPORT_CONTROL|AMOUNT|EXPIR|PRESENTATION_PERIOD|PRESENTATION_BEFORE|SHIPMENT_DATE|LATEST_SHIPMENT|MISSING_DOCUMENT|SIGNATURE/;
  const SANCTIONS = /^SANCTIONS_(?!SCREENED|NOT_SCREENED|CLEARED)/;
  /** A sanctions hit noted as false positive by one person and waiting for the approval of a second one. */
  const isPendingApproval = finding => isOpen(finding) && SANCTIONS.test(finding.code || '') && !!finding.reviewedBy;
- const TIERS = [['blocking', 'Blockierend'], ['check', 'Prüfen'], ['hint', 'Hinweise'], ['done', 'Erledigt & in Ordnung']];
+ const TIERS = () => [['blocking', tr('dr.tier.blocking', 'Blockierend')], ['check', tr('dr.tier.check', 'Prüfen')], ['hint', tr('dr.tier.hint', 'Hinweise')], ['done', tr('dr.tier.done', 'Erledigt & in Ordnung')]];
  /** Tier of a finding: blocking, check (other discrepancies), hint (warnings) or done (decided or OK). */
  function tierOf(finding) {
   if (!isOpen(finding)) return 'done';
@@ -78,28 +79,28 @@
  /** Draft notice of discrepancies (MT734 and letter) from the confirmed discrepancies; editable and copyable, nothing is sent. */
  async function openNotice(lcId) {
   const box = document.createElement('dialog'); box.className = 'wide-dialog notice-dialog'; document.body.append(box); box.onclose = () => box.remove();
-  box.innerHTML = '<div class="dialoghead"><h2>Unstimmigkeitsmeldung (Entwurf)</h2><button type="button" data-close>Schließen</button></div><p role="status">Wird erstellt …</p>';
+  box.innerHTML = '<div class="dialoghead"><h2>' + tr('dr.notice.title', 'Unstimmigkeitsmeldung (Entwurf)') + '</h2><button type="button" data-close>' + tr('common.close', 'Schließen') + '</button></div><p role="status">' + tr('dr.notice.creating', 'Wird erstellt …') + '</p>';
   box.querySelector('[data-close]').onclick = () => box.close(); box.showModal();
   try {
    const draft = await json(`/api/lcs/${lcId}/document-checks/discrepancy-notice`);
-   if (!draft.discrepancies) { box.querySelector('[role=status]').textContent = 'Noch keine bestätigten Abweichungen. Im Prüfmodus „Abweichung bestätigen“ wählen; nur bestätigte Abweichungen kommen in die Meldung.'; return; }
-   box.querySelector('[role=status]').textContent = `${draft.discrepancies} bestätigte Abweichung${draft.discrepancies === 1 ? '' : 'en'}. Entwurf prüfen, ergänzen (z. B. :21: Referenz der Einreicherbank, Betrag) und selbst versenden.`;
-   for (const [key, title] of [['mt734', 'SWIFT MT734 (Advice of Refusal)'], ['letter', 'Schreiben an die Bank']]) {
+   if (!draft.discrepancies) { box.querySelector('[role=status]').textContent = tr('dr.notice.none', 'Noch keine bestätigten Abweichungen. Im Prüfmodus „Abweichung bestätigen“ wählen; nur bestätigte Abweichungen kommen in die Meldung.'); return; }
+   box.querySelector('[role=status]').textContent = draft.discrepancies === 1 ? tr('dr.notice.readyOne', '1 bestätigte Abweichung. Entwurf prüfen, ergänzen (z. B. :21: Referenz der Einreicherbank, Betrag) und selbst versenden.') : tr('dr.notice.readyMany', '{n} bestätigte Abweichungen. Entwurf prüfen, ergänzen (z. B. :21: Referenz der Einreicherbank, Betrag) und selbst versenden.', { n: draft.discrepancies });
+   for (const [key, title] of [['mt734', 'SWIFT MT734 (Advice of Refusal)'], ['letter', tr('dr.notice.letter', 'Schreiben an die Bank')]]) {
     const section = document.createElement('section'); section.className = 'notice-part';
     const head = document.createElement('h3'); head.textContent = title;
     const area = document.createElement('textarea'); area.rows = key === 'mt734' ? 12 : 14; area.value = draft[key]; area.spellcheck = false;
-    const copy = document.createElement('button'); copy.type = 'button'; copy.className = 'secondary'; copy.textContent = 'Kopieren';
-    copy.onclick = async () => { try { await navigator.clipboard.writeText(area.value); copy.textContent = 'Kopiert ✓'; } catch { area.select(); copy.textContent = 'Markiert – mit Strg/Cmd+C kopieren'; } };
+    const copy = document.createElement('button'); copy.type = 'button'; copy.className = 'secondary'; copy.textContent = tr('dr.copy', 'Kopieren');
+    copy.onclick = async () => { try { await navigator.clipboard.writeText(area.value); copy.textContent = tr('dr.copied', 'Kopiert ✓'); } catch { area.select(); copy.textContent = tr('dr.copyManual', 'Markiert – mit Strg/Cmd+C kopieren'); } };
     section.append(head, area, copy); box.append(section);
    }
-  } catch (error) { box.querySelector('[role=status]').textContent = 'Entwurf nicht verfügbar: ' + error.message; }
+  } catch (error) { box.querySelector('[role=status]').textContent = tr('dr.notice.unavailable', 'Entwurf nicht verfügbar:') + ' ' + error.message; }
  }
  async function open() {
   const lcId = activeLc?.id; if (!lcId) return;
   let dialog = document.querySelector('#documentReviewDialog');
   if (!dialog) { dialog = document.createElement('dialog'); dialog.id = 'documentReviewDialog'; dialog.className = 'wide-dialog'; document.body.append(dialog); }
   dialog.onclose?.(); dialog.onclose = null;
-  dialog.innerHTML = '<p>Prüfung wird geladen …</p><button type="button" data-close>Schließen</button>';
+  dialog.innerHTML = '<p>' + tr('dr.loading', 'Prüfung wird geladen …') + '</p><button type="button" data-close>' + tr('common.close', 'Schließen') + '</button>';
   dialog.querySelector('[data-close]').onclick = () => dialog.close(); dialog.showModal();
   let groups, missing = [], gi = 0, active = -1, busy = false;
   const load = async () => {
@@ -110,10 +111,10 @@
   try { await load(); } catch (error) { dialog.querySelector('p').textContent = 'Prüfung konnte nicht geladen werden: ' + error.message; return; }
   if (!groups.length && !missing.length) { dialog.querySelector('p').textContent = 'Keine Befunde zu Dokumenten vorhanden.'; return; }
   gi = Math.max(0, nextGroupWithOpen(groups)); 
-  dialog.innerHTML = '<div class="dialoghead"><h2>Dokumentweise Prüfung</h2><div class="doc-review-nav"><button type="button" class="secondary" data-doc-prev aria-label="Vorheriges Dokument">←</button><b data-doc-label></b><button type="button" class="secondary" data-doc-next aria-label="Nächstes Dokument">→</button></div><button type="button" data-close>Schließen</button></div>' +
+  dialog.innerHTML = '<div class="dialoghead"><h2>' + tr('dr.title', 'Dokumentweise Prüfung') + '</h2><div class="doc-review-nav"><button type="button" class="secondary" data-doc-prev aria-label="' + tr('dr.prev', 'Vorheriges Dokument') + '">←</button><b data-doc-label></b><button type="button" class="secondary" data-doc-next aria-label="' + tr('dr.next', 'Nächstes Dokument') + '">→</button></div><button type="button" data-close>' + tr('common.close', 'Schließen') + '</button></div>' +
    '<div class="doc-review-progress"><span data-doc-progress></span><progress data-doc-progress-bar max="1" value="0"></progress><button type="button" class="secondary" data-notice>Unstimmigkeitsmeldung (Entwurf)</button></div><section class="doc-review-finish" data-doc-finish hidden></section><section class="doc-review-missing" data-doc-missing hidden></section><nav class="doc-review-strip" data-doc-strip aria-label="Dokumente"></nav>' +
-   '<div class="evidence-workspace"><section class="evidence-details">' + (can('DOCUMENT_UPLOAD') ? '<p class="doc-review-bar"><button type="button" class="secondary" data-doc-apply>Erkannte Prüfdaten übernehmen</button> <small data-doc-apply-status role="status"></small></p>' : '') + '<div data-doc-findings></div></section><section class="evidence-document" data-pdf-pages></section></div>' +
-   '<p class="doc-review-keys"><kbd>J</kbd> erfüllt · <kbd>N</kbd> Abweichung · <kbd>↑</kbd><kbd>↓</kbd> Befund · <kbd>←</kbd><kbd>→</kbd> Dokument</p>';
+   '<div class="evidence-workspace"><section class="evidence-details">' + (can('DOCUMENT_UPLOAD') ? '<p class="doc-review-bar"><button type="button" class="secondary" data-doc-apply>' + tr('dr.apply', 'Erkannte Prüfdaten übernehmen') + '</button> <small data-doc-apply-status role="status"></small></p>' : '') + '<div data-doc-findings></div></section><section class="evidence-document" data-pdf-pages></section></div>' +
+   '<p class="doc-review-keys"><kbd>J</kbd> ' + tr('dr.key.ok', 'erfüllt') + ' · <kbd>N</kbd> ' + tr('dr.key.disc', 'Abweichung') + ' · <kbd>↑</kbd><kbd>↓</kbd> ' + tr('dr.key.finding', 'Befund') + ' · <kbd>←</kbd><kbd>→</kbd> ' + tr('dr.key.doc', 'Dokument') + '</p>';
   dialog.querySelector('[data-close]').onclick = () => dialog.close();
   const list = dialog.querySelector('[data-doc-findings]'), viewer = dialog.querySelector('[data-pdf-pages]'), label = dialog.querySelector('[data-doc-label]');
   const prev = dialog.querySelector('[data-doc-prev]'), next = dialog.querySelector('[data-doc-next]');
@@ -123,7 +124,7 @@
   /** Reloads after LC data was entered: rules waiting for it are evaluated again. */
   async function refreshAfterFacts() {
    const name = groups[gi]?.name; await load(); renderMissing();
-   if (!groups.length) { list.textContent = missing.length ? 'Keine weiteren Befunde – zuerst die fehlenden Angaben oben erfassen.' : '✓ Alle Befunde sind erledigt.'; return; }
+   if (!groups.length) { list.textContent = missing.length ? tr('dr.noMoreMissing', 'Keine weiteren Befunde – zuerst die fehlenden Angaben oben erfassen.') : tr('dr.allDone', '✓ Alle Befunde sind erledigt.'); return; }
    const at = groups.findIndex(g => g.name === name); await showGroup(at >= 0 ? at : Math.max(0, nextGroupWithOpen(groups)));
   }
   const finishBox = dialog.querySelector('[data-doc-finish]');
@@ -133,18 +134,18 @@
    finishBox.hidden = !sum.complete; if (!sum.complete || finishBox.dataset.key === `${sum.accepted}/${sum.discrepancies}/${finished}`) return;
    finishBox.dataset.key = `${sum.accepted}/${sum.discrepancies}/${finished}`; finishBox.replaceChildren();
    const head = document.createElement('p');
-   head.textContent = sum.discrepancies ? `✓ Alle Befunde entschieden: ${sum.accepted} erfüllt, ${sum.discrepancies} Unstimmigkeit${sum.discrepancies === 1 ? '' : 'en'} bestätigt. Nächster Schritt: Unstimmigkeitsmeldung.` : `✓ Alle Befunde entschieden: ${sum.accepted} erfüllt, keine Unstimmigkeiten. Die Dokumente können als konform behandelt werden.`;
+   head.textContent = sum.discrepancies ? tr('dr.fin.disc', '✓ Alle Befunde entschieden: {a} erfüllt, {d} Unstimmigkeit(en) bestätigt. Nächster Schritt: Unstimmigkeitsmeldung.', { a: sum.accepted, d: sum.discrepancies }) : tr('dr.fin.clean', '✓ Alle Befunde entschieden: {a} erfüllt, keine Unstimmigkeiten. Die Dokumente können als konform behandelt werden.', { a: sum.accepted });
    finishBox.classList.toggle('with-discrepancies', sum.discrepancies > 0); finishBox.append(head);
    const actions = document.createElement('div'); actions.className = 'doc-review-finish-actions';
-   if (sum.discrepancies) { const notice = document.createElement('button'); notice.type = 'button'; notice.textContent = 'Unstimmigkeitsmeldung erstellen'; notice.onclick = () => openNotice(lcId); actions.append(notice); }
+   if (sum.discrepancies) { const notice = document.createElement('button'); notice.type = 'button'; notice.textContent = tr('dr.notice.create', 'Unstimmigkeitsmeldung erstellen'); notice.onclick = () => openNotice(lcId); actions.append(notice); }
    if (can('LC_EDIT')) {
     const close = document.createElement('button'); close.type = 'button'; close.className = sum.discrepancies ? 'secondary' : ''; close.disabled = finished;
-    close.textContent = finished ? 'Abschluss vermerkt ✓' : 'Prüfung abschließen (Vermerk in der Akte)';
+    close.textContent = finished ? tr('dr.closed', 'Abschluss vermerkt ✓') : tr('dr.close', 'Prüfung abschließen (Vermerk in der Akte)');
     close.onclick = async () => {
-     const text = `Dokumentenprüfung abgeschlossen: ${sum.docs} Dokument${sum.docs === 1 ? '' : 'e'}, ${sum.accepted} Befund${sum.accepted === 1 ? '' : 'e'} als erfüllt bestätigt, ${sum.discrepancies ? sum.discrepancies + ' Unstimmigkeit' + (sum.discrepancies === 1 ? '' : 'en') + ' bestätigt' : 'keine Unstimmigkeiten'}.`;
+     const text = tr('dr.note', 'Dokumentenprüfung abgeschlossen: {docs} Dokument(e), {a} Befund(e) als erfüllt bestätigt, {disc}.', { docs: sum.docs, a: sum.accepted, disc: sum.discrepancies ? tr('dr.note.disc', '{d} Unstimmigkeit(en) bestätigt', { d: sum.discrepancies }) : tr('dr.note.none', 'keine Unstimmigkeiten') });
      close.disabled = true;
      try { await json(`/api/lcs/${lcId}/notes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: text }) }); finished = true; renderFinish(summary(groups, missing)); }
-     catch (error) { close.disabled = false; alert('Vermerk konnte nicht gespeichert werden: ' + error.message); }
+     catch (error) { close.disabled = false; alert(tr('dr.noteFailed', 'Vermerk konnte nicht gespeichert werden:') + ' ' + error.message); }
     };
     actions.append(close);
    }
@@ -154,25 +155,25 @@
   function renderMissing() {
    missingBox.hidden = !missing.length; missingBox.replaceChildren(); if (!missing.length) return;
    const rules = missing.reduce((n, m) => n + m.rules, 0);
-   const head = document.createElement('p'); head.innerHTML = `<b>Fehlende LC-Angaben</b> – ${rules} Regel${rules === 1 ? '' : 'n'} können erst geprüft werden, wenn diese Angaben erfasst sind. Sie stehen deshalb nicht einzeln bei den Dokumenten.`; missingBox.append(head);
+   const head = document.createElement('p'); head.innerHTML = '<b>' + tr('dr.missing.title', 'Fehlende LC-Angaben') + '</b> – ' + (rules === 1 ? tr('dr.missing.textOne', '1 Regel kann erst geprüft werden, wenn diese Angaben erfasst sind. Sie stehen deshalb nicht einzeln bei den Dokumenten.') : tr('dr.missing.textMany', '{n} Regeln können erst geprüft werden, wenn diese Angaben erfasst sind. Sie stehen deshalb nicht einzeln bei den Dokumenten.', { n: rules })); missingBox.append(head);
    const editable = can('LC_EDIT');
    const others = missing.filter(m => !(editable && m.field === 'LC_PRESENTATION_DATE'));
-   if (editable && others.length) { const capture = document.createElement('button'); capture.type = 'button'; capture.className = 'secondary'; capture.dataset.ruleFacts = ''; capture.textContent = 'In den LC-Prüfdaten erfassen'; head.append(' ', capture); }
+   if (editable && others.length) { const capture = document.createElement('button'); capture.type = 'button'; capture.className = 'secondary'; capture.dataset.ruleFacts = ''; capture.textContent = tr('dr.capture', 'In den LC-Prüfdaten erfassen'); head.append(' ', capture); }
    const list = document.createElement('details'); list.className = 'doc-review-missing-list';
-   const summaryLine = document.createElement('summary'); summaryLine.textContent = `${others.length} fehlende Angabe${others.length === 1 ? '' : 'n'} anzeigen`;
+   const summaryLine = document.createElement('summary'); summaryLine.textContent = others.length === 1 ? tr('dr.showOne', '1 fehlende Angabe anzeigen') : tr('dr.showMany', '{n} fehlende Angaben anzeigen', { n: others.length });
    if (others.length) { list.append(summaryLine); if (others.length <= 3) list.open = true; }
    missing.forEach(m => {
     const row = document.createElement('div'); row.className = 'doc-review-missing-row';
-    const text = document.createElement('span'); text.textContent = `${fieldLabel(m.field)} · ${m.rules} Regel${m.rules === 1 ? '' : 'n'}${m.documents.size ? ', ' + m.documents.size + ' Dokument' + (m.documents.size === 1 ? '' : 'e') : ''}`; row.append(text);
+    const text = document.createElement('span'); text.textContent = fieldLabel(m.field) + ' · ' + (m.rules === 1 ? tr('dr.rowRuleOne', '1 Regel') : tr('dr.rowRuleMany', '{n} Regeln', { n: m.rules })) + (m.documents.size ? ', ' + (m.documents.size === 1 ? tr('dr.rowDocOne', '1 Dokument') : tr('dr.rowDocMany', '{n} Dokumente', { n: m.documents.size })) : ''); row.append(text);
     if (editable && m.field === 'LC_PRESENTATION_DATE') {
-     const input = document.createElement('input'); input.type = 'date'; input.value = new Date().toISOString().slice(0, 10); input.max = input.value; input.setAttribute('aria-label', 'Vorlagedatum');
-     const save = document.createElement('button'); save.type = 'button'; save.textContent = 'Vorlagedatum speichern';
+     const input = document.createElement('input'); input.type = 'date'; input.value = new Date().toISOString().slice(0, 10); input.max = input.value; input.setAttribute('aria-label', tr('dr.presentationDate', 'Vorlagedatum'));
+     const save = document.createElement('button'); save.type = 'button'; save.textContent = tr('dr.savePresentation', 'Vorlagedatum speichern');
      const status = document.createElement('small'); status.setAttribute('role', 'status');
      save.onclick = async () => {
-      if (!input.value) { status.textContent = 'Bitte ein Datum wählen.'; return; }
-      save.disabled = true; status.textContent = 'Wird gespeichert …';
+      if (!input.value) { status.textContent = tr('dr.pickDate', 'Bitte ein Datum wählen.'); return; }
+      save.disabled = true; status.textContent = tr('dr.saving', 'Wird gespeichert …');
       try { await json(`/api/lcs/${lcId}/rule-facts/presentation-date`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ date: input.value }) }); await refreshAfterFacts(); }
-      catch (error) { status.textContent = 'Nicht gespeichert: ' + error.message; save.disabled = false; }
+      catch (error) { status.textContent = tr('dr.notSaved', 'Nicht gespeichert:') + ' ' + error.message; save.disabled = false; }
      };
      row.append(input, save, status);
     }
@@ -225,19 +226,19 @@
      } catch (ignored) { /* the tick is a convenience only */ }
      checkCache.set(key, boxes);
     }
-    boxes.forEach(b => marks.push({ page: b.page, x: b.x, y: b.y, w: b.w, h: b.h, kind: f.reviewDecision === 'CONFIRMED_DISCREPANCY' ? 'discrepancy' : 'ok', title: `${f.reviewDecision === 'CONFIRMED_DISCREPANCY' ? 'Abweichung bestätigt' : 'Geprüft'}${f.reviewedBy ? ' · ' + f.reviewedBy : ''}` }));
+    boxes.forEach(b => marks.push({ page: b.page, x: b.x, y: b.y, w: b.w, h: b.h, kind: f.reviewDecision === 'CONFIRMED_DISCREPANCY' ? 'discrepancy' : 'ok', title: `${f.reviewDecision === 'CONFIRMED_DISCREPANCY' ? tr('dr.markDisc', 'Abweichung bestätigt') : tr('dr.markOk', 'Geprüft')}${f.reviewedBy ? ' · ' + f.reviewedBy : ''}` }));
    }));
    if (groups[gi] === group) dialog.setCheckmarks?.(marks);
   }
   function renderList() {
    const group = groups[gi];
    renderOverview();
-   label.textContent = `Dokument ${gi + 1} von ${groups.length}: ${group.name || 'Dokumentensatz (ohne einzelnes Dokument)'} · ${group.openCount} offen`;
+   label.textContent = tr('dr.docLabel', 'Dokument {i} von {n}: {name} · {open} offen', { i: gi + 1, n: groups.length, name: group.name || tr('dr.docSet', 'Dokumentensatz (ohne einzelnes Dokument)'), open: group.openCount });
    prev.disabled = gi === 0 || busy; next.disabled = gi >= groups.length - 1 || busy;
    list.replaceChildren();
    if (group.openCount === 0) { const done = document.createElement('p'); done.className = 'doc-review-done'; done.textContent = '✓ Alle Befunde zu diesem Dokument sind erledigt.'; list.append(done); }
    const sections = {};
-   TIERS.forEach(([key, title]) => {
+   TIERS().forEach(([key, title]) => {
     const count = group.items.filter(f => tierOf(f) === key).length; if (!count) return;
     const box = document.createElement('details'); box.className = 'doc-review-tier tier-' + key; box.dataset.tier = key;
     box.open = openTiers.has(key) || (active >= 0 && tierOf(group.items[active]) === key);
@@ -248,7 +249,7 @@
    group.items.forEach((finding, index) => {
     const card = document.createElement('article'); card.className = 'doc-review-finding' + (index === active ? ' active' : '') + (isOpen(finding) ? '' : ' decided'); card.dataset.index = index;
     const head = document.createElement('p'); head.className = 'doc-review-head';
-    const badge = document.createElement('b'); badge.className = 'doc-review-badge ' + String(finding.severity || '').toLowerCase(); badge.textContent = SEVERITY[finding.severity] || finding.severity;
+    const badge = document.createElement('b'); badge.className = 'doc-review-badge ' + String(finding.severity || '').toLowerCase(); badge.textContent = SEVERITY()[finding.severity] || finding.severity;
     head.append(badge, document.createTextNode(' ' + ((english() && finding.messageEn) || finding.message || ''))); card.append(head);
     if (finding.lcCondition) { const c = document.createElement('small'); c.textContent = 'LC-Bedingung: ' + finding.lcCondition; card.append(c); }
     if (finding.advice) { const a = document.createElement('p'); a.className = 'doc-review-advice'; a.textContent = english() ? 'How to fix: ' + (finding.adviceEn || finding.advice) : 'So beheben: ' + finding.advice; card.append(a); }
@@ -257,27 +258,27 @@
     if (isOpen(finding)) {
      const actions = document.createElement('div'); actions.className = 'doc-review-actions';
      const pending = isPendingApproval(finding);
-     if (pending) { const note = document.createElement('small'); note.className = 'doc-review-pending'; note.textContent = `${finding.reviewComment} (vorgemerkt von ${finding.reviewedBy})`; card.append(note); }
-     [['ACCEPTED', pending ? 'Falsch-positiv freigeben (Vier-Augen)' : SANCTIONS.test(finding.code || '') ? 'Als Falsch-positiv vormerken' : 'Als erfüllt bestätigen'], ['CONFIRMED_DISCREPANCY', SANCTIONS.test(finding.code || '') ? 'Treffer bestätigen' : 'Abweichung bestätigen']].forEach(([decision, text]) => {
+     if (pending) { const note = document.createElement('small'); note.className = 'doc-review-pending'; note.textContent = `${finding.reviewComment} (${tr('dr.notedBy', 'vorgemerkt von {name}', { name: finding.reviewedBy })})`; card.append(note); }
+     [['ACCEPTED', pending ? tr('dr.btn.release', 'Falsch-positiv freigeben (Vier-Augen)') : SANCTIONS.test(finding.code || '') ? tr('dr.btn.noteFp', 'Als Falsch-positiv vormerken') : tr('dr.btn.accept', 'Als erfüllt bestätigen')], ['CONFIRMED_DISCREPANCY', SANCTIONS.test(finding.code || '') ? tr('dr.btn.hit', 'Treffer bestätigen') : tr('dr.btn.disc', 'Abweichung bestätigen')]].forEach(([decision, text]) => {
       const button = document.createElement('button'); button.type = 'button'; button.className = decision === 'ACCEPTED' ? '' : 'secondary'; button.textContent = text; button.disabled = busy;
       button.onclick = event => { event.stopPropagation(); decide(index, decision); }; actions.append(button);
      });
      const missingLc = /\b(LC_[A-Z_]+) = nicht erfasst/.exec(finding.lcCondition || '');
-     if (missingLc) { const facts = document.createElement('button'); facts.type = 'button'; facts.className = 'secondary'; facts.dataset.ruleFacts = ''; facts.textContent = missingLc[1] === 'LC_PRESENTATION_DATE' ? 'Vorlagedatum erfassen' : 'Fehlende LC-Prüfdaten erfassen'; actions.append(facts); }
-     const hint = document.createElement('small'); hint.textContent = 'Fundstelle rechts im PDF markieren statt Kommentar schreiben.'; card.append(actions, hint);
+     if (missingLc) { const facts = document.createElement('button'); facts.type = 'button'; facts.className = 'secondary'; facts.dataset.ruleFacts = ''; facts.textContent = missingLc[1] === 'LC_PRESENTATION_DATE' ? tr('dr.enterPresentation', 'Vorlagedatum erfassen') : tr('dr.enterMissing', 'Fehlende LC-Prüfdaten erfassen'); actions.append(facts); }
+     const hint = document.createElement('small'); hint.textContent = tr('dr.markHint', 'Fundstelle rechts im PDF markieren statt Kommentar schreiben.'); card.append(actions, hint);
      const siblings = siblingsOf(groups, finding);
      if (siblings.length) {
       const also = document.createElement('div'); also.className = 'doc-review-also';
       const names = [...new Set(siblings.map(f => f.documentName))];
       const text = document.createElement('small'); text.textContent = `Gleicher Befund auch in: ${names.join(', ')}`;
-      const all = document.createElement('button'); all.type = 'button'; all.className = 'secondary'; all.disabled = busy; all.textContent = `Für alle ${siblings.length + 1} als erfüllt bestätigen`;
+      const all = document.createElement('button'); all.type = 'button'; all.className = 'secondary'; all.disabled = busy; all.textContent = tr('dr.allAccept', 'Für alle {n} als erfüllt bestätigen', { n: siblings.length + 1 });
       all.onclick = event => { event.stopPropagation(); decideAll(index, 'ACCEPTED'); };
-      const allDiscrepancy = document.createElement('button'); allDiscrepancy.type = 'button'; allDiscrepancy.className = 'secondary'; allDiscrepancy.disabled = busy; allDiscrepancy.textContent = `Für alle ${siblings.length + 1} Abweichung bestätigen`;
+      const allDiscrepancy = document.createElement('button'); allDiscrepancy.type = 'button'; allDiscrepancy.className = 'secondary'; allDiscrepancy.disabled = busy; allDiscrepancy.textContent = tr('dr.allDisc', 'Für alle {n} Abweichung bestätigen', { n: siblings.length + 1 });
       allDiscrepancy.onclick = event => { event.stopPropagation(); decideAll(index, 'CONFIRMED_DISCREPANCY'); };
       also.append(text, all, allDiscrepancy); card.append(also);
      }
     } else if (finding.code === 'REVIEW_STALE') {
-     const note = document.createElement('small'); note.textContent = 'Eine frühere Entscheidung gilt nicht mehr (Regel oder Vergleichsgrundlage haben sich geändert). Bitte den ursprünglichen Befund dieses Dokuments erneut bestätigen; dieser Hinweis verschwindet dann von selbst.'; card.append(note);
+     const note = document.createElement('small'); note.textContent = tr('dr.stale', 'Eine frühere Entscheidung gilt nicht mehr (Regel oder Vergleichsgrundlage haben sich geändert). Bitte den ursprünglichen Befund dieses Dokuments erneut bestätigen; dieser Hinweis verschwindet dann von selbst.'); card.append(note);
     } else {
      const done = document.createElement('small'); done.className = 'doc-review-doneline';
      done.textContent = `✓ ${finding.reviewDecision === 'ACCEPTED' ? 'als erfüllt bestätigt' : finding.reviewDecision === 'CONFIRMED_DISCREPANCY' ? 'Abweichung bestätigt' : 'in Ordnung'}${finding.reviewedBy ? ' · ' + finding.reviewedBy : ''}`; card.append(done);
@@ -297,7 +298,7 @@
     await renderFindingPdf(dialog, viewer, group.documentId, 1, [], null);
     loadCheckmarks(group);
     if (first) showEvidencePage(first);
-   } else { const none = document.createElement('p'); none.textContent = group.documentId ? 'Dieses Dokument ist kein PDF und kann hier nicht angezeigt werden.' : 'Diese Befunde betreffen den Dokumentensatz, nicht ein einzelnes Dokument.'; viewer.append(none); }
+   } else { const none = document.createElement('p'); none.textContent = group.documentId ? tr('dr.notPdf', 'Dieses Dokument ist kein PDF und kann hier nicht angezeigt werden.') : tr('dr.setFindings', 'Diese Befunde betreffen den Dokumentensatz, nicht ein einzelnes Dokument.'); viewer.append(none); }
   }
   async function decide(index, decision) {
    if (busy) return; busy = true; const finding = groups[gi].items[index], name = groups[gi].name, mark = dialog.getEvidenceMark?.() || null; renderList();
@@ -306,21 +307,21 @@
     await load();
     dialog.clearEvidenceMark?.();
     const at = groups.findIndex(g => g.name === name);
-    if (at < 0) { const n = nextGroupWithOpen(groups); if (n >= 0) await showGroup(n); else { list.textContent = '✓ Alle Befunde sind erledigt.'; } return; }
+    if (at < 0) { const n = nextGroupWithOpen(groups); if (n >= 0) await showGroup(n); else { list.textContent = tr('dr.allDone', '✓ Alle Befunde sind erledigt.'); } return; }
     gi = at;
     const nextIndex = nextOpen(groups[gi].items);
     if (nextIndex >= 0) { active = nextIndex; renderList(); showEvidencePage(groups[gi].items[nextIndex]); }
     else { const n = nextGroupWithOpen(groups, gi); if (n >= 0) await showGroup(n); else { active = -1; renderList(); } }
-   } catch (error) { alert('Entscheidung konnte nicht gespeichert werden: ' + error.message); }
+   } catch (error) { alert(tr('dr.decisionFailed', 'Entscheidung konnte nicht gespeichert werden:') + ' ' + error.message); }
    finally { busy = false; if (dialog.open) renderList(); }
   }
   /** One decision for the finding and the same open finding in the other documents. The marked evidence belongs to the current document only, so the others need a written reason. */
   async function decideAll(index, decision) {
    if (busy) return; const finding = groups[gi].items[index], siblings = siblingsOf(groups, finding); if (!siblings.length) return decide(index, decision);
-   const comment = await globalThis.LcReviewNote.ask({ decision, finding, required: decision === 'ACCEPTED', title: `Für alle ${siblings.length + 1} Dokumente`, text: decision === 'ACCEPTED' ? 'Begründung für alle Dokumente (Pflicht; eine markierte Fundstelle gilt nur für dieses Dokument).' : 'Optionaler Prüfvermerk für alle Dokumente.' });
+   const comment = await globalThis.LcReviewNote.ask({ decision, finding, required: decision === 'ACCEPTED', title: tr('dr.allDocs', 'Für alle {n} Dokumente', { n: siblings.length + 1 }), text: decision === 'ACCEPTED' ? tr('dr.allReasonReq', 'Begründung für alle Dokumente (Pflicht; eine markierte Fundstelle gilt nur für dieses Dokument).') : tr('dr.allReasonOpt', 'Optionaler Prüfvermerk für alle Dokumente.') });
    if (comment === null) return;
-   if (decision === 'ACCEPTED' && !comment.trim()) { alert('Bitte eine Begründung eingeben. Die Entscheidung wurde nicht gespeichert.'); return; }
-   if (comment.length > 1000) { alert('Die Begründung darf maximal 1000 Zeichen enthalten.'); return; }
+   if (decision === 'ACCEPTED' && !comment.trim()) { alert(tr('dr.needReason', 'Bitte eine Begründung eingeben. Die Entscheidung wurde nicht gespeichert.')); return; }
+   if (comment.length > 1000) { alert(tr('dr.reasonLong', 'Die Begründung darf maximal 1000 Zeichen enthalten.')); return; }
    busy = true; const name = groups[gi].name, mark = dialog.getEvidenceMark?.() || null; renderList();
    const post = (f, withMark) => json(`/api/lcs/${lcId}/document-checks/decisions`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ findingCode: f.code, documentName: f.documentName || '', decision, comment: comment.trim() || null, reviewFingerprint: f.reviewFingerprint, mark: withMark ? mark : null }) });
    let failed = 0;
@@ -329,25 +330,25 @@
     for (const f of siblings) { try { await post(f, false); } catch (ignored) { failed++; } }
     await load(); dialog.clearEvidenceMark?.();
     if (activeLc?.id === lcId && typeof refreshReviewInline === 'function') refreshReviewInline(lcId);
-    if (failed) alert(`${failed} von ${siblings.length + 1} Entscheidungen konnten nicht gespeichert werden; bitte diese Befunde einzeln prüfen.`);
+    if (failed) alert(tr('dr.someFailed', '{f} von {n} Entscheidungen konnten nicht gespeichert werden; bitte diese Befunde einzeln prüfen.', { f: failed, n: siblings.length + 1 }));
     const at = groups.findIndex(g => g.name === name);
     const nextIndex = at >= 0 ? nextOpen(groups[at].items) : -1;
     if (at >= 0 && nextIndex >= 0) { gi = at; active = nextIndex; renderList(); showEvidencePage(groups[gi].items[nextIndex]); }
     else { const n = nextGroupWithOpen(groups, Math.max(at, -1)); const first = n >= 0 ? n : nextGroupWithOpen(groups); if (first >= 0) await showGroup(first); else { active = -1; renderList(); } }
-   } catch (error) { alert('Entscheidung konnte nicht gespeichert werden: ' + error.message); }
+   } catch (error) { alert(tr('dr.decisionFailed', 'Entscheidung konnte nicht gespeichert werden:') + ' ' + error.message); }
    finally { busy = false; if (dialog.open) renderList(); }
   }
   const applyButton = dialog.querySelector('[data-doc-apply]');
   if (applyButton) applyButton.onclick = async () => {
-   const status = dialog.querySelector('[data-doc-apply-status]'); applyButton.disabled = true; status.textContent = 'Wird übernommen …';
+   const status = dialog.querySelector('[data-doc-apply-status]'); applyButton.disabled = true; status.textContent = tr('dr.applying', 'Wird übernommen …');
    try {
     const result = await json(`/api/lcs/${lcId}/rule-facts/suggestions/apply`, { method: 'POST' });
     const count = (result.documentFields || 0) + (result.lcFields || 0);
     const name = groups[gi]?.name; await load();
     const at = groups.findIndex(g => g.name === name);
-    status.textContent = count ? `${count} erkannte Angabe${count === 1 ? '' : 'n'} übernommen (nur leere Felder); die Befunde wurden neu berechnet.` : 'Es gab keine neuen erkannten Angaben.';
+    status.textContent = count ? (count === 1 ? tr('dr.appliedOne', '1 erkannte Angabe übernommen (nur leere Felder); die Befunde wurden neu berechnet.') : tr('dr.appliedMany', '{n} erkannte Angaben übernommen (nur leere Felder); die Befunde wurden neu berechnet.', { n: count })) : tr('dr.appliedNone', 'Es gab keine neuen erkannten Angaben.');
     if (groups.length) await showGroup(at >= 0 ? at : 0);
-   } catch (error) { status.textContent = 'Nicht übernommen: ' + error.message; }
+   } catch (error) { status.textContent = tr('dr.notApplied', 'Nicht übernommen:') + ' ' + error.message; }
    finally { applyButton.disabled = false; }
   };
   dialog.querySelector('[data-notice]').onclick = () => openNotice(lcId);
@@ -365,7 +366,7 @@
    event.preventDefault();
   };
   prev.onclick = () => gi > 0 && showGroup(gi - 1); next.onclick = () => gi < groups.length - 1 && showGroup(gi + 1);
-  if (groups.length) await showGroup(gi); else list.textContent = 'Keine weiteren Befunde – zuerst die fehlenden Angaben oben erfassen.';
+  if (groups.length) await showGroup(gi); else list.textContent = tr('dr.noMoreMissing', 'Keine weiteren Befunde – zuerst die fehlenden Angaben oben erfassen.');
  }
 
  Object.assign(globalThis.LcDocumentReview, { open, openNotice });

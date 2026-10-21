@@ -223,3 +223,13 @@ test('trash shows the days left before final removal', () => {
   assert.equal(context.LcTrash.daysLeft('2026-10-30T12:00:00Z', now), 29);
   assert.equal(context.LcTrash.daysLeft('2026-08-01T00:00:00Z', now), 0);
 });
+
+test('review assistant steps and note templates follow the language', () => {
+  const en = JSON.parse(fs.readFileSync(dir + 'language-en.json', 'utf8'));
+  const context = vm.createContext({ globalThis: null, LcI18n: { language: () => 'en', t: key => en[key] ?? key } }); context.globalThis = context;
+  vm.runInContext(fs.readFileSync(dir + 'review-steps.js', 'utf8'), context);
+  vm.runInContext(fs.readFileSync(dir + 'review-note.js', 'utf8'), context);
+  assert.equal(context.LcReviewSteps.STEPS[0].label, 'File and conditions');
+  assert.equal(context.LcReviewSteps.STEPS.at(-1).label, 'Completion');
+  assert.match(context.LcReviewNote.DEFAULTS.ACCEPTED[0], /^Original checked/);
+});

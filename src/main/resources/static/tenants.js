@@ -1,45 +1,45 @@
 /* Workspace administration: a page first, never an automatic modal. */
 async function setupTenants(){
  const text=(key,fallback)=>{const value=globalThis.LcI18n?.t(key);return value&&value!==key?value:fallback;};
- const node=(tag,value)=>{const n=document.createElement(tag);n.textContent=value;return n;};
- const nav=node('button',text('tenant.title','Mandant'));nav.type='button';nav.id='appNavTenants';
+ const node=(tag,value,key)=>{const n=document.createElement(tag);n.textContent=value;if(key)n.dataset.i18n=key;return n;};
+ const nav=node('button',text('tenant.title','Mandant'),'tenant.title');nav.type='button';nav.id='appNavTenants';
  document.querySelector('#appNav nav').append(nav);
  const section=document.createElement('section');section.id='tenantSection';section.className='panel hidden';
- const heading=node('h2',text('tenant.title','Mandant'));const message=node('p','');message.setAttribute('role','status');const list=document.createElement('div');
+ const heading=node('h2',text('tenant.title','Mandant'),'tenant.title');const message=node('p','');message.setAttribute('role','status');const list=document.createElement('div');
  const form=document.createElement('form');form.className='form-grid';
  const fields=[['code','tenant.code','Tenant code'],['name','tenant.name','Tenant name']];
- fields.forEach(([name,key,label])=>{const wrapper=node('label',text(key,label)),input=document.createElement('input');input.name=name;input.required=true;input.maxLength=name==='code'?50:255;if(name==='code')input.pattern='[a-z][a-z0-9-]{1,49}';wrapper.append(input);form.append(wrapper);});
- const language=node('label',text('tenant.language','Default language')),select=document.createElement('select');select.name='defaultLanguage';[['en','English'],['de','Deutsch']].forEach(([value,label])=>{const option=node('option',label);option.value=value;select.append(option);});language.append(select);form.append(language);
- const profileLabel=node('label',text('tenant.profile','Tenant profile')),profile=document.createElement('select');profile.name='profile';profile.id='tenantCreationProfile';profile.value='bank';
- [['bank','tenant.profileBank','Bank'],['corporate','tenant.profileCorporate','Corporate'],['combined','tenant.profileCombined','Bank & Corporate']].forEach(([value,key,label])=>{const option=node('option',text(key,label));option.value=value;profile.append(option);});profile.value='bank';profileLabel.append(profile);form.append(profileLabel);
- const profileNotice=node('p',text('tenant.profileNotice','The profile is informational. It does not enable modules or grant permissions. It cannot currently be changed after creation.'));profileNotice.id='tenantProfileNotice';profile.setAttribute('aria-describedby',profileNotice.id);form.append(profileNotice);
- const submit=node('button',text('tenant.create','Create tenant'));submit.type='submit';form.append(submit);
- const notice=node('p',text('tenant.identityNotice','Global accounts and invitations are managed in Platform administration. Local roles and memberships are managed under Users. New tenants start without business data.'));
+ fields.forEach(([name,key,label])=>{const wrapper=node('label',text(key,label),key),input=document.createElement('input');input.name=name;input.required=true;input.maxLength=name==='code'?50:255;if(name==='code')input.pattern='[a-z][a-z0-9-]{1,49}';wrapper.append(input);form.append(wrapper);});
+ const language=node('label',text('tenant.language','Default language'),'tenant.language'),select=document.createElement('select');select.name='defaultLanguage';[['en','English'],['de','Deutsch']].forEach(([value,label])=>{const option=node('option',label);option.value=value;select.append(option);});language.append(select);form.append(language);
+ const profileLabel=node('label',text('tenant.profile','Tenant profile'),'tenant.profile'),profile=document.createElement('select');profile.name='profile';profile.id='tenantCreationProfile';profile.value='bank';
+ [['bank','tenant.profileBank','Bank'],['corporate','tenant.profileCorporate','Corporate'],['combined','tenant.profileCombined','Bank & Corporate']].forEach(([value,key,label])=>{const option=node('option',text(key,label),key);option.value=value;profile.append(option);});profile.value='bank';profileLabel.append(profile);form.append(profileLabel);
+ const profileNotice=node('p',text('tenant.profileNotice','The profile is informational. It does not enable modules or grant permissions. It cannot currently be changed after creation.'),'tenant.profileNotice');profileNotice.id='tenantProfileNotice';profile.setAttribute('aria-describedby',profileNotice.id);form.append(profileNotice);
+ const submit=node('button',text('tenant.create','Create tenant'),'tenant.create');submit.type='submit';form.append(submit);
+ const notice=node('p',text('tenant.identityNotice','Global accounts and invitations are managed in Platform administration. Local roles and memberships are managed under Users. New tenants start without business data.'),'tenant.identityNotice');
  section.append(heading,notice,message,list,form);document.querySelector('main').append(section);
- const retry=node('button',text('tenant.retry','Reload tenant information'));retry.id='tenantRetry';retry.type='button';retry.className='secondary';retry.hidden=true;retry.onclick=()=>refresh();section.append(retry);
+ const retry=node('button',text('tenant.retry','Reload tenant information'),'tenant.retry');retry.id='tenantRetry';retry.type='button';retry.className='secondary';retry.hidden=true;retry.onclick=()=>refresh();section.append(retry);
  const createdInfo=document.createElement('section');createdInfo.id='tenantCreatedInfo';createdInfo.className='tenant-readiness';createdInfo.hidden=true;section.append(createdInfo);
  const loginInfo=document.createElement('section');loginInfo.id='tenantLoginInfo';loginInfo.className='tenant-readiness';loginInfo.hidden=true;section.append(loginInfo);
  const settingsForm=document.createElement('form');settingsForm.id='tenantSettingsForm';settingsForm.className='form-grid';settingsForm.hidden=true;
- const settingsTitle=node('h3',text('tenant.settings','Stammdaten des Mandanten'));
- const nameLabel=node('label',text('tenant.name','Tenant name')),settingsName=document.createElement('input');settingsName.name='name';settingsName.required=true;settingsName.maxLength=255;nameLabel.append(settingsName);
- const languageLabel=node('label',text('tenant.language','Default language')),settingsLanguage=document.createElement('select');settingsLanguage.name='defaultLanguage';[['en','English'],['de','Deutsch']].forEach(([value,label])=>{const option=node('option',label);option.value=value;settingsLanguage.append(option);});languageLabel.append(settingsLanguage);
- const saveSettings=node('button',text('tenant.saveSettings','Save settings'));saveSettings.type='submit';settingsForm.append(settingsTitle,nameLabel,languageLabel,saveSettings);section.append(settingsForm);
+ const settingsTitle=node('h3',text('tenant.settings','Stammdaten des Mandanten'),'tenant.settings');
+ const nameLabel=node('label',text('tenant.name','Tenant name'),'tenant.name'),settingsName=document.createElement('input');settingsName.name='name';settingsName.required=true;settingsName.maxLength=255;nameLabel.append(settingsName);
+ const languageLabel=node('label',text('tenant.language','Default language'),'tenant.language'),settingsLanguage=document.createElement('select');settingsLanguage.name='defaultLanguage';[['en','English'],['de','Deutsch']].forEach(([value,label])=>{const option=node('option',label);option.value=value;settingsLanguage.append(option);});languageLabel.append(settingsLanguage);
+ const saveSettings=node('button',text('tenant.saveSettings','Save settings'),'tenant.saveSettings');saveSettings.type='submit';settingsForm.append(settingsTitle,nameLabel,languageLabel,saveSettings);section.append(settingsForm);
  // OCR tolerance: minimum confidence of a recognised word to count as certain (own form, so the name/language save stays as it was).
  const ocrForm=document.createElement('form');ocrForm.id='tenantOcrForm';ocrForm.className='form-grid';ocrForm.hidden=true;
- const ocrTitle=node('h3',text('tenant.ocr','OCR-Toleranz'));
- const ocrLabel=node('label',text('tenant.ocrThreshold','Mindest-Sicherheit erkannter Wörter (%)')),ocrInput=document.createElement('input');ocrInput.name='threshold';ocrInput.type='number';ocrInput.min='50';ocrInput.max='95';ocrInput.step='1';ocrLabel.append(ocrInput);
- const ocrHint=node('p',text('tenant.ocrHint','Niedriger = toleranter: mehr Scans werden automatisch aufgeteilt und weniger Werte als unsicher markiert, dafür steigt das Fehlerrisiko. Leer = Standard.'));
- const saveOcr=node('button',text('tenant.saveOcr','OCR-Toleranz speichern'));saveOcr.type='submit';ocrForm.append(ocrTitle,ocrLabel,ocrHint,saveOcr);section.append(ocrForm);
+ const ocrTitle=node('h3',text('tenant.ocr','OCR-Toleranz'),'tenant.ocr');
+ const ocrLabel=node('label',text('tenant.ocrThreshold','Mindest-Sicherheit erkannter Wörter (%)'),'tenant.ocrThreshold'),ocrInput=document.createElement('input');ocrInput.name='threshold';ocrInput.type='number';ocrInput.min='50';ocrInput.max='95';ocrInput.step='1';ocrLabel.append(ocrInput);
+ const ocrHint=node('p',text('tenant.ocrHint','Niedriger = toleranter: mehr Scans werden automatisch aufgeteilt und weniger Werte als unsicher markiert, dafür steigt das Fehlerrisiko. Leer = Standard.'),'tenant.ocrHint');
+ const saveOcr=node('button',text('tenant.saveOcr','OCR-Toleranz speichern'),'tenant.saveOcr');saveOcr.type='submit';ocrForm.append(ocrTitle,ocrLabel,ocrHint,saveOcr);section.append(ocrForm);
  let ocrSettings=null;
  const readiness=document.createElement('section');readiness.id='tenantReadiness';readiness.className='tenant-readiness';readiness.hidden=true;section.append(readiness);
  async function refreshReadiness(generation){
   if(generation!==refreshGeneration)return;
   readiness.replaceChildren();readiness.hidden=!(settings?.editingEnabled&&typeof can==='function'&&can('USER_MANAGE')&&can('SETTINGS_MANAGE'));if(readiness.hidden)return;
-  readiness.append(node('h3',text('tenant.readiness','Tenant setup')),node('p',text('tenant.readinessNote','Presence checks only. These do not confirm the completeness or validity of company data and templates.')));
+  readiness.append(node('h3',text('tenant.readiness','Tenant setup'),'tenant.readiness'),node('p',text('tenant.readinessNote','Presence checks only. These do not confirm the completeness or validity of company data and templates.'),'tenant.readinessNote'));
   try{const status=await json('/api/tenants/current/readiness');if(generation!==refreshGeneration)return;
    [['companies','tenant.companies','Company records','#appNavCompany'],['templates','tenant.templates','Document templates','#appNavTemplates'],['activeMembers','tenant.members','Active members','#appNavUsers']].forEach(([key,label,fallback,target])=>{
-    const count=Number(status[key])||0,row=document.createElement('article');row.className='membership-row';row.append(node('b',text(label,fallback)),node('span',(count>0?text('tenant.present','Present'):text('tenant.missing','Not yet configured'))+' · '+count));
-    const open=node('button',text('tenant.configure','Open administration'));open.type='button';open.className='secondary';open.disabled=key==='templates'&&settings?.corporateEnabled!==true;open.onclick=()=>{if(!open.disabled)document.querySelector(target)?.click?.();};row.append(open);readiness.append(row);
+    const count=Number(status[key])||0,row=document.createElement('article');row.className='membership-row';row.append(node('b',text(label,fallback),label),node('span',(count>0?text('tenant.present','Present'):text('tenant.missing','Not yet configured'))+' · '+count));
+    const open=node('button',text('tenant.configure','Open administration'),'tenant.configure');open.type='button';open.className='secondary';open.disabled=key==='templates'&&settings?.corporateEnabled!==true;open.onclick=()=>{if(!open.disabled)document.querySelector(target)?.click?.();};row.append(open);readiness.append(row);
    });
   }catch(error){if(generation!==refreshGeneration)return;const notice=node('p',error.message);notice.setAttribute('role','alert');readiness.append(notice);}
  }
@@ -51,13 +51,13 @@ async function setupTenants(){
  const tabs=document.createElement('div');tabs.className='tenant-tabs';tabs.setAttribute('role','tablist');
  let activeTab='overview';
  function paintTabs(){[...tabs.children].forEach(b=>{const on=b.dataset.tab===activeTab;b.classList?.toggle('active',on);b.setAttribute('aria-selected',String(on));b.hidden=b.dataset.tab!=='overview'&&!panes[b.dataset.tab].children.length;});Object.entries(panes).forEach(([key,pane])=>{pane.hidden=key!==activeTab;});}
- tabLabels.forEach(([key,i18n,label])=>{const b=node('button',text(i18n,label));b.type='button';b.className='tenant-tab';b.dataset.tab=key;b.setAttribute('role','tab');b.onclick=()=>{activeTab=key;paintTabs();};tabs.append(b);panes[key].className='tenant-pane';});
+ tabLabels.forEach(([key,i18n,label])=>{const b=node('button',text(i18n,label),i18n);b.type='button';b.className='tenant-tab';b.dataset.tab=key;b.setAttribute('role','tab');b.onclick=()=>{activeTab=key;paintTabs();};tabs.append(b);panes[key].className='tenant-pane';});
  [...section.children].filter(child=>child!==heading).forEach(child=>panes.overview.append(child));
  section.append(tabs,panes.overview,panes.recognition,panes.data);
  if(typeof MutationObserver==='function')new MutationObserver(()=>{[...section.children].forEach(child=>{const target=boxPane[child.id];if(target)panes[target].append(child);});paintTabs();}).observe(section,{childList:true});
  paintTabs();
  globalThis.openTenantTab=key=>{if(panes[key]){activeTab=key;paintTabs();}};
- const header=document.createElement('label');header.className='tenant-workspace-selector';header.append(node('span',text('tenant.workspace','Workspace')));
+ const header=document.createElement('label');header.className='tenant-workspace-selector';header.append(node('span',text('tenant.workspace','Workspace'),'tenant.workspace'));
  const chooser=document.createElement('select');chooser.setAttribute('aria-label',text('tenant.workspace','Workspace'));header.append(chooser);document.querySelector('.header-actions').prepend(header);
  let overview,settings,busy=false,refreshGeneration=0;
  async function switchTo(id){
@@ -86,14 +86,14 @@ async function setupTenants(){
    ocrForm.hidden=true;ocrSettings=null;
    if(settings.editingEnabled){try{const ocr=await json('/api/tenants/current/settings/ocr');if(generation===refreshGeneration&&ocr&&typeof ocr.defaultThreshold==='number'&&typeof ocr.min==='number'&&typeof ocr.max==='number'){ocrSettings=ocr;ocrForm.hidden=false;ocrInput.min=String(Math.round(ocr.min*100));ocrInput.max=String(Math.round(ocr.max*100));ocrInput.placeholder=text('tenant.ocrDefault','Standard')+': '+Math.round(ocr.defaultThreshold*100);ocrInput.value=ocr.threshold==null?'':String(Math.round(ocr.threshold*100));}}catch(ignored){/* the tolerance form stays hidden */}}
    const current=overview.workspaces.find(workspace=>workspace.id===overview.selectedTenantId);
-   if(current){loginInfo.hidden=false;loginInfo.append(node('h3',text('tenant.loginInfo','Access to this tenant')),node('p',current.name),node('p',text('tenant.loginCode','Tenant identifier: ')+current.code),node('p',text('tenant.profile','Mandantenprofil')+': '+[settings.bankEnabled?text('tenant.profileBank','Bank'):'',settings.corporateEnabled?text('tenant.profileCorporate','Corporate'):''].filter(Boolean).join(' & ')),node('p',text('tenant.loginHelp','Sign in with your username, password and two-factor authentication when required, then select an authorized workspace. A single available workspace opens directly.')),node('p',text('tenant.accessHelp','A tenant administrator must first assign your existing account to a role under Users. Creating a tenant or knowing its code does not grant access.')));}
+   if(current){loginInfo.hidden=false;loginInfo.append(node('h3',text('tenant.loginInfo','Access to this tenant'),'tenant.loginInfo'),node('p',current.name),node('p',text('tenant.loginCode','Tenant identifier: ')+current.code),node('p',text('tenant.profile','Mandantenprofil')+': '+[settings.bankEnabled?text('tenant.profileBank','Bank'):'',settings.corporateEnabled?text('tenant.profileCorporate','Corporate'):''].filter(Boolean).join(' & ')),node('p',text('tenant.loginHelp','Sign in with your username, password and two-factor authentication when required, then select an authorized workspace. A single available workspace opens directly.'),'tenant.loginHelp'),node('p',text('tenant.accessHelp','A tenant administrator must first assign your existing account to a role under Users. Creating a tenant or knowing its code does not grant access.'),'tenant.accessHelp'));}
    await refreshReadiness(generation);if(generation===refreshGeneration)message.textContent='';
   }catch(error){if(generation!==refreshGeneration)return;message.textContent=error.message;form.hidden=true;chooser.disabled=true;retry.hidden=false;}
   finally{if(generation===refreshGeneration)section.setAttribute('aria-busy','false');}
  }
  form.onsubmit=async event=>{event.preventDefault();if(busy||!overview?.creationEnabled)return;busy=true;submit.disabled=true;message.textContent='';createdInfo.hidden=true;createdInfo.replaceChildren();
   try{const values=Object.fromEntries(new FormData(form));if(!['bank','corporate','combined'].includes(profile.value))throw Error(text('tenant.profileInvalid','Select a supported tenant profile.'));delete values.profile;values.bankEnabled=profile.value!=='corporate';values.corporateEnabled=profile.value!=='bank';const created=await json('/api/tenants',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(values)});form.reset();await refresh();message.textContent=text('tenant.created','Tenant created: ')+created.name;
-   if(overview.workspaces.some(workspace=>workspace.id===created.id)){createdInfo.hidden=false;createdInfo.append(node('h3',created.name),node('p',text('tenant.createdNext','Open the new workspace to configure company records, document templates and user roles. Existing business data is not copied.')));const open=node('button',text('tenant.open','Open workspace'));open.id='tenantCreatedOpen';open.type='button';open.onclick=()=>switchTo(created.id);createdInfo.append(open);}}
+   if(overview.workspaces.some(workspace=>workspace.id===created.id)){createdInfo.hidden=false;createdInfo.append(node('h3',created.name),node('p',text('tenant.createdNext','Open the new workspace to configure company records, document templates and user roles. Existing business data is not copied.'),'tenant.createdNext'));const open=node('button',text('tenant.open','Open workspace'),'tenant.open');open.id='tenantCreatedOpen';open.type='button';open.onclick=()=>switchTo(created.id);createdInfo.append(open);}}
   catch(error){message.textContent=error.message;}finally{busy=false;submit.disabled=false;chooser.disabled=false;}
  };
  ocrForm.onsubmit=async event=>{event.preventDefault();if(busy||!ocrSettings)return;busy=true;saveOcr.disabled=true;message.textContent='';

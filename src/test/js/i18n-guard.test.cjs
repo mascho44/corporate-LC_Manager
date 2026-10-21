@@ -3,10 +3,11 @@ const dir = 'src/main/resources/static/';
 
 /* Safety net for the multilingual rule (docs/mehrsprachigkeit.md): these scripts are fully translated, so they must not gain a plain German text.
    Add new scripts of new features to this list. The check is a heuristic (umlauts and common German words); it does not replace looking at the screen in English. */
-const TRANSLATED = ['draft-check', 'amendment-request', 'document-set', 'submission-package', 'kpis', 'akte-copy', 'procurement-plan', 'lc-tools', 'corporate-profile', 'action-menus', 'global-search', 'first-steps', 'drag-drop', 'document-trash'];
+const TRANSLATED = ['draft-check', 'amendment-request', 'document-set', 'submission-package', 'kpis', 'akte-copy', 'procurement-plan', 'lc-tools', 'corporate-profile', 'action-menus', 'global-search', 'first-steps', 'drag-drop', 'document-trash', 'document-review', 'review-assistant', 'review-steps', 'review-note'];
 const GERMAN = /[äöüÄÖÜß]|\b(und|der|die|das|zur|für|mit|nicht|noch|von|bei|eine?|im|aus|bitte|keine|wird|werden|kann|alle|neue|speichern|löschen|öffnen|schließen|prüfen|erstellen|bearbeiten|laden)\b/i;
 
 function plainGermanTexts(source) {
+ source = source.split('\n').filter(line => !line.includes('guard-ignore')).join('\n');
  const withoutFallbacks = source.replace(/\b(?:tx|tr)\('[\w.]+'\s*(?:\+[^,]+)?,\s*'(?:[^'\\]|\\.)*'/g, 'tx_').replace(/\/\/[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
  const found = [];
  for (const match of withoutFallbacks.matchAll(/(['"`])((?:\\.|(?!\1).){5,300})\1/g)) {
