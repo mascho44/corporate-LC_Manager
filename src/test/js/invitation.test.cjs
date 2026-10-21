@@ -2,7 +2,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 function fixture(token='A'.repeat(43)){
  const calls=[],historyCalls=[],message={textContent:''},button={disabled:false};
  const form={hidden:false,elements:{password:{value:'Synthetic123!'},confirmation:{value:'Synthetic123!'}},reportValidity:()=>true,querySelector:()=>button,reset(){this.elements.password.value='';this.elements.confirmation.value='';}};
- let failure=false;const context=vm.createContext({document:{querySelector:s=>s==='#invitationForm'?form:message},location:{hash:token?'#token='+token:'',pathname:'/invitation.html'},history:{replaceState:(...a)=>historyCalls.push(a)},URLSearchParams,fetch:async(url,options)=>{calls.push({url,options});return{ok:!failure,json:async()=>failure?{error:'Synthetic rejection'}:{message:'Accepted'}};}});
+ let failure=false;const context=vm.createContext({tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(m,k)=>values[k]??m),document:{querySelector:s=>s==='#invitationForm'?form:message},location:{hash:token?'#token='+token:'',pathname:'/invitation.html'},history:{replaceState:(...a)=>historyCalls.push(a)},URLSearchParams,fetch:async(url,options)=>{calls.push({url,options});return{ok:!failure,json:async()=>failure?{error:'Synthetic rejection'}:{message:'Accepted'}};}});
  vm.runInContext(fs.readFileSync('src/main/resources/static/invitation.js','utf8'),context);return{calls,historyCalls,form,message,button,setFailure:v=>failure=v};
 }
 test('invitation token is removed from browser history immediately and never stored',()=>{const f=fixture();assert.deepEqual(f.historyCalls[0],[null,'','/invitation.html']);assert.equal(f.form.hidden,false);});

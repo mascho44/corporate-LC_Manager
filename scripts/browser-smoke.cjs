@@ -48,6 +48,13 @@ function client(url) {
   }
   await send('Network.clearBrowserCookies');
   for (const page of ['/login.html', '/platform-login.html', '/password-reset.html', '/invitation.html', '/poststelle.html']) await visit(page);
+  // The pages without login also speak English when chosen with the switch (remembered in the browser).
+  await send('Runtime.evaluate', { expression: "localStorage.setItem('lc.preloginLanguage','en')" });
+  for (const page of ['/login.html', '/platform-login.html', '/password-reset.html', '/invitation.html', '/poststelle.html']) await visit(page);
+  const answer = await send('Runtime.evaluate', { expression: "document.documentElement.lang + '|' + (document.querySelector('button[type=submit]')?.textContent || document.querySelector('h1')?.textContent)" });
+  await send('Page.navigate', { url: base + '/login.html' }); await new Promise(r => setTimeout(r, 2000));
+  const login = await send('Runtime.evaluate', { expression: "document.documentElement.lang + '|' + document.querySelector('button[type=submit]').textContent" });
+  if (login.result.value !== 'en|Sign in') failures.push(`/login.html in English: expected "en|Sign in", got "${login.result.value}"`);
   cdp.close();
  } finally { chrome.kill(); }
  if (failures.length) { console.error('JavaScript errors:\n' + failures.join('\n')); process.exit(1); }

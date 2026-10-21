@@ -5,6 +5,7 @@ import de.ostms.lc.user.service.AppUserDetailsService; import jakarta.servlet.ht
  @Bean AuthenticationManager authenticationManager(AuthenticationConfiguration c)throws Exception{return c.getAuthenticationManager();}
  @Bean SecurityFilterChain security(HttpSecurity http,org.springframework.beans.factory.ObjectProvider<de.ostms.lc.capture.CaptureTokenService> captureTokens,org.springframework.beans.factory.ObjectProvider<AccessDenialLog> denialLogs,AppUserDetailsService users,de.ostms.lc.user.repository.AppUserRepository accounts,de.ostms.lc.tenant.service.TenantMembershipService memberships)throws Exception{return http.userDetailsService(users)
   .authorizeHttpRequests(a->a
+   .requestMatchers("/prelogin-language.js").permitAll()
    .requestMatchers("/favicon.ico","/apple-touch-icon.png","/apple-touch-icon-precomposed.png","/robots.txt").permitAll() // browsers ask for these by themselves; without login they get 404 instead of 401
    .requestMatchers("/platform-login.html","/platform-login.js","/platform-login.css").permitAll()
    .requestMatchers("/poststelle.html","/poststelle.js","/poststelle.css").permitAll()

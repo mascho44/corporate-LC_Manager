@@ -105,3 +105,8 @@ body .dossier-nav>button{flex:0 0 auto;align-self:center;min-height:44px;height:
 .amendment-status{margin:0 0 8px}.amendment-status b{padding:3px 10px;border-radius:99px;font-size:13px;background:#eef2f6;color:#344054}
 .amendment-status.pending b{background:#ffefc7;color:#8a5a00}.amendment-status.accepted b{background:#dcf5e5;color:#067647}.amendment-status.rejected b{background:#fde0dd;color:#b42318}
 .amendment-status small{margin-left:6px;color:#667085}.amendment-pending{margin-top:8px}.amendment-planned{margin:4px 0 8px 18px;padding:0}.amendment-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* Sprachumschalter der Seiten ohne Anmeldung */
+.prelogin-lang{position:fixed;top:12px;right:14px;display:flex;gap:2px;padding:2px;border:1px solid rgba(100,116,139,.4);border-radius:8px;background:rgba(255,255,255,.9);z-index:20}
+.prelogin-lang button{border:0;background:transparent;padding:4px 10px;border-radius:6px;font:inherit;font-size:13px;cursor:pointer;color:#344054}
+.prelogin-lang button[aria-pressed="true"]{background:#2f6fed;color:#fff}
