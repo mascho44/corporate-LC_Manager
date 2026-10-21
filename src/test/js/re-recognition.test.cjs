@@ -4,7 +4,7 @@ function setup(responses,docButtons){
  function node(tag){return{tag,children:[],textContent:'',className:'',dataset:{},attributes:{},disabled:false,
   append(...i){this.children.push(...i);},remove(){this.removed=true;},addEventListener(n,f){this['on'+n]=f;},setAttribute(k,v){this.attributes[k]=v;},showModal(){this.open=true;},close(){this.open=false;}};}
  const body=node('body'),calls=[];let listener;
- const context=vm.createContext({activeLc:{id:'lc1'},csrfToken:'tok',load:async()=>{},show:async()=>{},
+ const context=vm.createContext({tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(m,k)=>values[k]??m),activeLc:{id:'lc1'},csrfToken:'tok',load:async()=>{},show:async()=>{},
   document:{createElement:node,body,addEventListener:(n,f)=>{listener=f;},querySelectorAll:()=>docButtons},
   fetch:async(url,options)=>{calls.push({url,body:options.body,csrf:options.headers['X-CSRF-TOKEN']});const r=responses.shift();return {ok:r.ok!==false,json:async()=>r.body};}});
  vm.runInContext(source,context);

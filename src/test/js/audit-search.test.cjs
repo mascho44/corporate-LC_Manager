@@ -3,7 +3,7 @@ const source=fs.readFileSync('src/main/resources/static/audit-search.js','utf8')
 function setup(responses){
  function node(tag){return{tag,children:[],textContent:'',value:'',className:'',attributes:{},append(...i){this.children.push(...i);},after(n){this.next=n;},setAttribute(k,v){this.attributes[k]=v;},addEventListener(n,f){this[n]=f;}};}
  const toolbar=node('div'),auditBtn=node('button'),calls=[],navigations=[];let filtered=0;
- const context=vm.createContext({URLSearchParams,Date,Object,document:{querySelector:s=>s==='#auditBtn'?auditBtn:toolbar,createElement:node},location:{assign:u=>navigations.push(u)},
+ const context=vm.createContext({tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(m,k)=>values[k]??m),URLSearchParams,Date,Object,document:{querySelector:s=>s==='#auditBtn'?auditBtn:toolbar,createElement:node},location:{assign:u=>navigations.push(u)},
   fetch:async url=>{calls.push(url);const r=responses.shift();return r;},filterAudit:()=>{filtered++;}});
  vm.runInContext(source,context);
  const [from,to,user,load,exportButton]=toolbar.children;

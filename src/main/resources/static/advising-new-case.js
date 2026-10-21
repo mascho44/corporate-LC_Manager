@@ -1,5 +1,5 @@
 const advisingNewCaseButton=document.createElement('button');
-advisingNewCaseButton.type='button';advisingNewCaseButton.className='hidden';advisingNewCaseButton.textContent='Bestätigte Angaben in neue LC-Akte übernehmen';
+advisingNewCaseButton.type='button';advisingNewCaseButton.className='hidden';advisingNewCaseButton.textContent=tx('anl.412ea6','Bestätigte Angaben in neue LC-Akte übernehmen');
 finishAdvice.after(advisingNewCaseButton);
 const advisingCaseArea=document.createElement('section');advisingCaseArea.id='advisingCaseArea';advisingCaseArea.className='advising-case-area hidden';advisingBody.append(advisingCaseArea);
 let advisingCaseBusy=false;
@@ -11,7 +11,7 @@ function updateAdvisingCaseButton(){
  advisingNewCaseButton.disabled=advisingCaseBusy||!item?.fields.length||item.fields.some(field=>!field.review);
 }
 const renderAdviceWithCase=renderAdvisingTraining;
-renderAdvisingTraining=function(){renderAdviceWithCase();advisingCaseArea.classList.add('hidden');updateAdvisingCaseButton();if(advisingTrainingItem.lcId){advisingCaseArea.innerHTML='<button type="button" id="openLinkedAdvisingCase">Verknüpfte LC-Akte öffnen</button>';advisingCaseArea.classList.remove('hidden');document.querySelector('#openLinkedAdvisingCase').onclick=async()=>{trainingDialog.close();await show(advisingTrainingItem.lcId);};}};
+renderAdvisingTraining=function(){renderAdviceWithCase();advisingCaseArea.classList.add('hidden');updateAdvisingCaseButton();if(advisingTrainingItem.lcId){advisingCaseArea.innerHTML='<button type="button" id="openLinkedAdvisingCase">'+tx('anh.96488c','Verknüpfte LC-Akte öffnen')+'</button>';advisingCaseArea.classList.remove('hidden');document.querySelector('#openLinkedAdvisingCase').onclick=async()=>{trainingDialog.close();await show(advisingTrainingItem.lcId);};}};
 const setProfileWithCase=setTrainingProfile;
 setTrainingProfile=function(profile){setProfileWithCase(profile);updateAdvisingCaseButton();};
 advisingBody.addEventListener('input',event=>{if(event.target.closest('[data-advising-index]')){advisingNewCaseButton.disabled=true;advisingCaseArea.classList.add('hidden');}});
@@ -27,9 +27,9 @@ advisingNewCaseButton.onclick=async()=>{
  try{
   const preview=await json(`/api/training/advising/${item.id}/new-case`);
   if(item!==advisingTrainingItem)return;
-  const labels={reference:'Aktenreferenz',ownBankReference:'Referenz eigene Bank',foreignBankReference:'Referenz Fremdbank',applicant:'Antragsteller',beneficiary:'Begünstigter',amount:'LC-Betrag',currency:'Währung',expiryDate:'Verfallsdatum',issuingBank:'Eröffnende Bank',expiryPlace:'Verfallsort'};
+  const labels={reference:tx('anl.4c550b','Aktenreferenz'),ownBankReference:tx('anl.cf5c95','Referenz eigene Bank'),foreignBankReference:tx('anl.5423bb','Referenz Fremdbank'),applicant:tx('anl.ccaa52','Antragsteller'),beneficiary:tx('anl.391339','Begünstigter'),amount:tx('anl.370950','LC-Betrag'),currency:tx('anl.f73cd5','Währung'),expiryDate:tx('anl.b22b24','Verfallsdatum'),issuingBank:tx('anl.56781e','Eröffnende Bank'),expiryPlace:tx('anl.d1f01c','Verfallsort')};
   const required=['reference','applicant','beneficiary','amount','currency','expiryDate'];
-  advisingCaseArea.innerHTML=`<h3>Neue LC-Akte anlegen</h3><p>Bestätigte Angaben sind vorbelegt. Mit * gekennzeichnete Angaben ergänzen und am Original prüfen. Das Avisierungsschreiben wird in der Akte gespeichert.</p><div class="advising-case-warnings">${preview.warnings.filter(warning=>!warning.startsWith('Vorschläge sind unbestätigt')&&!warning.startsWith('Unsere/Ihre Referenz')).map(warning=>`<p>${esc(warning)}</p>`).join('')}</div><form id="advisingCaseForm" class="form-grid">${Object.entries(labels).map(([key,label])=>`<label>${label}${required.includes(key)?' *':''}<input name="${key}" ${required.includes(key)?'required':''} ${key==='amount'?'type="number" min="0.01" step="0.01"':key==='expiryDate'?'type="date"':key==='currency'?'maxlength="3" pattern="[A-Z]{3}" placeholder="EUR"':'maxlength="255"'} value="${esc(preview.fields[key]||'')}"></label>`).join('')}<label class="wide check-label"><input type="checkbox" name="reviewConfirmed" required> Angaben geprüft – neue Akte anlegen und Original übernehmen</label><p id="advisingCaseError" class="error wide" role="alert"></p><div class="wide"><button type="submit">LC-Akte anlegen & Original speichern</button> <button type="button" id="cancelAdvisingCase" class="secondary">Zur Feldprüfung</button></div></form>`;
+  advisingCaseArea.innerHTML=`<h3>${tx('anh.688718','Neue LC-Akte anlegen')}</h3><p>${tx('anh.d275dc','Bestätigte Angaben sind vorbelegt. Mit * gekennzeichnete Angaben ergänzen und am Original prüfen. Das Avisierungsschreiben wird in der Akte gespeichert.')}</p><div class="advising-case-warnings">${preview.warnings.filter(warning=>!warning.startsWith(tx('anl.a7a345','Vorschläge sind unbestätigt'))&&!warning.startsWith(tx('anl.659002','Unsere/Ihre Referenz'))).map(warning=>`<p>${esc(warning)}</p>`).join('')}</div><form id="advisingCaseForm" class="form-grid">${Object.entries(labels).map(([key,label])=>`<label>${label}${required.includes(key)?' *':''}<input name="${key}" ${required.includes(key)?'required':''} ${key==='amount'?'type="number" min="0.01" step="0.01"':key==='expiryDate'?'type="date"':key==='currency'?'maxlength="3" pattern="[A-Z]{3}" placeholder="EUR"':'maxlength="255"'} value="${esc(preview.fields[key]||'')}"></label>`).join('')}<label class="wide check-label"><input type="checkbox" name="reviewConfirmed" required> ${tx('anh.fec961','Angaben geprüft – neue Akte anlegen und Original übernehmen')}</label><p id="advisingCaseError" class="error wide" role="alert"></p><div class="wide"><button type="submit">${tx('anh.3a4426','LC-Akte anlegen & Original speichern')}</button> <button type="button" id="cancelAdvisingCase" class="secondary">${tx('anh.10c49b','Zur Feldprüfung')}</button></div></form>`;
   advisingCaseArea.classList.remove('hidden');
   document.querySelector('#cancelAdvisingCase').onclick=()=>advisingCaseArea.classList.add('hidden');
   document.querySelector('#advisingCaseForm').onsubmit=event=>createAdvisingCase(event,item);
@@ -49,8 +49,8 @@ async function createAdvisingCase(event,item){
  finally{advisingCaseControls(false);}
  if(!result)return;
  item.lcId=result.lcId;item.status='CONFIRMED';item.editable=false;renderAdvisingTraining();
- document.querySelector('#advisingTrainingMessage').textContent=`LC-Akte „${values.reference}“ angelegt; Original-PDF gespeichert und Übernahme protokolliert.`;
- advisingCaseArea.innerHTML='<button type="button" id="openCreatedAdvisingCase">Neue LC-Akte öffnen</button>';advisingCaseArea.classList.remove('hidden');
+ document.querySelector('#advisingTrainingMessage').textContent=tx('ant.bc7767','LC-Akte „{p0}“ angelegt; Original-PDF gespeichert und Übernahme protokolliert.',{p0:values.reference});
+ advisingCaseArea.innerHTML='<button type="button" id="openCreatedAdvisingCase">'+tx('anh.515592','Neue LC-Akte öffnen')+'</button>';advisingCaseArea.classList.remove('hidden');
  document.querySelector('#openCreatedAdvisingCase').onclick=async()=>{trainingDialog.close();await show(result.lcId);};
- try{await load();}catch(error){document.querySelector('#advisingTrainingMessage').textContent+=' Die Übersicht konnte nicht aktualisiert werden; bitte neu laden.';}
+ try{await load();}catch(error){document.querySelector('#advisingTrainingMessage').textContent+=tx('anl.d2ab2a',' Die Übersicht konnte nicht aktualisiert werden; bitte neu laden.');}
 }

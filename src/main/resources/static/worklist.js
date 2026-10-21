@@ -4,15 +4,15 @@
  function tiles(m) {
   const list = [];
   const add = (key, label, count, hint, tone) => { if (count === null || count === undefined) return; list.push({ key, label, count, hint, tone: count > 0 ? tone : 'ok' }); };
-  add('sanctions', 'Sanktionstreffer offen', m.sanctions, 'Prüfen und freigeben', 'bad');
-  add('urgent', 'Frist knapp, blockiert', m.urgent, 'Zuerst prüfen', 'bad');
-  add('overdue', 'Überfällige Fristen', m.overdue, 'Fristen prüfen', 'bad');
-  add('ebics', 'Neue EBICS-Nachrichten', m.ebics, 'Ansehen und importieren', 'info');
-  add('inbox', 'Posteingang offen', m.inbox, 'Dokumente zuordnen', 'info');
-  add('team', 'Gruppeninbox', m.team, 'Übernehmen', 'info');
-  add('waiting', 'Warten auf Kunde', m.waiting, 'Nachfassen', 'warn');
-  add('upcoming', 'Fristen in 7 Tagen', m.upcoming, 'Vorbereiten', 'warn');
-  add('unassigned', 'Ohne Bearbeiter', m.unassigned, 'Zuweisen', 'warn');
+  add('sanctions', tx('wll.5280b9','Sanktionstreffer offen'), m.sanctions, tx('wll.4831a4','Prüfen und freigeben'), 'bad');
+  add('urgent', tx('wll.50dd77','Frist knapp, blockiert'), m.urgent, tx('wll.30f881','Zuerst prüfen'), 'bad');
+  add('overdue', tx('wll.520f91','Überfällige Fristen'), m.overdue, tx('wll.18a3f2','Fristen prüfen'), 'bad');
+  add('ebics', tx('wll.3eefc9','Neue EBICS-Nachrichten'), m.ebics, tx('wll.effeb5','Ansehen und importieren'), 'info');
+  add('inbox', tx('wll.a5ec36','Posteingang offen'), m.inbox, tx('wll.d72ac8','Dokumente zuordnen'), 'info');
+  add('team', tx('wll.8c445e','Gruppeninbox'), m.team, tx('wll.bf8310','Übernehmen'), 'info');
+  add('waiting', tx('wll.5abe41','Warten auf Kunde'), m.waiting, tx('wll.3a479f','Nachfassen'), 'warn');
+  add('upcoming', tx('wll.5e94f2','Fristen in 7 Tagen'), m.upcoming, tx('wll.e3f1f4','Vorbereiten'), 'warn');
+  add('unassigned', tx('wll.2fe012','Ohne Bearbeiter'), m.unassigned, tx('wll.33b940','Zuweisen'), 'warn');
   return list;
  }
  /** Open LC files with blocking findings whose expiry or latest shipment date is at most `days` days away. */
@@ -81,11 +81,11 @@
    const row = document.createElement('div'); row.className = 'today-tiles';
    model.forEach(tile => {
     const button = document.createElement('button'); button.type = 'button'; button.className = 'today-tile ' + tile.tone;
-    button.setAttribute('aria-label', `${tile.label}: ${tile.count}. ${tile.count > 0 ? tile.hint : 'Nichts offen'}`);
+    button.setAttribute('aria-label', `${tile.label}: ${tile.count}. ${tile.count > 0 ? tile.hint : tx('wll.efbc3c','Nichts offen')}`);
     const icon = document.createElement('span'); icon.className = 'today-icon'; icon.setAttribute('aria-hidden', 'true'); icon.textContent = symbol(tile.tone);
     const count = document.createElement('b'); count.textContent = String(tile.count);
     const label = document.createElement('span'); label.textContent = tile.label;
-    const hint = document.createElement('small'); hint.textContent = tile.count > 0 ? tile.hint : 'Nichts offen';
+    const hint = document.createElement('small'); hint.textContent = tile.count > 0 ? tile.hint : tx('wll.efbc3c','Nichts offen');
     button.append(icon, count, label, hint); button.onclick = () => open(tile.key);
     row.append(button);
    });

@@ -3,7 +3,7 @@ const source=fs.readFileSync('src/main/resources/static/audit-chain.js','utf8');
 function setup(response){
  function node(tag){return{tag,children:[],textContent:'',className:'',attributes:{},append(...i){this.children.push(...i);},replaceChildren(...i){this.children=i;},after(n){this.next=n;},setAttribute(k,v){this.attributes[k]=v;},addEventListener(n,f){this[n]=f;}};}
  const toolbar=node('div');
- const context=vm.createContext({document:{querySelector:()=>toolbar,createElement:node},fetch:async()=>response});
+ const context=vm.createContext({tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(m,k)=>values[k]??m),document:{querySelector:()=>toolbar,createElement:node},fetch:async()=>response});
  vm.runInContext(source,context);
  const button=toolbar.children[0],result=toolbar.next;
  const texts=()=>{const out=[];const walk=n=>{if(n.textContent)out.push(n.textContent);n.children.forEach(walk);};walk(result);return out.join('\n');};

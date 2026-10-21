@@ -2,7 +2,7 @@
 (() => {
  const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
  const isGuarantee = lc => Boolean(lc) && lc.instrumentType === 'GUARANTEE';
- const badge = () => '<span class="badge instrument-badge" title="Garantie / Standby (MT760)">Garantie</span>';
+ const badge = () => '<span class="badge instrument-badge" title="'+tx('gmh.ea6d01','Garantie / Standby (MT760)')+'">'+tx('gmh.79c64b','Garantie')+'</span>';
  const when = value => String(value || '').replace('T', ' ').slice(0, 16);
  function messageHtml(m) {
   const related = m.relatedReference ? ` · Bezug ${escape(m.relatedReference)}` : '';
@@ -10,7 +10,7 @@
  }
  function panelHtml(messages) {
   if (!messages || !messages.length) return '';
-  return `<section class="swift-messages"><h3>Bankmitteilungen (${messages.length})</h3>${messages.map(messageHtml).join('')}</section>`;
+  return `<section class="swift-messages"><h3>${tx('gmh.38775f','Bankmitteilungen (')}${messages.length})</h3>${messages.map(messageHtml).join('')}</section>`;
  }
  globalThis.LcGuaranteeMessages = { escape, isGuarantee, badge, messageHtml, panelHtml };
  if (typeof document === 'undefined' || !document.body) return;
@@ -53,7 +53,7 @@
   const loose = await json('/api/swift-messages/unassigned').catch(() => []);
   if (!loose.length) return;
   const options = (typeof data !== 'undefined' ? data : []).map(lc => `<option value="${escape(lc.id)}">${escape(lc.reference)}</option>`).join('');
-  host.insertAdjacentHTML('beforeend', `<div class="swift-loose"><h3>Mitteilungen ohne Akte (${loose.length})</h3>${loose.map(m => `<div class="swift-loose-row" data-message="${escape(m.id)}">${messageHtml(m)}<select aria-label="Akte wählen">${options}</select><button type="button" class="secondary" data-assign>Zuordnen</button></div>`).join('')}</div>`);
+  host.insertAdjacentHTML('beforeend', `<div class="swift-loose"><h3>${tx('gmh.6d2eb6','Mitteilungen ohne Akte (')}${loose.length})</h3>${loose.map(m => `<div class="swift-loose-row" data-message="${escape(m.id)}">${messageHtml(m)}<select aria-label="${tx('gmh.ac3b08','Akte wählen')}">${options}</select><button type="button" class="secondary" data-assign>${tx('gmh.9b20b9','Zuordnen')}</button></div>`).join('')}</div>`);
   host.querySelectorAll('.swift-loose-row [data-assign]').forEach(button => button.onclick = async () => {
    const row = button.closest('.swift-loose-row');
    try {

@@ -13,8 +13,8 @@
  const header = document.querySelector('body>header'), nav = document.querySelector('#appNav');
  if (!header || !nav) return;
  const button = document.createElement('button');
- button.type = 'button'; button.id = 'mobileNavToggle'; button.className = 'secondary'; button.textContent = '☰ Menü';
- button.setAttribute('aria-controls', 'appNav'); button.setAttribute('aria-expanded', 'false'); button.setAttribute('aria-label', 'Menü öffnen oder schließen');
+ button.type = 'button'; button.id = 'mobileNavToggle'; button.className = 'secondary'; button.textContent = tx('mnl.845685','☰ Menü');
+ button.setAttribute('aria-controls', 'appNav'); button.setAttribute('aria-expanded', 'false'); button.setAttribute('aria-label', tx('mnl.3bfadb','Menü öffnen oder schließen'));
  header.prepend(button);
  const sync = () => button.setAttribute('aria-expanded', String(document.body.classList.contains(OPEN)));
  button.addEventListener('click', event => { event.stopPropagation(); setOpen(document.body); sync(); });

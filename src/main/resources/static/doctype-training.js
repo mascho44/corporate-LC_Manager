@@ -5,7 +5,7 @@
  /** One line per learned example: where it started and who confirmed it when. */
  function rowText(example) {
   const start = (example.sample || '').trim();
-  return `${start ? '„' + start + '“' : '(ohne Textauszug)'} · bestätigt von ${example.confirmedBy || '?'}${example.confirmedAt ? ' am ' + stamp(example.confirmedAt) : ''}`;
+  return `${start ? '„' + start + '“' : tx('dtx.noExcerpt','(ohne Textauszug)')} · ${tx('dtx.by','bestätigt von {name}',{name:example.confirmedBy || '?'})}${example.confirmedAt ? tx('dtx.on',' am {when}',{when:stamp(example.confirmedAt)}) : ''}`;
  }
  /** Examples grouped by document type, in the order the server sent them. */
  function groupByType(examples) {
@@ -20,22 +20,22 @@
   const box = node('section', undefined, 'settings-box'); box.id = 'docTypeTrainingBox';
   const message = node('p', '', 'settings-status'); message.setAttribute('role', 'status');
   const list = node('div', undefined, 'settings-list');
-  box.append(node('h3', 'Gelernte Dokumentarten'),
+  box.append(node('h3', tx('dtl.f47a4e','Gelernte Dokumentarten')),
    node('p', 'Wenn beim Aufteilen oder Zuordnen eine Dokumentart bestätigt wird, merkt sich das System die typischen Wörter des Dokuments. Ähnliche Dokumente, deren Art sonst nicht erkannt würde (z. B. ein Wechsel oder ein anders aussehendes Dokument), werden danach als Vorschlag „aus Training" angeboten und müssen weiter geprüft werden. Falsch gelernte Beispiele können hier entfernt werden.'),
    message, list);
   host.append(box);
   const render = examples => {
    list.replaceChildren();
    const groups = groupByType(examples);
-   if (!groups.length) { list.append(node('p', 'Noch nichts gelernt. Es wird beim Bestätigen von Aufteilungen und Zuordnungen von selbst gesammelt.')); return; }
+   if (!groups.length) { list.append(node('p', tx('dtl.7d387f','Noch nichts gelernt. Es wird beim Bestätigen von Aufteilungen und Zuordnungen von selbst gesammelt.'))); return; }
    groups.forEach(group => {
     list.append(node('h4', `${group.name} (${group.items.length})`));
     group.items.forEach(example => {
      const row = node('div', undefined, 'settings-row'); row.append(node('span', rowText(example)));
-     const remove = node('button', 'Entfernen', 'danger'); remove.type = 'button';
+     const remove = node('button', tx('dtl.513d30','Entfernen'), 'danger'); remove.type = 'button';
      remove.onclick = async () => {
-      if (typeof confirmAction === 'function' && !await confirmAction('Dieses gelernte Beispiel entfernen? Die Erkennung nutzt es danach nicht mehr.')) return;
-      try { await json(`/api/document-type-training/${encodeURIComponent(example.id)}`, { method: 'DELETE' }); render(await json('/api/document-type-training')); message.textContent = 'Beispiel entfernt.'; }
+      if (typeof confirmAction === 'function' && !await confirmAction(tx('dtl.eacb17','Dieses gelernte Beispiel entfernen? Die Erkennung nutzt es danach nicht mehr.'))) return;
+      try { await json(`/api/document-type-training/${encodeURIComponent(example.id)}`, { method: 'DELETE' }); render(await json('/api/document-type-training')); message.textContent = tx('dtl.d911ea','Beispiel entfernt.'); }
       catch (error) { message.textContent = error.message; }
      };
      row.append(remove); list.append(row);

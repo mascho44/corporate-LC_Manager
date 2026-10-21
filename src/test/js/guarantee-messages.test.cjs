@@ -1,6 +1,6 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const source=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/guarantee-messages.js'),'utf8');
-function load(){const context=vm.createContext({});context.globalThis=context;vm.runInContext(source,context);return context.LcGuaranteeMessages;}
+function load(){const context=vm.createContext({tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(m,k)=>values[k]??m),});context.globalThis=context;vm.runInContext(source,context);return context.LcGuaranteeMessages;}
 test('only dossiers of kind GUARANTEE get the badge',()=>{
  const m=load();assert.equal(m.isGuarantee({instrumentType:'GUARANTEE'}),true);assert.equal(m.isGuarantee({instrumentType:'LC'}),false);assert.equal(m.isGuarantee(null),false);
  assert.match(m.badge(),/Garantie/);

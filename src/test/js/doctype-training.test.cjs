@@ -1,5 +1,5 @@
 const test = require('node:test'), assert = require('node:assert/strict'), fs = require('node:fs'), vm = require('node:vm');
-const context = vm.createContext({ Date });
+const context = vm.createContext({tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(m,k)=>values[k]??m), Date });
 context.globalThis = context;
 vm.runInContext(fs.readFileSync('src/main/resources/static/doctype-training.js', 'utf8'), context);
 const { rowText, groupByType } = context.LcDocTypeTraining;

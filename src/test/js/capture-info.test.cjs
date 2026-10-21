@@ -1,5 +1,5 @@
 const test = require('node:test'), assert = require('node:assert/strict'), fs = require('node:fs'), vm = require('node:vm');
-const context = vm.createContext({ Intl });
+const context = vm.createContext({tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(m,k)=>values[k]??m), Intl });
 context.globalThis = context;
 vm.runInContext(fs.readFileSync('src/main/resources/static/capture-info.js', 'utf8'), context);
 const { describe } = context.LcCaptureInfo;

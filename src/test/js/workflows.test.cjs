@@ -1,7 +1,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const root=path.resolve(__dirname,'../../main/resources/static/');
 const source=fs.readFileSync(path.join(root,'workflows.js'),'utf8');
-function load(){const context=vm.createContext({});context.globalThis=context;vm.runInContext(source,context);return context.LcWorkflows;}
+function load(){const context=vm.createContext({tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(m,k)=>values[k]??m),});context.globalThis=context;vm.runInContext(source,context);return context.LcWorkflows;}
 const wf={id:'w1',templateTitle:'Neue Akte prüfen',status:'RUNNING',startedBy:'boss',steps:[
  {no:1,title:'Erfassen',state:'DONE',completedBy:'ben',fourEyes:false},
  {no:2,title:'Prüfen',state:'ACTIVE',assignedTo:null,fourEyes:false},

@@ -1,7 +1,7 @@
 /* Amendments (MT707) take effect only when accepted: status per amendment, accept / reject, and the planned changes of open ones. */
 (() => {
  const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
- const STATUS = { PENDING: ['Offen – noch nicht wirksam', 'pending'], ACCEPTED: ['Angenommen – wirksam', 'accepted'], REJECTED: ['Abgelehnt – ohne Wirkung', 'rejected'] };
+ const STATUS = { PENDING: [tx('aml.c17b04','Offen – noch nicht wirksam'), 'pending'], ACCEPTED: [tx('aml.de73d4','Angenommen – wirksam'), 'accepted'], REJECTED: [tx('aml.50413f','Abgelehnt – ohne Wirkung'), 'rejected'] };
  const date = value => { try { return value ? new Intl.DateTimeFormat('de-DE').format(new Date(value)) : ''; } catch (ignored) { return String(value || ''); } };
  const when = value => String(value || '').replace('T', ' ').slice(0, 16);
  const money = value => { const n = Number(value); return Number.isFinite(n) ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) : String(value); };
@@ -9,13 +9,13 @@
  function plannedChanges(a) {
   const lines = [];
   if (a.newExpiryDate) lines.push(`Ablauf: ${date(a.newExpiryDate)}${a.newExpiryPlace ? ' ' + a.newExpiryPlace : ''}`);
-  if (a.newLatestShipmentDate) lines.push(`Spätester Versand: ${date(a.newLatestShipmentDate)}`);
-  if (a.amountIncrease) lines.push(`Betrag erhöht um ${money(a.amountIncrease)}`);
+  if (a.newLatestShipmentDate) lines.push(tx('amt.58d9d4','Spätester Versand: {p0}',{p0:date(a.newLatestShipmentDate)}));
+  if (a.amountIncrease) lines.push(tx('amt.2d1ad8','Betrag erhöht um {p0}',{p0:money(a.amountIncrease)}));
   if (a.amountDecrease) lines.push(`Betrag vermindert um ${money(a.amountDecrease)}`);
-  if (a.changedDocuments) lines.push('Dokumentenanforderungen (46B) geändert');
-  if (a.changedGoods) lines.push('Warenbeschreibung (45B) geändert');
-  if (a.changedConditions) lines.push('Zusatzbedingungen (47B) geändert');
-  try { Object.keys(JSON.parse(a.otherChanges || '{}')).forEach(tag => lines.push(tag === '59' ? 'Begünstigter (59) geändert' : `Feld ${tag} geändert`)); } catch (ignored) { }
+  if (a.changedDocuments) lines.push(tx('aml.2a578e','Dokumentenanforderungen (46B) geändert'));
+  if (a.changedGoods) lines.push(tx('aml.e983ec','Warenbeschreibung (45B) geändert'));
+  if (a.changedConditions) lines.push(tx('aml.b219a2','Zusatzbedingungen (47B) geändert'));
+  try { Object.keys(JSON.parse(a.otherChanges || '{}')).forEach(tag => lines.push(tag === '59' ? tx('amx.59','Begünstigter (59) geändert') : tx('amt.dbe8ab','Feld {p0} geändert',{p0:tag}))); } catch (ignored) { }
   return lines;
  }
  function badgeHtml(a) {
@@ -28,8 +28,8 @@
   if (a.status !== 'PENDING') return '';
   const lines = plannedChanges(a);
   const list = lines.length ? `<ul class="amendment-planned">${lines.map(l => `<li>${escape(l)}</li>`).join('')}</ul>` : '';
-  const buttons = canDecide ? `<div class="amendment-actions"><button type="button" data-amendment-accept="${escape(a.id)}">Änderung annehmen</button> <button type="button" class="secondary" data-amendment-reject="${escape(a.id)}">Änderung ablehnen</button></div>` : '';
-  return `<div class="amendment-pending"><small>Geplante Änderungen</small>${list}${buttons}</div>`;
+  const buttons = canDecide ? `<div class="amendment-actions"><button type="button" data-amendment-accept="${escape(a.id)}">${tx('amh.3fb019','Änderung annehmen')}</button> <button type="button" class="secondary" data-amendment-reject="${escape(a.id)}">${tx('amh.d4c1dc','Änderung ablehnen')}</button></div>` : '';
+  return `<div class="amendment-pending"><small>${tx('amh.fc624e','Geplante Änderungen')}</small>${list}${buttons}</div>`;
  }
  globalThis.LcAmendmentStatus = { escape, plannedChanges, badgeHtml, pendingHtml };
  if (typeof document === 'undefined' || !document.body) return;
@@ -57,12 +57,12 @@
      }
     });
     history.querySelectorAll('[data-amendment-accept]').forEach(b => b.onclick = async () => {
-     if (typeof confirmAction === 'function' && !await confirmAction('Änderung annehmen? Sie wird jetzt in die gültige Fassung der Akte übernommen; bisherige Prüfentscheidungen werden zurückgesetzt.')) return;
-     const comment = prompt('Optionaler Vermerk zur Annahme:'); if (comment === null) return;
+     if (typeof confirmAction === 'function' && !await confirmAction(tx('aml.dc46e3','Änderung annehmen? Sie wird jetzt in die gültige Fassung der Akte übernommen; bisherige Prüfentscheidungen werden zurückgesetzt.'))) return;
+     const comment = prompt(tx('aml.33d749','Optionaler Vermerk zur Annahme:')); if (comment === null) return;
      try { await decide(id, b.dataset.amendmentAccept, 'accept', comment); } catch (error) { alert(error.message); }
     });
     history.querySelectorAll('[data-amendment-reject]').forEach(b => b.onclick = async () => {
-     const comment = prompt('Optionaler Vermerk zur Ablehnung (die Akte bleibt unverändert):'); if (comment === null) return;
+     const comment = prompt(tx('aml.d51d24','Optionaler Vermerk zur Ablehnung (die Akte bleibt unverändert):')); if (comment === null) return;
      try { await decide(id, b.dataset.amendmentReject, 'reject', comment); } catch (error) { alert(error.message); }
     });
    } catch (ignored) { }

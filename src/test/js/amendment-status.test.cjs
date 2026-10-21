@@ -1,7 +1,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const root=path.resolve(__dirname,'../../main/resources/static/');
 const source=fs.readFileSync(path.join(root,'amendment-status.js'),'utf8');
-function load(){const context=vm.createContext({});context.globalThis=context;vm.runInContext(source,context);return context.LcAmendmentStatus;}
+function load(){const context=vm.createContext({tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(m,k)=>values[k]??m),});context.globalThis=context;vm.runInContext(source,context);return context.LcAmendmentStatus;}
 const pending={id:'a1',status:'PENDING',amendmentNumber:'2',newExpiryDate:'2027-12-31',newExpiryPlace:'BERLIN',amountIncrease:'50',changedDocuments:'+X',otherChanges:'{"59":"NEW","44E":"NINGBO"}'};
 test('open amendments list what would change and offer accept and reject to editors only',()=>{
  const s=load();

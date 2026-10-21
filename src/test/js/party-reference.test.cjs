@@ -1,5 +1,5 @@
 const test = require('node:test'), assert = require('node:assert/strict'), fs = require('node:fs'), vm = require('node:vm');
-const context = vm.createContext({}); context.globalThis = context;
+const context = vm.createContext({tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(m,k)=>values[k]??m),}); context.globalThis = context;
 vm.runInContext(fs.readFileSync('src/main/resources/static/party-reference.js', 'utf8'), context);
 const api = context.LcPartyReference;
 test('references in applicant or beneficiary are found in usual spellings', () => {

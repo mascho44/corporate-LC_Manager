@@ -2,7 +2,7 @@
    The found address is prefilled; the referred field is shown to copy from. The original message text stays unchanged. */
 (() => {
  const REFERENCE = /\b(?:SEE|REFER(?:\s+TO)?|SIEHE|VIDE|AS\s+PER|GEM(?:AESS|ÄSS|\.))\s+(?:(?:FIELD|FLD|TAG|FELD)\s*:?\s*)?(\d{2}[A-Z]?)\b/i;
- const PARTIES = [['applicant', '50', 'Auftraggeber (Applicant, :50:)'], ['beneficiary', '59', 'Begünstigter (Beneficiary, :59:)']];
+ const PARTIES = [['applicant', '50', tx('pal.1dc6a9','Auftraggeber (Applicant, :50:)')], ['beneficiary', '59', tx('pal.18eff1','Begünstigter (Beneficiary, :59:)')]];
  const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
  /** The field a party value refers to ("47A"), or null. "SEE 47" means 47A when only that exists. */
@@ -27,11 +27,11 @@
  }
  function html(list) {
   if (!list.length) return '';
-  return `<div class="party-correction" data-party-correction><b>Korrektur nötig</b>` + list.map(c =>
-   `<label>${esc(c.label)} – in der Nachricht steht „${esc(c.original)}“${c.suggested ? ' (Adresse aus :' + esc(c.source) + ': vorgeschlagen, bitte prüfen)' : ''}` +
-   `<textarea data-party="${c.key}" rows="3" maxlength="2000" placeholder="Name und Adresse eintragen">${esc(c.suggested)}</textarea></label>` +
-   (c.sourceText ? `<details><summary>Feld :${esc(c.source)}: anzeigen</summary><pre>${esc(c.sourceText)}</pre></details>` : `<small>Feld :${esc(c.source)}: kommt in der Nachricht nicht vor.</small>`)
-  ).join('') + `<small>Die Korrektur wird in die Akte übernommen; der Originaltext der Nachricht bleibt erhalten.</small></div>`;
+  return `<div class="party-correction" data-party-correction><b>${tx('pah.d2b2f7','Korrektur nötig')}</b>` + list.map(c =>
+   `<label>${esc(c.label)} ${tx('pax.says','– in der Nachricht steht „{orig}“',{orig:esc(c.original)})}${c.suggested ? tx('pal.8de2d0',' (Adresse aus :') + esc(c.source) + tx('pal.8f52ec',': vorgeschlagen, bitte prüfen)') : ''}` +
+   `<textarea data-party="${c.key}" rows="3" maxlength="2000" placeholder="${tx('pah.9ae133','Name und Adresse eintragen')}">${esc(c.suggested)}</textarea></label>` +
+   (c.sourceText ? `<details><summary>${tx('pah.ae63ef','Feld :')}${esc(c.source)}${tx('pax.show',': anzeigen')}</summary><pre>${esc(c.sourceText)}</pre></details>` : `<small>${tx('pah.ae63ef','Feld :')}${esc(c.source)}${tx('pax.absent',': kommt in der Nachricht nicht vor.')}</small>`)
+  ).join('') + `<small>${tx('pah.9ffc62','Die Korrektur wird in die Akte übernommen; der Originaltext der Nachricht bleibt erhalten.')}</small></div>`;
  }
  /** Values of a correction box; missing lists the labels that are still empty. */
  function read(container) {
@@ -39,7 +39,7 @@
   container?.querySelectorAll('[data-party]').forEach(area => {
    const value = area.value.trim();
    out[area.dataset.party] = value || null;
-   if (!value) out.missing.push(area.dataset.party === 'applicant' ? 'Auftraggeber' : 'Begünstigter');
+   if (!value) out.missing.push(area.dataset.party === 'applicant' ? tx('pal.5144d0','Auftraggeber') : tx('pal.391339','Begünstigter'));
   });
   return out;
  }

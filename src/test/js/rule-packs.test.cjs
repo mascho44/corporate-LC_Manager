@@ -4,7 +4,7 @@ const preview={definition:{name:'<unsafe>',version:'1.0.0',packId:'own-demo',lic
 async function setup(previewResult=preview){
  const elements={},calls=[];
  for(const id of ['packMessage','packPreview','packVersions','packFile','packImport','packRefresh','packRights','ruleSourceMode','ruleSourceSave'])elements[id]={disabled:true,files:[],checked:false,value:''};
- vm.runInNewContext(source,{document:{getElementById:id=>elements[id]},location:{assign:assert.fail},confirm:()=>true,fetch:async(url,options={})=>{
+ vm.runInNewContext(source,{tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(m,k)=>values[k]??m), document:{getElementById:id=>elements[id]},location:{assign:assert.fail},confirm:()=>true,fetch:async(url,options={})=>{
   calls.push({url,...options});const value=url==='/api/auth/me'?{csrfToken:'csrf',permissions:['SETTINGS_MANAGE']}:url==='/api/settings/rule-source'?(options.method==='PUT'?JSON.parse(options.body):{mode:'IMPORTED'}):url.endsWith('/preview')||url.endsWith('/test')?previewResult:url==='/api/settings/rule-packs'&&!options.method?[]:null;
   return {status:200,ok:true,headers:{get:()=>null},text:async()=>JSON.stringify(value)};
  }});

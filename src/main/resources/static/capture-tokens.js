@@ -3,16 +3,16 @@
  const node = (tag, text, css) => { const n = document.createElement(tag); if (text !== undefined) n.textContent = text; if (css) n.className = css; return n; };
  const stamp = value => value ? new Date(value).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }) : '–';
  function rowText(token) {
-  const state = token.revoked ? 'widerrufen' : token.lastUsedAt ? 'zuletzt benutzt ' + stamp(token.lastUsedAt) : 'noch nie benutzt';
+  const state = token.revoked ? tx('ctx.revoked','widerrufen') : token.lastUsedAt ? tx('ctx.lastUsed','zuletzt benutzt {when}',{when:stamp(token.lastUsedAt)}) : tx('ctx.never','noch nie benutzt');
   const quiet = token.quietWorkingDays ? ` · ⚠ ruhig seit ${quietText(token.quietWorkingDays)}` : '';
-  return `${token.name} · ${token.prefix}… · angelegt ${stamp(token.createdAt)}${token.createdBy ? ' von ' + token.createdBy : ''} · ${state}${quiet}`;
+  return `${token.name} · ${token.prefix}… · angelegt ${stamp(token.createdAt)}${token.createdBy ? tx('ctl.c8a06e',' von ') + token.createdBy : ''} · ${state}${quiet}`;
  }
  const quietText = days => `${days} Arbeitstag${days === 1 ? '' : 'en'}`;
  /** Warning line for the inbox: stations that delivered nothing for a while (null when all is well). */
  function silentWarning(silent) {
   if (!silent?.length) return null;
   const parts = silent.map(s => `${s.name} (${s.neverUsed ? 'noch nie benutzt, seit ' : 'seit '}${quietText(s.quietWorkingDays)})`);
-  return `Keine Lieferung von: ${parts.join(', ')}. Bitte in der Poststelle nachfragen, ob dort alles läuft.`;
+  return tx('ctt.91b870','Keine Lieferung von: {p0}. Bitte in der Poststelle nachfragen, ob dort alles läuft.',{p0:parts.join(', ')});
  }
  globalThis.LcCaptureTokens = { rowText, silentWarning };
  if (typeof document === 'undefined' || !document.body) return;
@@ -35,23 +35,23 @@
   const box = node('section', undefined, 'settings-box'); box.id = 'captureTokenBox';
   const message = node('p', '', 'settings-status'); message.setAttribute('role', 'status');
   const list = node('div', undefined, 'settings-list'); const secret = node('div', undefined, 'capture-secret'); secret.hidden = true;
-  const name = document.createElement('input'); name.maxLength = 100; name.placeholder = 'z. B. Poststelle Scanner 2'; name.setAttribute('aria-label', 'Name des Zugangs');
-  const create = node('button', 'Zugang anlegen'); create.type = 'button';
+  const name = document.createElement('input'); name.maxLength = 100; name.placeholder = 'z. B. Poststelle Scanner 2'; name.setAttribute('aria-label', tx('ctl.d1fc53','Name des Zugangs'));
+  const create = node('button', tx('ctl.af58cb','Zugang anlegen')); create.type = 'button';
   const row = node('div', undefined, 'settings-inline'); row.append(name, create);
-  box.append(node('h3', 'Erfassungszugänge'),
-   node('p', 'Ein Zugang erlaubt einer Scan-Station, Dokumente in den Posteingang dieses Mandanten zu laden. Er kann nichts anderes: weder Akten lesen noch Prüfungen ändern. Das Geheimnis wird nur einmal angezeigt.'),
+  box.append(node('h3', tx('ctl.4704f6','Erfassungszugänge')),
+   node('p', tx('ctl.8c48d4','Ein Zugang erlaubt einer Scan-Station, Dokumente in den Posteingang dieses Mandanten zu laden. Er kann nichts anderes: weder Akten lesen noch Prüfungen ändern. Das Geheimnis wird nur einmal angezeigt.')),
    row, secret, message, list);
   host.append(box);
   const render = tokens => {
    list.replaceChildren();
-   if (!tokens.length) list.append(node('p', 'Noch kein Zugang angelegt.'));
+   if (!tokens.length) list.append(node('p', tx('ctl.8c577b','Noch kein Zugang angelegt.')));
    tokens.forEach(token => {
     const item = node('div', undefined, 'settings-row'); item.append(node('span', rowText(token)));
     if (!token.revoked) {
-     const revoke = node('button', 'Widerrufen', 'secondary'); revoke.type = 'button';
+     const revoke = node('button', tx('ctl.4d2063','Widerrufen'), 'secondary'); revoke.type = 'button';
      revoke.onclick = async () => {
-      if (typeof confirmAction === 'function' && !await confirmAction(`Zugang „${token.name}" widerrufen? Die Scan-Station kann danach keine Dokumente mehr senden.`)) return;
-      try { await json(`/api/capture-tokens/${encodeURIComponent(token.id)}`, { method: 'DELETE' }); render(await json('/api/capture-tokens')); message.textContent = 'Zugang widerrufen.'; }
+      if (typeof confirmAction === 'function' && !await confirmAction(tx('ctt.afdcb8','Zugang „{p0}" widerrufen? Die Scan-Station kann danach keine Dokumente mehr senden.',{p0:token.name}))) return;
+      try { await json(`/api/capture-tokens/${encodeURIComponent(token.id)}`, { method: 'DELETE' }); render(await json('/api/capture-tokens')); message.textContent = tx('ctl.bdca21','Zugang widerrufen.'); }
       catch (error) { message.textContent = error.message; }
      };
      item.append(revoke);
@@ -63,7 +63,7 @@
    create.disabled = true; message.textContent = '';
    try {
     const created = await json('/api/capture-tokens', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name.value }) });
-    secret.hidden = false; secret.replaceChildren(node('b', 'Zugang „' + created.token.name + '" angelegt. Bitte jetzt kopieren; später ist er nicht mehr sichtbar:'));
+    secret.hidden = false; secret.replaceChildren(node('b', tx('ctl.7b01bf','Zugang „') + created.token.name + tx('ctl.75f768','" angelegt. Bitte jetzt kopieren; später ist er nicht mehr sichtbar:')));
     const code = node('code', created.secret); code.style.display = 'block'; code.style.wordBreak = 'break-all'; secret.append(code);
     name.value = '';
     render(await json('/api/capture-tokens'));
