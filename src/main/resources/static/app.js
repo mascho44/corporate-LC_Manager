@@ -1194,6 +1194,16 @@ function setupTrainingPreviewSizes(){
     });
 }
 
+function lcNextStep(lc,documents,review,tasks,deadlines){
+    const open=tasks==null?0:tasks.filter(task=>!task.completed).length;
+    const soon=(deadlines||[]).filter(item=>item.date&&daysUntil(item.date)>=0&&daysUntil(item.date)<=14).sort((a,b)=>String(a.date).localeCompare(String(b.date)))[0];
+    if(review&&review.discrepancies>0)return [tx('ak.next.disc','{n} Abweichungen prüfen',{n:review.discrepancies}),'checks'];
+    if(!lc.assignedTo)return [tx('ak.next.assign','Bearbeiter zuweisen'),'admin'];
+    if(open>0)return [tx('ak.next.tasks','{n} offene Aufgaben erledigen',{n:open}),'tasks'];
+    if(documents&&!documents.length)return [tx('ak.next.upload','Dokumente hochladen'),'documents'];
+    if(soon)return [tx('ak.next.deadline','Frist am {date} beachten: {title}',{date:fmtDate(soon.date),title:soon.title}),'deadlines'];
+    return [tx('ak.next.none','Keine offenen Punkte – Akte ist auf Stand.'),null];
+}
 function lcCockpitCards(lc,documents,review,tasks,deadlines){
     return [
         [tx('ak.parties','Beteiligte'),lc.beneficiary||tx('ak.notCaptured','Nicht erfasst'),tx('ak.partiesNote','Begünstigter · Antragsteller: {applicant}',{applicant:lc.applicant||tx('ak.notCaptured','Nicht erfasst')}),'admin'],
@@ -1223,7 +1233,7 @@ show=async function(id){
         json(`/api/lcs/${id}/deadlines`).catch(()=>null)
     ]);
     if(activeLc?.id!==id||!block.isConnected)return;
-    block.innerHTML=`<h3>${tx('ak.cockpit','LC-Cockpit')}</h3><div class="grid">`+lcCockpitCards(activeLc,documents,review,tasks,deadlines).map(([title,value,note,section])=>`<div class="card cockpit-card" role="button" tabindex="0" data-cockpit-section="${section}" aria-label="${esc(tx('ak.openSection','{title} öffnen',{title}))}"><small>${esc(title)}</small><b>${esc(value)}</b><p>${esc(note)}</p></div>`).join('')+'</div>';
+    const next=lcNextStep(activeLc,documents,review,tasks,deadlines);block.innerHTML=`<div class="next-step${next[1]?'':' done'}"${next[1]?` role="button" tabindex="0" data-cockpit-section="${next[1]}"`:''}><small>${tx('ak.next.label','Nächster Schritt')}</small><b>${esc(next[0])}</b></div><h3>${tx('ak.cockpit','LC-Cockpit')}</h3><div class="grid">`+lcCockpitCards(activeLc,documents,review,tasks,deadlines).map(([title,value,note,section])=>`<div class="card cockpit-card" role="button" tabindex="0" data-cockpit-section="${section}" aria-label="${esc(tx('ak.openSection','{title} öffnen',{title}))}"><small>${esc(title)}</small><b>${esc(value)}</b><p>${esc(note)}</p></div>`).join('')+'</div>';
     block.querySelectorAll('[data-cockpit-section]').forEach(button=>{button.onclick=()=>activateDossierSection(button.dataset.cockpitSection);button.onkeydown=event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();button.click()}}});
     const duplicates=document.createElement('button');duplicates.type='button';duplicates.className='secondary';duplicates.textContent=tx('ak.duplicates','Identische Dokumentdateien prüfen');duplicates.onclick=()=>openDocumentDuplicates('/api/lcs/'+id+'/documents/duplicates');block.append(duplicates);
     const activity=document.createElement('section');
