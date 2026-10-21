@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Bedienung: Die Kennzahlen über der Aktenliste sind anklickbar und filtern die Liste (Offene, Ablauf bald, Verladung bald, Ablauf überschritten, Wiedervorlage fällig, nicht zugewiesen, wartet auf Kunde); ein zweiter Klick hebt den Filter auf, auch mit der Tastatur (Enter/Leertaste). Dazu vier feste Ansichten: Alle Akten, Meine Akten, Läuft bald ab und Braucht Aufmerksamkeit (Ablauf oder Verladung in 7 Tagen, Wiedervorlage fällig oder rote Prüfampel). Der aktive Filter wird angezeigt und lässt sich zurücksetzen.
 * Dokumentation: `datenbank-rollen.md` beschreibt den tatsächlichen Stand der Row-Level-Security (nicht mehr „nicht eingerichtet“) und den Betriebshinweis, dass sie nur mit der eingeschränkten Laufzeitrolle wirkt; derselbe Hinweis steht im Erstinstallations-Leitfaden.
 * Entwicklung: Leitfaden `docs/mehrsprachigkeit.md` (neue Texte immer zweisprachig, Muster für Frontend und Server) und Schutz-Test `i18n-guard.test.cjs`, der Schlüsselgleichheit der Sprachpakete prüft und verhindert, dass in den übersetzten Skripten deutscher Klartext ohne Übersetzung hinzukommt.
 * Dokumentation: Leitfaden `docs/erstinstallation.md` für die Erstinstallation (Server, `.env`, erster Start, Mailserver, Datenbankrolle, Sicherung, Audit-Anker, Update) und die ersten Benutzer (Plattformadministrator, Mandant, Einladung, Einrichtung, Rollen, erste Akte) mit Abnahme-Checklisten.

@@ -1184,5 +1184,13 @@
   "mo.c.approvers": "Freigeber",
   "mo.loading": "Übersicht wird geladen …",
   "mo.loadFailed": "Übersicht konnte nicht geladen werden: ",
-  "mo.c.user": "Benutzer"
+  "mo.c.user": "Benutzer",
+  "kpi.views": "Ansichten",
+  "kpi.viewAll": "Alle Akten",
+  "kpi.viewMine": "Meine Akten",
+  "kpi.viewSoon": "Läuft bald ab",
+  "kpi.viewAttention": "Braucht Aufmerksamkeit",
+  "kpi.reset": "Filter zurücksetzen",
+  "kpi.filtered": "Gefiltert: {name}",
+  "kpi.clickHint": "Klicken, um die Liste zu filtern"
 }

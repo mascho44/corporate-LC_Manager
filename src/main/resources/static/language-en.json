@@ -1184,5 +1184,13 @@
   "mo.c.approvers": "Approvers",
   "mo.loading": "Loading overview …",
   "mo.loadFailed": "The overview could not be loaded: ",
-  "mo.c.user": "User"
+  "mo.c.user": "User",
+  "kpi.views": "Views",
+  "kpi.viewAll": "All files",
+  "kpi.viewMine": "My files",
+  "kpi.viewSoon": "Expiring soon",
+  "kpi.viewAttention": "Needs attention",
+  "kpi.reset": "Clear filter",
+  "kpi.filtered": "Filtered: {name}",
+  "kpi.clickHint": "Click to filter the list"
 }
