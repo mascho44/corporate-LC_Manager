@@ -19,7 +19,7 @@ function fixture(responses,tenantCode){
   form.insertBefore=(item)=>{form.children.push(item);if(item.inputs.length)form.elements.code=item.inputs[0];};
   form.replaceChildren=()=>{form.children=[];};
   const calls=[],redirects=[];
-  const context={document:{querySelector:selector=>selector==='#loginForm'?form:error,createElement:tag=>new Element(tag)},
+  const context={tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(m,k)=>values[k]??m),document:{querySelector:selector=>selector==='#loginForm'?form:error,createElement:tag=>new Element(tag)},
     fetch:async(url,options)=>{calls.push({url,options});const body=responses.shift()||{selectedTenantId:'one',workspaces:[{id:'one',name:'Only workspace'}]};return {ok:!body.error,json:async()=>body};},
     FormData:class{entries(){return [['username','user'],['password','password'],['tenantCode',tenantCode||'']];}},location:{replace:url=>redirects.push(url)}};
   vm.runInNewContext(fs.readFileSync('src/main/resources/static/login.js','utf8'),context);

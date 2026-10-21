@@ -1,15 +1,15 @@
 /* Poststelle: simple page for a mailroom to deliver scans with an access token (no login). Everything is sent to POST /api/capture/upload, one file per call. */
 (() => {
- const MESSAGES = { 401: 'Der Zugang ist ungültig oder wurde widerrufen. Bitte bei der Administration einen neuen anfordern.', 403: 'Dieser Zugang darf das nicht.', 413: 'Die Datei ist zu groß.' };
+ const messages = () => ({ 401: tx('ps.e401', 'Der Zugang ist ungültig oder wurde widerrufen. Bitte bei der Administration einen neuen anfordern.'), 403: tx('ps.e403', 'Dieser Zugang darf das nicht.'), 413: tx('ps.e413', 'Die Datei ist zu groß.') });
  /** Result line for a receipt of the server or an error: { kind: ok|warn|fail, text }. */
  function describe(receipt, error) {
   if (error) return { kind: 'fail', text: error };
-  if (receipt.status === 'DUPLICATE') return { kind: 'warn', text: 'Schon früher angeliefert – nicht ein zweites Mal angelegt.' };
-  if (receipt.pageCountMatches === false) return { kind: 'warn', text: `Angeliefert, aber die Seitenzahl weicht ab (erkannt ${receipt.actualPages ?? '?'}). Bitte den Stapel prüfen.` };
-  return { kind: 'ok', text: 'Angeliefert.' };
+  if (receipt.status === 'DUPLICATE') return { kind: 'warn', text: tx('ps.duplicate', 'Schon früher angeliefert – nicht ein zweites Mal angelegt.') };
+  if (receipt.pageCountMatches === false) return { kind: 'warn', text: tx('ps.pages', 'Angeliefert, aber die Seitenzahl weicht ab (erkannt {n}). Bitte den Stapel prüfen.', { n: receipt.actualPages ?? '?' }) };
+  return { kind: 'ok', text: tx('ps.delivered', 'Angeliefert.') };
  }
  function httpMessage(status, body) {
-  return MESSAGES[status] || (body && body.error) || `Fehler ${status}. Bitte noch einmal versuchen.`;
+  return messages()[status] || (body && body.error) || tx('ps.error', 'Fehler {status}. Bitte noch einmal versuchen.', { status });
  }
  function defaultBatch(date) {
   const p = n => String(n).padStart(2, '0');
@@ -34,10 +34,10 @@
  ['token', 'scanner', 'batch'].forEach(id => $(id).addEventListener('change', remember)); $('remember').addEventListener('change', remember);
 
  let ok = 0, warn = 0, fail = 0;
- const summary = () => { $('summary').textContent = ok + warn + fail ? `${ok} angeliefert${warn ? `, ${warn} mit Hinweis` : ''}${fail ? `, ${fail} fehlgeschlagen` : ''}.` : ''; };
+ const summary = () => { $('summary').textContent = ok + warn + fail ? tx('ps.summary', '{ok} angeliefert{warn}{fail}.', { ok, warn: warn ? tx('ps.summaryWarn', ', {n} mit Hinweis', { n: warn }) : '', fail: fail ? tx('ps.summaryFail', ', {n} fehlgeschlagen', { n: fail }) : '' }) : ''; };
  function line(file) {
   const li = document.createElement('li'), mark = document.createElement('b'), name = document.createElement('span'), note = document.createElement('small');
-  mark.textContent = '…'; name.textContent = file.name; note.textContent = 'wird gesendet'; li.append(mark, name, note); $('results').prepend(li);
+  mark.textContent = '…'; name.textContent = file.name; note.textContent = tx('ps.sending', 'wird gesendet'); li.append(mark, name, note); $('results').prepend(li);
   return result => { li.className = result.kind; mark.textContent = { ok: '✓', warn: '⚠', fail: '✗' }[result.kind]; note.textContent = result.text; };
  }
  async function send(file, token) {
@@ -51,12 +51,12 @@
    const body = await response.json().catch(() => null);
    if (!response.ok) { fail++; done(describe(null, httpMessage(response.status, body))); return response.status === 401; }
    const result = describe(body[0] || {}); result.kind === 'ok' ? ok++ : warn++; done(result);
-  } catch { fail++; done(describe(null, 'Keine Verbindung zum Server. Bitte noch einmal versuchen.')); }
+  } catch { fail++; done(describe(null, tx('ps.noConnection', 'Keine Verbindung zum Server. Bitte noch einmal versuchen.'))); }
   return false;
  }
  async function deliver(files) {
   const token = $('token').value.trim();
-  if (!token.startsWith('lcc_')) { $('summary').textContent = 'Bitte zuerst den Erfassungszugang eintragen (beginnt mit lcc_).'; $('token').focus(); return; }
+  if (!token.startsWith('lcc_')) { $('summary').textContent = tx('ps.needToken', 'Bitte zuerst den Erfassungszugang eintragen (beginnt mit lcc_).'); $('token').focus(); return; }
   remember();
   for (const file of files) { if (await send(file, token)) break; }
   summary();

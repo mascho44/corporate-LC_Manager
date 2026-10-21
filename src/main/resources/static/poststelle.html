@@ -1,18 +1,18 @@
-<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Poststelle · Corporate LC Manager</title><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/poststelle.css?v=20261014-1"></head>
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title data-i18n="ps.title">Poststelle · Corporate LC Manager</title><link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/poststelle.css?v=20261014-1"></head>
 <body class="poststelle-page"><main class="poststelle">
-<header><span class="brand">LC</span><div><b>Corporate LC Manager</b><small>Poststelle · Dokumente anliefern</small></div></header>
+<header><span class="brand">LC</span><div><b>Corporate LC Manager</b><small data-i18n="ps.brandSub">Poststelle · Dokumente anliefern</small></div></header>
 <section id="accessBox" class="ps-card">
-<h1>Zugang</h1>
-<p>Der Erfassungszugang wird von der Mandanten-Administration angelegt (Einstellungen → Erfassungszugänge). Er erlaubt nur, Dokumente anzuliefern.</p>
-<label>Erfassungszugang<input id="token" type="password" autocomplete="off" spellcheck="false" placeholder="lcc_…"></label>
-<label>Gerät / Station<input id="scanner" maxlength="100" placeholder="z. B. Scanner 2"></label>
-<label class="ps-check"><input id="remember" type="checkbox"> Auf diesem Gerät merken</label>
+<h1 data-i18n="ps.access">Zugang</h1>
+<p data-i18n="ps.accessText">Der Erfassungszugang wird von der Mandanten-Administration angelegt (Einstellungen → Erfassungszugänge). Er erlaubt nur, Dokumente anzuliefern.</p>
+<label data-i18n="ps.token">Erfassungszugang<input id="token" type="password" autocomplete="off" spellcheck="false" placeholder="lcc_…"></label>
+<label data-i18n="ps.scanner">Gerät / Station<input id="scanner" maxlength="100" placeholder="z. B. Scanner 2" data-i18n-placeholder="ps.scannerExample"></label>
+<label class="ps-check" data-i18n="ps.remember"><input id="remember" type="checkbox"> Auf diesem Gerät merken</label>
 </section>
 <section class="ps-card">
-<h1>Lieferung</h1>
-<label>Stapel<input id="batch" maxlength="100" placeholder="z. B. 17"></label>
-<div id="drop" class="ps-drop" tabindex="0" role="button" aria-label="Dateien auswählen oder hierher ziehen"><b>Dateien hierher ziehen</b><span>oder zum Auswählen klicken (PDF, Bilder)</span><input id="files" type="file" multiple accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff" hidden></div>
+<h1 data-i18n="ps.delivery">Lieferung</h1>
+<label data-i18n="ps.batch">Stapel<input id="batch" maxlength="100" placeholder="z. B. 17" data-i18n-placeholder="ps.batchExample"></label>
+<div id="drop" class="ps-drop" tabindex="0" role="button" data-i18n-aria-label="ps.dropLabel" aria-label="Dateien auswählen oder hierher ziehen"><b data-i18n="ps.dropTitle">Dateien hierher ziehen</b><span data-i18n="ps.dropSub">oder zum Auswählen klicken (PDF, Bilder)</span><input id="files" type="file" multiple accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff" hidden></div>
 <p id="summary" class="ps-summary" role="status"></p>
 <ul id="results" class="ps-results"></ul>
 </section>
-</main><script src="/poststelle.js?v=20261014-1"></script></body></html>
+</main><script src="/prelogin-language.js?v=20261022-1"></script><script src="/poststelle.js?v=20261022-1"></script></body></html>

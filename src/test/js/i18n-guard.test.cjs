@@ -1,4 +1,4 @@
-const test = require('node:test'), assert = require('node:assert/strict'), fs = require('node:fs');
+const test = require('node:test'), assert = require('node:assert/strict'), fs = require('node:fs'), vm = require('node:vm');
 const dir = 'src/main/resources/static/';
 
 /* Safety net for the multilingual rule (docs/mehrsprachigkeit.md): these scripts are fully translated, so they must not gain a plain German text.
@@ -40,6 +40,19 @@ test('every page that loads a script using tx() also loads i18n.js or app-inbox.
   const scripts = [...fs.readFileSync(root + page, 'utf8').matchAll(/<script src="\/([\w.-]+\.js)/g)].map(m => m[1]);
   const users = scripts.filter(name => !name.startsWith('app-') && name !== 'i18n.js' && /\btx\(/.test(fs.readFileSync(root + name, 'utf8')));
   const html = fs.readFileSync(root + page, 'utf8');
-  if (users.length) assert.ok(scripts.includes('i18n.js') || scripts.includes('app-inbox.js') || scripts.includes('tx-fallback.js'), `${page}: ${users.join(', ')} use tx() but no script defines it`);
+  if (users.length) assert.ok(scripts.includes('i18n.js') || scripts.includes('app-inbox.js') || scripts.includes('tx-fallback.js') || scripts.includes('prelogin-language.js'), `${page}: ${users.join(', ')} use tx() but no script defines it`);
+ }
+});
+
+test('the pages without login have every text in German and English, and every key they use exists', () => {
+ const root = 'src/main/resources/static/', context = vm.createContext({ globalThis: null, document: { documentElement: { lang: 'de' } } }); context.globalThis = context;
+ vm.runInContext(fs.readFileSync(root + 'prelogin-language.js', 'utf8'), context);
+ const dictionary = context.LcPrelogin.D, placeholders = t => (t.match(/\{\w+\}/g) || []).sort().join();
+ for (const [key, [de, en]] of Object.entries(dictionary)) { assert.ok(de && en, key); assert.equal(placeholders(de), placeholders(en), key); }
+ const pages = { 'login.html': 'login.js', 'platform-login.html': 'platform-login.js', 'password-reset.html': 'password-reset.js', 'invitation.html': 'invitation.js', 'poststelle.html': 'poststelle.js' };
+ for (const [page, script] of Object.entries(pages)) {
+  const keys = [...fs.readFileSync(root + page, 'utf8').matchAll(/data-i18n(?:-placeholder|-aria-label)?="([\w.]+)"/g)].map(m => m[1]).concat([...fs.readFileSync(root + script, 'utf8').matchAll(/\btx\('([\w.]+)'/g)].map(m => m[1]));
+  for (const key of keys) assert.ok(dictionary[key], `${page}/${script}: ${key}`);
+  assert.ok(fs.readFileSync(root + page, 'utf8').includes('/prelogin-language.js'), page);
  }
 });
