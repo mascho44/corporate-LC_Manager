@@ -76,3 +76,8 @@ html body #detail.file-drop-over::after{content:attr(data-drop-label);position:a
 html body .trash-list{list-style:none;margin:8px 0;padding:0}
 html body .trash-list li{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:6px 0;border-bottom:1px solid #e5e9ef}
 html body .trash-list small{display:block;color:#667085}
+
+/* Fehlende LC-Angaben: eingeklappte Liste mit einem gemeinsamen Erfassen-Knopf */
+html body .doc-review-missing-list summary{cursor:pointer;color:#2f6fed;margin:4px 0}
+html body .doc-review-missing-list .doc-review-missing-row{margin-top:2px}
+html body .doc-review-missing-row>span{min-width:0;font-weight:500}

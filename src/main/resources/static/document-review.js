@@ -153,6 +153,11 @@
    const rules = missing.reduce((n, m) => n + m.rules, 0);
    const head = document.createElement('p'); head.innerHTML = `<b>Fehlende LC-Angaben</b> – ${rules} Regel${rules === 1 ? '' : 'n'} können erst geprüft werden, wenn diese Angaben erfasst sind. Sie stehen deshalb nicht einzeln bei den Dokumenten.`; missingBox.append(head);
    const editable = can('LC_EDIT');
+   const others = missing.filter(m => !(editable && m.field === 'LC_PRESENTATION_DATE'));
+   if (editable && others.length) { const capture = document.createElement('button'); capture.type = 'button'; capture.className = 'secondary'; capture.dataset.ruleFacts = ''; capture.textContent = 'In den LC-Prüfdaten erfassen'; head.append(' ', capture); }
+   const list = document.createElement('details'); list.className = 'doc-review-missing-list';
+   const summaryLine = document.createElement('summary'); summaryLine.textContent = `${others.length} fehlende Angabe${others.length === 1 ? '' : 'n'} anzeigen`;
+   if (others.length) { list.append(summaryLine); if (others.length <= 3) list.open = true; }
    missing.forEach(m => {
     const row = document.createElement('div'); row.className = 'doc-review-missing-row';
     const text = document.createElement('span'); text.textContent = `${fieldLabel(m.field)} · ${m.rules} Regel${m.rules === 1 ? '' : 'n'}${m.documents.size ? ', ' + m.documents.size + ' Dokument' + (m.documents.size === 1 ? '' : 'e') : ''}`; row.append(text);
@@ -167,9 +172,10 @@
       catch (error) { status.textContent = 'Nicht gespeichert: ' + error.message; save.disabled = false; }
      };
      row.append(input, save, status);
-    } else if (editable) { const open = document.createElement('button'); open.type = 'button'; open.className = 'secondary'; open.dataset.ruleFacts = ''; open.textContent = 'In den LC-Prüfdaten erfassen'; row.append(open); }
-    missingBox.append(row);
+    }
+    (editable && m.field === 'LC_PRESENTATION_DATE' ? missingBox : list).append(row);
    });
+   if (others.length) missingBox.append(list);
   }
   const onFactsSaved = () => { if (dialog.open) refreshAfterFacts().catch(() => {}); };
   document.addEventListener('lc-rule-facts-saved', onFactsSaved); dialog.onclose = () => document.removeEventListener('lc-rule-facts-saved', onFactsSaved);
