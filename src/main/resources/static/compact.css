@@ -53,3 +53,13 @@ html body .next-step{display:flex;align-items:baseline;gap:10px;padding:8px 12px
 html body .next-step small{color:#2f6fed;font-weight:700;text-transform:uppercase;font-size:11px}
 html body .next-step.done{cursor:default;background:#f6faf7;border-color:#cfe5d6}
 html body .next-step.done small{color:#1a7f45}
+
+/* Globale Suche (Strg+K) */
+html body .global-search{border:0;border-radius:10px;padding:12px;width:min(560px,92vw);margin:12vh auto auto;box-shadow:0 12px 40px rgba(16,24,40,.28)}
+html body .global-search::backdrop{background:rgba(16,24,40,.35)}
+html body .global-search input{width:100%;box-sizing:border-box;margin:0}
+html body .global-search ul{list-style:none;margin:6px 0 0;padding:0}
+html body .global-search li{display:flex;gap:10px;align-items:baseline;padding:7px 10px;border-radius:6px;cursor:pointer}
+html body .global-search li span{color:#667085;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html body .global-search li[aria-selected="true"],html body .global-search li:hover{background:#eaf1ff}
+html body .global-search small{display:block;color:#667085;margin-top:6px}

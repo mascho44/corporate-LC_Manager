@@ -180,3 +180,11 @@ test('the document buttons are grouped into two menus with translated labels', (
   assert.deepEqual(groups[0].items, ['[data-doc-create]', '#documentSetBtn']); assert.deepEqual(groups[1].items, ['#draftCheckBtn', '#submissionPackageBtn', '#amendmentRequestBtn']);
  }
 });
+
+test('global search finds files by reference and parties, best reference match first', () => {
+  const context = vm.createContext({ globalThis: null }); context.globalThis = context;
+  vm.runInContext(fs.readFileSync(dir + 'global-search.js', 'utf8'), context);
+  const list = [{ reference: 'LC-2', beneficiary: 'Acme GmbH' }, { reference: 'ACME-1', applicant: 'Foo' }, { reference: 'LC-3', beneficiary: 'Other' }];
+  assert.deepEqual(JSON.parse(JSON.stringify(context.LcSearch.search(list, 'acme').map(x => x.reference))), ['ACME-1', 'LC-2']);
+  assert.equal(context.LcSearch.search(list, '').length, 0);
+});
