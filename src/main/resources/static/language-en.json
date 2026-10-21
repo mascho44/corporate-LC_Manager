@@ -2624,6 +2624,8 @@
   "po.object": "Object",
   "po.result": "Result",
   "audit.act.SERVER_LOG_VIEWED": "Server log viewed",
+  "rf.reSuggest": "Suggest recognised details again",
+  "rf.reSuggestHint": "Fills only empty fields from the SWIFT message, invoice and recognised text; entered values stay.",
   "ak.openSection": "Open {title}",
   "ak.duplicates": "Check identical document files",
   "ak.recent": "Recent activity",
