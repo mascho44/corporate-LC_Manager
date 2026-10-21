@@ -1,6 +1,6 @@
 const test = require('node:test'), assert = require('node:assert/strict'), fs = require('node:fs'), vm = require('node:vm');
 const dir = 'src/main/resources/static/';
-const FILES = ['app', 'procurement-plan', 'corporate-profile', 'kpis', 'akte-copy', 'draft-check', 'amendment-request', 'document-set', 'submission-package'];
+const FILES = ['app', 'lc-tools', 'procurement-plan', 'corporate-profile', 'kpis', 'akte-copy', 'draft-check', 'amendment-request', 'document-set', 'submission-package'];
 const en = JSON.parse(fs.readFileSync(dir + 'language-en.json', 'utf8')), de = JSON.parse(fs.readFileSync(dir + 'language-de.json', 'utf8'));
 const placeholders = text => [...String(text).matchAll(/\{(\w+)\}/g)].map(m => m[1]).sort().join(',');
 
@@ -78,4 +78,16 @@ test('the status names read in English and the header buttons use the language p
   assert.equal(context.statusLabel('DOCUMENTS_PRESENTED'), expected); assert.equal(context.statusLabel('UNKNOWN_STATUS'), 'UNKNOWN_STATUS');
  }
  assert.equal(en['lc.conditions'], 'LC conditions'); assert.equal(de['lc.charges'], 'Gebühren & Provisionen');
+});
+
+test('the draft states, the charge types and the condition names exist in both languages', () => {
+ for (const key of ['dr.draft', 'dr.submitted', 'dr.reviewed', 'dr.final', 'dr.title', 'lcx.type.OPENING', 'lcx.type.CONFIRMATION', 'lcx.cond.GOODS_DESCRIPTION', 'lcx.cond.APPLICABLE_RULES']) { assert.ok(key in en && key in de, key); }
+ const source = fs.readFileSync(dir + 'app.js', 'utf8');
+ const start = source.indexOf('function draftStatusLabel('), code = source.slice(start, source.indexOf('\n', start));
+ const tx = source.slice(source.indexOf('function tx('), source.indexOf('\n', source.indexOf('function tx(')));
+ for (const [language, pack, expected] of [['en', en, 'For review'], ['de', de, 'Zur Prüfung']]) {
+  const context = vm.createContext({ LcI18n: { language: () => language, t: (key, values = {}) => String(pack[key] ?? key) } });
+  vm.runInContext([tx, code].join('\n'), context);
+  assert.equal(context.draftStatusLabel('SUBMITTED'), expected); assert.equal(context.draftStatusLabel('SOMETHING'), 'SOMETHING');
+ }
 });
