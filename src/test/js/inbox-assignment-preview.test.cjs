@@ -1,6 +1,6 @@
 const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
 const source=fs.readFileSync('src/main/resources/static/app.js','utf8');
-const context=vm.createContext({esc:value=>String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;')});
+const context=vm.createContext({tx:(key,german,values={})=>german.replace(/\{(\w+)\}/g,(_,n)=>String(values[n]??'')),esc:value=>String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;')});
 vm.runInContext(source.slice(source.indexOf('function inboxAssignmentPreview('),source.indexOf('function documentCopyLabel(')),context);
 test('PDF and image previews are lazy, same-origin and escape names',()=>{
  const pdf=context.inboxAssignmentPreview({id:'synthetic',contentType:'application/pdf',originalFilename:'<script>.pdf'});

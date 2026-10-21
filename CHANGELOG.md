@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Englische Oberfläche, achter Teil: Dokumentenposteingang (Kopf, Hochladen, Dateizeilen, Zuordnungsformular, vorgeschlagene Akten und Dokumenttypen, Vorschau, Sammelaktionen, Lade-, Leer- und Fehlermeldungen) sowie der Dialog „Dokumentdaten bearbeiten“ sind zweisprachig. Aufteilen, Layoutlernen und Metadatenkorrektur folgen.
 * Englische Oberfläche, siebter Teil: Formular „Dokument erstellen“ mit Positionen, Aktenliste (Zeilen, Fristentexte, Zähler, Filter, Sortierung, leere Liste) und die Startseiten-Kennzahlen sind zweisprachig.
 * Englische Oberfläche, sechster Teil: Die Dialoge „LC-Bedingungen“ und „Gebühren & Provisionen“ (Bedingungsnamen, Tarifprofile, Schätzungen) sowie der Bereich „Dokumententwürfe“ (Status, Freigabe-Ablauf, Knöpfe, Meldungen) sind zweisprachig.
 * Englische Oberfläche, fünfter Teil: Beschaffungsplan (Ampeln, Stände, Zieltermine, Vorlaufzeiten, Hinweise; neues Feld `hintEn` am Planpunkt), Status der Akte, Kopf der Akte mit Aktionen, Überschriften der Aktenbereiche, Menüeinträge Fristenkalender, EBICS-Bankanbindung und Gruppeninbox sowie der Arbeitsplatz-Block. Die Aktenbereiche werden nicht mehr am deutschen Überschriftentext erkannt, sondern an einem festen Schlüssel (`data-sect`).

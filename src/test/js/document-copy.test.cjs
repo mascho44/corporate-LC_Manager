@@ -1,5 +1,5 @@
 const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
-const source=fs.readFileSync('src/main/resources/static/app.js','utf8'),context=vm.createContext({});
+const source=fs.readFileSync('src/main/resources/static/app.js','utf8'),context=vm.createContext({tx:(key,german)=>german});
 vm.runInContext(source.slice(source.indexOf('function documentCopyLabel('),source.indexOf('let inboxRefreshTimer=')),context);
 test('unspecified is never inferred as original and numeric zero survives form conversion',()=>{
  assert.equal(context.readDocumentCopy(''),null);assert.equal(context.readDocumentCopy('0'),0);assert.equal(context.readDocumentCopy('3'),3);

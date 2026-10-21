@@ -106,3 +106,52 @@ test('the credit list shows deadlines and counts in English', () => {
  const html = fs.readFileSync(dir + 'index.html', 'utf8');
  for (const [, key] of html.matchAll(/data-i18n(?:-placeholder)?="([\w.]+)"/g)) assert.ok(key in en || key.startsWith('audit.') || key.startsWith('nav.') || key.startsWith('profile.'), key + ' fehlt im englischen Paket');
 });
+
+test('the inbox item, its preview and the suggestions render in English without leftovers', () => {
+ const source = fs.readFileSync(dir + 'app.js', 'utf8');
+ const fn = name => { const start = source.indexOf(`function ${name}(`); const rest = source.slice(start); const lines = rest.split('\n'); let depth = 0, out = [];
+  for (const line of lines) { out.push(line); for (const c of line) { if (c === '{') depth++; else if (c === '}') depth--; } if (depth === 0 && out.length > 0 && /\}\s*$/.test(line)) break; } return out.join('\n'); };
+ const consts = ['const inboxDocumentTypes=', 'const documentCopyOptions'].map(prefix => { const i = source.indexOf(prefix); return i < 0 ? '' : source.slice(i, source.indexOf('\n', i)); }).join('\n');
+ for (const [language, pack] of [['en', en], ['de', de]]) {
+  const context = vm.createContext({ LcI18n: { language: () => language, locale: () => language === 'en' ? 'en-GB' : 'de-DE', t: (key, values = {}) => String(pack[key] ?? key).replace(/\{(\w+)\}/g, (_, n) => String(values[n] ?? '')) },
+   Intl, Date, Math, esc: v => String(v ?? ''), can: () => true, fileSize: n => n + ' B', extractionLabel: s => s || '', statusLabel: s => s, inboxMetadataFields: () => '', inboxNewCaseHtml: () => '', globalThis: {} });
+  context.globalThis = context;
+  vm.runInContext([consts, fn('tx'), fn('documentCopyLabel'), fn('documentCopyOptions'), fn('inboxPrefill'), fn('renderInboxSuggestions'), fn('renderClassificationHint'), fn('inboxAssignmentPreview'), fn('renderInboxItem')].join('\n'), context);
+  const item = { id: 'i1', originalFilename: 'doc.pdf', fileSize: 10, receivedBy: 'anna', receivedAt: '2026-10-21T08:00:00', extractionStatus: 'EXTRACTED', contentType: 'application/pdf', extractedReference: 'LC-1',
+   classification: { suggestedType: 'COMMERCIAL_INVOICE', status: 'SUGGESTED', score: 0.82, evidence: ['x'] }, assignmentCandidates: [{ lcId: 'l1', reference: 'LC-1', status: 'ACTIVE', reason: 'REFERENCE_EXACT', evidence: 'ref' }] };
+  const html = context.renderInboxItem(item, [{ id: 'l1', reference: 'LC-1', status: 'ACTIVE' }]);
+  assert.ok(!html.includes('${') && !/tx\('/.test(html), language + ': unrendered template left');
+  if (language === 'en') {
+   for (const text of ['Received from anna', 'View document', 'Recognised LC reference: LC-1', 'Please choose', 'Commercial invoice', 'Confirm assignment', 'Previous page', 'Next page', 'Suggested LC file', 'Recognised LC reference matches', 'Choose suggestion', 'Type recognition: Commercial invoice', 'Score 82 / 100', 'Preview for the assignment']) assert.ok(html.includes(text), text);
+   assert.ok(!/Eingang|Bitte auswählen|Zuordnung bestätigen|Vorschlag auswählen/.test(html), 'German leftover');
+  } else {
+   for (const text of ['Eingang von anna', 'Dokument ansehen', 'Handelsrechnung', 'Zuordnung bestätigen']) assert.ok(html.includes(text), text);
+  }
+ }
+});
+
+test('the inbox toolbar and the inbox page texts exist in both languages', () => {
+ const source = fs.readFileSync(dir + 'app.js', 'utf8');
+ const start = source.indexOf('function inboxBulkToolbar('), code = source.slice(start, source.indexOf('\n', start));
+ const tx = source.slice(source.indexOf('function tx('), source.indexOf('\n', source.indexOf('function tx(')));
+ for (const [language, pack, expected] of [['en', en, 'Delete selected'], ['de', de, 'Ausgewählte löschen']]) {
+  const context = vm.createContext({ LcI18n: { language: () => language, t: (key, values = {}) => String(pack[key] ?? key) }, can: () => true, esc: v => String(v) });
+  vm.runInContext([tx, code].join('\n'), context);
+  const html = context.inboxBulkToolbar();
+  assert.ok(html.includes(expected), language); assert.ok(!html.includes('tx(') && !html.includes('${'), language + ' leftover');
+ }
+ const source2 = fs.readFileSync(dir + 'app.js', 'utf8');
+ for (const key of ['inbox.title', 'inbox.intro', 'inbox.refresh', 'inbox.pick', 'inbox.limits', 'inbox.upload']) { assert.ok(source2.includes(`data-i18n="${key}"`), key); assert.ok(key in en && key in de, key); }
+});
+
+test('the recognition status and the metadata block read in English', () => {
+ const source = fs.readFileSync(dir + 'app.js', 'utf8');
+ const pick = name => { const start = source.indexOf(`function ${name}(`); return source.slice(start, source.indexOf('\n', start)); };
+ const context = vm.createContext({ LcI18n: { language: () => 'en', t: (key, values = {}) => String(en[key] ?? key).replace(/\{(\w+)\}/g, (_, n) => String(values[n] ?? '')) }, esc: v => String(v ?? '') });
+ vm.runInContext([pick('tx'), pick('extractionLabel'), pick('inboxMetadataFields')].join('\n'), context);
+ assert.equal(context.extractionLabel('EXTRACTED'), 'Text read automatically'); assert.equal(context.extractionLabel(undefined), 'Not processed'); assert.equal(context.extractionLabel('FUTURE'), 'FUTURE');
+ const html = context.inboxMetadataFields({ id: 'i', extractedReference: 'LC-1', extractedAmount: null });
+ assert.ok(!html.includes('${') && !html.includes('tx('), 'leftover');
+ for (const text of ['Check and correct metadata', 'LC reference in the document', 'Recognised – check', 'Not recognised / uncertain', 'Save working state', 'Confirm layout & learn', 'Show evidence']) assert.ok(html.includes(text), text);
+ assert.ok(!/prüfen|Bearbeitungsstand|Fundstellen/.test(html), 'German leftover');
+});
