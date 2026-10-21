@@ -22,6 +22,7 @@ import java.util.UUID;
 @RequestMapping("/api")
 public class DocumentController {
     @org.springframework.beans.factory.annotation.Autowired private de.ostms.lc.document.service.PdfPagePreviewService pagePreview;
+    @org.springframework.beans.factory.annotation.Autowired private de.ostms.lc.document.service.DocumentTrashService trash;
     @GetMapping(value="/documents/{id}/pages/{page}/preview",produces="image/png")
     public ResponseEntity<byte[]> pagePreview(@PathVariable UUID id,@PathVariable int page,@RequestParam(defaultValue="large") String size)throws Exception{
         LcDocument document=service.one(id);
@@ -76,6 +77,16 @@ public class DocumentController {
         LcDocument document=service.delete(lcId,id);
         resetChecks(lcId,authentication,"Dokument gelöscht");
         audit.recordChange(authentication,"DOCUMENT_DELETED","LETTER_OF_CREDIT",lcId,document.getOriginalFilename()+" · "+document.getDocumentType(),de.ostms.lc.audit.service.AuditSnapshots.document(document),null);
+    }
+
+    @GetMapping("/lcs/{lcId}/documents/trash")
+    public List<de.ostms.lc.document.service.DocumentTrashService.TrashItem> trash(@PathVariable UUID lcId) { return trash.list(lcId); }
+
+    @PostMapping("/lcs/{lcId}/documents/{id}/restore")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void restore(@PathVariable UUID lcId,@PathVariable UUID id,Authentication authentication) {
+        String name=trash.restore(lcId,id);
+        audit.record(authentication,"DOCUMENT_RESTORED","LETTER_OF_CREDIT",lcId,name);
     }
 
     @PutMapping("/lcs/{lcId}/documents/{id}")

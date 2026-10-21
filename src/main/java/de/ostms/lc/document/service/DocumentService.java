@@ -129,7 +129,8 @@ public class DocumentService {
         LcDocument document = one(id);
         if (document.getLetterOfCredit() == null || !lcId.equals(document.getLetterOfCredit().getId()))
             throw new IllegalArgumentException("Dokument gehört nicht zu diesem Akkreditiv.");
-        documents.delete(document);
+        document.setDeletedAt(java.time.LocalDateTime.now());
+        documents.save(document);
         return document;
     }
 
