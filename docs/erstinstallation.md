@@ -106,7 +106,7 @@ und starten Sie neu (`scripts/deploy-prod.sh`, siehe A9). Ohne Mailserver kann d
 
 ### A7. Datenbankrollen trennen (empfohlen)
 
-Standardmäßig nutzt die Anwendung für Migrationen und Laufzeit dieselbe Rolle `lcmanager`, die in der Produktion Superuser ist. Besser läuft die Anwendung mit einer eingeschränkten Rolle ohne Schema-Rechte. Dazu in der `.env` ergänzen:
+Standardmäßig nutzt die Anwendung für Migrationen und Laufzeit dieselbe Rolle `lcmanager`, die in der Produktion Superuser ist. Besser läuft die Anwendung mit einer eingeschränkten Rolle ohne Schema-Rechte. **Nur mit dieser Rolle greift die Row-Level-Security der Datenbank**, die die Daten der Mandanten zusätzlich voneinander trennt; für echte Mandanten ist dieser Schritt daher dringend zu empfehlen. Dazu in der `.env` ergänzen:
 
 ```text
 DB_APP_USER=lcmanager_app
@@ -157,7 +157,7 @@ Eine Sicherung entsteht automatisch vor jedem Deploy. Zusätzlich:
 - [ ] `https://…/api/health` antwortet, Anmeldeseite erreichbar, kein Zugriff über HTTP
 - [ ] `.env` hat Rechte 600 und liegt zusätzlich sicher getrennt
 - [ ] Anmeldung als `admin` klappt, Zwei-Faktor eingerichtet (B1)
-- [ ] Datenbankrolle getrennt (A7) oder bewusst nicht
+- [ ] Datenbankrolle getrennt (A7), sonst wirkt die Row-Level-Security nicht (nur im reinen Testbetrieb bewusst weglassen)
 - [ ] Tägliche Sicherung läuft, Wiederherstellung einmal getestet, Passwortdatei getrennt gesichert
 - [ ] Audit-Anker per Cron
 - [ ] Mailversand getestet (Einladung an die eigene Adresse)
