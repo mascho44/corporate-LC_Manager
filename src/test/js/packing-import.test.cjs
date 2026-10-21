@@ -1,6 +1,6 @@
 const test = require('node:test'), assert = require('node:assert/strict'), fs = require('node:fs'), vm = require('node:vm');
 const source = fs.readFileSync('src/main/resources/static/packing-import.js', 'utf8');
-const context = vm.createContext({ TextDecoder, Uint8Array });
+const context = vm.createContext({ tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(m,k)=>values[k]??m), TextDecoder, Uint8Array });
 context.globalThis = context;
 vm.runInContext(source, context);
 const api = context.LcPackingImport;

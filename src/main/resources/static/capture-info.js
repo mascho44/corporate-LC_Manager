@@ -6,25 +6,25 @@
   if (!info) return null;
   const source = String(info.source || '').replace(/^(?:capture|mail|folder):/, '');
   if (info.channel === 'EMAIL') {
-   const mail = ['Eingang: E-Mail' + (info.sender ? ' von ' + info.sender : '')];
-   if (info.subject) mail.push('Betreff „' + info.subject + '“');
+   const mail = [tx('cil.cf40e0','Eingang: E-Mail') + (info.sender ? tx('cil.c8a06e',' von ') + info.sender : '')];
+   if (info.subject) mail.push(tx('cil.37e2b4','Betreff „') + info.subject + '“');
    if (info.scannedAt) mail.push('gesendet ' + fmt(info.scannedAt));
-   if (source) mail.push('Postfach ' + source);
+   if (source) mail.push(tx('cil.9cf877','Postfach ') + source);
    return { text: mail.join(' · '), warning: null };
   }
   if (info.channel === 'FOLDER') {
    const file = info.reference ? String(info.reference).replace(/^[^/]*\//, '') : '';
-   const folder = ['Eingang: Ordner ' + (info.scanner || source || '')];
-   if (file) folder.push('Datei ' + file);
+   const folder = [tx('cil.be4514','Eingang: Ordner ') + (info.scanner || source || '')];
+   if (file) folder.push(tx('cil.54b99a','Datei ') + file);
    if (info.scannedAt) folder.push('abgelegt ' + fmt(info.scannedAt));
    return { text: folder.join(' · '), warning: null };
   }
-  const parts = ['Eingang: ' + (source || 'Erfassung')];
-  if (info.scanner) parts.push('Gerät ' + info.scanner);
-  if (info.batchId) parts.push('Stapel ' + info.batchId);
-  if (info.declaredPages != null) parts.push(info.declaredPages + (info.declaredPages === 1 ? ' Seite' : ' Seiten') + ' gemeldet');
+  const parts = [tx('cil.cb8750','Eingang: ') + (source || tx('cil.55fd28','Erfassung'))];
+  if (info.scanner) parts.push(tx('cil.e74a6b','Gerät ') + info.scanner);
+  if (info.batchId) parts.push(tx('cil.797f57','Stapel ') + info.batchId);
+  if (info.declaredPages != null) parts.push(info.declaredPages + (info.declaredPages === 1 ? tx('cil.669cfa',' Seite') : tx('cil.2b2bbd',' Seiten')) + tx('cil.085a1c',' gemeldet'));
   if (info.scannedAt) parts.push('gescannt ' + fmt(info.scannedAt));
-  const warning = info.pageCountMatches === false ? `Seitenzahl weicht ab: gemeldet ${info.declaredPages}, erkannt ${info.actualPages}. Bitte den Stapel prüfen.` : null;
+  const warning = info.pageCountMatches === false ? tx('cit.cfeab1','Seitenzahl weicht ab: gemeldet {p0}, erkannt {p1}. Bitte den Stapel prüfen.',{p0:info.declaredPages,p1:info.actualPages}) : null;
   return { text: parts.join(' · '), warning };
  }
  globalThis.LcCaptureInfo = { describe };

@@ -2,15 +2,15 @@
    detected or chosen by the user; the column mapping is remembered per set of headers. The file never leaves the browser until the document is created. */
 (() => {
  const FIELDS = [
-  ['position', 'Position', ['pos', 'position', 'item no', 'item', 'line', 'lfd', 'nr', 'no']],
-  ['description', 'Beschreibung', ['description', 'beschreibung', 'goods', 'ware', 'warenbezeichnung', 'bezeichnung', 'artikel', 'article', 'product', 'produkt', 'material', 'text']],
-  ['quantity', 'Menge', ['quantity', 'qty', 'menge', 'anzahl', 'stück', 'stueck', 'pieces', 'pcs']],
-  ['unit', 'Einheit', ['unit', 'einheit', 'uom', 'me']],
-  ['unitPrice', 'Einzelpreis', ['unit price', 'einzelpreis', 'preis', 'price', 'ep']],
-  ['amount', 'Gesamt', ['amount', 'total', 'gesamt', 'betrag', 'value', 'wert', 'line total', 'summe']],
-  ['packages', 'Packstücke', ['packages', 'packstücke', 'packstuecke', 'colli', 'cartons', 'ctns', 'kartons', 'packs', 'pallets', 'paletten', 'no of packages']],
-  ['netWeight', 'Netto kg', ['net weight', 'nettogewicht', 'netto', 'net', 'n.w.', 'nw', 'net kg']],
-  ['grossWeight', 'Brutto kg', ['gross weight', 'bruttogewicht', 'brutto', 'gross', 'g.w.', 'gw', 'gross kg']]
+  ['position', tx('pil.52f5e0','Position'), ['pos', 'position', 'item no', 'item', 'line', 'lfd', 'nr', 'no']],
+  ['description', tx('pil.35bedb','Beschreibung'), ['description', 'beschreibung', 'goods', 'ware', 'warenbezeichnung', 'bezeichnung', 'artikel', 'article', 'product', 'produkt', 'material', 'text']],
+  ['quantity', tx('pil.7c856a','Menge'), ['quantity', 'qty', 'menge', 'anzahl', 'stück', 'stueck', 'pieces', 'pcs']],
+  ['unit', tx('pil.574cd0','Einheit'), ['unit', 'einheit', 'uom', 'me']],
+  ['unitPrice', tx('pil.86762b','Einzelpreis'), ['unit price', 'einzelpreis', 'preis', 'price', 'ep']],
+  ['amount', tx('pil.927cee','Gesamt'), ['amount', 'total', 'gesamt', 'betrag', 'value', 'wert', 'line total', 'summe']],
+  ['packages', tx('pil.7d98cc','Packstücke'), ['packages', 'packstücke', 'packstuecke', 'colli', 'cartons', 'ctns', 'kartons', 'packs', 'pallets', 'paletten', 'no of packages']],
+  ['netWeight', tx('pil.5544c6','Netto kg'), ['net weight', 'nettogewicht', 'netto', 'net', 'n.w.', 'nw', 'net kg']],
+  ['grossWeight', tx('pil.a567c8','Brutto kg'), ['gross weight', 'bruttogewicht', 'brutto', 'gross', 'g.w.', 'gw', 'gross kg']]
  ];
  const NUMERIC = new Set(['quantity', 'unitPrice', 'amount', 'packages', 'netWeight', 'grossWeight']);
 
@@ -105,10 +105,10 @@
    const item = { position: cell('position'), description: cell('description'), unit: cell('unit') };
    NUMERIC.forEach(key => {
     const raw = cell(key); const number = raw === '' ? null : parseNumber(raw, decimal);
-    if (raw !== '' && number === null) warnings.push(`Zeile ${index + 1}: „${raw}" ist keine Zahl (${FIELDS.find(f => f[0] === key)[1]}).`);
+    if (raw !== '' && number === null) warnings.push(tx('pit.1562df','Zeile {p0}: „{p1}" ist keine Zahl ({p2}).',{p0:index + 1,p1:raw,p2:FIELDS.find(f => f[0] === key)[1]}));
     item[key] = number;
    });
-   if (!item.description) { warnings.push(`Zeile ${index + 1} ohne Beschreibung übersprungen.`); return; }
+   if (!item.description) { warnings.push(tx('pit.41095f','Zeile {p0} ohne Beschreibung übersprungen.',{p0:index + 1})); return; }
    items.push(item);
   });
   items.forEach((item, i) => { if (!item.position) item.position = String(i + 1); });
@@ -129,20 +129,20 @@
   const dialog = document.createElement('dialog'); dialog.className = 'wide-dialog packing-import-dialog'; document.body.append(dialog); dialog.onclose = () => dialog.remove();
   const state = { text: '', delimiter: ';', hasHeader: true, rows: [], mapping: {}, mode: 'replace' };
   const view = () => {
-   const headers = state.hasHeader ? (state.rows[0] || []) : (state.rows[0] || []).map((_, i) => 'Spalte ' + (i + 1));
+   const headers = state.hasHeader ? (state.rows[0] || []) : (state.rows[0] || []).map((_, i) => tx('pil.89986a','Spalte ') + (i + 1));
    const data = state.hasHeader ? state.rows.slice(1) : state.rows;
    const { items, warnings } = buildItems(data, state.mapping);
-   const column = key => `<select data-map="${key}"><option value="">– nicht übernehmen –</option>${headers.map((h, i) => `<option value="${i}"${state.mapping[key] === i ? ' selected' : ''}>${esc(h || 'Spalte ' + (i + 1))}</option>`).join('')}</select>`;
+   const column = key => `<select data-map="${key}"><option value="">${tx('pih.3d6e2c','– nicht übernehmen –')}</option>${headers.map((h, i) => `<option value="${i}"${state.mapping[key] === i ? ' selected' : ''}>${esc(h || tx('pil.89986a','Spalte ') + (i + 1))}</option>`).join('')}</select>`;
    const preview = items.slice(0, 5).map(i => `<tr>${FIELDS.map(([key]) => `<td>${esc(i[key] ?? '')}</td>`).join('')}</tr>`).join('');
-   dialog.innerHTML = `<div class="dialoghead"><h2>Positionen aus CSV importieren</h2><button type="button" data-close>Schließen</button></div>` +
-    `<p>${esc(file.name)} · ${data.length} Zeilen. Trennzeichen und Spalten sind erkannt; bitte kurz prüfen.</p>` +
-    `<div class="packing-import-options"><label>Trennzeichen <select data-delimiter>${[[';', 'Semikolon ;'], [',', 'Komma ,'], ['\t', 'Tabulator'], ['|', 'Senkrechter Strich |']].map(([v, l]) => `<option value="${v}"${state.delimiter === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label>` +
-    `<label><input type="checkbox" data-header${state.hasHeader ? ' checked' : ''}> Erste Zeile enthält Spaltennamen</label></div>` +
-    `<table class="plan-table"><thead><tr><th>Feld</th><th>Spalte in der Datei</th></tr></thead><tbody>${FIELDS.map(([key, label]) => `<tr><td>${label}</td><td>${column(key)}</td></tr>`).join('')}</tbody></table>` +
-    `<h3>Vorschau (${items.length} Positionen)</h3><div class="plan-scroll"><table class="plan-table"><thead><tr>${FIELDS.map(([, label]) => `<th>${label}</th>`).join('')}</tr></thead><tbody>${preview || '<tr><td colspan="9">Keine Positionen erkannt – bitte Beschreibung zuordnen.</td></tr>'}</tbody></table></div>` +
-    (warnings.length ? `<p class="packing-import-warnings" role="status">${warnings.slice(0, 5).map(esc).join('<br>')}${warnings.length > 5 ? `<br>… und ${warnings.length - 5} weitere Hinweise` : ''}</p>` : '') +
-    `<div class="packing-import-options"><label><input type="radio" name="mode" value="replace"${state.mode === 'replace' ? ' checked' : ''}> Vorhandene Positionen ersetzen</label><label><input type="radio" name="mode" value="append"${state.mode === 'append' ? ' checked' : ''}> An vorhandene anhängen</label></div>` +
-    `<div class="dialog-actions"><button type="button" data-apply${items.length ? '' : ' disabled'}>${items.length} Positionen übernehmen</button></div>`;
+   dialog.innerHTML = `<div class="dialoghead"><h2>${tx('pih.e65949','Positionen aus CSV importieren')}</h2><button type="button" data-close>${tx('pih.8311b9','Schließen')}</button></div>` +
+    tx('pit.aad800','<p>{p0} · {p1} Zeilen. Trennzeichen und Spalten sind erkannt; bitte kurz prüfen.</p>',{p0:esc(file.name),p1:data.length}) +
+    `<div class="packing-import-options"><label>${tx('pih.123acd','Trennzeichen')} <select data-delimiter>${[[';', tx('pil.2ecec7','Semikolon ;')], [',', tx('pil.316497','Komma ,')], ['\t', tx('pil.6c2e6c','Tabulator')], ['|', tx('pil.3c7364','Senkrechter Strich |')]].map(([v, l]) => `<option value="${v}"${state.delimiter === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label>` +
+    `<label><input type="checkbox" data-header${state.hasHeader ? ' checked' : ''}> ${tx('pih.06d9ec','Erste Zeile enthält Spaltennamen')}</label></div>` +
+    `<table class="plan-table"><thead><tr><th>${tx('pih.144d62','Feld')}</th><th>${tx('pih.ed6f20','Spalte in der Datei')}</th></tr></thead><tbody>${FIELDS.map(([key, label]) => `<tr><td>${label}</td><td>${column(key)}</td></tr>`).join('')}</tbody></table>` +
+    `<h3>${tx('pih.13edf2','Vorschau (')}${items.length} Positionen)</h3><div class="plan-scroll"><table class="plan-table"><thead><tr>${FIELDS.map(([, label]) => `<th>${label}</th>`).join('')}</tr></thead><tbody>${preview || '<tr><td colspan="9">'+tx('pih.681904','Keine Positionen erkannt – bitte Beschreibung zuordnen.')+'</td></tr>'}</tbody></table></div>` +
+    (warnings.length ? `<p class="packing-import-warnings" role="status">${warnings.slice(0, 5).map(esc).join('<br>')}${warnings.length > 5 ? `<br>${tx('pih.6c904f','… und')} ${warnings.length - 5} weitere Hinweise` : ''}</p>` : '') +
+    `<div class="packing-import-options"><label><input type="radio" name="mode" value="replace"${state.mode === 'replace' ? ' checked' : ''}> ${tx('pih.5818ba','Vorhandene Positionen ersetzen')}</label><label><input type="radio" name="mode" value="append"${state.mode === 'append' ? ' checked' : ''}> ${tx('pih.ecf891','An vorhandene anhängen')}</label></div>` +
+    `<div class="dialog-actions"><button type="button" data-apply${items.length ? '' : ' disabled'}>${tx('pix.apply','{n} Positionen übernehmen',{n:items.length})}</button></div>`;
    dialog.querySelector('[data-close]').onclick = () => dialog.close();
    dialog.querySelector('[data-delimiter]').onchange = e => { state.delimiter = e.target.value; reparse(); };
    dialog.querySelector('[data-header]').onchange = e => { state.hasHeader = e.target.checked; remap(); view(); };
@@ -167,7 +167,7 @@
    ['packages', 'netWeight', 'grossWeight'].forEach(key => { if (form?.elements[key] && form.elements[key].value === '' && total[key] != null) form.elements[key].value = total[key]; });
   };
   file.arrayBuffer().then(buffer => { state.text = decode(buffer); state.delimiter = detectDelimiter(state.text); state.rows = parseCsv(state.text, state.delimiter); remap(); view(); dialog.showModal(); })
-   .catch(() => { dialog.remove(); alert('Die Datei konnte nicht gelesen werden.'); });
+   .catch(() => { dialog.remove(); alert(tx('pil.da8f0a','Die Datei konnte nicht gelesen werden.')); });
  }
 
  const base = ensureDocumentCreationUi;
@@ -175,7 +175,7 @@
   base();
   const head = document.querySelector('#documentItems .sectionhead');
   if (!head || head.querySelector('#importDocumentItems')) return;
-  const button = document.createElement('button'); button.type = 'button'; button.id = 'importDocumentItems'; button.className = 'secondary'; button.textContent = 'CSV importieren';
+  const button = document.createElement('button'); button.type = 'button'; button.id = 'importDocumentItems'; button.className = 'secondary'; button.textContent = tx('pil.5cdefa','CSV importieren');
   const input = document.createElement('input'); input.type = 'file'; input.accept = '.csv,.txt,text/csv'; input.hidden = true;
   button.onclick = () => input.click();
   input.onchange = () => { const file = input.files[0]; input.value = ''; if (file) openImport(file); };

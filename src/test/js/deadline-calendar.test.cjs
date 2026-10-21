@@ -1,7 +1,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const root=path.resolve(__dirname,'../../main/resources/static/');
 const source=fs.readFileSync(path.join(root,'deadline-calendar.js'),'utf8');
-function load(){const context=vm.createContext({});context.globalThis=context;vm.runInContext(source,context);return context.LcDeadlineCalendar;}
+function load(){const context=vm.createContext({tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(m,k)=>values[k]??m),});context.globalThis=context;vm.runInContext(source,context);return context.LcDeadlineCalendar;}
 test('month grid starts on Monday and covers whole weeks',()=>{
  const weeks=load().buildMonth(2026,9,[]);// October 2026 starts on a Thursday
  assert.equal(weeks[0][0].date,'2026-09-28');assert.equal(weeks[0][3].date,'2026-10-01');assert.equal(weeks[0][3].inMonth,true);assert.equal(weeks[0][0].inMonth,false);

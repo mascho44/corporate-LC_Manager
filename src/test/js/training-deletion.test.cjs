@@ -7,7 +7,7 @@ function fixture(){
  const calls=[];
  function element(){return {classList:{add(){},remove(){},toggle(){}},querySelectorAll(){return[]},querySelector(){return null},prepend(){},before(){},after(){},replaceChildren(){},reset(){},addEventListener(){}};}
  const elements={};const profile=element();profile.value='ADVISING_LETTER';
- const context=vm.createContext({document:{createElement:element,querySelector(selector){if(selector==='#trainingProfileSelect')return profile;if(selector==='#trainingHistory')return null;return elements[selector]??=element();},querySelectorAll(){return[];}},
+ const context=vm.createContext({tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(m,k)=>values[k]??m),document:{createElement:element,querySelector(selector){if(selector==='#trainingProfileSelect')return profile;if(selector==='#trainingHistory')return null;return elements[selector]??=element();},querySelectorAll(){return[];}},
   currentUser:{username:'owner',role:'EDITOR'},can:()=>true,advisingBody:element(),finishAdvice:element(),advisingTrainingItem:{id:'test-id',username:'owner'},trainingDialog:{open:true},advisingCaseBusy:false,
   esc:value=>String(value),confirmAction:async()=>true,alert:message=>calls.push(['alert',message]),
   json:async(url,options)=>{calls.push([url,options]);return[];},openTraining(){},renderAdvisingTraining(){},saveAdvisingTraining:async()=>{},setTrainingProfile(){},openTrainingSession(){},loadDashboardDrafts:async()=>{},loadTrainingHistory:async()=>{}});

@@ -5,7 +5,7 @@ function el(tag){return {tag,children:[],textContent:'',value:'',disabled:false,
 function setup(failSave=false){
  const calls=[];const view={current:'STANDARD',changedBy:null,available:[
   {id:'STANDARD',label:'Standard',description:'Bisheriges Verhalten',renderDpi:300},{id:'PROFI_SCANNER',label:'Profi-Scanner',description:'Saubere Scans',renderDpi:300}]};
- const context=vm.createContext({document:undefined,json:async(url,options)=>{calls.push({url,options});if(options?.method==='PUT'){if(failSave)throw Error('Nicht erlaubt');return {...view,current:JSON.parse(options.body).profile,changedBy:'anna'};}return view;}});
+ const context=vm.createContext({tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(m,k)=>values[k]??m),document:undefined,json:async(url,options)=>{calls.push({url,options});if(options?.method==='PUT'){if(failSave)throw Error('Nicht erlaubt');return {...view,current:JSON.parse(options.body).profile,changedBy:'anna'};}return view;}});
  context.globalThis=context;vm.runInContext(source,context);
  // the module only touches the document inside build(); give it a tiny one now
  context.document={createElement:el};

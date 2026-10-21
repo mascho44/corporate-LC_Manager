@@ -6,9 +6,9 @@
   const message = node('p', ''); message.setAttribute('role', 'status');
   const select = document.createElement('select'); select.name = 'scanProfile';
   const description = node('small', '');
-  const save = node('button', 'Scan-Profil speichern'); save.type = 'button';
-  const label = node('label', 'Profil '); label.append(select);
-  box.append(node('h3', 'Scan-Profil'), node('p', 'Bestimmt, wie eingescannte Seiten für die Texterkennung aufbereitet werden. Die Änderung gilt für ab jetzt erkannte Dokumente; vorhandene werden über „Neu erkennen“ mit dem neuen Profil erkannt.'), label, description, save, message);
+  const save = node('button', tx('sp2l.2110ca','Scan-Profil speichern')); save.type = 'button';
+  const label = node('label', tx('sp2l.1a6884','Profil ')); label.append(select);
+  box.append(node('h3', tx('sp2l.b0d785','Scan-Profil')), node('p', tx('sp2l.d33eeb','Bestimmt, wie eingescannte Seiten für die Texterkennung aufbereitet werden. Die Änderung gilt für ab jetzt erkannte Dokumente; vorhandene werden über „Neu erkennen“ mit dem neuen Profil erkannt.')), label, description, save, message);
   host.append(box);
   let view = null;
   const describe = () => { const p = view?.available?.find(x => x.id === select.value); description.textContent = p ? `${p.description} (${p.renderDpi} DPI)` : ''; };
@@ -19,12 +19,12 @@
     select.replaceChildren();
     view.available.forEach(p => { const o = node('option', p.label); o.value = p.id; select.append(o); });
     select.value = view.current; describe();
-    message.textContent = view.changedBy ? `Zuletzt geändert von ${view.changedBy}.` : '';
+    message.textContent = view.changedBy ? tx('sp2t.0bc096','Zuletzt geändert von {p0}.',{p0:view.changedBy}) : '';
    } catch (error) { message.textContent = error.message; }
   }
   save.onclick = async () => {
    if (save.disabled) return; save.disabled = true;
-   try { view = await json('/api/scan-profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ profile: select.value }) }); message.textContent = 'Scan-Profil gespeichert.'; }
+   try { view = await json('/api/scan-profile', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ profile: select.value }) }); message.textContent = tx('sp2l.9b8033','Scan-Profil gespeichert.'); }
    catch (error) { message.textContent = error.message; }
    finally { save.disabled = false; }
   };

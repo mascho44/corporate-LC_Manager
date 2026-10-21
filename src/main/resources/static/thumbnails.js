@@ -14,13 +14,13 @@
   const head = document.createElement('div'); head.className = 'dialoghead';
   const h = document.createElement('h2'); h.textContent = title; const close = document.createElement('button'); close.type = 'button'; close.textContent = 'Schließen';
   head.append(h, close);
-  const img = document.createElement('img'); img.alt = 'Seite 1 von ' + title; img.src = url;
+  const img = document.createElement('img'); img.alt = tx('thl.fdb6e5','Seite 1 von ') + title; img.src = url;
   dialog.append(head, img); document.body.append(dialog);
   close.onclick = () => dialog.close(); dialog.onclose = () => dialog.remove(); dialog.showModal();
  }
  function thumb(src, large, title) {
-  const button = document.createElement('button'); button.type = 'button'; button.className = 'doc-thumb'; button.title = 'Seite 1 vergrößern';
-  const img = document.createElement('img'); img.loading = 'lazy'; img.decoding = 'async'; img.alt = 'Vorschau ' + title; img.src = src;
+  const button = document.createElement('button'); button.type = 'button'; button.className = 'doc-thumb'; button.title = tx('thl.20f677','Seite 1 vergrößern');
+  const img = document.createElement('img'); img.loading = 'lazy'; img.decoding = 'async'; img.alt = tx('thl.df2c83','Vorschau ') + title; img.src = src;
   img.onerror = () => button.remove();
   button.append(img);
   button.onclick = event => { event.preventDefault(); event.stopPropagation(); enlarge(large, title); };
@@ -47,7 +47,7 @@
  }
  /** Word templates cannot be rendered on the server; the list shows a small sheet with the first text lines of the template instead. */
  function templateSheet(title, lines) {
-  const sheet = document.createElement('div'); sheet.className = 'tpl-thumb'; sheet.setAttribute('role', 'img'); sheet.setAttribute('aria-label', 'Textvorschau der Vorlage ' + title);
+  const sheet = document.createElement('div'); sheet.className = 'tpl-thumb'; sheet.setAttribute('role', 'img'); sheet.setAttribute('aria-label', tx('thl.20903d','Textvorschau der Vorlage ') + title);
   sheet.title = lines.length ? lines.join('\n') : 'Kein Text erkannt';
   lines.slice(0, 7).forEach((line, index) => { const p = document.createElement('p'); p.textContent = line; if (index === 0) p.className = 'tpl-thumb-title'; sheet.append(p); });
   if (!lines.length) { const p = document.createElement('p'); p.textContent = 'Kein Text erkannt'; sheet.append(p); }

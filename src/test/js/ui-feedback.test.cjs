@@ -14,7 +14,7 @@ function fixture(){
   getResponseHeader(){return 'application/json';}
   abort(){this.onabort();}
  }
- const context=vm.createContext({document:{activeElement:{focus(){focused++;}},createElement:element,body:{append(d){dialogs.push(d);}}},XMLHttpRequest:Xhr,Response,Headers,DOMException,Promise});
+ const context=vm.createContext({tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(m,k)=>values[k]??m),document:{activeElement:{focus(){focused++;}},createElement:element,body:{append(d){dialogs.push(d);}}},XMLHttpRequest:Xhr,Response,Headers,DOMException,Promise});
  vm.runInContext(fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/ui-feedback.js'),'utf8'),context);
  return {context,dialogs,requests,focused:()=>focused};
 }

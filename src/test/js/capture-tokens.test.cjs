@@ -1,5 +1,5 @@
 const test = require('node:test'), assert = require('node:assert/strict'), fs = require('node:fs'), vm = require('node:vm');
-const context = vm.createContext({});
+const context = vm.createContext({tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(m,k)=>values[k]??m),});
 context.globalThis = context;
 vm.runInContext(fs.readFileSync('src/main/resources/static/capture-tokens.js', 'utf8'), context);
 test('token row shows name, prefix, creator and state, never a secret', () => {
