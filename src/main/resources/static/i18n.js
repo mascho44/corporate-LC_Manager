@@ -14,7 +14,7 @@ globalThis.LcI18n=(()=>{
     }
     async function setLanguage(selected){
         const next=Object.hasOwn(packs,selected)?selected:'en',request=++generation;
-        const load=async code=>{const response=await fetch(packs[code].file,{credentials:'same-origin'});if(!response.ok)throw new Error('Language pack unavailable');return response.json();};
+        const load=async code=>{const response=await fetch(packs[code].file,{credentials:'same-origin',cache:'reload'});if(!response.ok)throw new Error('Language pack unavailable');return response.json();};
         const fallback=await load('en');let dictionary=fallback;
         if(next!=='en')try{dictionary=await load(next);}catch{/* English fallback for missing optional pack. */}
         if(request!==generation)return;

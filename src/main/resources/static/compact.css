@@ -10,3 +10,33 @@ html body .timeline-list>*{padding-bottom:12px}
 html body .document-row{padding:9px 12px}
 html body p{margin-block:.6em}
 html body input:not([type=checkbox]):not([type=radio]),html body select{min-height:30px}
+
+/* Schlanke Startseite: ein linker Einzug (22px) fuer alle Bereiche, weniger Kopf- und Kachelhoehe */
+html body #cockpitSection{padding:14px 22px 0;margin:0 0 14px}
+html body #cockpitSection .eyebrow{display:none}
+html body #cockpitSection h1{font-size:24px;line-height:1.2;margin:0}
+html body #cockpitSection>div:first-child p{margin:2px 0 0}
+html body #cockpitSection .stats{display:none}
+html body #workspaceProfileShortcuts{margin:10px 0 0;gap:8px}
+html body #workspaceProfileShortcuts h2,html body #workspaceProfileShortcuts>p{display:none}
+html body .today{margin:0 0 14px;padding:12px 22px}
+html body .today-head h2{font-size:15px;margin:0 0 8px}
+html body .today-tiles{display:flex;flex-wrap:wrap;gap:6px}
+html body .today-tile{display:inline-flex;align-items:center;gap:8px;padding:5px 12px 5px 8px;border-radius:999px}
+html body .today-icon{width:18px;height:18px;font-size:11px}
+html body .today-tile b{font-size:15px}
+html body .today-tile>span:not(.today-icon){font-size:13px;font-weight:600}
+html body .today-tile small{display:none}
+html body .today-tile:not(.ok) small{display:inline;font-size:12px}
+html body .today-tile.ok{border-color:#e5e9ef;background:transparent;color:#667085}
+html body .today-tile.ok b{color:#667085;font-weight:600}
+html body #workQueueSection{margin-top:0}
+html body #workQueueSection .panelhead,html body #lcSection .panelhead{padding:12px 22px}
+html body #workQueueSection .panelhead p,html body #lcSection .panelhead p{display:none}
+html body #lcSection .lc-filters{display:flex;flex-wrap:wrap;gap:8px}
+html body #kpiStrip{display:flex;flex-wrap:wrap;gap:6px;margin:4px 22px 10px}
+html body #kpiStrip .kpi-views{flex:1 0 100%}
+html body #kpiStrip .kpi{display:flex;align-items:baseline;gap:8px;padding:5px 12px}
+html body #kpiStrip .kpi b{font-size:15px;display:inline}
+html body #kpiStrip .kpi small{display:inline}
+html body #list .row.dossier-row{padding:10px 22px;gap:4px 14px}
