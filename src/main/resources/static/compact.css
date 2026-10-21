@@ -40,3 +40,10 @@ html body #kpiStrip .kpi{display:flex;align-items:baseline;gap:8px;padding:5px 1
 html body #kpiStrip .kpi b{font-size:15px;display:inline}
 html body #kpiStrip .kpi small{display:inline}
 html body #list .row.dossier-row{padding:10px 22px;gap:4px 14px}
+
+/* LC-Cockpit der Akte: kompakte, anklickbare Kacheln statt Karten mit Oeffnen-Knopf */
+html body .lc-operational-cockpit>.grid{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+html body .cockpit-card{padding:8px 12px;cursor:pointer}
+html body .cockpit-card:hover,html body .cockpit-card:focus-visible{border-color:#2f6fed;outline:none}
+html body .cockpit-card b{font-size:16px;display:block}
+html body .cockpit-card p{margin:2px 0 0;font-size:12px;color:#667085}
