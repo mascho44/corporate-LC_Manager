@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Bedienung: Checkliste „Erste Schritte“ auf der Startseite für Mandanten-Administratoren (Firmendaten, Dokumentvorlagen, weitere Benutzer, erste LC-Akte; Knöpfe springen zum Bereich, verschwindet wenn alles erledigt ist), zweisprachig.
 * Bedienung: Globale Suche mit Strg+K (Cmd+K): findet LC-Akten nach Referenz, Begünstigtem, Antragsteller, Bank und Bearbeiter, Pfeiltasten und Enter öffnen die Akte; zweisprachig.
 * Bedienung: Oben im LC-Cockpit der Akte steht der „Nächste Schritt“ (Abweichungen prüfen, Bearbeiter zuweisen, offene Aufgaben, Dokumente hochladen, bald fällige Frist), zweisprachig; Klick springt in den passenden Bereich.
 * Layout: Das LC-Cockpit in der Aktenübersicht besteht aus kompakten, anklickbaren Kacheln (ohne eigenen „öffnen“-Knopf je Karte).
