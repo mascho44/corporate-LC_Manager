@@ -1,5 +1,5 @@
 let advisingTrainingItem=null;
-const advisingTargets={reference:tx('at2l.4c550b','Aktenreferenz'),ownBankReference:tx('at2l.cf5c95','Referenz eigene Bank'),foreignBankReference:tx('at2l.5423bb','Referenz Fremdbank'),applicant:tx('at2l.ccaa52','Antragsteller'),beneficiary:tx('at2l.391339','Begünstigter'),amount:tx('at2l.23e3f5','LC-Betrag mit Währung'),expiryDate:tx('at2l.f05f70','Verfallsdatum / Ort'),issuingBank:tx('at2l.56781e','Eröffnende Bank')};
+const advisingTargets = (globalThis.lcLazy || (f => f()))(() => ({reference:tx('at2l.4c550b','Aktenreferenz'),ownBankReference:tx('at2l.cf5c95','Referenz eigene Bank'),foreignBankReference:tx('at2l.5423bb','Referenz Fremdbank'),applicant:tx('at2l.ccaa52','Antragsteller'),beneficiary:tx('at2l.391339','Begünstigter'),amount:tx('at2l.23e3f5','LC-Betrag mit Währung'),expiryDate:tx('at2l.f05f70','Verfallsdatum / Ort'),issuingBank:tx('at2l.56781e','Eröffnende Bank')}));
 const trainingDialog=document.querySelector('#trainingDialog');
 const swiftTrainingBody=trainingDialog.querySelector('.training-body');
 const trainingHeading=trainingDialog.querySelector('.dialoghead h2'),trainingDescription=trainingDialog.querySelector('.dialoghead p');

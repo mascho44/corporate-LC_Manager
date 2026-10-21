@@ -1,12 +1,12 @@
 /* Review findings: filter chips by kind, document and rule with counts of open findings, a compact list with expandable details,
    and a bulk decision for the open warnings of the current selection. */
 (() => {
- const KINDS = [
+ const KINDS = (globalThis.lcLazy || (f => f()))(() => ([
   [/^Regel verletzt/i, tx('fol.202529','Regel verletzt')],
   [/^Manuelle fachliche Prüfung erforderlich/i, tx('fol.cbf14e','Manuelle Prüfung nötig')],
   [/^Regel nicht prüfbar/i, tx('fol.223c6e','Nicht prüfbar (Angaben fehlen)')],
   [/^Interne Regel/i, tx('fol.d106b1','Interne Regel')]
- ];
+ ]));
  /** Kind of a finding, read from the outcome label the rule engine puts in front of the message. */
  function kindOf(message) { const m = String(message || ''); const hit = KINDS.find(([re]) => re.test(m)); return hit ? hit[1] : 'Sonstige'; }
  /** Message without severity word and outcome label, used as the readable name of a rule. */
@@ -56,7 +56,7 @@
   return { row, code, severity: row.dataset.findingSeverity, decided: row.dataset.findingDecided === 'true', document: document_, kind: kindOf(message),
    fingerprint: decision?.dataset.checkFingerprint || '', labels: { code: ruleLabel(message) || title || code, document: document_, kind: kindOf(message) } };
  };
- const GROUPS = [['kind', tx('fol.978d7d','Art')], ['document', tx('fol.160f00','Dokument')], ['code', tx('fol.9e5c87','Regel')]];
+ const GROUPS = (globalThis.lcLazy || (f => f()))(() => ([['kind', tx('fol.978d7d','Art')], ['document', tx('fol.160f00','Dokument')], ['code', tx('fol.9e5c87','Regel')]]));
  const COLLAPSED = 10;
 
  function enhance(bar) {

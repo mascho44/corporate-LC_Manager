@@ -33,3 +33,5 @@ document.addEventListener('DOMContentLoaded',()=>{
 
 /* Shared text helper for all scripts (also on pages without app.js): translated text with {name} placeholders, German fallback. */
 if(typeof globalThis.tx!=='function')globalThis.tx=(key,de,values={})=>{const s=globalThis.LcI18n?.t?globalThis.LcI18n.t(key,values):null;return s&&s!==key?s:String(de).replace(/\{(\w+)\}/g,(_,n)=>String(values[n]??`{${n}}`));};
+/* Labels computed at load time would stay in the language of that moment; lcLazy(() => ({...})) recomputes them on every access. */
+if(typeof globalThis.lcLazy!=='function')globalThis.lcLazy=fn=>new Proxy({},{get(_,key){const value=fn(),result=Reflect.get(value,key);return typeof result==='function'?result.bind(value):result;},has(_,key){return key in fn();},ownKeys(){return Reflect.ownKeys(fn());},getOwnPropertyDescriptor(_,key){const d=Reflect.getOwnPropertyDescriptor(fn(),key);if(d)d.configurable=true;return d;}});

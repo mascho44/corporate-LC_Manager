@@ -1,7 +1,7 @@
 /* Plattformadministration: Tabs statt einer langen Seite.
    Übersicht (Kennzahlen, Hinweise) · Mandanten · Konten & Einladungen · Protokoll · Mein Konto (über den Kopf erreichbar). */
 (() => {
- const TABS = [['overview', tx('ptl.5d1261','Übersicht')], ['tenants', tx('ptl.2f1127','Mandanten')], ['accounts', tx('ptl.a17085','Konten & Einladungen')], ['log', tx('ptl.d1fd5d','Protokoll')], ['serverlog', tx('sl.tab', 'Server-Log')]];
+ const TABS = (globalThis.lcLazy || (f => f()))(() => ([['overview', tx('ptl.5d1261','Übersicht')], ['tenants', tx('ptl.2f1127','Mandanten')], ['accounts', tx('ptl.a17085','Konten & Einladungen')], ['log', tx('ptl.d1fd5d','Protokoll')], ['serverlog', tx('sl.tab', 'Server-Log')]]));
 
  /** Kennzahlen und Hinweise aus den vorhandenen Listen; reine Funktion. */
  function summarize(tenants = [], accounts = [], invitations = []) {

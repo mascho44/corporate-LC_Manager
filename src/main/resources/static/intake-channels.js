@@ -2,7 +2,7 @@
 (() => {
  const node = (tag, text, css) => { const n = document.createElement(tag); if (text !== undefined) n.textContent = text; if (css) n.className = css; return n; };
  const stamp = value => value ? new Date(value).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' }) : '–';
- const TYPES = { FOLDER: tx('icl.391ed3','Ordner (Scan to Folder)'), EMAIL: tx('icl.5ca981','E-Mail-Postfach (IMAP)') };
+ const TYPES = (globalThis.lcLazy || (f => f()))(() => ({ FOLDER: tx('icl.391ed3','Ordner (Scan to Folder)'), EMAIL: tx('icl.5ca981','E-Mail-Postfach (IMAP)') }));
  /** One line of the list: type, name, state, interval and the last run with its result. */
  function rowText(channel) {
   const state = channel.enabled ? tx('ict.409a82','an, alle {p0} Min.',{p0:channel.intervalMinutes}) : 'aus';
