@@ -3,6 +3,7 @@
 ## 0.5.1 – in Arbeit
 
 * Entwicklung: Leitfaden `docs/mehrsprachigkeit.md` (neue Texte immer zweisprachig, Muster für Frontend und Server) und Schutz-Test `i18n-guard.test.cjs`, der Schlüsselgleichheit der Sprachpakete prüft und verhindert, dass in den übersetzten Skripten deutscher Klartext ohne Übersetzung hinzukommt.
+* Dokumentation: Leitfaden `docs/erstinstallation.md` für die Erstinstallation (Server, `.env`, erster Start, Mailserver, Datenbankrolle, Sicherung, Audit-Anker, Update) und die ersten Benutzer (Plattformadministrator, Mandant, Einladung, Einrichtung, Rollen, erste Akte) mit Abnahme-Checklisten.
 * Englische Oberfläche, neunter Teil: Audit-Ereignisse im Verlauf und im Protokoll (130 Bezeichnungen, bisher fehlten für rund 55 Ereignisse Bezeichnungen und sie erschienen als Rohcode), Menü-Übersichten (Firmen, Vorlagen, Benutzer, Protokoll, Verbindungssicherheit, Passwort, Zwei-Faktor, Freigabestufen), Prüfentscheidungen und ihre Historie, Meldungen im Posteingang und im Arbeitsplatz-Bereich, Amendment-Vergleich.
 * Englische Oberfläche, achter Teil: Dokumentenposteingang (Kopf, Hochladen, Dateizeilen, Zuordnungsformular, vorgeschlagene Akten und Dokumenttypen, Vorschau, Sammelaktionen, Lade-, Leer- und Fehlermeldungen) sowie der Dialog „Dokumentdaten bearbeiten“ sind zweisprachig. Aufteilen, Layoutlernen und Metadatenkorrektur folgen.
 * Englische Oberfläche, siebter Teil: Formular „Dokument erstellen“ mit Positionen, Aktenliste (Zeilen, Fristentexte, Zähler, Filter, Sortierung, leere Liste) und die Startseiten-Kennzahlen sind zweisprachig.

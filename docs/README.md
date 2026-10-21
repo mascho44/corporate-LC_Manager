@@ -9,6 +9,7 @@ versionierte Inventar der Java-Laufzeitbibliotheken.
 ## Überblick
 - [Fachliche Dokumentation und Bedienabläufe](fachliche-dokumentation.md)
 - [Technische Dokumentation und Betrieb](technische-dokumentation.md)
+- [Erstinstallation: Leitfaden für Betrieb und erste Benutzer](erstinstallation.md)
 - [Roadmap](../ROADMAP.md) · [Änderungsprotokoll](../CHANGELOG.md)
 - [Einheitliche Bedienelemente](oberflaeche-einheitlich.md) · [Layout prüfen](layout-pruefung.md)
 
