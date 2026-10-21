@@ -202,3 +202,16 @@ test('drag and drop only reacts to dragged files', () => {
   assert.equal(context.LcDragDrop.hasFiles({ dataTransfer: { types: ['text/plain', 'Files'] } }), true);
   assert.equal(context.LcDragDrop.hasFiles({ dataTransfer: { types: ['text/uri-list'] } }), false);
 });
+
+test('document set draft is stored per file and cleared', () => {
+  const store = {};
+  const context = vm.createContext({ globalThis: null, localStorage: { getItem: k => store[k] ?? null, setItem: (k, v) => { store[k] = v; }, removeItem: k => { delete store[k]; } } }); context.globalThis = context;
+  vm.runInContext(fs.readFileSync(dir + 'document-set.js', 'utf8'), context);
+  const api = context.LcDocumentSet;
+  assert.equal(api.loadDraft('a'), null);
+  api.saveDraft('a', { state: { notes: 'x' }, lines: [{ description: 'Ware' }], types: ['INVOICE'] });
+  assert.equal(JSON.parse(JSON.stringify(api.loadDraft('a'))).state.notes, 'x');
+  assert.equal(api.loadDraft('b'), null);
+  api.clearDraft('a');
+  assert.equal(api.loadDraft('a'), null);
+});
