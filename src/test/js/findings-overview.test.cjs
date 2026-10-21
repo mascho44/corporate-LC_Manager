@@ -1,7 +1,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const root=path.resolve(__dirname,'../../main/resources/static/');
 const source=fs.readFileSync(path.join(root,'findings-overview.js'),'utf8');
-function load(){const context=vm.createContext({});context.globalThis=context;vm.runInContext(source,context);return context.LcFindingsOverview;}
+function load(){const context=vm.createContext({tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(m,k)=>values[k]??m),});context.globalThis=context;vm.runInContext(source,context);return context.LcFindingsOverview;}
 const lab=t=>({code:t});
 const rows=[
  {code:'SIG',title:'Unterschrift',labels:lab('Unterschrift'),severity:'WARNING',decided:false},{code:'SIG',title:'Unterschrift',labels:lab('Unterschrift'),severity:'WARNING',decided:false},{code:'SIG',title:'Unterschrift',labels:lab('Unterschrift'),severity:'WARNING',decided:true},

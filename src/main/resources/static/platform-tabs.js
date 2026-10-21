@@ -1,7 +1,7 @@
 /* Plattformadministration: Tabs statt einer langen Seite.
    Übersicht (Kennzahlen, Hinweise) · Mandanten · Konten & Einladungen · Protokoll · Mein Konto (über den Kopf erreichbar). */
 (() => {
- const TABS = [['overview', 'Übersicht'], ['tenants', 'Mandanten'], ['accounts', 'Konten & Einladungen'], ['log', 'Protokoll']];
+ const TABS = [['overview', tx('ptl.5d1261','Übersicht')], ['tenants', tx('ptl.2f1127','Mandanten')], ['accounts', tx('ptl.a17085','Konten & Einladungen')], ['log', tx('ptl.d1fd5d','Protokoll')]];
 
  /** Kennzahlen und Hinweise aus den vorhandenen Listen; reine Funktion. */
  function summarize(tenants = [], accounts = [], invitations = []) {
@@ -12,15 +12,15 @@
   const suspended = live.filter(t => !t.active);
   if (suspended.length) hints.push({ tab: 'tenants', text: `${suspended.length} Mandant(en) gesperrt: ${suspended.map(t => t.code).join(', ')}` });
   const failed = invitations.filter(i => ['MAIL_FAILED', 'MAIL_CANCELLED', 'EXPIRED'].includes(i.status));
-  if (failed.length) hints.push({ tab: 'accounts', text: `${failed.length} Einladung(en) nicht zugestellt oder abgelaufen: ${failed.map(i => i.username).join(', ')}` });
+  if (failed.length) hints.push({ tab: 'accounts', text: tx('ptt.cbb4b4','{p0} Einladung(en) nicht zugestellt oder abgelaufen: {p1}',{p0:failed.length,p1:failed.map(i => i.username).join(', ')}) });
   const noTotp = accounts.filter(a => a.active && !a.invitationPending && a.totpEnabled === false);
   if (noTotp.length) hints.push({ tab: 'accounts', text: `${noTotp.length} aktive(s) Konto/Konten ohne Zwei-Faktor-Anmeldung: ${noTotp.map(a => a.username).join(', ')}` });
   return {
    tiles: [
-    { label: 'Mandanten aktiv', value: live.filter(t => t.active).length, detail: `${tenants.length - live.length} archiviert · ${suspended.length} gesperrt`, tab: 'tenants' },
-    { label: 'Konten aktiv', value: accounts.filter(a => a.active && !a.invitationPending).length, detail: `${accounts.filter(a => !a.active).length} gesperrt`, tab: 'accounts' },
-    { label: 'Offene Einladungen', value: invitations.length, detail: failed.length ? `${failed.length} mit Problem` : 'alle im Versand', tab: 'accounts' },
-    { label: 'Plattformadministratoren', value: accounts.filter(a => a.platformAdministrator).length, detail: 'Zugriff auf alle Mandanten', tab: 'accounts' }
+    { label: tx('ptl.cf9161','Mandanten aktiv'), value: live.filter(t => t.active).length, detail: `${tenants.length - live.length} archiviert · ${suspended.length} gesperrt`, tab: 'tenants' },
+    { label: tx('ptl.78744a','Konten aktiv'), value: accounts.filter(a => a.active && !a.invitationPending).length, detail: `${accounts.filter(a => !a.active).length} gesperrt`, tab: 'accounts' },
+    { label: tx('ptl.20b9dc','Offene Einladungen'), value: invitations.length, detail: failed.length ? tx('ptt.d90b7d','{p0} mit Problem',{p0:failed.length}) : tx('ptf.0','alle im Versand'), tab: 'accounts' },
+    { label: tx('ptl.c7e29e','Plattformadministratoren'), value: accounts.filter(a => a.platformAdministrator).length, detail: tx('ptl.c9de19','Zugriff auf alle Mandanten'), tab: 'accounts' }
    ],
    hints
   };
@@ -50,8 +50,8 @@
   });
   section.replaceChildren();
   const head = node('div', undefined, 'platform-head');
-  head.append(node('p', 'Eine globale Kontosperre verhindert den Zugang in allen Mandanten. Die Aktivierung hebt lokale Sperren in einzelnen Mandanten nicht auf.'));
-  if (reload) { reload.textContent = 'Alles neu laden'; head.append(reload); }
+  head.append(node('p', tx('ptl.732257','Eine globale Kontosperre verhindert den Zugang in allen Mandanten. Die Aktivierung hebt lokale Sperren in einzelnen Mandanten nicht auf.')));
+  if (reload) { reload.textContent = tx('ptl.2df971','Alles neu laden'); head.append(reload); }
   const tabs = node('div', undefined, 'platform-tabs'); tabs.setAttribute('role', 'tablist');
   let active = 'overview';
   const paint = () => {
@@ -60,10 +60,10 @@
   };
   const show = key => { if (!panes[key]) return; active = key; paint(); if (key === 'overview') renderOverview(); };
   TABS.forEach(([key, label]) => { const b = node('button', label, 'platform-tab'); b.type = 'button'; b.dataset.tab = key; b.setAttribute('role', 'tab'); b.onclick = () => show(key); tabs.append(b); });
-  panes.account.prepend(node('h3', 'Mein Konto'));
+  panes.account.prepend(node('h3', tx('ptl.c0192b','Mein Konto')));
   section.append(head, tabs, ...Object.values(panes));
 
-  const myAccount = document.getElementById('platformMyAccount') || node('button', 'Mein Konto');
+  const myAccount = document.getElementById('platformMyAccount') || node('button', tx('ptl.c0192b','Mein Konto'));
   myAccount.type = 'button'; myAccount.id = 'platformMyAccount'; myAccount.onclick = () => { active = 'account'; paint(); window.scrollTo(0, 0); };
   if (!myAccount.isConnected) document.getElementById('platformLogout')?.before(myAccount);
 
@@ -71,7 +71,7 @@
   let overviewGeneration = 0;
   async function renderOverview() {
    const generation = ++overviewGeneration;
-   overview.replaceChildren(node('p', 'Lade …'));
+   overview.replaceChildren(node('p', tx('ptl.b1d2e3','Lade …')));
    try {
     const [tenants, accounts, invitations] = await Promise.all([json('/api/platform/tenants'), json('/api/platform/users'), json('/api/platform/invitations')]);
     if (generation !== overviewGeneration) return;
@@ -79,30 +79,30 @@
     const grid = node('div', undefined, 'platform-tiles');
     tiles.forEach(t => { const tile = node('button', undefined, 'platform-tile'); tile.type = 'button'; tile.append(node('b', String(t.value)), node('span', t.label), node('small', t.detail)); tile.onclick = () => show(t.tab); grid.append(tile); });
     const list = node('div', undefined, 'platform-hints');
-    if (!hints.length) list.append(node('p', 'Keine Auffälligkeiten.', 'platform-ok'));
-    hints.forEach(h => { const row = node('article', undefined, 'membership-row'); row.append(node('div', h.text)); const go = node('button', 'Öffnen', 'secondary'); go.type = 'button'; go.onclick = () => show(h.tab); row.append(go); list.append(row); });
+    if (!hints.length) list.append(node('p', tx('ptl.c67425','Keine Auffälligkeiten.'), 'platform-ok'));
+    hints.forEach(h => { const row = node('article', undefined, 'membership-row'); row.append(node('div', h.text)); const go = node('button', tx('ptl.9889e0','Öffnen'), 'secondary'); go.type = 'button'; go.onclick = () => show(h.tab); row.append(go); list.append(row); });
     const sanctions = node('div', undefined, 'platform-sanctions');
-    overview.replaceChildren(node('h3', 'Überblick'), grid, node('h3', 'Hinweise'), list, node('h3', 'Sanktionslisten'), sanctions);
+    overview.replaceChildren(node('h3', tx('ptl.fd3576','Überblick')), grid, node('h3', tx('ptl.9fdbbc','Hinweise')), list, node('h3', tx('ptl.a5bfee','Sanktionslisten')), sanctions);
     renderSanctions(sanctions, list);
    } catch (error) { if (generation === overviewGeneration) overview.replaceChildren(node('p', error.message)); }
   }
   /** Status of the public sanctions lists (EU, UN, OFAC) with a manual refresh; a missing or stale list also shows up as a hint. */
   async function renderSanctions(box, hints) {
    let status;
-   try { status = await json('/api/platform/sanctions'); } catch (error) { box.replaceChildren(node('p', 'Status nicht verfügbar: ' + error.message)); return; }
-   const table = node('table', undefined, 'pu-table'); const head = node('tr'); ['Liste', 'Stand', 'Einträge', 'Hinweis'].forEach(h => head.append(node('th', h))); table.append(head);
+   try { status = await json('/api/platform/sanctions'); } catch (error) { box.replaceChildren(node('p', tx('ptl.261d99','Status nicht verfügbar: ') + error.message)); return; }
+   const table = node('table', undefined, 'pu-table'); const head = node('tr'); ['Liste', tx('ptl.f5e531','Stand'), tx('ptl.7a6305','Einträge'), tx('ptl.987451','Hinweis')].forEach(h => head.append(node('th', h))); table.append(head);
    const stale = [];
    status.sources.forEach(s => {
     const tr = node('tr'); const age = s.fetchedAt ? (Date.now() - new Date(s.fetchedAt).getTime()) / 36e5 : Infinity;
     if (s.fetchedAt && age > 48) stale.push(s.source);
-    [s.source, s.fetchedAt ? new Date(s.fetchedAt).toLocaleString('de-DE') : 'noch nicht geladen', s.entries ? s.entries.toLocaleString('de-DE') : '–', s.error || (!s.fetchedAt ? 'wird nach dem Start automatisch geladen' : age > 48 ? 'älter als 48 Stunden' : 'aktuell')].forEach(v => tr.append(node('td', v)));
+    [s.source, s.fetchedAt ? new Date(s.fetchedAt).toLocaleString('de-DE') : tx('ptf.1','noch nicht geladen'), s.entries ? s.entries.toLocaleString('de-DE') : '–', s.error || (!s.fetchedAt ? 'wird nach dem Start automatisch geladen' : age > 48 ? 'älter als 48 Stunden' : 'aktuell')].forEach(v => tr.append(node('td', v)));
     table.append(tr);
    });
-   const refresh = node('button', status.refreshing ? 'Aktualisierung läuft …' : 'Jetzt aktualisieren', 'secondary'); refresh.type = 'button'; refresh.disabled = status.refreshing;
-   const note = node('small', 'Öffentliche Listen von EU, UN und OFAC; automatischer Abruf täglich. Die Prüfung unterstützt die Sachbearbeitung und ersetzt kein zertifiziertes Screening-System.');
-   refresh.onclick = async () => { refresh.disabled = true; refresh.textContent = 'Aktualisierung läuft …'; try { await json('/api/platform/sanctions/refresh', { method: 'POST' }); setTimeout(() => renderSanctions(box, hints), 15000); } catch (error) { refresh.textContent = 'Fehler: ' + error.message; } };
+   const refresh = node('button', status.refreshing ? tx('ptl.4245cc','Aktualisierung läuft …') : tx('ptl.c2aff3','Jetzt aktualisieren'), 'secondary'); refresh.type = 'button'; refresh.disabled = status.refreshing;
+   const note = node('small', tx('ptl.0ba221','Öffentliche Listen von EU, UN und OFAC; automatischer Abruf täglich. Die Prüfung unterstützt die Sachbearbeitung und ersetzt kein zertifiziertes Screening-System.'));
+   refresh.onclick = async () => { refresh.disabled = true; refresh.textContent = tx('ptl.4245cc','Aktualisierung läuft …'); try { await json('/api/platform/sanctions/refresh', { method: 'POST' }); setTimeout(() => renderSanctions(box, hints), 15000); } catch (error) { refresh.textContent = tx('ptl.19e8b1','Fehler: ') + error.message; } };
    box.replaceChildren(table, refresh, note);
-   if (stale.length && hints) { hints.querySelector('.platform-ok')?.remove(); const row = node('article', undefined, 'membership-row'); row.append(node('div', `Sanktionslisten nicht aktuell: ${stale.join(', ')}`)); hints.append(row); }
+   if (stale.length && hints) { hints.querySelector('.platform-ok')?.remove(); const row = node('article', undefined, 'membership-row'); row.append(node('div', tx('ptg.b91bee','Sanktionslisten nicht aktuell: {p0}',{p0:stale.join(', ')}))); hints.append(row); }
   }
   paint(); renderOverview();
   globalThis.LcPlatformTabs.show = show; globalThis.LcPlatformTabs.refresh = renderOverview;

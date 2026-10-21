@@ -1,7 +1,7 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const root=path.resolve(__dirname,'../../main/resources/static/');
 const source=fs.readFileSync(path.join(root,'ai.js'),'utf8');
-function load(){const context=vm.createContext({});context.globalThis=context;vm.runInContext(source,context);return context.LcAi;}
+function load(){const context=vm.createContext({tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(m,k)=>values[k]??m),});context.globalThis=context;vm.runInContext(source,context);return context.LcAi;}
 test('hints are sorted by severity and unknown severities count as low',()=>{
  const sorted=load().sortHints([{severity:'LOW',check:'c'},{severity:'WEIRD',check:'w'},{severity:'HIGH',check:'a'},{severity:'MEDIUM',check:'b'}]);
  assert.deepEqual(Array.from(sorted,h=>h.check),['a','b','c','w']);

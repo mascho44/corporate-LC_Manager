@@ -22,18 +22,18 @@
   try { mine = await json('/api/teams/mine'); } catch (ignored) { return; }
   const manager = can('USER_MANAGE');
   if (!mine.length && !manager) return;
-  nav = node('button', 'Gruppeninbox'); nav.type = 'button'; nav.id = 'appNavGroupInbox';
+  nav = node('button', tx('gil.8c445e','Gruppeninbox')); nav.type = 'button'; nav.id = 'appNavGroupInbox';
   document.querySelector('#appNav nav')?.append(nav);
   section = document.createElement('section'); section.id = 'groupInboxSection'; section.className = 'panel hidden';
   message = node('p', ''); message.setAttribute('role', 'status');
-  section.append(node('h2', 'Gruppeninbox'), message);
+  section.append(node('h2', tx('gil.8c445e','Gruppeninbox')), message);
   document.querySelector('main')?.append(section);
   nav.onclick = () => { appNavigate('groupInbox', nav); return refresh(); };
   badge(); timer = setInterval(() => { if (!document.hidden) badge(); }, 60000);
  }
 
  async function badge() {
-  try { const items = await json('/api/tasks/inbox'); const open = group(items, currentUser?.username).open.length; nav.textContent = 'Gruppeninbox' + (open ? ` (${open})` : ''); } catch (ignored) { }
+  try { const items = await json('/api/tasks/inbox'); const open = group(items, currentUser?.username).open.length; nav.textContent = tx('gil.8c445e','Gruppeninbox') + (open ? ` (${open})` : ''); } catch (ignored) { }
  }
 
  async function act(task, done) {
@@ -45,15 +45,15 @@
  function row(item, kind) {
   const r = node('article', undefined, 'membership-row team-task-row');
   const title = node('b', item.title);
-  const subject = { EBICS_MESSAGE: 'EBICS-Nachricht', INBOX_ITEM: 'Posteingang' }[item.subjectType];
-  const meta = node('span', ` · ${item.lcReference || subject || 'ohne Akte'} · ${item.teamName}${item.workflow ? ' · ' + item.workflow : ''}${item.fourEyes ? ' · Vier-Augen' : ''}${item.dueDate ? ' · fällig ' + fmt(item.dueDate) : ''}${kind === 'others' ? ' · bei ' + item.assignedTo : ''}`);
+  const subject = { EBICS_MESSAGE: tx('gil.f8f5b2','EBICS-Nachricht'), INBOX_ITEM: tx('gil.bb97a4','Posteingang') }[item.subjectType];
+  const meta = node('span', ` · ${item.lcReference || subject || tx('gix.noFile','ohne Akte')} · ${item.teamName}${item.workflow ? ' · ' + item.workflow : ''}${item.fourEyes ? ' · ' + tx('gix.fourEyes','Vier-Augen') : ''}${item.dueDate ? ' · ' + tx('gix.due','fällig {date}',{date:fmt(item.dueDate)}) : ''}${kind === 'others' ? ' · ' + tx('gix.with','bei {name}',{name:item.assignedTo}) : ''}`);
   r.append(title, meta);
   const button = (label, handler, css) => { const b = node('button', label); b.type = 'button'; b.className = css || 'secondary'; b.onclick = handler; r.append(b); };
-  if (item.subjectType === 'EBICS_MESSAGE' || item.subjectType === 'INBOX_ITEM') button('Öffnen', () => document.querySelector(item.subjectType === 'EBICS_MESSAGE' ? '#appNavEbics' : '#appNavInbox')?.click());
-  if (kind === 'open') button('Übernehmen', () => act(() => json(`/api/tasks/${item.taskId}/claim`, { method: 'POST' }), 'Auftrag übernommen.'), 'primary');
+  if (item.subjectType === 'EBICS_MESSAGE' || item.subjectType === 'INBOX_ITEM') button(tx('gil.9889e0','Öffnen'), () => document.querySelector(item.subjectType === 'EBICS_MESSAGE' ? '#appNavEbics' : '#appNavInbox')?.click());
+  if (kind === 'open') button(tx('gil.bf8310','Übernehmen'), () => act(() => json(`/api/tasks/${item.taskId}/claim`, { method: 'POST' }), tx('gil.3fac4c','Auftrag übernommen.')), 'primary');
   if (kind === 'mine') {
-   button('Erledigt', () => act(() => item.lcId ? json(`/api/lcs/${item.lcId}/tasks/${item.taskId}/complete?completed=true`, { method: 'PUT' }) : json(`/api/tasks/${item.taskId}/complete`, { method: 'POST' }), 'Auftrag erledigt.'), 'primary');
-   button('Zurückgeben', () => act(() => json(`/api/tasks/${item.taskId}/release`, { method: 'POST' }), 'Auftrag zurück in die Gruppeninbox gelegt.'));
+   button(tx('gil.22eb8c','Erledigt'), () => act(() => item.lcId ? json(`/api/lcs/${item.lcId}/tasks/${item.taskId}/complete?completed=true`, { method: 'PUT' }) : json(`/api/tasks/${item.taskId}/complete`, { method: 'POST' }), tx('gil.6836c5','Auftrag erledigt.')), 'primary');
+   button(tx('gil.994bae','Zurückgeben'), () => act(() => json(`/api/tasks/${item.taskId}/release`, { method: 'POST' }), tx('gil.a82807','Auftrag zurück in die Gruppeninbox gelegt.')));
   }
   return r;
  }
@@ -70,12 +70,12 @@
   (typeof data !== 'undefined' ? data : []).filter(x => !['CLOSED', 'EXPIRED'].includes(x.status)).forEach(x => { const o = node('option', x.reference); o.value = x.id; lc.append(o); });
   const team = document.createElement('select'); team.name = 'team'; team.required = true;
   teams.filter(t => t.active).forEach(t => { const o = node('option', t.name); o.value = t.id; team.append(o); });
-  const title = document.createElement('input'); title.name = 'title'; title.required = true; title.maxLength = 500; title.placeholder = 'Was ist zu tun?';
+  const title = document.createElement('input'); title.name = 'title'; title.required = true; title.maxLength = 500; title.placeholder = tx('gil.072327','Was ist zu tun?');
   const due = document.createElement('input'); due.name = 'due'; due.type = 'date';
   const labeled = (text, input) => { const l = node('label', text); l.append(input); return l; };
-  const submit = node('button', 'Auftrag an Team anlegen'); submit.type = 'submit';
-  form.append(labeled('Akte', lc), labeled('Team', team), labeled('Auftrag', title), labeled('Fällig am', due), submit);
-  form.onsubmit = event => { event.preventDefault(); return act(() => json(`/api/lcs/${lc.value}/tasks`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: title.value.trim(), dueDate: due.value || null, teamId: team.value }) }), 'Auftrag angelegt.'); };
+  const submit = node('button', tx('gil.cc2641','Auftrag an Team anlegen')); submit.type = 'submit';
+  form.append(labeled(tx('gil.768f35','Akte'), lc), labeled(tx('gil.ac848f','Team'), team), labeled(tx('gil.cc644a','Auftrag'), title), labeled(tx('gil.659add','Fällig am'), due), submit);
+  form.onsubmit = event => { event.preventDefault(); return act(() => json(`/api/lcs/${lc.value}/tasks`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: title.value.trim(), dueDate: due.value || null, teamId: team.value }) }), tx('gil.654a79','Auftrag angelegt.')); };
   return form;
  }
 
@@ -83,16 +83,16 @@
   const templates = await json('/api/workflow-templates').catch(() => []);
   if (!templates.length || typeof data === 'undefined' || !data.length) return null;
   const form = document.createElement('form'); form.className = 'form-grid';
-  const select = (name, options, optional) => { const s = document.createElement('select'); s.name = name; if (optional) { const o = node('option', '– wie Team –'); o.value = ''; s.append(o); } options.forEach(([v, t]) => { const o = node('option', t); o.value = v; s.append(o); }); return s; };
+  const select = (name, options, optional) => { const s = document.createElement('select'); s.name = name; if (optional) { const o = node('option', tx('gil.9348b9','– wie Team –')); o.value = ''; s.append(o); } options.forEach(([v, t]) => { const o = node('option', t); o.value = v; s.append(o); }); return s; };
   const lc = select('lc', data.filter(x => !['CLOSED', 'EXPIRED'].includes(x.status)).map(x => [x.id, x.reference]));
   const template = select('template', templates.map(t => [t.id, t.title]));
   const team = select('team', teams.filter(t => t.active).map(t => [t.id, t.name]));
   const approval = select('approval', teams.filter(t => t.active).map(t => [t.id, t.name]), true);
   const hint = node('small', ''); const describe = () => { const t = templates.find(x => x.id === template.value); hint.textContent = t ? `${t.description} Schritte: ${t.steps.map(s => s.title).join(' → ')}` : ''; }; template.onchange = describe; describe();
   const labeled = (text, input) => { const l = node('label', text); l.append(input); return l; };
-  const submit = node('button', 'Workflow starten'); submit.type = 'submit';
-  form.append(labeled('Akte', lc), labeled('Vorlage', template), labeled('Team', team), labeled('Freigabeteam (Vier-Augen-Schritt)', approval), hint, submit);
-  form.onsubmit = event => { event.preventDefault(); return act(() => json(`/api/lcs/${lc.value}/workflows`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ template: template.value, teamId: team.value, approvalTeamId: approval.value || null }) }), 'Workflow gestartet. Der erste Schritt liegt in der Gruppeninbox.'); };
+  const submit = node('button', tx('gil.eedf77','Workflow starten')); submit.type = 'submit';
+  form.append(labeled(tx('gil.768f35','Akte'), lc), labeled(tx('gil.07411f','Vorlage'), template), labeled(tx('gil.ac848f','Team'), team), labeled(tx('gil.389ff3','Freigabeteam (Vier-Augen-Schritt)'), approval), hint, submit);
+  form.onsubmit = event => { event.preventDefault(); return act(() => json(`/api/lcs/${lc.value}/workflows`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ template: template.value, teamId: team.value, approvalTeamId: approval.value || null }) }), tx('gil.4b90ca','Workflow gestartet. Der erste Schritt liegt in der Gruppeninbox.')); };
   return form;
  }
 
@@ -100,44 +100,44 @@
   const rules = await json('/api/automation-rules').catch(() => []);
   if (!rules.length) return null;
   const corporate = globalThis.LcWorkspaceModules?.corporate === true;
-  const names = { EBICS_MESSAGE: 'Neue EBICS-Nachricht', INBOX_ITEM: 'Neues Dokument im Posteingang', DEADLINE: 'Frist oder Wiedervorlage steht an', PROCUREMENT: 'Dokument für die Beschaffung wird knapp' };
-  const box = node('div'); box.append(node('h3', 'Automatische Aufträge'), node('p', 'Aufträge entstehen automatisch für das gewählte Team und schließen sich, sobald die Nachricht bzw. das Dokument bearbeitet ist.'));
+  const names = { EBICS_MESSAGE: tx('gil.db5d0f','Neue EBICS-Nachricht'), INBOX_ITEM: tx('gil.2fd685','Neues Dokument im Posteingang'), DEADLINE: tx('gil.619cac','Frist oder Wiedervorlage steht an'), PROCUREMENT: tx('gil.36dc09','Dokument für die Beschaffung wird knapp') };
+  const box = node('div'); box.append(node('h3', tx('gil.b24b51','Automatische Aufträge')), node('p', tx('gil.6d0af8','Aufträge entstehen automatisch für das gewählte Team und schließen sich, sobald die Nachricht bzw. das Dokument bearbeitet ist.')));
   rules.filter(rule => rule.trigger !== 'PROCUREMENT' || corporate).forEach(rule => {
    const form = document.createElement('form'); form.className = 'form-grid auto-rule';
    const on = document.createElement('input'); on.type = 'checkbox'; on.checked = rule.enabled;
    const onLabel = node('label', ' ' + names[rule.trigger]); onLabel.prepend(on);
    const team = document.createElement('select'); teams.filter(t => t.active).forEach(t => { const o = node('option', t.name); o.value = t.id; team.append(o); }); if (rule.teamId) team.value = rule.teamId;
-   const teamLabel = node('label', 'Team'); teamLabel.append(team);
+   const teamLabel = node('label', tx('gil.ac848f','Team')); teamLabel.append(team);
    form.append(onLabel, teamLabel);
    let days = null;
-   if (rule.trigger === 'DEADLINE' || rule.trigger === 'PROCUREMENT') { days = document.createElement('input'); days.type = 'number'; days.min = 0; days.max = 60; days.value = rule.leadDays; const l = node('label', 'Vorlauf (Tage)'); l.append(days); form.append(l); }
-   const save = node('button', 'Speichern'); save.type = 'submit'; form.append(save);
-   form.onsubmit = event => { event.preventDefault(); return act(() => json('/api/automation-rules', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ trigger: rule.trigger, enabled: on.checked, teamId: team.value || null, leadDays: days ? Number(days.value) : null }) }), 'Regel gespeichert.'); };
+   if (rule.trigger === 'DEADLINE' || rule.trigger === 'PROCUREMENT') { days = document.createElement('input'); days.type = 'number'; days.min = 0; days.max = 60; days.value = rule.leadDays; const l = node('label', tx('gil.8c5965','Vorlauf (Tage)')); l.append(days); form.append(l); }
+   const save = node('button', tx('gil.b97d23','Speichern')); save.type = 'submit'; form.append(save);
+   form.onsubmit = event => { event.preventDefault(); return act(() => json('/api/automation-rules', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ trigger: rule.trigger, enabled: on.checked, teamId: team.value || null, leadDays: days ? Number(days.value) : null }) }), tx('gil.16c573','Regel gespeichert.')); };
    box.append(form);
   });
   return box;
  }
 
  async function teamAdmin() {
-  const box = node('div'); box.append(node('h3', 'Teams verwalten'));
+  const box = node('div'); box.append(node('h3', tx('gil.7a5a53','Teams verwalten')));
   const [teams, people] = await Promise.all([json('/api/teams'), json('/api/users/assignable').catch(() => [])]);
   const editor = team => {
    const form = document.createElement('form'); form.className = 'form-grid';
    const name = document.createElement('input'); name.name = 'name'; name.required = true; name.maxLength = 100; name.value = team ? team.name : '';
    const description = document.createElement('input'); description.name = 'description'; description.maxLength = 300; description.value = team?.description || '';
-   const members = document.createElement('fieldset'); members.append(node('legend', 'Mitglieder'));
+   const members = document.createElement('fieldset'); members.append(node('legend', tx('gil.a498e9','Mitglieder')));
    people.forEach(p => { const l = node('label', ` ${p.displayName || p.username}`); const c = document.createElement('input'); c.type = 'checkbox'; c.value = p.username; c.checked = Boolean(team?.members?.some(m => m.toLowerCase() === p.username.toLowerCase())); l.prepend(c); members.append(l); });
    const active = document.createElement('input'); active.type = 'checkbox'; active.checked = team ? team.active : true;
-   const activeLabel = node('label', ' Aktiv'); activeLabel.prepend(active);
-   const submit = node('button', team ? 'Speichern' : 'Team anlegen'); submit.type = 'submit';
+   const activeLabel = node('label', tx('gil.492793',' Aktiv')); activeLabel.prepend(active);
+   const submit = node('button', team ? tx('gil.b97d23','Speichern') : tx('gil.1c8e23','Team anlegen')); submit.type = 'submit';
    const wrap = (text, input) => { const l = node('label', text); l.append(input); return l; };
-   form.append(wrap('Name', name), wrap('Beschreibung', description), members, activeLabel, submit);
+   form.append(wrap('Name', name), wrap(tx('gil.35bedb','Beschreibung'), description), members, activeLabel, submit);
    form.onsubmit = event => { event.preventDefault(); const body = JSON.stringify({ name: name.value.trim(), description: description.value.trim(), members: [...members.querySelectorAll('input:checked')].map(c => c.value), active: active.checked });
-    return act(() => json(team ? `/api/teams/${team.id}` : '/api/teams', { method: team ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body }), team ? 'Team gespeichert.' : 'Team angelegt.'); };
+    return act(() => json(team ? `/api/teams/${team.id}` : '/api/teams', { method: team ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body }), team ? tx('gil.e09242','Team gespeichert.') : tx('gil.6574ec','Team angelegt.')); };
    return form;
   };
   teams.forEach(team => { const d = document.createElement('details'); d.append(node('summary', `${team.name}${team.active ? '' : ' (inaktiv)'} · ${team.members.length} Mitglieder`), editor(team)); box.append(d); });
-  const create = document.createElement('details'); create.append(node('summary', 'Neues Team'), editor(null)); box.append(create);
+  const create = document.createElement('details'); create.append(node('summary', tx('gil.7d46ac','Neues Team')), editor(null)); box.append(create);
   return box;
  }
 
@@ -147,14 +147,14 @@
   try {
    const [items, mine] = await Promise.all([json('/api/tasks/inbox'), json('/api/teams/mine')]);
    const parts = group(items, currentUser?.username);
-   section.replaceChildren(node('h2', 'Gruppeninbox'), message);
+   section.replaceChildren(node('h2', tx('gil.8c445e','Gruppeninbox')), message);
    message.textContent = keepMessage ? text : '';
    if (mine.length) {
-    section.append(list('Zur Übernahme', parts.open, 'open', 'Nichts zu übernehmen.'), list('In meiner Bearbeitung', parts.mine, 'mine', 'Keine übernommenen Aufträge.'), list('Bei Kolleginnen und Kollegen', parts.others, 'others', 'Keine.'));
-   } else section.append(node('p', 'Sie gehören keinem Team an.'));
+    section.append(list(tx('gil.426bbe','Zur Übernahme'), parts.open, 'open', tx('gil.e30a26','Nichts zu übernehmen.')), list(tx('gil.4fdb23','In meiner Bearbeitung'), parts.mine, 'mine', tx('gil.928c76','Keine übernommenen Aufträge.')), list(tx('gil.943fa6','Bei Kolleginnen und Kollegen'), parts.others, 'others', tx('gil.b3b733','Keine.')));
+   } else section.append(node('p', tx('gil.7d110f','Sie gehören keinem Team an.')));
    const teams = can('USER_MANAGE') ? await json('/api/teams') : mine;
-   if (teams.some(t => t.active) && typeof data !== 'undefined' && data.length) { section.append(node('h3', 'Neuer Teamauftrag'), newTaskForm(teams)); }
-   if (can('LC_EDIT') && teams.some(t => t.active)) { const wf = await workflowForm(teams); if (wf) section.append(node('h3', 'Workflow starten'), wf); }
+   if (teams.some(t => t.active) && typeof data !== 'undefined' && data.length) { section.append(node('h3', tx('gil.c42185','Neuer Teamauftrag')), newTaskForm(teams)); }
+   if (can('LC_EDIT') && teams.some(t => t.active)) { const wf = await workflowForm(teams); if (wf) section.append(node('h3', tx('gil.eedf77','Workflow starten')), wf); }
    if (can('USER_MANAGE')) { const rules = await automationPanel(teams); if (rules) section.append(rules); section.append(await teamAdmin()); }
    badge();
   } catch (error) { message.textContent = error.message; }

@@ -3,7 +3,7 @@ const source=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static
 const settle=()=>new Promise(r=>setImmediate(r));
 function setup({overview,confirm=true}){
  const calls=[],alerts=[],confirmations=[];let click;
- const globals={document:{getElementById:()=>null,createElement:()=>({}),body:{append(){}},addEventListener:(t,h)=>{click=h;}},activeLc:{id:'lc-1'},can:()=>true,esc:v=>String(v),
+ const globals={tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(m,k)=>values[k]??m),document:{getElementById:()=>null,createElement:()=>({}),body:{append(){}},addEventListener:(t,h)=>{click=h;}},activeLc:{id:'lc-1'},can:()=>true,esc:v=>String(v),
   alert:m=>alerts.push(m),confirmAction:async m=>{confirmations.push(m);return confirm;},show:async id=>calls.push({refresh:id}),activateDossierSection:s=>calls.push({section:s}),
   json:async(url,options)=>{calls.push({url,method:options?.method});
    if(url.endsWith('/definitions'))return {document:[{field:'DOCUMENT_PACKAGE_COUNT',label:'Packstückzahl'}],lc:[{field:'LC_BENEFICIARY_ADDRESS_COUNTRY',label:'LC: Land der Begünstigtenadresse'}]};

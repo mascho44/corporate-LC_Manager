@@ -1,6 +1,6 @@
 const test = require('node:test'), assert = require('node:assert');
 const vm = require('node:vm'), fs = require('node:fs'), path = require('node:path');
-const ctx = {}; ctx.globalThis = ctx; vm.createContext(ctx);
+const ctx = {tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(m,k)=>values[k]??m)}; ctx.globalThis = ctx; vm.createContext(ctx);
 vm.runInContext(fs.readFileSync(path.join(__dirname, '../../main/resources/static/intake-channels.js'), 'utf8'), ctx);
 const c = ctx.LcIntakeChannels;
 test('a channel line names type, state and the last run', () => {

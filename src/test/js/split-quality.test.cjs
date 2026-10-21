@@ -2,7 +2,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const source=fs.readFileSync('src/main/resources/static/split-quality.js','utf8');
 function setup(report,status=200){
  const elements=[];function node(tag){const value={tag,children:[],textContent:'',classList:{contains:()=>true},append(...children){this.children.push(...children);},replaceChildren(){this.children=[];},setAttribute(){},addEventListener(name,fn){this[name]=fn;}};elements.push(value);return value;}
- const section=node('section');const context=vm.createContext({document:{getElementById:()=>section,createElement:node},MutationObserver:class{observe(){}},fetch:async()=>({ok:status===200,status,json:async()=>report})});vm.runInContext(source,context);
+ const section=node('section');const context=vm.createContext({tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(m,k)=>values[k]??m),document:{getElementById:()=>section,createElement:node},MutationObserver:class{observe(){}},fetch:async()=>({ok:status===200,status,json:async()=>report})});vm.runInContext(source,context);
  return {elements,refresh:elements.find(e=>e.tag==='button'),text:()=>elements.map(e=>e.textContent).join('\n')};
 }
 test('shows denominators and treats data as plain text',async()=>{

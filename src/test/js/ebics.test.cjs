@@ -7,7 +7,7 @@ function fixture(allowed,state){
  const nav=node('nav'),main=node('main');
  const form={elements:{}};
  const created=[];
- const context=vm.createContext({can:()=>allowed,confirmAction:async()=>true,appNavigate:(p)=>pages.push(p),
+ const context=vm.createContext({tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(m,k)=>values[k]??m),can:()=>allowed,confirmAction:async()=>true,appNavigate:(p)=>pages.push(p),
   json:async(url,options)=>{calls.push({url,options});if(url==='/api/ebics/connection'&&!options)return state;if(url==='/api/ebics/connection/fingerprints')return {a005:'A',e002:'E',x002:'X'};return state;},
   document:{createElement:tag=>{const n=node(tag);
     if(tag==='form'){n.elements={};const orig=n.append;n.append=function(...c){orig.apply(this,c);for(const l of c){const i=(l.children||[]).find(x=>x.tag==='input');if(i){i.name=i.name||'';}}};}

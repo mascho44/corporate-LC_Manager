@@ -9,7 +9,7 @@ function setup(allowed=true){
  const descriptor=(field,kind='TEXT',choices=[])=>({field,label:field,kind,choices,maxLength:500});
  const definitions={document:[descriptor('DOCUMENT_ISSUER'),descriptor('DOCUMENT_RECIPIENT'),descriptor('DOCUMENT_GOODS_DESCRIPTION')],lc:[descriptor('LC_TRANSFERRED','BOOLEAN',['true','false']),descriptor('LC_RULE_STANDARD','TEXT',['UCP600','OTHER'])],requirements:[descriptor('LC_SIGNATURE_REQUIRED','BOOLEAN',['true','false']),descriptor('LC_REQUIRED_ORIGINAL_COUNT','NUMBER')]};
  const document={getElementById:id=>dialogs[id],createElement:tag=>tag==='dialog'?dialog:{append(){},textContent:''},body:{append:element=>dialogs[element.id]=element},addEventListener:(type,handler)=>click=handler};
- const globals={document,activeLc:{id:'test-lc'},can:()=>allowed,esc:value=>String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'),alert:assert.fail,show:async id=>calls.push({refresh:id}),json:async(url,options)=>{
+ const globals={tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(m,k)=>values[k]??m),document,activeLc:{id:'test-lc'},can:()=>allowed,esc:value=>String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'),alert:assert.fail,show:async id=>calls.push({refresh:id}),json:async(url,options)=>{
   calls.push({url,...options});return url.endsWith('/missing')?[]:url.endsWith('/definitions')?definitions:url.includes('/documents/')?{DOCUMENT_ISSUER:'<unsafe>'}:{};
  }};
  vm.runInNewContext(source,globals);
