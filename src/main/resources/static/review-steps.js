@@ -1,20 +1,21 @@
 /* Guided examination (Prüfungsassistent): the fixed steps and which findings belong to which step. Pure logic, no DOM. */
 (() => {
+ const tr = (key, de, values = {}) => { const i = globalThis.LcI18n, s = i?.t ? i.t(key, values) : null; return s && s !== key ? s : String(de).replace(/\{(\w+)\}/g, (m, k) => values[k] ?? m); };
  const STEPS = [
-  { key: 'AKTE', label: 'Akte und Bedingungen', intro: 'Parteien, Betrag, Fristen und die geforderten Dokumente des Akkreditivs lesen. Stimmen die Stammdaten mit der SWIFT-Nachricht überein?' },
-  { key: 'VOLLSTAENDIGKEIT', label: 'Vollständigkeit', intro: 'Liegen alle geforderten Dokumente vor, in der geforderten Zahl von Originalen und Kopien (bei „Full Set" alle Originale)?' },
-  { key: 'ANGABEN', label: 'Fehlende Angaben', intro: 'Angaben, ohne die Regeln nicht prüfbar sind (z. B. das Vorlagedatum), jetzt erfassen, damit nichts „nicht prüfbar" bleibt.' },
-  { key: 'COMPLIANCE', label: 'Compliance', intro: 'Sanktionen, Embargo und Exportkontrolle. Treffer zuerst entscheiden; ein Falsch-positiv braucht die Freigabe einer zweiten Person.' },
-  { key: 'DOKUMENTE', label: 'Dokumente', intro: 'Dokument für Dokument prüfen: Rechnung, Transportdokument, Versicherung, Ursprung, Packliste. Jeder Befund wird bestätigt oder als Abweichung gemeldet.' },
-  { key: 'QUERPRUEFUNG', label: 'Querprüfungen und Fristen', intro: 'Betrag, Ware und Daten über alle Dokumente hinweg; Vorlagefrist, spätester Versand und Ablauf des Akkreditivs.' },
-  { key: 'ABSCHLUSS', label: 'Abschluss', intro: 'Ergebnis ansehen, bei Abweichungen die Unstimmigkeitsmeldung erstellen, die Prüfung mit einem Vermerk abschließen.' }
+  { key: 'AKTE', get label() { return tr('rs.AKTE.label', 'Akte und Bedingungen'); }, get intro() { return tr('rs.AKTE.intro', 'Parteien, Betrag, Fristen und die geforderten Dokumente des Akkreditivs lesen. Stimmen die Stammdaten mit der SWIFT-Nachricht überein?'); } },
+  { key: 'VOLLSTAENDIGKEIT', get label() { return tr('rs.VOLLSTAENDIGKEIT.label', 'Vollständigkeit'); }, get intro() { return tr('rs.VOLLSTAENDIGKEIT.intro', 'Liegen alle geforderten Dokumente vor, in der geforderten Zahl von Originalen und Kopien (bei „Full Set" alle Originale)?'); } },
+  { key: 'ANGABEN', get label() { return tr('rs.ANGABEN.label', 'Fehlende Angaben'); }, get intro() { return tr('rs.ANGABEN.intro', 'Angaben, ohne die Regeln nicht prüfbar sind (z. B. das Vorlagedatum), jetzt erfassen, damit nichts „nicht prüfbar" bleibt.'); } },
+  { key: 'COMPLIANCE', get label() { return tr('rs.COMPLIANCE.label', 'Compliance'); }, get intro() { return tr('rs.COMPLIANCE.intro', 'Sanktionen, Embargo und Exportkontrolle. Treffer zuerst entscheiden; ein Falsch-positiv braucht die Freigabe einer zweiten Person.'); } },
+  { key: 'DOKUMENTE', get label() { return tr('rs.DOKUMENTE.label', 'Dokumente'); }, get intro() { return tr('rs.DOKUMENTE.intro', 'Dokument für Dokument prüfen: Rechnung, Transportdokument, Versicherung, Ursprung, Packliste. Jeder Befund wird bestätigt oder als Abweichung gemeldet.'); } },
+  { key: 'QUERPRUEFUNG', get label() { return tr('rs.QUERPRUEFUNG.label', 'Querprüfungen und Fristen'); }, get intro() { return tr('rs.QUERPRUEFUNG.intro', 'Betrag, Ware und Daten über alle Dokumente hinweg; Vorlagefrist, spätester Versand und Ablauf des Akkreditivs.'); } },
+  { key: 'ABSCHLUSS', get label() { return tr('rs.ABSCHLUSS.label', 'Abschluss'); }, get intro() { return tr('rs.ABSCHLUSS.intro', 'Ergebnis ansehen, bei Abweichungen die Unstimmigkeitsmeldung erstellen, die Prüfung mit einem Vermerk abschließen.'); } }
  ];
  const COMPLIANCE = /SANCTION|EMBARGO|EXPORT_CONTROL|DUAL_USE|HS_CODE/;
  const COMPLETE = /MISSING_DOCUMENT|DOCUMENT_PRESENT|ORIGINAL_COUNT|COPY_COUNT|DOCUMENT_COPIES|DUPLICATE_DOCUMENT|FULL_SET|REQUIRED_DOCUMENT/;
  const CROSS = /_CONSISTENCY|PRESENTATION_|AMOUNT_EXCEEDED|SHIPMENT_DATE|EXPIRY|INSURANCE_DATE|PARTIAL_SHIPMENT|TRANSSHIPMENT|QUANTITY_NOT_COMPARABLE|ADDITIONAL_CONDITIONS/;
  const BLOCKING = /SANCTION|EMBARGO|EXPORT_CONTROL|AMOUNT|EXPIR|PRESENTATION_PERIOD|PRESENTATION_BEFORE|SHIPMENT_DATE|LATEST_SHIPMENT|MISSING_DOCUMENT|SIGNATURE/;
  const isOpen = f => !f.reviewDecision && f.severity !== 'OK' && f.code !== 'REVIEW_STALE';
- const isMissing = f => f.severity === 'WARNING' && /^Regel nicht prüfbar/.test(f.message || '') && /\bLC_[A-Z_]+ = nicht erfasst/.test(f.lcCondition || '');
+ const isMissing = f => f.severity === 'WARNING' && /^Regel nicht prüfbar/.test(f.message || '') && /\bLC_[A-Z_]+ = nicht erfasst/.test(f.lcCondition || ''); // guard-ignore: matches the German message text of the server, not a UI text
  /** The step a finding belongs to; the first matching rule decides: missing input, compliance, completeness, cross-check (or no single document), else the documents. */
  function stepOf(f) {
   const code = String(f.code || '');
