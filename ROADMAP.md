@@ -37,6 +37,8 @@
 
 ## Später
 
+- SLAs: je Mandant einstellbare Bearbeitungszeiten (zum Beispiel Dokumentenprüfung binnen x Stunden nach Eingang, Unstimmigkeitsmeldung innerhalb der Prüffrist von fünf Bankarbeitstagen nach UCP 600 Art. 14 b, Reaktion auf eine Änderung MT707), Uhr je Akte und Schritt aus den vorhandenen Eingangs-, Prüf- und Fristendaten, Ampel „im Plan / knapp / verletzt“, Eskalation über die Gruppeninbox an die Teamleitung, Feiertagskalender, Auswertung der Einhaltung. Konzept noch offen: Welche Zeiten gelten je Mandant, welche Schritte zählen, wer wird eskaliert.
+- KPI-Cockpit: eigene Seite für Leitung und Compliance mit Kennzahlen aus den vorhandenen Daten: offene und überfällige Akten, Durchlaufzeit je Schritt, Abweichungsquote und Erstprüfungsquote, SLA-Einhaltung, Volumen je Kunde, Bank und Zeitraum, Auslastung je Bearbeiter. Filter nach Zeitraum, Gesellschaft und Team, CSV-Export, Mandantengrenzen wie überall. Baut auf den SLAs und den klickbaren Kennzahlen der Aktenliste auf. Konzept noch offen: Kennzahlenliste, Zielwerte, Aufbewahrung der Verlaufsdaten.
 - Zurückgestellt bis zur Rechteklärung: ICC-bezogene Rule Packs und Microservice `lc-rule-engine`. Zielarchitektur und Freigabevorgaben stehen in [lc-rule-engine](docs/lc-rule-engine.md). Bezug: GitHub #29. Die neue ICC-Teilregel und der Pack-Endpunkt wurden vorerst entfernt; interne LC-Vorprüfungen bleiben bestehen.
 - EBICS-Anbindung für den sicheren Bankaustausch
 - Multiple Entities: Mandantenanlage und Wechsel deployed; Bearbeitung von Name/Standardsprache und expliziter Mandanten-Login lokal ergänzt. Globale Identitäten werden zunächst zentral im Standardmandanten angelegt; ein vollständiger globaler IAM-Lebenszyklus bleibt offen.
