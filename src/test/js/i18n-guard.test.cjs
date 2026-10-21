@@ -3,7 +3,7 @@ const dir = 'src/main/resources/static/';
 
 /* Safety net for the multilingual rule (docs/mehrsprachigkeit.md): these scripts are fully translated, so they must not gain a plain German text.
    Add new scripts of new features to this list. The check is a heuristic (umlauts and common German words); it does not replace looking at the screen in English. */
-const TRANSLATED = ['draft-check', 'amendment-request', 'document-set', 'submission-package', 'kpis', 'akte-copy', 'procurement-plan', 'lc-tools', 'corporate-profile', 'action-menus', 'global-search', 'first-steps', 'drag-drop'];
+const TRANSLATED = ['draft-check', 'amendment-request', 'document-set', 'submission-package', 'kpis', 'akte-copy', 'procurement-plan', 'lc-tools', 'corporate-profile', 'action-menus', 'global-search', 'first-steps', 'drag-drop', 'document-trash'];
 const GERMAN = /[äöüÄÖÜß]|\b(und|der|die|das|zur|für|mit|nicht|noch|von|bei|eine?|im|aus|bitte|keine|wird|werden|kann|alle|neue|speichern|löschen|öffnen|schließen|prüfen|erstellen|bearbeiten|laden)\b/i;
 
 function plainGermanTexts(source) {

@@ -48,6 +48,8 @@ import de.ostms.lc.user.service.AppUserDetailsService; import jakarta.servlet.ht
    .requestMatchers("/api/users/**","/api/roles/**").hasAuthority("PERM_USER_MANAGE")
    .requestMatchers(org.springframework.http.HttpMethod.DELETE,"/api/lcs/*").hasAuthority("PERM_LC_DELETE")
    .requestMatchers(org.springframework.http.HttpMethod.DELETE,"/api/lcs/*/documents/*").hasAuthority("PERM_DOCUMENT_DELETE")
+   .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/lcs/*/documents/trash").hasAuthority("PERM_DOCUMENT_DELETE")
+   .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/lcs/*/documents/*/restore").hasAuthority("PERM_DOCUMENT_DELETE")
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/imports","/api/imports/preview","/api/imports/file-preview","/api/lcs/import/**").hasAuthority("PERM_SWIFT_IMPORT")
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/lcs/*/documents","/api/lcs/*/documents/archive","/api/lcs/*/documents/batch").hasAuthority("PERM_DOCUMENT_UPLOAD")
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/lcs/*/generated-documents","/api/lcs/*/generated-documents/docx").hasAuthority("PERM_DOCUMENT_GENERATE")

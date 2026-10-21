@@ -71,3 +71,8 @@ html body .first-steps button.done{opacity:.6}
 /* Dateien auf die Akte ziehen */
 html body #detail.file-drop-over{position:relative;outline:2px dashed #2f6fed;outline-offset:-4px}
 html body #detail.file-drop-over::after{content:attr(data-drop-label);position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(234,241,255,.85);color:#1d4fb8;font-weight:700;pointer-events:none}
+
+/* Papierkorb der Dokumente */
+html body .trash-list{list-style:none;margin:8px 0;padding:0}
+html body .trash-list li{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:6px 0;border-bottom:1px solid #e5e9ef}
+html body .trash-list small{display:block;color:#667085}

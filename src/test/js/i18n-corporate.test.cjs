@@ -215,3 +215,11 @@ test('document set draft is stored per file and cleared', () => {
   api.clearDraft('a');
   assert.equal(api.loadDraft('a'), null);
 });
+
+test('trash shows the days left before final removal', () => {
+  const context = vm.createContext({ globalThis: null }); context.globalThis = context;
+  vm.runInContext(fs.readFileSync(dir + 'document-trash.js', 'utf8'), context);
+  const now = Date.parse('2026-10-31T12:00:00Z');
+  assert.equal(context.LcTrash.daysLeft('2026-10-30T12:00:00Z', now), 29);
+  assert.equal(context.LcTrash.daysLeft('2026-08-01T00:00:00Z', now), 0);
+});

@@ -10,6 +10,7 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "lc_document")
+@org.hibernate.annotations.SQLRestriction("deleted_at is null")
 public class LcDocument {
     @Column(nullable=false,updatable=false) @JsonIgnore private UUID tenantId=de.ostms.lc.tenant.domain.TenantContext.currentId();
     public UUID getTenantId(){return tenantId;}
@@ -26,6 +27,9 @@ public class LcDocument {
     public String getClassificationHistoryJson(){return classificationHistoryJson;}
     public void setClassificationHistoryJson(String value){classificationHistoryJson=value;}
     /** Documents created together by "Dokumentensatz erzeugen" share this id; the input is kept to create a corrected set. */
+    /** Set when the document was moved to the trash; the restriction above hides such rows everywhere else. */
+    @Column(name="deleted_at") @JsonIgnore private LocalDateTime deletedAt;
+    public LocalDateTime getDeletedAt(){return deletedAt;} public void setDeletedAt(LocalDateTime value){deletedAt=value;}
     @Column(name="generation_set_id") private UUID generationSetId;
     @Column(name="generation_input",columnDefinition="text") @JsonIgnore private String generationInput;
     public UUID getGenerationSetId(){return generationSetId;} public void setGenerationSetId(UUID value){generationSetId=value;}

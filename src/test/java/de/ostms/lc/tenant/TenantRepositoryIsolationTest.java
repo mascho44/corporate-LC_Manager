@@ -246,6 +246,23 @@ class TenantRepositoryIsolationTest {
  }
  de.ostms.lc.document.domain.DocumentDraft createDraft(LetterOfCredit lc){var d=new de.ostms.lc.document.domain.DocumentDraft();d.setLcId(lc.getId());d.setDocumentType(de.ostms.lc.document.domain.DocumentType.COMMERCIAL_INVOICE);d.setDocumentNumber("SYNTHETIC-1");d.setDataJson("{}");d.setCreatedBy("synthetic-user");d.setUpdatedBy("synthetic-user");return drafts.saveAndFlush(d);}
  de.ostms.lc.document.domain.DocumentApprovalThreshold createThreshold(int approvals){var t=new de.ostms.lc.document.domain.DocumentApprovalThreshold();t.setCurrency("EUR");t.setMinimumAmount(java.math.BigDecimal.ZERO);t.setRequiredApprovals(approvals);return approvalThresholds.saveAndFlush(t);}
+ @Autowired org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+ @Test void deletedDocumentGoesToTrashIsHiddenRestoredAndPurgedAfterRetention(){
+  var lc=createLc("TRASH-LC");var doc=createDocument(lc);
+  var service=new de.ostms.lc.document.service.DocumentService(documents,lcs,null);
+  var trash=new de.ostms.lc.document.service.DocumentTrashService(jdbcTemplate);
+  assertThat(documents.countByLetterOfCreditId(lc.getId())).isEqualTo(1);
+  service.delete(lc.getId(),doc.getId());documents.flush();
+  assertThat(documents.countByLetterOfCreditId(lc.getId())).isZero();
+  assertThat(trash.list(lc.getId())).hasSize(1);
+  trash.restore(lc.getId(),doc.getId());
+  assertThat(documents.countByLetterOfCreditId(lc.getId())).isEqualTo(1);
+  assertThat(trash.list(lc.getId())).isEmpty();
+  assertThatThrownBy(()->trash.restore(lc.getId(),doc.getId())).isInstanceOf(java.util.NoSuchElementException.class);
+  jdbcTemplate.update("update lc_document set deleted_at=? where id=?",java.sql.Timestamp.valueOf(java.time.LocalDateTime.now().minusDays(40)),doc.getId());
+  assertThat(trash.purgeExpired(java.time.LocalDateTime.now())).isEqualTo(1);
+  assertThat(trash.list(lc.getId())).isEmpty();
+ }
  @Test void foreignDraftCannotBeViewedChangedDeletedOrApproved(){
   var own=createDraft(createLc("OWN-DRAFT"));LetterOfCredit foreignLc;de.ostms.lc.document.domain.DocumentDraft foreign;
   try(var scope=TenantContext.open(foreignTenant)){foreignLc=createLc("FOREIGN-DRAFT");foreign=createDraft(foreignLc);}
