@@ -56,7 +56,7 @@ function setupLanguagePreferences(section){
     const apply=async preference=>{form.elements.language.value=preference.preferredLanguage||'';await LcI18n.setLanguage(preference.language);};
     json('/api/profile/language').then(apply).catch(error=>{form.querySelector('p').textContent=error.message;});
     form.onsubmit=async event=>{event.preventDefault();const button=form.querySelector('button');button.disabled=true;
-        try{await apply(await json('/api/profile/language',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({language:form.elements.language.value||null})}));form.querySelector('p').textContent=LcI18n.t('language.saved');}
+        try{const before=LcI18n.language();await apply(await json('/api/profile/language',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({language:form.elements.language.value||null})}));form.querySelector('p').textContent=LcI18n.t('language.saved');if(LcI18n.language()!==before)setTimeout(()=>location.reload(),600);/* menus and pages built once must be rebuilt in the new language */}
         catch(error){form.querySelector('p').textContent=error.message;}finally{button.disabled=false;}
     };
 }
