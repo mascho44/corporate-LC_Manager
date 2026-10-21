@@ -2,6 +2,8 @@
 
 ## 0.5.1 – in Arbeit
 
+* Englische Oberfläche, zwölfter Teil: EBICS, Einladungen, Plattform-Benutzer und -Reiter, Mitgliederseite (Rechte-Matrix, Sammelaktionen), Regel-Fakten, Befund-Nachweise und Übersicht, Avis-Einlesen, Avisierungs-Training, KI-Einstellungen, Sammel-PDF-Qualität, Kunden, Eingangskanäle, Gruppeninbox, neue Akte aus dem Posteingang (rund 600 Texte).
+* Sprache: Beim Start wird die Sprache des Benutzers geladen, bevor Menü und Einstellungsseiten aufgebaut werden. Bisher entstanden diese Teile in der Standardsprache (Englisch) und blieben nach dem Laden der deutschen Sprache zum Teil englisch.
 * Englische Oberfläche, elfter Teil: Der Rest von `app.js` – Sammel-PDF aufteilen und vortrainieren, SWIFT-Training und Dokumentenerkennung, Dokumentenposteingang (Dialoge, Rückfragen, Meldungen), Importvorschau, Firmenverwaltung, Vorlagen, Zwei-Faktor, Freigabestufen, Rollen, E-Mail-Dialog, Aufgaben und Monitoring (rund 450 Texte). Die Audit-Bezeichnungen waren bereits übersetzt.
 * Englische Oberfläche, zehnter Teil: Dokumentweise Prüfung (Dialog, Unstimmigkeitsmeldung, Abschluss, fehlende Angaben), Prüfungsassistent (alle sieben Schritte mit Beschreibungen) und die Vorlagen des Prüfvermerks. Außerdem erscheint der Menüpunkt „Mandant“ und alle Texte der Mandantenseite jetzt auch nach dem Sprachwechsel in der gewählten Sprache (stand zuvor auf „Tenant“).
 * LC-Prüfkontext: „LC tatsächlich übertragen?“ wird auf „nein“ vorbelegt, wenn Feld :40A: das Akkreditiv nicht als übertragbar (TRANSFERABLE) kennzeichnet; damit entfallen die Rückfragen nach einem zweiten Begünstigten. Bei übertragbaren Akkreditiven bleibt die Angabe offen.

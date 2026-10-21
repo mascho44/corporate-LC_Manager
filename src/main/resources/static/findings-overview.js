@@ -2,10 +2,10 @@
    and a bulk decision for the open warnings of the current selection. */
 (() => {
  const KINDS = [
-  [/^Regel verletzt/i, 'Regel verletzt'],
-  [/^Manuelle fachliche Prüfung erforderlich/i, 'Manuelle Prüfung nötig'],
-  [/^Regel nicht prüfbar/i, 'Nicht prüfbar (Angaben fehlen)'],
-  [/^Interne Regel/i, 'Interne Regel']
+  [/^Regel verletzt/i, tx('fol.202529','Regel verletzt')],
+  [/^Manuelle fachliche Prüfung erforderlich/i, tx('fol.cbf14e','Manuelle Prüfung nötig')],
+  [/^Regel nicht prüfbar/i, tx('fol.223c6e','Nicht prüfbar (Angaben fehlen)')],
+  [/^Interne Regel/i, tx('fol.d106b1','Interne Regel')]
  ];
  /** Kind of a finding, read from the outcome label the rule engine puts in front of the message. */
  function kindOf(message) { const m = String(message || ''); const hit = KINDS.find(([re]) => re.test(m)); return hit ? hit[1] : 'Sonstige'; }
@@ -56,7 +56,7 @@
   return { row, code, severity: row.dataset.findingSeverity, decided: row.dataset.findingDecided === 'true', document: document_, kind: kindOf(message),
    fingerprint: decision?.dataset.checkFingerprint || '', labels: { code: ruleLabel(message) || title || code, document: document_, kind: kindOf(message) } };
  };
- const GROUPS = [['kind', 'Art'], ['document', 'Dokument'], ['code', 'Regel']];
+ const GROUPS = [['kind', tx('fol.978d7d','Art')], ['document', tx('fol.160f00','Dokument')], ['code', tx('fol.9e5c87','Regel')]];
  const COLLAPSED = 10;
 
  function enhance(bar) {
@@ -68,10 +68,10 @@
   bar.dataset.overview = '1';
   const panel = node('div', undefined, 'finding-filters');
   const tools = node('div', undefined, 'finding-tools');
-  const compact = node('button', 'Kompakte Liste'); compact.type = 'button'; compact.className = 'secondary';
+  const compact = node('button', tx('fol.71a891','Kompakte Liste')); compact.type = 'button'; compact.className = 'secondary';
   compact.setAttribute('aria-pressed', 'true'); list.classList.add('findings-compact');
-  compact.onclick = () => { const on = list.classList.toggle('findings-compact'); compact.setAttribute('aria-pressed', String(on)); compact.textContent = on ? 'Kompakte Liste' : 'Ausführliche Liste'; };
-  const reset = node('button', 'Auswahl aufheben'); reset.type = 'button'; reset.className = 'secondary'; reset.hidden = true;
+  compact.onclick = () => { const on = list.classList.toggle('findings-compact'); compact.setAttribute('aria-pressed', String(on)); compact.textContent = on ? tx('fol.71a891','Kompakte Liste') : tx('fol.eb0ef9','Ausführliche Liste'); };
+  const reset = node('button', tx('fol.d6d42d','Auswahl aufheben')); reset.type = 'button'; reset.className = 'secondary'; reset.hidden = true;
   const bulk = node('button', ''); bulk.type = 'button'; bulk.className = 'secondary'; bulk.hidden = true;
   tools.append(compact, reset, bulk);
   // The filter bar must stay directly in front of the list: the existing filter code finds the list as its next sibling.
@@ -79,7 +79,7 @@
   const filters = { kind: '', document: '', code: '' };
 
   // Findings that only say "data missing" are bundled per document into one collapsed line instead of a long run of rows.
-  const NOT_CHECKABLE = KINDS.find(([re]) => re.test('Regel nicht prüfbar'))[1];
+  const NOT_CHECKABLE = KINDS.find(([re]) => re.test(tx('fol.ca1b9b','Regel nicht prüfbar')))[1];
   const groups = [];
   const bundles = new Map();
   rows.filter(r => r.kind === NOT_CHECKABLE).forEach(r => { const l = bundles.get(r.document) || []; l.push(r); bundles.set(r.document, l); });
@@ -89,13 +89,13 @@
    const summary = node('summary'); details.append(summary);
    members[0].row.before(details);
    members.forEach(m => details.append(m.row));
-   groups.push({ details, summary, members, name: document_ || 'Dokument' });
+   groups.push({ details, summary, members, name: document_ || tx('fol.160f00','Dokument') });
   });
   const updateGroups = () => groups.forEach(g => {
    const visible = g.members.filter(m => !m.row.classList.contains('hidden')).length;
    const openCount = g.members.filter(m => open(m) && !m.row.classList.contains('hidden')).length;
    g.details.classList.toggle('hidden', visible === 0);
-   g.summary.textContent = `${g.name}: ${visible} Angaben zur Prüfung fehlen${openCount !== visible ? ` (${openCount} offen)` : ''}`;
+   g.summary.textContent = tx('fot.missing','{name}: {n} Angaben zur Prüfung fehlen{open}',{name:g.name,n:visible,open:openCount !== visible ? tx('fot.nOpen',' ({n} offen)',{n:openCount}) : ''});
   });
 
   let apply = () => {
@@ -103,12 +103,12 @@
    updateGroups();
    const visible = rows.filter(r => !r.row.classList.contains('hidden')).length;
    const selected = Object.entries(filters).filter(([, v]) => v).map(([d, v]) => rows.find(r => r[d] === v)?.labels[d] || v);
-   const count = bar.querySelector('[data-review-count]'); if (count) count.textContent = `${visible} von ${rows.length} Befunden${selected.length ? ' · ' + selected.join(' · ') : ''} · Gesamtbewertung unverändert`;
+   const count = bar.querySelector('[data-review-count]'); if (count) count.textContent = tx('fot.804832','{p0} von {p1} Befunden{p2} · Gesamtbewertung unverändert',{p0:visible,p1:rows.length,p2:selected.length ? ' · ' + selected.join(' · ') : ''});
    panel.querySelectorAll('select[data-dimension]').forEach(sel => { sel.value = filters[sel.dataset.dimension] || ''; });
    reset.hidden = !selected.length;
    const targets = bulkTargets(rows, filters).filter(r => !r.row.classList.contains('hidden'));
    bulk.hidden = !(targets.length >= 2 && typeof can === 'function' && can('DOCUMENT_REVIEW'));
-   bulk.textContent = `Alle ${targets.length} offenen Hinweise der Auswahl als erfüllt bestätigen`;
+   bulk.textContent = tx('fot.82a58a','Alle {p0} offenen Hinweise der Auswahl als erfüllt bestätigen',{p0:targets.length});
   };
   const refilter = event => { if (event.target.matches?.('[data-review-filter],[data-review-search]') && bar.contains(event.target)) apply(); };
   document.addEventListener('input', refilter); document.addEventListener('change', refilter);
@@ -119,13 +119,13 @@
    if (!entries.length || (dimension !== 'code' && entries.length < 2)) return;
    const group = node('label', undefined, 'finding-select'); group.append(node('span', title + ':', 'finding-chip-title'));
    const select = node('select'); select.dataset.dimension = dimension; select.setAttribute('aria-label', `Offene Befunde nach ${title}`);
-   const all = node('option', `Alle (${entries.reduce((n, e) => n + e.open, 0)})`); all.value = ''; select.append(all);
+   const all = node('option', tx('fot.946a0a','Alle ({p0})',{p0:entries.reduce((n, e) => n + e.open, 0)})); all.value = ''; select.append(all);
    entries.forEach(e => { const o = node('option', `${e.label.length > 60 ? e.label.slice(0, 57) + '…' : e.label} (${e.open})`); o.value = e.key; o.title = `${e.label} · ${e.warnings} Hinweise, ${e.discrepancies} Abweichungen offen`; select.append(o); });
    select.onchange = () => { filters[dimension] = select.value; bar.querySelector('[data-review-filter]')?.dispatchEvent(new Event('change', { bubbles: true })); apply(); };
    group.append(select);
    panel.append(group);
   });
-  if (!panel.children.length) panel.append(node('small', 'Keine offenen Hinweise.'));
+  if (!panel.children.length) panel.append(node('small', tx('fol.30c072','Keine offenen Hinweise.')));
 
   list.addEventListener('click', event => {
    const row = event.target.closest('.check'); if (!row || !list.classList.contains('findings-compact')) return;
@@ -137,11 +137,11 @@
   const confirmTargets = async (targets, button) => {
    if (targets.length < 1 || typeof activeLc === 'undefined' || !activeLc) return;
    const kinds = [...new Set(targets.map(t => t.kind))].join(', ');
-   const comment = await globalThis.LcReviewNote.ask({ decision: 'ACCEPTED', required: true, title: `${targets.length} Hinweise bestätigen`, text: `Pflichtbegründung für ${targets.length} Hinweise (${kinds}). Sie gilt für alle und wird je Befund protokolliert.` });
+   const comment = await globalThis.LcReviewNote.ask({ decision: 'ACCEPTED', required: true, title: tx('fot.e9aba3','{p0} Hinweise bestätigen',{p0:targets.length}), text: tx('fot.4ec1af','Pflichtbegründung für {p0} Hinweise ({p1}). Sie gilt für alle und wird je Befund protokolliert.',{p0:targets.length,p1:kinds}) });
    if (comment === null) return;
-   if (!comment.trim()) { alert('Bitte eine Begründung eingeben. Es wurde nichts gespeichert.'); return; }
-   if (comment.length > 1000) { alert('Die Begründung darf maximal 1000 Zeichen enthalten.'); return; }
-   if (typeof confirmAction === 'function' && !await confirmAction(`${targets.length} Hinweise (${kinds}) als erfüllt bestätigen? Abweichungen sind nicht betroffen.`)) return;
+   if (!comment.trim()) { alert(tx('fol.4f2a03','Bitte eine Begründung eingeben. Es wurde nichts gespeichert.')); return; }
+   if (comment.length > 1000) { alert(tx('fol.2b5816','Die Begründung darf maximal 1000 Zeichen enthalten.')); return; }
+   if (typeof confirmAction === 'function' && !await confirmAction(tx('fot.26522b','{p0} Hinweise ({p1}) als erfüllt bestätigen? Abweichungen sind nicht betroffen.',{p0:targets.length,p1:kinds}))) return;
    const lcId = activeLc.id; let done = 0, failed = 0;
    button.disabled = true;
    for (const t of targets) {
@@ -149,7 +149,7 @@
     catch (error) { failed++; }
    }
    button.disabled = false;
-   if (failed) alert(`${done} bestätigt, ${failed} konnten nicht gespeichert werden (z. B. geändert seit dem Laden). Bitte Prüfung neu laden.`);
+   if (failed) alert(tx('fot.7521e6','{p0} bestätigt, {p1} konnten nicht gespeichert werden (z. B. geändert seit dem Laden). Bitte Prüfung neu laden.',{p0:done,p1:failed}));
    if (typeof activeLc !== 'undefined' && activeLc?.id === lcId) await (typeof refreshReviewInline === 'function' ? refreshReviewInline : showKeepingView)(lcId);
   };
   bulk.onclick = () => confirmTargets(bulkTargets(rows, filters).filter(r => !r.row.classList.contains('hidden')), bulk);
@@ -158,14 +158,14 @@
   if (typeof can === 'function' && can('DOCUMENT_REVIEW')) {
    const pickable = rows.filter(r => r.severity === 'WARNING' && !r.decided);
    pickable.forEach(r => {
-    const box = node('input', undefined, 'finding-pick'); box.type = 'checkbox'; box.setAttribute('aria-label', 'Befund zur Sammelbestätigung auswählen');
+    const box = node('input', undefined, 'finding-pick'); box.type = 'checkbox'; box.setAttribute('aria-label', tx('fol.557d8e','Befund zur Sammelbestätigung auswählen'));
     r.row.prepend(box); r.pick = box;
    });
    if (pickable.length >= 2) {
-    const selectAll = node('button', 'Alle sichtbaren Hinweise auswählen'); selectAll.type = 'button'; selectAll.className = 'secondary';
+    const selectAll = node('button', tx('fol.c93028','Alle sichtbaren Hinweise auswählen')); selectAll.type = 'button'; selectAll.className = 'secondary';
     const confirmPicked = node('button', ''); confirmPicked.type = 'button'; confirmPicked.hidden = true;
     const picked = () => pickable.filter(r => r.pick.checked && !r.row.classList.contains('hidden'));
-    const update = () => { const n = picked().length; confirmPicked.hidden = n === 0; confirmPicked.textContent = `${n} ausgewählte Hinweise als erfüllt bestätigen`; };
+    const update = () => { const n = picked().length; confirmPicked.hidden = n === 0; confirmPicked.textContent = tx('fot.5ffc9f','{p0} ausgewählte Hinweise als erfüllt bestätigen',{p0:n}); };
     list.addEventListener('change', event => { if (event.target.matches?.('.finding-pick')) update(); });
     selectAll.onclick = () => { const visible = pickable.filter(r => !r.row.classList.contains('hidden')); const all = visible.every(r => r.pick.checked); visible.forEach(r => { r.pick.checked = !all; }); update(); };
     confirmPicked.onclick = () => confirmTargets(picked(), confirmPicked);

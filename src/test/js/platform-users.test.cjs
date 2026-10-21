@@ -1,6 +1,6 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const root=path.resolve(__dirname,'../../main/resources/static/');
-function load(){const context=vm.createContext({});context.globalThis=context;vm.runInContext(fs.readFileSync(path.join(root,'platform-users.js'),'utf8'),context);return context.LcPlatformUsers;}
+function load(){const context=vm.createContext({tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(m,k)=>values[k]??m),});context.globalThis=context;vm.runInContext(fs.readFileSync(path.join(root,'platform-users.js'),'utf8'),context);return context.LcPlatformUsers;}
 const U=load();
 const eq=(a,b)=>assert.equal(JSON.stringify(a),JSON.stringify(b)); // arrays from the vm context have another prototype
 const T1='t-1',T2='t-2',HOME=U.DEFAULT_TENANT;

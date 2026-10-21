@@ -5,7 +5,7 @@ function setup(failed=false){
  for(const selector of ['img','[data-status]','[data-prev]','[data-next]','[data-retry]','[data-page]','[data-zoom]'])nodes[selector]={textContent:'',disabled:false,classList:{toggle:()=>true}};
  Object.defineProperty(nodes.img,'src',{set(value){this.url=value;this.onload?.();}});
  const container={querySelector:s=>nodes[s]};
- const context=vm.createContext({AbortController,encodeURIComponent,URL:{createObjectURL:()=>`blob:page-${calls.length}`,revokeObjectURL:url=>revoked.push(url)},fetch:async url=>{calls.push(url);return {ok:!failed,status:failed?503:200,headers:{get:name=>name==='Content-Type'?'image/png':'3'},blob:async()=>({})};}});
+ const context=vm.createContext({tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(m,k)=>values[k]??m),AbortController,encodeURIComponent,URL:{createObjectURL:()=>`blob:page-${calls.length}`,revokeObjectURL:url=>revoked.push(url)},fetch:async url=>{calls.push(url);return {ok:!failed,status:failed?503:200,headers:{get:name=>name==='Content-Type'?'image/png':'3'},blob:async()=>({})};}});
  vm.runInContext(source.slice(source.indexOf('async function renderFindingPdf('),source.indexOf("document.addEventListener('click'")),context);
  return {run:()=>context.renderFindingPdf(dialog,container,'synthetic',1),dialog,nodes,calls,revoked};
 }
@@ -24,7 +24,7 @@ function setupMark(saved){
  nodes['[data-mark-clear]'].hidden=true;
  Object.defineProperty(nodes.img,'src',{set(value){this.url=value;this.hidden=false;this.onload?.();}});
  const container={querySelector:s=>nodes[s]};
- const context=vm.createContext({document:{createElement:()=>element()},AbortController,encodeURIComponent,URL:{createObjectURL:()=>`blob:page-${calls.length}`,revokeObjectURL:()=>{}},fetch:async url=>{calls.push(url);return {ok:true,status:200,headers:{get:name=>name==='Content-Type'?'image/png':'3'},blob:async()=>({})};}});
+ const context=vm.createContext({tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(m,k)=>values[k]??m),document:{createElement:()=>element()},AbortController,encodeURIComponent,URL:{createObjectURL:()=>`blob:page-${calls.length}`,revokeObjectURL:()=>{}},fetch:async url=>{calls.push(url);return {ok:true,status:200,headers:{get:name=>name==='Content-Type'?'image/png':'3'},blob:async()=>({})};}});
  vm.runInContext(source.slice(source.indexOf('async function renderFindingPdf('),source.indexOf("document.addEventListener('click'")),context);
  return {run:()=>context.renderFindingPdf(dialog,container,'doc-1',1,[],saved),dialog,nodes};
 }

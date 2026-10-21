@@ -13,7 +13,7 @@ function setup(pages=3,marked=[2],withLc=false){
  Object.defineProperty(nodes.img,'src',{set(v){this.url=v;this.onload?.();}});
  const dialog={open:true,onclose:null,addEventListener:(t,f)=>{listeners[t]=f;},removeEventListener:(t)=>{delete listeners[t];}};
  const container={querySelector:s=>nodes[s]};
- const context=vm.createContext({AbortController,encodeURIComponent,document:{createElement:el},URL:{createObjectURL:()=>'blob:x',revokeObjectURL(){}},
+ const context=vm.createContext({tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(m,k)=>values[k]??m),AbortController,encodeURIComponent,document:{createElement:el},URL:{createObjectURL:()=>'blob:x',revokeObjectURL(){}},
   ...(withLc?{activeLc:{id:'lc-1'}}:{}),
   fetch:async url=>{calls.push(url);if(String(url).includes('finding-pages'))return {ok:true,json:async()=>[{page:3,count:2,severity:'DISCREPANCY'},{page:2,count:1,severity:'WARNING'}]};return {ok:true,status:200,headers:{get:n=>n==='Content-Type'?'image/png':String(pages)},blob:async()=>({})};}});
  vm.runInContext(source.slice(source.indexOf('async function renderFindingPdf('),source.indexOf("document.addEventListener('click'")),context);

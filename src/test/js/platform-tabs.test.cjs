@@ -1,6 +1,6 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const source=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/platform-tabs.js'),'utf8');
-const context=vm.createContext({globalThis:{}});context.globalThis=context;vm.runInContext(source,context);
+const context=vm.createContext({tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(m,k)=>values[k]??m),globalThis:{}});context.globalThis=context;vm.runInContext(source,context);
 const tabs=context.LcPlatformTabs;
 test('summary counts tenants, accounts and invitations and flags problems',()=>{
  const result=tabs.summarize(
