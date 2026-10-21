@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Server-Log: Symbole, die Browser von selbst anfragen (`/favicon.ico`, `/apple-touch-icon*.png`, `/robots.txt`), sind ohne Anmeldung erreichbar (Antwort 404 statt 401) und erzeugen keine ACCESS_DENIED-Warnung mehr.
 * Plattformadministration: Das Ansehen des Server-Logs wird im Audit-Protokoll vermerkt (`SERVER_LOG_VIEWED`, höchstens einmal je Benutzer und zehn Minuten, damit die automatische Aktualisierung das Protokoll nicht füllt).
 * Plattformadministration: Das Protokoll ist eine kompakte Tabelle (Zeit, Aktion mit lesbarer Bezeichnung statt Code, Mandant, Benutzer, Objekt, Ergebnis; Fehlschläge hell rot) statt großer Zeilen. Anonyme Aufrufe der Startseite (Erreichbarkeitsprüfung alle 5 Minuten) werden nicht mehr als Warnung „ACCESS_DENIED“ protokolliert.
 * Plattformadministration: Neuer Reiter „Server-Log“ mit den letzten 2000 Ereignissen des laufenden Servers (Stufenfilter, Suche, Zeilenzahl, automatische Aktualisierung alle 5 Sekunden, Download als Textdatei). Passwörter und Tokens werden maskiert, nichts wird auf die Platte geschrieben; für ältere Einträge bleibt das Container-Log. Nur für Plattformadministratoren mit Zwei-Faktor-Anmeldung (`GET /api/platform/server-log`).
