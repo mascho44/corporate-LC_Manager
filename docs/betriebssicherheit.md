@@ -60,6 +60,18 @@ prüft das PostgreSQL-Archiv und veröffentlicht erst dann die fertige Sicherung
 Fehler hinterlassen keinen vermeintlich gültigen Dump. Lokale Dumps bleiben
 unverschlüsselt, mit Dateirechten 600.
 
+### Tägliche lokale Sicherung (eingerichtet)
+
+Auf dem Produktivserver läuft täglich um 03:30 Uhr (Cron des Benutzers `administrator`):
+
+```
+30 3 * * * PATH=/usr/local/bin:/usr/bin:/bin BACKUP_KEEP=30 /home/administrator/corporate-lc-manager/scripts/backup-prod.sh >> /home/administrator/lcm-backup.log 2>&1
+```
+
+Die Sicherung ist verschlüsselt (`.dump.enc`), weil die Passwortdatei `~/.lcm-backup-passphrase` vorhanden ist (siehe `datenbank-rollen.md`). `BACKUP_KEEP=30` behält die 30 neuesten Sicherungen und löscht die älteren; ohne die Variable wird nichts gelöscht. Auch jeder Deploy erzeugt eine Sicherung. Die Wiederherstellung wird mit `scripts/test-backup-restore.sh` geprüft.
+
+**Grenze:** Diese Sicherungen liegen auf demselben Server wie die Datenbank. Ohne Offsite-Ziel (`backup-offsite.sh`, siehe unten) schützen sie nicht vor Verlust des Servers oder der Platte. Das Offsite-Ziel ist noch nicht eingerichtet.
+
 `backup-offsite.sh` erstellt einen frischen Dump und sichert diesen sowie die
 private Betriebskonfiguration mittels Restic verschlüsselt:
 
