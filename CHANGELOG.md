@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* LC-Prüfkontext: „LC tatsächlich übertragen?“ wird auf „nein“ vorbelegt, wenn Feld :40A: das Akkreditiv nicht als übertragbar (TRANSFERABLE) kennzeichnet; damit entfallen die Rückfragen nach einem zweiten Begünstigten. Bei übertragbaren Akkreditiven bleibt die Angabe offen.
 * LC-Prüfkontext: Mehr wird automatisch vorbefüllt (weiterhin „aus OCR, unbestätigt“, bis gespeichert wird): UCP-600-Standardwerte (Vorlagefrist 21 Tage, Versicherungsdeckung 110 %, nur bei UCP 600 und wenn die Nachricht nichts anderes sagt), Beträge (beanspruchter Betrag, Bruttowarenwert, CIF-/CIP-Wert; die Versicherungsbasis leitet die Prüfung daraus ab) aus der einzigen Handelsrechnung der Akte in LC-Währung, Anzahl (ausgestellter) Originale auch bei Nicht-Transportdokumenten. Das Vorbefüllen läuft jetzt auch beim Hochladen eines Dokuments, beim „Bedingungen neu aus SWIFT einlesen“ und einmalig täglich nachträglich für Akten, deren Prüfdaten nie angefasst wurden.
 * Dokumentweise Prüfung: Fehlende LC-Angaben erscheinen mit den deutschen Feldbezeichnungen (die Bezeichnungen wurden nur im Prüfungsassistenten geladen, sonst stand der englische Feldcode da); in der englischen Oberfläche steht der lesbar gemachte Feldcode.
 * Prüfungsassistent: Ein als „erledigt“ vermerkter Schritt mit wieder offenen Punkten wird als Warnung angezeigt (statt als Häkchen), der Abschluss-Schritt nennt die Schritte mit offenen Punkten als Sprungknöpfe; „1 Befund“ statt „1 Befunde“.
