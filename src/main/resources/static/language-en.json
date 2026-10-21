@@ -2623,6 +2623,7 @@
   "po.user": "User",
   "po.object": "Object",
   "po.result": "Result",
+  "audit.act.SERVER_LOG_VIEWED": "Server log viewed",
   "ak.openSection": "Open {title}",
   "ak.duplicates": "Check identical document files",
   "ak.recent": "Recent activity",
