@@ -118,7 +118,7 @@ public class RuleFactsController {
  @GetMapping("/rule-facts/suggestions") @Transactional(readOnly=true)
  public SuggestionOverview allSuggestions(@PathVariable UUID lcId){
   var lc=lcs.findById(lcId).orElseThrow();
-  var lcSuggestions=lcSuggester==null?List.<DocumentFactSuggester.Suggestion>of():lcSuggester.suggest(lc);
+  var lcSuggestions=lcSuggester==null?List.<DocumentFactSuggester.Suggestion>of():lcSuggester.suggest(lc,documents.findByLetterOfCreditIdOrderByUploadedAtDesc(lcId));
   var perDocument=new ArrayList<DocumentSuggestions>();int total=lcSuggestions.size();
   if(suggester!=null)for(var doc:documents.findByLetterOfCreditIdOrderByUploadedAtDesc(lcId)){
    var found=suggester.suggest(doc);if(found.isEmpty())continue;
@@ -136,7 +136,11 @@ public class RuleFactsController {
    var merged=new EnumMap<Field,String>(Field.class);merged.putAll(RuleFacts.read(lc.getRuleFactsJson()));int before=merged.size();
    for(var s:overview.lc())if(blank(merged.get(s.field())))merged.put(s.field(),s.value());
    lcFields=merged.size()-before;
-   if(lcFields>0)updateLc(lcId,merged,auth);
+   if(lcFields>0){
+    var filled=new java.util.LinkedHashSet<String>();for(var s:overview.lc())if(merged.containsKey(s.field())&&s.value().equals(merged.get(s.field())))filled.add(s.field().name());
+    updateLc(lcId,merged,auth);
+    var auto=AutoRuleFacts.read(lc.getAutoRuleFacts());auto.addAll(filled);lc.setAutoRuleFacts(AutoRuleFacts.write(auto));lcs.save(lc); // proposals stay marked "unconfirmed" until a person saves
+   }
   }
   for(var entry:overview.documents()){
    var doc=documentInLc(lcId,entry.documentId());
