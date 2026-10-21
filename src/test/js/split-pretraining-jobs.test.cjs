@@ -2,7 +2,7 @@ const test=require('node:test'),assert=require('node:assert/strict'),vm=require(
 const source=fs.readFileSync('src/main/resources/static/app.js','utf8');
 function setup(failed=false){
  const button={disabled:false},status={textContent:'',setAttribute(){}},file={name:'synthetic.pdf'},picker={files:[file],click(){}};let calls=[],opened=null;
- const context=vm.createContext({document:{createElement:()=>picker},FormData:class{append(){}},$:selector=>selector==='#openSplitPretraining'?button:status,Date,encodeURIComponent,setTimeout:callback=>callback(),json:async(url)=>{calls.push(url);return calls.length===1?{id:'job',state:'QUEUED',message:'Queued'}:failed?{id:'job',state:'FAILED',message:'OCR_TIMEOUT'}:{id:'job',state:'COMPLETED',result:{proposal:{pageCount:2},receipt:'signed'}};},openInboxSplit:async input=>{opened=input;}});
+ const context=vm.createContext({tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(m,k)=>values[k]??m),document:{createElement:()=>picker},FormData:class{append(){}},$:selector=>selector==='#openSplitPretraining'?button:status,Date,encodeURIComponent,setTimeout:callback=>callback(),json:async(url)=>{calls.push(url);return calls.length===1?{id:'job',state:'QUEUED',message:'Queued'}:failed?{id:'job',state:'FAILED',message:'OCR_TIMEOUT'}:{id:'job',state:'COMPLETED',result:{proposal:{pageCount:2},receipt:'signed'}};},openInboxSplit:async input=>{opened=input;}});
  vm.runInContext(source.slice(source.indexOf('async function openSplitPretraining('),source.indexOf('async function openInboxSplit(')),context);
  return {run:async()=>{await context.openSplitPretraining();await picker.onchange();},button,status,calls,get opened(){return opened;},file};
 }

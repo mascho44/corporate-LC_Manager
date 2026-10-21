@@ -9,7 +9,7 @@ function setup(ranges,index){
  };
  for(const [from,to] of ranges)all.push(makeRow(from,to));
  const rows={get children(){return all;},replaceChildren(){all.length=0;}};
- const context=vm.createContext({row:all[index],rows,dialog:{querySelector:()=>error},submitStatus:status,preview:{},
+ const context=vm.createContext({tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(m,k)=>values[k]??m),row:all[index],rows,dialog:{querySelector:()=>error},submitStatus:status,preview:{},
   readRange:row=>({fromPage:Number(row.fields.fromPage.value),toPage:Number(row.fields.toPage.value),documentType:row.fields.documentType.value,copyNumber:null}),
   refreshMergeButtons(){},add(part){const r=makeRow(part.fromPage,part.toPage);r.fields.documentType.value=part.documentType;all.push(r);},
   document:{createElement(){const nodes={'p':node(),'[data-confirm]':node(),'[data-cancel]':node()};return {querySelector:s=>nodes[s],remove(){panel=null;},scrollIntoView(){}};}}});

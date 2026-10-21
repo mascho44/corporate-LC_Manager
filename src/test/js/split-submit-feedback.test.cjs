@@ -6,7 +6,7 @@ function setup(ranges,fail=false){
  const error={textContent:'',focus(){}},status={textContent:''},submit={textContent:'Aufteilung bestätigen',disabled:false},message={textContent:''};
  let requests=0,closed=false;
  const rows={children:ranges.map(([from,to])=>({querySelector(selector){return {value:selector.includes('fromPage')?String(from):selector.includes('toPage')?String(to):selector.includes('documentType')?'OTHER':'',focus(){}};}}))};
- const context=vm.createContext({rows,submitStatus:status,proposal:{pageCount:4},item:{id:'synthetic'},form:{querySelectorAll(){return [];},querySelector(){return submit;}},dialog:{querySelector(){return error;},close(){closed=true;}},readDocumentCopy:()=>null,json:async()=>{requests++;if(fail)throw Error('HTTP 503');return [{},{}];},$:()=>message,loadInbox:async()=>{}});
+ const context=vm.createContext({tx:(key,de,values={})=>String(de).replace(/\{(\w+)\}/g,(m,k)=>values[k]??m),rows,submitStatus:status,proposal:{pageCount:4},item:{id:'synthetic'},form:{querySelectorAll(){return [];},querySelector(){return submit;}},dialog:{querySelector(){return error;},close(){closed=true;}},readDocumentCopy:()=>null,json:async()=>{requests++;if(fail)throw Error('HTTP 503');return [{},{}];},$:()=>message,loadInbox:async()=>{}});
  vm.runInContext('handler='+source.slice(start+'form.onsubmit='.length,end)+'};',context);
  return {run:()=>context.handler({preventDefault(){}}),error,status,submit,get requests(){return requests;},get closed(){return closed;}};
 }
