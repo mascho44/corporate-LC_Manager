@@ -1,5 +1,5 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
-const source=fs.readFileSync('src/main/resources/static/app.js','utf8');
+const source=require('./app-source.cjs')();
 test('document drafts and completeness target content sections, not navigation buttons',()=>{
  assert.doesNotMatch(source,/#detail \[data-section="(?:documents|overview)"\]/);
  assert.match(source,/#detail \.dossier-section\[data-section="documents"\]/);

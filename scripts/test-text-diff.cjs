@@ -12,7 +12,7 @@ assert.equal(context.textDiff('old','').before,'<del>old</del>');
 assert.ok(!context.textDiff('<script>','<img>').after.includes('<img>'));
 const large='word '.repeat(2000);
 assert.ok(context.textDiff(large+'old',large+'new').after.includes('<ins>new</ins>'));
-vm.runInContext(fs.readFileSync('src/main/resources/static/app.js','utf8').split('function renderInboxSuggestions')[0],context);
+vm.runInContext(fs.readFileSync('src/main/resources/static/app-inbox.js','utf8').split('function renderInboxSuggestions')[0],context);
 const amendment={beforeState:JSON.stringify({amount:'1000',rawMessage:'MT700 <unsafe>'}),afterState:JSON.stringify({amount:'1200',rawMessage:'MT700 <unsafe>'}),rawMessage:'MT707 <unsafe>'};
 const html=context.amendmentDiffHtml(amendment);
 assert.match(html,/<ins>1200<\/ins>/);

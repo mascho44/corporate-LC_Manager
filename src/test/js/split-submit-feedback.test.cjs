@@ -1,5 +1,5 @@
 const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
-const source=fs.readFileSync('src/main/resources/static/app.js','utf8');
+const source=require('./app-source.cjs')();
 const start=source.indexOf('form.onsubmit=async event=>',source.indexOf('async function openInboxSplit('));
 const end=source.indexOf('\n        };\n    }catch',start);
 function setup(ranges,fail=false){

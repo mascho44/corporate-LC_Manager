@@ -1,5 +1,5 @@
 const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const vm=require('node:vm');const path=require('node:path');
-const source=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/app.js'),'utf8');
+const source=require('./app-source.cjs')();
 function fixture(){
  const nodes=new Map(),calls=[],requests=[];let confirmation=true,allowed=true,answer=async()=>({tenantName:'Synthetic tenant',memberships:[]});
  function node(tag){let id='';const n={tag,dataset:{},children:[],textContent:'',append(...items){this.children.push(...items);},replaceChildren(...items){this.children=items;},setAttribute(key,value){this[key]=value;},before(){},remove(){nodes.delete(id);}};Object.defineProperty(n,'id',{get:()=>id,set:value=>{id=value;nodes.set(value,n);}});return n;}

@@ -1,5 +1,5 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
-const source=fs.readFileSync('src/main/resources/static/app.js','utf8');
+const source=require('./app-source.cjs')();
 function setup(ranges,index){
  const error={textContent:''},status={textContent:''},all=[];let panel=null;
  const node=()=>({textContent:'',focus(){},onclick:null});

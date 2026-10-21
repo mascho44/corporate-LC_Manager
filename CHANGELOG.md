@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Entwicklung: Die große Skriptdatei `app.js` (rund 1330 sehr lange Zeilen) ist ohne Funktionsänderung in sieben Teile nach Themen zerlegt (`app-inbox`, `app-core`, `app-review-tools`, `app-audit-training`, `app-documents`, `app-admin`, `app-workspace`) plus `app-start.js` für den Start; die Teile teilen den globalen Gültigkeitsbereich und werden in dieser Reihenfolge geladen. Der Quelltext ist Zeile für Zeile unverändert (geprüft), nur der Startaufruf steht jetzt am Ende. Tests lesen die Teile über `src/test/js/app-source.cjs`; ein Test sichert die Ladereihenfolge.
 * Aktenliste: Die Akten erscheinen sofort, die Ampeln (Prüfstatus) werden nachgeladen, sobald sie berechnet sind (bei 300 Akten bisher rund 4 Sekunden Wartezeit vor der ersten Anzeige).
 * LC-Prüfkontext: Knopf „Erkannte Angaben neu vorschlagen“ (mit LC-Bearbeitungsrecht) füllt leere Felder auch in bereits bearbeiteten Akten; die Vorschläge berücksichtigen jetzt auch die Handelsrechnung und bleiben als „unbestätigt“ markiert, bis gespeichert wird.
 * Englische Oberfläche: Beschriftungen, die beim Laden der Seite festgelegt wurden (Monatsnamen und Arten im Fristenkalender, KI-Stufen, Reiter der Plattformadministration, Filtergruppen und Arten der Befundübersicht, Kundenfelder, Eingangskanäle, Regelquelle, Änderungsstatus, CSV-Felder u. a.), richten sich jetzt nach der gewählten Sprache (`lcLazy` in `i18n.js`).

@@ -1,5 +1,5 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
-const source=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/app.js'),'utf8');
+const source=require('./app-source.cjs')();
 test('snippet blob URL stays valid so the zoom dialog can reuse it',()=>{
  const start=source.indexOf('async function loadTrainingSnippets'),end=source.indexOf('function openSnippetZoom');
  assert.ok(start>=0&&end>start);

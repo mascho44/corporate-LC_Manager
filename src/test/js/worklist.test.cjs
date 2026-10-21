@@ -19,7 +19,7 @@ test('state is not conveyed by colour alone',()=>{
 test('start page loads the worklist and its styles, and the cockpit page includes the section',()=>{
  const html=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/index.html'),'utf8');
  assert.match(html,/worklist\.js/);assert.match(html,/worklist\.css/);
- const app=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/app.js'),'utf8');
+ const app=require('./app-source.cjs')();
  assert.match(app,/cockpit:\['cockpitSection','todaySection'/);assert.match(app,/pageSections=\['platformSection','tenantSection','membersSection','ebicsSection','groupInboxSection','deadlineCalendarSection','profileSection','menuOverviewSection','cockpitSection','todaySection'/);
 });
 

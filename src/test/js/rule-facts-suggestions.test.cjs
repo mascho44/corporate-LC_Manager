@@ -32,6 +32,6 @@ test('without new proposals the user is told so and nothing is posted',async()=>
  assert.equal(s.confirmations.length,0);assert.match(s.alerts[0],/keine neuen Vorschläge/);assert.equal(s.calls.some(c=>c.method==='POST'),false);
 });
 test('the dossier review offers the button only to users who may edit documents',()=>{
- const app=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/app.js'),'utf8');
+ const app=require('./app-source.cjs')();
  assert.match(app,/can\('DOCUMENT_UPLOAD'\)\?` <button type="button" class="secondary" data-apply-suggestions>\$\{tx\('rv\.applySuggestions','Erkannte Prüfdaten übernehmen'\)\}<\/button>`:''/);
 });

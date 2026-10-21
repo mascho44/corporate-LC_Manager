@@ -11,6 +11,6 @@ test('missing input gives empty groups',()=>{
 });
 test('page loads the script and the navigation knows the section',()=>{
  assert.match(fs.readFileSync(path.join(root,'index.html'),'utf8'),/group-inbox\.js/);
- const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ const app=require('./app-source.cjs')();
  assert.match(app,/groupInbox:\['groupInboxSection'\]/);assert.match(app,/'ebicsSection','groupInboxSection'/);
 });

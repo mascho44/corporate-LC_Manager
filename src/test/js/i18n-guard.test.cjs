@@ -34,12 +34,12 @@ test('both language packs have the same keys and the same placeholders', () => {
  for (const key of Object.keys(en)) assert.equal(placeholders(en[key]), placeholders(de[key]), `Platzhalter von ${key}`);
 });
 
-test('every page that loads a script using tx() also loads i18n.js or app.js (which define it)', () => {
+test('every page that loads a script using tx() also loads i18n.js or app-inbox.js (which define it)', () => {
  const root = 'src/main/resources/static/';
  for (const page of fs.readdirSync(root).filter(f => f.endsWith('.html'))) {
   const scripts = [...fs.readFileSync(root + page, 'utf8').matchAll(/<script src="\/([\w.-]+\.js)/g)].map(m => m[1]);
-  const users = scripts.filter(name => name !== 'app.js' && name !== 'i18n.js' && /\btx\(/.test(fs.readFileSync(root + name, 'utf8')));
+  const users = scripts.filter(name => !name.startsWith('app-') && name !== 'i18n.js' && /\btx\(/.test(fs.readFileSync(root + name, 'utf8')));
   const html = fs.readFileSync(root + page, 'utf8');
-  if (users.length) assert.ok(scripts.includes('i18n.js') || scripts.includes('app.js') || scripts.includes('tx-fallback.js'), `${page}: ${users.join(', ')} use tx() but no script defines it`);
+  if (users.length) assert.ok(scripts.includes('i18n.js') || scripts.includes('app-inbox.js') || scripts.includes('tx-fallback.js'), `${page}: ${users.join(', ')} use tx() but no script defines it`);
  }
 });

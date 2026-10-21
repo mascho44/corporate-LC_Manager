@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const vm=require('node:vm');
-const source=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/app.js'),'utf8');
+const source=require('./app-source.cjs')();
 
 test('review submission sends the displayed finding fingerprint',async()=>{
   const start=source.indexOf('async function decideCheck(');

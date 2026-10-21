@@ -4,7 +4,7 @@ function fixture(items){
  const timers=[],nodes={},articles=[],created=[],calls=[];const list={prepend(){},innerHTML:'',textContent:'',querySelectorAll(selector){return selector==='[data-inbox-id]'?articles:[];},querySelector(selector){return nodes[selector]||null;},contains(){return false;}};
 const context=vm.createContext({document:{addEventListener(){},activeElement:null,createElement:tag=>{const node={tag,dataset:{},append(){},after(){},addEventListener(){},replaceChildren(){}};created.push(node);return node;}},$:selector=>selector==='#inboxList'?list:selector==='#inboxSection'?{classList:{contains:()=>false}}:nodes.message??={textContent:''},clearTimeout(){},setTimeout(fn,delay){timers.push([fn,delay]);return timers.length;},
   confirmAction:async()=>true,json:async(url,options)=>{calls.push({url,options});return url==='/api/inbox'?items:[];},renderInboxItem:item=>`item:${item.id}`,esc:String,extractionLabel:status=>status,can:()=>true});
- const source=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/app.js'),'utf8');
+ const source=require('./app-source.cjs')();
  vm.runInContext(source.slice(source.indexOf('let inboxRefreshTimer='),source.indexOf('let appNavigate=')),context);
  return {context,list,timers,nodes,articles,created,calls};
 }
@@ -29,7 +29,7 @@ test('attachment preserves per-document corrections and explicit empty metadata'
  elements.metadataReference.value='';elements.metadataAmount.value='';assert.equal(f.context.inboxAttachment({elements},'target').metadata.reference,null);assert.equal(f.context.inboxAttachment({elements},'target').metadata.amount,null);
 });
 test('learned anchor proposals are accepted and only evidenced fields are overwritten',()=>{
- const source=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/app.js'),'utf8');
+ const source=require('./app-source.cjs')();
  assert.ok(source.includes("['LEARNED_REVIEW','ANCHOR_REVIEW'].includes(proposal.status)"));
  assert.ok(source.includes("Object.hasOwn(proposal.evidence||{},key)"));
  assert.ok(source.includes('Textanker-Fundstellen aus dem neuen Beleg'));

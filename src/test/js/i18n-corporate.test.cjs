@@ -6,7 +6,7 @@ const placeholders = text => [...String(text).matchAll(/\{(\w+)\}/g)].map(m => m
 
 test('every text of the corporate workflow has German and English with the same placeholders', () => {
  for (const file of FILES) {
-  const source = fs.readFileSync(dir + file + '.js', 'utf8');
+  const source = file === 'app' ? require('./app-source.cjs')() : fs.readFileSync(dir + file + '.js', 'utf8');
   for (const [, key, german] of source.matchAll(/(?:tr|tx)\('([\w.]+)',\s*'((?:[^'\\]|\\.)*)'/g)) {
    assert.ok(key in en, `${file}: ${key} fehlt im englischen Paket`);
    assert.ok(key in de, `${file}: ${key} fehlt im deutschen Paket`);
@@ -19,7 +19,7 @@ function load(file, language) {
  const pack = language === 'en' ? en : de;
  const context = vm.createContext({ LcI18n: { language: () => language, t: (key, values = {}) => String(pack[key] ?? key).replace(/\{(\w+)\}/g, (_, n) => String(values[n] ?? `{${n}}`)) } });
  context.globalThis = context;
- vm.runInContext(fs.readFileSync(dir + file + '.js', 'utf8'), context);
+ vm.runInContext(file === 'app' ? require('./app-source.cjs')() : fs.readFileSync(dir + file + '.js', 'utf8'), context);
  return context;
 }
 
@@ -46,7 +46,7 @@ test('findings from the server show their English wording in English and the Ger
 });
 
 test('the document list and the deadline monitor read in English', () => {
- const source = fs.readFileSync(dir + 'app.js', 'utf8');
+ const source = require('./app-source.cjs')();
  const pick = name => { const start = source.indexOf(`function ${name}(`); return source.slice(start, source.indexOf('\n', start)); };
  const context = vm.createContext({ LcI18n: { language: () => 'en', t: (key, values = {}) => String(en[key] ?? key).replace(/\{(\w+)\}/g, (_, n) => String(values[n] ?? '')) }, currentUser: { role: 'VIEWER' }, can: () => false,
   esc: v => String(v ?? ''), documentRow: () => '<row>' });
@@ -69,7 +69,7 @@ test('the procurement plan and the status names read in English', () => {
 });
 
 test('the status names read in English and the header buttons use the language packs', () => {
- const source = fs.readFileSync(dir + 'app.js', 'utf8');
+ const source = require('./app-source.cjs')();
  const pick = name => { const start = source.indexOf(`function ${name}(`); return source.slice(start, source.indexOf('\n', start)); };
  for (const [language, expected] of [['en', 'Documents presented'], ['de', 'Dokumente eingereicht']]) {
   const pack = language === 'en' ? en : de;
@@ -82,7 +82,7 @@ test('the status names read in English and the header buttons use the language p
 
 test('the draft states, the charge types and the condition names exist in both languages', () => {
  for (const key of ['dr.draft', 'dr.submitted', 'dr.reviewed', 'dr.final', 'dr.title', 'lcx.type.OPENING', 'lcx.type.CONFIRMATION', 'lcx.cond.GOODS_DESCRIPTION', 'lcx.cond.APPLICABLE_RULES']) { assert.ok(key in en && key in de, key); }
- const source = fs.readFileSync(dir + 'app.js', 'utf8');
+ const source = require('./app-source.cjs')();
  const start = source.indexOf('function draftStatusLabel('), code = source.slice(start, source.indexOf('\n', start));
  const tx = source.slice(source.indexOf('function tx('), source.indexOf('\n', source.indexOf('function tx(')));
  for (const [language, pack, expected] of [['en', en, 'For review'], ['de', de, 'Zur Prüfung']]) {
@@ -93,7 +93,7 @@ test('the draft states, the charge types and the condition names exist in both l
 });
 
 test('the credit list shows deadlines and counts in English', () => {
- const source = fs.readFileSync(dir + 'app.js', 'utf8');
+ const source = require('./app-source.cjs')();
  const pick = name => { const start = source.indexOf(`function ${name}(`); return source.slice(start, source.indexOf('\n', start)); };
  const context = vm.createContext({ LcI18n: { language: () => 'en', t: (key, values = {}) => String(en[key] ?? key).replace(/\{(\w+)\}/g, (_, n) => String(values[n] ?? '')) },
   fmtDate: v => v, daysUntil: d => d == null || d === 'x' ? 99999 : Number(d) });
@@ -108,7 +108,7 @@ test('the credit list shows deadlines and counts in English', () => {
 });
 
 test('the inbox item, its preview and the suggestions render in English without leftovers', () => {
- const source = fs.readFileSync(dir + 'app.js', 'utf8');
+ const source = require('./app-source.cjs')();
  const fn = name => { const start = source.indexOf(`function ${name}(`); const rest = source.slice(start); const lines = rest.split('\n'); let depth = 0, out = [];
   for (const line of lines) { out.push(line); for (const c of line) { if (c === '{') depth++; else if (c === '}') depth--; } if (depth === 0 && out.length > 0 && /\}\s*$/.test(line)) break; } return out.join('\n'); };
  const consts = ['const inboxDocumentTypes=', 'const documentCopyOptions'].map(prefix => { const i = source.indexOf(prefix); return i < 0 ? '' : source.slice(i, source.indexOf('\n', i)); }).join('\n');
@@ -131,7 +131,7 @@ test('the inbox item, its preview and the suggestions render in English without 
 });
 
 test('the inbox toolbar and the inbox page texts exist in both languages', () => {
- const source = fs.readFileSync(dir + 'app.js', 'utf8');
+ const source = require('./app-source.cjs')();
  const start = source.indexOf('function inboxBulkToolbar('), code = source.slice(start, source.indexOf('\n', start));
  const tx = source.slice(source.indexOf('function tx('), source.indexOf('\n', source.indexOf('function tx(')));
  for (const [language, pack, expected] of [['en', en, 'Delete selected'], ['de', de, 'Ausgewählte löschen']]) {
@@ -140,12 +140,12 @@ test('the inbox toolbar and the inbox page texts exist in both languages', () =>
   const html = context.inboxBulkToolbar();
   assert.ok(html.includes(expected), language); assert.ok(!html.includes('tx(') && !html.includes('${'), language + ' leftover');
  }
- const source2 = fs.readFileSync(dir + 'app.js', 'utf8');
+ const source2 = require('./app-source.cjs')();
  for (const key of ['inbox.title', 'inbox.intro', 'inbox.refresh', 'inbox.pick', 'inbox.limits', 'inbox.upload']) { assert.ok(source2.includes(`data-i18n="${key}"`), key); assert.ok(key in en && key in de, key); }
 });
 
 test('the recognition status and the metadata block read in English', () => {
- const source = fs.readFileSync(dir + 'app.js', 'utf8');
+ const source = require('./app-source.cjs')();
  const pick = name => { const start = source.indexOf(`function ${name}(`); return source.slice(start, source.indexOf('\n', start)); };
  const context = vm.createContext({ LcI18n: { language: () => 'en', t: (key, values = {}) => String(en[key] ?? key).replace(/\{(\w+)\}/g, (_, n) => String(values[n] ?? '')) }, esc: v => String(v ?? '') });
  vm.runInContext([pick('tx'), pick('extractionLabel'), pick('inboxMetadataFields')].join('\n'), context);
@@ -158,16 +158,16 @@ test('the recognition status and the metadata block read in English', () => {
 
 test('audit events are labelled in both languages, including actions without an old label', () => {
  for (const code of ['LOGIN', 'DOCUMENT_UPLOADED', 'DOCUMENT_SET_GENERATED', 'LC_COPIED', 'DRAFT_CHECKED', 'AMENDMENT_REQUEST_CREATED', 'SUBMISSION_PACKAGE_CREATED', 'TASK_CLAIMED']) assert.ok(('audit.act.' + code) in en && ('audit.act.' + code) in de, code);
- const source = fs.readFileSync(dir + 'app.js', 'utf8');
+ const source = require('./app-source.cjs')();
  const pick = name => { const start = source.indexOf(`function ${name}(`); return source.slice(start, source.indexOf('\n', start)); };
  for (const [language, pack, expected] of [['en', en, 'Document set created'], ['de', de, 'Dokumentensatz erzeugt']]) {
   const context = vm.createContext({ LcI18n: { language: () => language, t: (key, values = {}) => String(pack[key] ?? key) }, auditLabels: { DOCUMENT_SET_GENERATED: 'x' } });
   vm.runInContext([pick('tx'), pick('auditLabel')].join('\n'), context);
   assert.equal(context.auditLabel('DOCUMENT_SET_GENERATED'), expected); assert.equal(context.auditLabel('SOMETHING_UNKNOWN'), 'SOMETHING_UNKNOWN');
  }
- const keys = [...fs.readFileSync(dir + 'app.js', 'utf8').matchAll(/tx\('([\w.]+)'/g)].map(m => m[1]);
+ const keys = [...require('./app-source.cjs')().matchAll(/tx\('([\w.]+)'/g)].map(m => m[1]);
  const missing = [...new Set(keys)].filter(key => !key.endsWith('.') && (!(key in en) || !(key in de))); // keys that end with a dot are completed at run time
- assert.deepEqual(missing, [], 'Schlüssel ohne Übersetzung in app.js');
+ assert.deepEqual(missing, [], 'Schlüssel ohne Übersetzung in den app-Teilen');
 });
 
 test('the document buttons are grouped into two menus with translated labels', () => {
