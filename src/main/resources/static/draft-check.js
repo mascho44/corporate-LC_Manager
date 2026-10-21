@@ -4,11 +4,21 @@
  const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
  const tr = (key, de, values = {}) => { const i = globalThis.LcI18n, s = i?.t ? i.t(key, values) : null; return s && s !== key ? s : String(de).replace(/\{(\w+)\}/g, (_, n) => String(values[n] ?? `{${n}}`)); };
  const english = () => globalThis.LcI18n?.language?.() === 'en';
- const TYPES = [['BILL_OF_LADING', 'Konnossement (Bill of Lading)'], ['AIR_WAYBILL', 'Luftfrachtbrief (AWB)'], ['ROAD_CONSIGNMENT_NOTE', 'CMR-Frachtbrief'],
-  ['SEA_WAYBILL', 'Seefrachtbrief'], ['MULTIMODAL_TRANSPORT_DOCUMENT', 'Multimodales Transportdokument'], ['INSURANCE_CERTIFICATE', 'Versicherungszertifikat'],
-  ['CERTIFICATE_OF_ORIGIN', 'Ursprungszeugnis'], ['INSPECTION_CERTIFICATE', 'Inspektionszertifikat'], ['QUALITY_CERTIFICATE', 'Qualitätszertifikat'],
-  ['COMMERCIAL_INVOICE', 'Handelsrechnung'], ['PACKING_LIST', 'Packliste'], ['BILL_OF_EXCHANGE', 'Tratte']];
- const typeLabel = ([value, de]) => tr('dc.type.' + value, de);
+ /** Document types a draft can be checked as; the labels are translated when the list is read, so a language change is honoured. */
+ const TYPES = () => [
+  ['BILL_OF_LADING', tr('dc.type.BILL_OF_LADING', 'Konnossement (Bill of Lading)')],
+  ['AIR_WAYBILL', tr('dc.type.AIR_WAYBILL', 'Luftfrachtbrief (AWB)')],
+  ['ROAD_CONSIGNMENT_NOTE', tr('dc.type.ROAD_CONSIGNMENT_NOTE', 'CMR-Frachtbrief')],
+  ['SEA_WAYBILL', tr('dc.type.SEA_WAYBILL', 'Seefrachtbrief')],
+  ['MULTIMODAL_TRANSPORT_DOCUMENT', tr('dc.type.MULTIMODAL_TRANSPORT_DOCUMENT', 'Multimodales Transportdokument')],
+  ['INSURANCE_CERTIFICATE', tr('dc.type.INSURANCE_CERTIFICATE', 'Versicherungszertifikat')],
+  ['CERTIFICATE_OF_ORIGIN', tr('dc.type.CERTIFICATE_OF_ORIGIN', 'Ursprungszeugnis')],
+  ['INSPECTION_CERTIFICATE', tr('dc.type.INSPECTION_CERTIFICATE', 'Inspektionszertifikat')],
+  ['QUALITY_CERTIFICATE', tr('dc.type.QUALITY_CERTIFICATE', 'Qualitätszertifikat')],
+  ['COMMERCIAL_INVOICE', tr('dc.type.COMMERCIAL_INVOICE', 'Handelsrechnung')],
+  ['PACKING_LIST', tr('dc.type.PACKING_LIST', 'Packliste')],
+  ['BILL_OF_EXCHANGE', tr('dc.type.BILL_OF_EXCHANGE', 'Tratte')]
+ ];
 
  /** The verdict on the draft: findings with what to change, discrepancies first. */
  function resultHtml(result) {
@@ -32,7 +42,7 @@
   const dialog = document.createElement('dialog'); dialog.className = 'wide-dialog draft-check-dialog'; document.body.append(dialog); dialog.onclose = () => dialog.remove();
   dialog.innerHTML = `<div class="dialoghead"><h2>${tr('dc.title', 'Entwurf prüfen')}</h2><button type="button" data-close>${tr('common.close', 'Schließen')}</button></div>` +
    `<p>${tr('dc.intro', 'Entwurf eines Dritten (zum Beispiel Konnossement vom Spediteur) vor der Ausstellung gegen das Akkreditiv prüfen. Der Entwurf wird nicht in der Akte gespeichert.')}</p>` +
-   `<label>${tr('dc.typeLabel', 'Dokumentart')}<select data-type>${TYPES.map(entry => `<option value="${entry[0]}">${esc(typeLabel(entry))}</option>`).join('')}</select></label>` +
+   `<label>${tr('dc.typeLabel', 'Dokumentart')}<select data-type>${TYPES().map(entry => `<option value="${entry[0]}">${esc(entry[1])}</option>`).join('')}</select></label>` +
    `<label>${tr('dc.file', 'Datei (PDF oder Bild)')}<input type="file" data-file accept=".pdf,image/*"></label><p data-error role="alert"></p>` +
    `<div class="dialog-actions"><button type="button" data-run>${tr('dc.run', 'Prüfen')}</button></div><div data-result aria-live="polite"></div>`;
   dialog.querySelector('[data-close]').onclick = () => dialog.close();
