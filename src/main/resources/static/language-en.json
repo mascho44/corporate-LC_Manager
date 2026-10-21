@@ -636,6 +636,7 @@
   "fs.templates": "Add document templates",
   "fs.users": "Invite more users",
   "fs.file": "Create the first LC file",
+  "dd.label": "Drop files here to upload them to the file",
   "ak.openSection": "Open {title}",
   "ak.duplicates": "Check identical document files",
   "ak.recent": "Recent activity",
