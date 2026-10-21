@@ -65,7 +65,13 @@
   const when = set.createdAt ? new Date(set.createdAt).toLocaleString(globalThis.LcI18n?.language?.() === 'en' ? 'en-GB' : 'de-DE', { dateStyle: 'short', timeStyle: 'short' }) : '';
   return tr(set.documents.length === 1 ? 'ds.previousOne' : 'ds.previousMany', set.documents.length === 1 ? 'Satz vom {when} · Rechnung {inv} · 1 Dokument' : 'Satz vom {when} · Rechnung {inv} · {n} Dokumente', { when, inv: set.request?.invoiceNumber || '–', n: set.documents.length });
  }
- globalThis.LcDocumentSet = { lineAmount, totalOf, limitMessage, requestBody, resultHtml, fromPrevious, previousLabel };
+  /** Unsent input is kept in this browser per LC file, so closing the dialog or reloading does not lose it. */
+ const DRAFT_PREFIX = 'lcm.documentSetDraft.';
+ const storage = () => { try { return globalThis.localStorage || null; } catch { return null; } };
+ function saveDraft(lcId, draft) { try { storage()?.setItem(DRAFT_PREFIX + lcId, JSON.stringify({ ...draft, savedAt: Date.now() })); } catch { /* storage full or blocked: nothing to keep */ } }
+ function loadDraft(lcId) { try { const raw = storage()?.getItem(DRAFT_PREFIX + lcId); const d = raw ? JSON.parse(raw) : null; return d && Array.isArray(d.lines) && Array.isArray(d.types) && d.state ? d : null; } catch { return null; } }
+ function clearDraft(lcId) { try { storage()?.removeItem(DRAFT_PREFIX + lcId); } catch { /* nothing to clear */ } }
+ globalThis.LcDocumentSet = { lineAmount, totalOf, limitMessage, requestBody, resultHtml, fromPrevious, previousLabel, saveDraft, loadDraft, clearDraft };
  if (typeof document === 'undefined' || !document.body) return;
 
  /** The fields of one goods line; the labels are translated when the list is read. */
@@ -123,13 +129,25 @@
      if (!body.items.length) throw new Error(tr('ds.needLine', 'Bitte mindestens eine Position angeben.'));
      if (!body.types.length) throw new Error(tr('ds.needType', 'Bitte mindestens ein Dokument wählen.'));
      const result = await json(`/api/lcs/${encodeURIComponent(lcId)}/document-set`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+     clearDraft(lcId);
      dialog.innerHTML = `<div class="dialoghead"><h2>${tr('ds.done', 'Dokumentensatz erzeugt')}</h2><button type="button" data-close>${tr('common.close', 'Schließen')}</button></div>${resultHtml(result)}${(result.replaced || []).length ? `<p class="ds-hint">${tr('ds.replaced', 'Ersetzt und gelöscht')}: ${esc(result.replaced.join(', '))}</p>` : ''}`;
      dialog.querySelector('[data-close]').onclick = async () => { dialog.close(); if (typeof show === 'function') { try { await show(lcId); } catch (ignored) { /* the list refreshes on the next visit */ } } };
     } catch (error) { dialog.querySelector('[data-error]').textContent = error.message; button.disabled = false; }
    };
   };
   const state = { format: 'docx', invoiceNumber: proposal.invoiceNumber, documentDate: proposal.documentDate, notes: '', packages: '', netWeight: '', grossWeight: '' };
+  const draft = loadDraft(lcId);
+  if (draft) { Object.assign(state, draft.state); lines = draft.lines; chosen = new Set(draft.types); }
+  const persist = () => setTimeout(() => { if (dialog.isConnected && dialog.querySelector('[data-create]')) saveDraft(lcId, { state, lines, types: [...chosen] }); }, 0);
+  dialog.addEventListener('input', persist); dialog.addEventListener('change', persist); dialog.addEventListener('click', persist);
   render();
+  if (draft) {
+   const note = document.createElement('p'); note.className = 'ds-restored'; note.setAttribute('role', 'status');
+   note.textContent = tr('ds.restored', 'Ungesendete Eingaben vom {when} wiederhergestellt.', { when: new Date(draft.savedAt).toLocaleString(globalThis.LcI18n?.language?.() === 'en' ? 'en-GB' : 'de-DE', { dateStyle: 'short', timeStyle: 'short' }) }) + ' ';
+   const discard = document.createElement('button'); discard.type = 'button'; discard.className = 'secondary'; discard.textContent = tr('ds.discardDraft', 'Verwerfen');
+   discard.onclick = () => { clearDraft(lcId); dialog.close(); open(); };
+   note.append(discard); dialog.querySelector('.dialoghead').after(note);
+  }
  }
 
  function enhance() {

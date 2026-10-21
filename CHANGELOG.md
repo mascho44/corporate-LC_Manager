@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Bedienung: Der Dialog „Dokumentensatz erzeugen“ merkt sich ungesendete Eingaben je LC-Akte im Browser (bei Schließen oder Neuladen nichts verloren, Hinweis mit „Verwerfen“); nach dem Erzeugen wird der Entwurf gelöscht. Zweisprachig.
 * Bedienung: Dateien lassen sich auf eine geöffnete LC-Akte ziehen; der Hochladen-Dialog öffnet sich mit den Dateien (nur mit Recht zum Hochladen), zweisprachig.
 * Bedienung: Checkliste „Erste Schritte“ auf der Startseite für Mandanten-Administratoren (Firmendaten, Dokumentvorlagen, weitere Benutzer, erste LC-Akte; Knöpfe springen zum Bereich, verschwindet wenn alles erledigt ist), zweisprachig.
 * Bedienung: Globale Suche mit Strg+K (Cmd+K): findet LC-Akten nach Referenz, Begünstigtem, Antragsteller, Bank und Bearbeiter, Pfeiltasten und Enter öffnen die Akte; zweisprachig.

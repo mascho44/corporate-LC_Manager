@@ -637,6 +637,8 @@
   "fs.users": "Invite more users",
   "fs.file": "Create the first LC file",
   "dd.label": "Drop files here to upload them to the file",
+  "ds.restored": "Restored unsent input from {when}.",
+  "ds.discardDraft": "Discard",
   "ak.openSection": "Open {title}",
   "ak.duplicates": "Check identical document files",
   "ak.recent": "Recent activity",
