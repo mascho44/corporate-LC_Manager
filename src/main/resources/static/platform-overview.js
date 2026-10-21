@@ -13,8 +13,13 @@ async function setupPlatformOverview(section){
   auditStatus.textContent=t('platformOverview.loading','Loading…');auditList.replaceChildren();
   const query=new URLSearchParams({limit:'200'});if(tenantFilter.value.trim())query.set('tenant',tenantFilter.value.trim());
   try{const events=await json('/api/platform/audit?'+query);
-   events.forEach(e=>{const row=document.createElement('article');row.className='membership-row';
-    row.append(node('small',new Date(e.occurredAt).toLocaleString()),node('b',e.action),node('span',e.tenantCode+' · '+e.username+(e.entityType?' · '+e.entityType:'')),node('span',e.successful?t('platformOverview.ok','OK'):t('platformOverview.failed','Failed'),'import-status '+(e.successful?'success':'rejected')));auditList.append(row);});
+   const locale=globalThis.LcI18n?.language?.()==='en'?'en-GB':'de-DE';
+   const table=document.createElement('table');table.className='pu-table platform-audit-table';
+   const head=document.createElement('tr');['po.time','po.action','po.tenant','po.user','po.object','po.result'].forEach((key,i)=>head.append(node('th',tx(key,['Zeit','Aktion','Mandant','Benutzer','Objekt','Ergebnis'][i]))));table.append(head);
+   events.forEach(e=>{const row=document.createElement('tr');if(!e.successful)row.className='failed';
+    row.append(node('td',new Date(e.occurredAt).toLocaleString(locale,{hour12:false,dateStyle:'short',timeStyle:'medium'}),'time'),node('td',tx('audit.act.'+e.action,e.action)),node('td',e.tenantCode||'–'),node('td',e.username||'–'),node('td',e.entityType||'–','muted'),node('td',e.successful?t('platformOverview.ok','OK'):t('platformOverview.failed','Failed'),'import-status '+(e.successful?'success':'rejected')));
+    table.append(row);});
+   if(events.length)auditList.append(table);
    auditStatus.textContent=events.length+' '+t('platformOverview.events','events');
   }catch(failure){auditStatus.textContent=failure.message;}
  }
