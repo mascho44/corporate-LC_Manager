@@ -636,6 +636,7 @@
   "fs.templates": "Dokumentvorlagen hinterlegen",
   "fs.users": "Weitere Benutzer einladen",
   "fs.file": "Erste LC-Akte anlegen",
+  "dd.label": "Dateien hier ablegen, um sie zur Akte hochzuladen",
   "ak.openSection": "{title} öffnen",
   "ak.duplicates": "Identische Dokumentdateien prüfen",
   "ak.recent": "Letzte Aktivitäten",

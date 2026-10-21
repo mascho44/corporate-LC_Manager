@@ -67,3 +67,7 @@ html body .global-search small{display:block;color:#667085;margin-top:6px}
 /* Erste Schritte */
 html body .first-steps{flex:1 0 100%;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0 0;padding:8px 12px;border:1px dashed #b9d0fb;border-radius:8px;background:#f8fbff}
 html body .first-steps button.done{opacity:.6}
+
+/* Dateien auf die Akte ziehen */
+html body #detail.file-drop-over{position:relative;outline:2px dashed #2f6fed;outline-offset:-4px}
+html body #detail.file-drop-over::after{content:attr(data-drop-label);position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(234,241,255,.85);color:#1d4fb8;font-weight:700;pointer-events:none}

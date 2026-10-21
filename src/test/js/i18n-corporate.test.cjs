@@ -195,3 +195,10 @@ test('first steps checklist marks done steps from readiness and file count', () 
   const done = JSON.parse(JSON.stringify(context.LcFirstSteps.steps({ companies: 1, templates: 0, activeMembers: 1 }, 2).map(s => s.done)));
   assert.deepEqual(done, [true, false, false, true]);
 });
+
+test('drag and drop only reacts to dragged files', () => {
+  const context = vm.createContext({ globalThis: null }); context.globalThis = context;
+  vm.runInContext(fs.readFileSync(dir + 'drag-drop.js', 'utf8'), context);
+  assert.equal(context.LcDragDrop.hasFiles({ dataTransfer: { types: ['text/plain', 'Files'] } }), true);
+  assert.equal(context.LcDragDrop.hasFiles({ dataTransfer: { types: ['text/uri-list'] } }), false);
+});
