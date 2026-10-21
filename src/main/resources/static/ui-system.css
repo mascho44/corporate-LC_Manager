@@ -295,3 +295,5 @@ html[data-profile="bank"] #appNavEbics{display:none!important}
 .kpi{border:1px solid var(--line,#c9d1de);border-radius:8px;padding:.5rem .7rem;background:var(--panel,transparent)}
 .kpi b{display:block;font-size:1.15rem;overflow-wrap:anywhere}.kpi small{color:var(--muted,#6b7280)}
 .kpi-hot{border-color:#c2410c}.kpi-hot b{color:#c2410c}
+.kpi-views{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:.4rem;align-items:center}.kpi-view[aria-pressed=true]{background:#1f3a5f;color:#fff;border-color:#1f3a5f}.kpi-active{color:var(--muted,#6b7280);font-size:12px}
+.kpi-filter{cursor:pointer}.kpi-filter:hover{border-color:#2f6db5}.kpi-filter:focus-visible{outline:2px solid #2f6db5;outline-offset:1px}.kpi-filter[aria-pressed=true]{outline:2px solid #2f6db5;background:#eef4fc}
