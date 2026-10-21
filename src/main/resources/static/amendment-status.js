@@ -1,7 +1,7 @@
 /* Amendments (MT707) take effect only when accepted: status per amendment, accept / reject, and the planned changes of open ones. */
 (() => {
  const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
- const STATUS = { PENDING: [tx('aml.c17b04','Offen – noch nicht wirksam'), 'pending'], ACCEPTED: [tx('aml.de73d4','Angenommen – wirksam'), 'accepted'], REJECTED: [tx('aml.50413f','Abgelehnt – ohne Wirkung'), 'rejected'] };
+ const STATUS = (globalThis.lcLazy || (f => f()))(() => ({ PENDING: [tx('aml.c17b04','Offen – noch nicht wirksam'), 'pending'], ACCEPTED: [tx('aml.de73d4','Angenommen – wirksam'), 'accepted'], REJECTED: [tx('aml.50413f','Abgelehnt – ohne Wirkung'), 'rejected'] }));
  const date = value => { try { return value ? new Intl.DateTimeFormat('de-DE').format(new Date(value)) : ''; } catch (ignored) { return String(value || ''); } };
  const when = value => String(value || '').replace('T', ' ').slice(0, 16);
  const money = value => { const n = Number(value); return Number.isFinite(n) ? new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n) : String(value); };

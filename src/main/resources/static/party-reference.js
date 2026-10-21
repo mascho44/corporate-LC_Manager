@@ -2,7 +2,7 @@
    The found address is prefilled; the referred field is shown to copy from. The original message text stays unchanged. */
 (() => {
  const REFERENCE = /\b(?:SEE|REFER(?:\s+TO)?|SIEHE|VIDE|AS\s+PER|GEM(?:AESS|ÄSS|\.))\s+(?:(?:FIELD|FLD|TAG|FELD)\s*:?\s*)?(\d{2}[A-Z]?)\b/i;
- const PARTIES = [['applicant', '50', tx('pal.1dc6a9','Auftraggeber (Applicant, :50:)')], ['beneficiary', '59', tx('pal.18eff1','Begünstigter (Beneficiary, :59:)')]];
+ const PARTIES = (globalThis.lcLazy || (f => f()))(() => ([['applicant', '50', tx('pal.1dc6a9','Auftraggeber (Applicant, :50:)')], ['beneficiary', '59', tx('pal.18eff1','Begünstigter (Beneficiary, :59:)')]]));
  const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
  /** The field a party value refers to ("47A"), or null. "SEE 47" means 47A when only that exists. */

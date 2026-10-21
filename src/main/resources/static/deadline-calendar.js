@@ -1,6 +1,6 @@
 /* Deadline calendar: month grid of LC deadlines and open tasks. Click an entry to open the file. */
 (() => {
- const KINDS = { expiry: tx('dll.708dee','Ablauf'), shipment: tx('dll.f4cc9c','Versand'), 'follow-up': tx('dll.62086a','Wiedervorlage'), presentation: tx('dll.07411f','Vorlage'), maturity: tx('dll.401535','Fälligkeit'), procurement: tx('dll.6eaac6','Beschaffung'), task: tx('dll.8c5713','Aufgabe') };
+ const KINDS = (globalThis.lcLazy || (f => f()))(() => ({ expiry: tx('dll.708dee','Ablauf'), shipment: tx('dll.f4cc9c','Versand'), 'follow-up': tx('dll.62086a','Wiedervorlage'), presentation: tx('dll.07411f','Vorlage'), maturity: tx('dll.401535','Fälligkeit'), procurement: tx('dll.6eaac6','Beschaffung'), task: tx('dll.8c5713','Aufgabe') }));
  const pad = n => String(n).padStart(2, '0');
  const iso = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;
 
@@ -26,7 +26,7 @@
  if (typeof document === 'undefined' || !document.body) return;
 
  const node = (tag, text, className) => { const n = document.createElement(tag); if (text !== undefined) n.textContent = text; if (className) n.className = className; return n; };
- const MONTHS = [tx('dll.c62224','Januar'), tx('dll.933116','Februar'), tx('dll.0666f8','März'), tx('dll.3fcf02','April'), tx('dll.9fd8e5','Mai'), tx('dll.8c15b6','Juni'), tx('dll.9d495f','Juli'), tx('dll.41ba70','August'), tx('dll.cc5d90','September'), tx('dll.43f11a','Oktober'), tx('dll.7e823b','November'), tx('dll.9c916a','Dezember')];
+ const MONTHS = (globalThis.lcLazy || (f => f()))(() => ([tx('dll.c62224','Januar'), tx('dll.933116','Februar'), tx('dll.0666f8','März'), tx('dll.3fcf02','April'), tx('dll.9fd8e5','Mai'), tx('dll.8c15b6','Juni'), tx('dll.9d495f','Juli'), tx('dll.41ba70','August'), tx('dll.cc5d90','September'), tx('dll.43f11a','Oktober'), tx('dll.7e823b','November'), tx('dll.9c916a','Dezember')]));
  let section = null, grid = null, title = null, scope = null, cursor = new Date();
 
  async function refresh() {

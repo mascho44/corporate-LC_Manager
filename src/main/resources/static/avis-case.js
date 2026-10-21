@@ -21,7 +21,7 @@
   return `<label class="avis-annex">${tx('avh.f94029','Anlage mit dem Akkreditivtext')}<select data-annex><option value="">${tx('avh.b1aeeb','keine – nur dieses Dokument')}</option>${options}</select></label>` +
    (selected ? '<p class="avis-note"><small>'+tx('avh.3078ee','Der Akkreditivtext wird aus der Anlage gelesen. Das Schreiben und die Anlage werden beide in der neuen Akte abgelegt.')+'</small></p>' : '');
  }
- const COVER_FIELDS = [['reference', tx('avl.ee4ea0','Akkreditivnummer *')], ['applicant', tx('avl.a5b681','Auftraggeber (Applicant)')], ['beneficiary', tx('avl.391339','Begünstigter')], ['amount', tx('avl.000374','Betrag')], ['currency', tx('avl.f73cd5','Währung')], ['expiryDate', tx('avl.abf7ac','Gültig bis')], ['expiryPlace', tx('avl.473390','Ort')], ['issuingBank', tx('avl.56781e','Eröffnende Bank')], ['ownBankReference', tx('avl.cf5c95','Referenz eigene Bank')], ['foreignBankReference', tx('avl.5423bb','Referenz Fremdbank')]];
+ const COVER_FIELDS = (globalThis.lcLazy || (f => f()))(() => ([['reference', tx('avl.ee4ea0','Akkreditivnummer *')], ['applicant', tx('avl.a5b681','Auftraggeber (Applicant)')], ['beneficiary', tx('avl.391339','Begünstigter')], ['amount', tx('avl.000374','Betrag')], ['currency', tx('avl.f73cd5','Währung')], ['expiryDate', tx('avl.abf7ac','Gültig bis')], ['expiryPlace', tx('avl.473390','Ort')], ['issuingBank', tx('avl.56781e','Eröffnende Bank')], ['ownBankReference', tx('avl.cf5c95','Referenz eigene Bank')], ['foreignBankReference', tx('avl.5423bb','Referenz Fremdbank')]]));
  /** Advice without credit text of its own: the data of the cover letter as an editable form to create the LC file from. */
  function coverFormHtml(cover) {
   const fields = cover?.fields || {};

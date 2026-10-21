@@ -1,7 +1,7 @@
 /* CSV import for the positions of a packing list or invoice. No fixed format: delimiter, encoding, decimal notation and column names are
    detected or chosen by the user; the column mapping is remembered per set of headers. The file never leaves the browser until the document is created. */
 (() => {
- const FIELDS = [
+ const FIELDS = (globalThis.lcLazy || (f => f()))(() => ([
   ['position', tx('pil.52f5e0','Position'), ['pos', 'position', 'item no', 'item', 'line', 'lfd', 'nr', 'no']],
   ['description', tx('pil.35bedb','Beschreibung'), ['description', 'beschreibung', 'goods', 'ware', 'warenbezeichnung', 'bezeichnung', 'artikel', 'article', 'product', 'produkt', 'material', 'text']],
   ['quantity', tx('pil.7c856a','Menge'), ['quantity', 'qty', 'menge', 'anzahl', 'stück', 'stueck', 'pieces', 'pcs']],
@@ -11,7 +11,7 @@
   ['packages', tx('pil.7d98cc','Packstücke'), ['packages', 'packstücke', 'packstuecke', 'colli', 'cartons', 'ctns', 'kartons', 'packs', 'pallets', 'paletten', 'no of packages']],
   ['netWeight', tx('pil.5544c6','Netto kg'), ['net weight', 'nettogewicht', 'netto', 'net', 'n.w.', 'nw', 'net kg']],
   ['grossWeight', tx('pil.a567c8','Brutto kg'), ['gross weight', 'bruttogewicht', 'brutto', 'gross', 'g.w.', 'gw', 'gross kg']]
- ];
+ ]));
  const NUMERIC = new Set(['quantity', 'unitPrice', 'amount', 'packages', 'netWeight', 'grossWeight']);
 
  /** UTF-8 if the bytes are valid UTF-8, otherwise Windows-1252 (typical for German Excel exports). */

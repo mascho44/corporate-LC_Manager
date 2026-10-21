@@ -1,7 +1,7 @@
 /* Optional AI support: tenant switch and non-binding hints across the documents of a file. Suggestions per document live in rule-facts.js. */
 (() => {
  const ORDER = { HIGH: 0, MEDIUM: 1, LOW: 2 };
- const LABEL = { HIGH: tx('ail.73607f','Hoch'), MEDIUM: tx('ail.f7b252','Mittel'), LOW: tx('ail.561bc1','Niedrig') };
+ const LABEL = (globalThis.lcLazy || (f => f()))(() => ({ HIGH: tx('ail.73607f','Hoch'), MEDIUM: tx('ail.f7b252','Mittel'), LOW: tx('ail.561bc1','Niedrig') }));
  /** Most serious first; unknown severities count as low. */
  function sortHints(hints) {
   return [...(hints || [])].sort((a, b) => (ORDER[a.severity] ?? 2) - (ORDER[b.severity] ?? 2));

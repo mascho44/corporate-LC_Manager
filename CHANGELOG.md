@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Englische Oberfläche: Beschriftungen, die beim Laden der Seite festgelegt wurden (Monatsnamen und Arten im Fristenkalender, KI-Stufen, Reiter der Plattformadministration, Filtergruppen und Arten der Befundübersicht, Kundenfelder, Eingangskanäle, Regelquelle, Änderungsstatus, CSV-Felder u. a.), richten sich jetzt nach der gewählten Sprache (`lcLazy` in `i18n.js`).
 * Qualitätssicherung: Neuer CI-Schritt „Browser smoke test“ startet eine synthetische Installation, öffnet Startseite, Plattformadministration, Info- und Regelpaketseite (auf Deutsch und Englisch) sowie die Anmeldeseiten in Headless-Chrome und schlägt bei ungefangenen JavaScript-Fehlern fehl (`scripts/test-browser-smoke.sh`).
 * Sprache: Nach dem Wechsel der Sprache im Profil lädt die Seite neu, damit Menü und Einstellungsseiten nicht in der alten Sprache stehen bleiben.
 * Server-Log: Symbole, die Browser von selbst anfragen (`/favicon.ico`, `/apple-touch-icon*.png`, `/robots.txt`), sind ohne Anmeldung erreichbar (Antwort 404 statt 401) und erzeugen keine ACCESS_DENIED-Warnung mehr.

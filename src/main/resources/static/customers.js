@@ -1,8 +1,8 @@
 /* Customer master (settings) and the customer block of submission letters in the inbox: what the letter says, the suggested customer, and a manual choice. */
 (() => {
  const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
- const label = { customerName: tx('cul.7c56a3','Kunde'), customerNumber: tx('cul.21ade1','Kundennummer'), accountNumber: tx('cul.6b882a','Kontonummer'), iban: 'IBAN', ibanCandidate: tx('cul.629a55','IBAN (nicht prüfbar – bitte am Original prüfen)'), bic: 'BIC',
-  lcReference: tx('cul.a4e303','Akkreditivnummer'), yourReference: tx('cul.05c3bb','Ihre Referenz'), applicant: tx('cul.affebf','Auftraggeber (Akkreditiv)'), issuingBank: tx('cul.56781e','Eröffnende Bank'), documentValue: tx('cul.87be41','Dokumentengegenwert') };
+ const label = (globalThis.lcLazy || (f => f()))(() => ({ customerName: tx('cul.7c56a3','Kunde'), customerNumber: tx('cul.21ade1','Kundennummer'), accountNumber: tx('cul.6b882a','Kontonummer'), iban: 'IBAN', ibanCandidate: tx('cul.629a55','IBAN (nicht prüfbar – bitte am Original prüfen)'), bic: 'BIC',
+  lcReference: tx('cul.a4e303','Akkreditivnummer'), yourReference: tx('cul.05c3bb','Ihre Referenz'), applicant: tx('cul.affebf','Auftraggeber (Akkreditiv)'), issuingBank: tx('cul.56781e','Eröffnende Bank'), documentValue: tx('cul.87be41','Dokumentengegenwert') }));
 
  /** The block shown for one submission letter. `customers` is the master list for the manual choice. */
  function blockHtml(entry, customers) {

@@ -1,6 +1,6 @@
 /* Regelquelle und Pack-Auswahl je Akte. Standard: wie im Mandanten eingestellt, alle aktiven Packs. */
 (() => {
- const MODES={BOTH:tx('rsl.401ffa','Beides: eingebaute Prüfungen und aktive Packs'),EMBEDDED:tx('rsl.8d2bd2','Nur eingebaute Prüfungen'),IMPORTED:tx('rsl.857f3a','Nur importierte Packs')};
+ const MODES = (globalThis.lcLazy || (f => f()))(() => ({BOTH:tx('rsl.401ffa','Beides: eingebaute Prüfungen und aktive Packs'),EMBEDDED:tx('rsl.8d2bd2','Nur eingebaute Prüfungen'),IMPORTED:tx('rsl.857f3a','Nur importierte Packs')}));
  async function openRuleSource(){
   const lcId=activeLc?.id;if(!lcId)return;
   const url='/api/lcs/'+encodeURIComponent(lcId)+'/rule-source',editable=can('LC_EDIT');
