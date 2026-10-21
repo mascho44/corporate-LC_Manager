@@ -24,9 +24,9 @@ public class AccessDenialLog {
  static String clean(String value,int max){if(value==null)return "-";String v=value.replaceAll("[\\p{Cntrl}\\s]+"," ").trim();return v.length()>max?v.substring(0,max)+"…":(v.isEmpty()?"-":v);}
 
  public void record(int status,String method,String path,String user,String tenant,String address,String reason){
-  // An anonymous visit of the start page (reachability checks, uptime monitors, browsers without session) is expected, not a refusal worth a warning.
+  // An anonymous visit of the start page or the icons a browser asks for by itself (reachability checks, browsers without session) is expected, not a refusal worth a warning.
   boolean anonymous=user==null||user.isBlank()||"-".equals(user);
-  if(status==401&&anonymous&&"GET".equalsIgnoreCase(method)&&("/".equals(path)||"/index.html".equals(path))){LOG.debug("anonymous start page visit address={}",clean(address,60));return;}
+  if(status==401&&anonymous&&"GET".equalsIgnoreCase(method)&&("/".equals(path)||"/index.html".equals(path)||"/favicon.ico".equals(path)||"/robots.txt".equals(path)||path.startsWith("/apple-touch-icon"))){LOG.debug("anonymous start page visit address={}",clean(address,60));return;}
   long now=System.currentTimeMillis();String shown=clean(path,200);
   String key=clean(user,100)+"|"+method+"|"+shape(shown)+"|"+status+"|"+clean(reason,80);
   if(seen.size()>MAX_KEYS)seen.entrySet().removeIf(e->now-e.getValue()[0]>WINDOW_MS);
