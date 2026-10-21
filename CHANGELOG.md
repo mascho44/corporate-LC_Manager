@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Englische Oberfläche, neunter Teil: Audit-Ereignisse im Verlauf und im Protokoll (130 Bezeichnungen, bisher fehlten für rund 55 Ereignisse Bezeichnungen und sie erschienen als Rohcode), Menü-Übersichten (Firmen, Vorlagen, Benutzer, Protokoll, Verbindungssicherheit, Passwort, Zwei-Faktor, Freigabestufen), Prüfentscheidungen und ihre Historie, Meldungen im Posteingang und im Arbeitsplatz-Bereich, Amendment-Vergleich.
 * Englische Oberfläche, achter Teil: Dokumentenposteingang (Kopf, Hochladen, Dateizeilen, Zuordnungsformular, vorgeschlagene Akten und Dokumenttypen, Vorschau, Sammelaktionen, Lade-, Leer- und Fehlermeldungen) sowie der Dialog „Dokumentdaten bearbeiten“ sind zweisprachig. Aufteilen, Layoutlernen und Metadatenkorrektur folgen.
 * Englische Oberfläche, siebter Teil: Formular „Dokument erstellen“ mit Positionen, Aktenliste (Zeilen, Fristentexte, Zähler, Filter, Sortierung, leere Liste) und die Startseiten-Kennzahlen sind zweisprachig.
 * Englische Oberfläche, sechster Teil: Die Dialoge „LC-Bedingungen“ und „Gebühren & Provisionen“ (Bedingungsnamen, Tarifprofile, Schätzungen) sowie der Bereich „Dokumententwürfe“ (Status, Freigabe-Ablauf, Knöpfe, Meldungen) sind zweisprachig.

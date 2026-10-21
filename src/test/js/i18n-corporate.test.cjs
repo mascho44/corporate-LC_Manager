@@ -155,3 +155,17 @@ test('the recognition status and the metadata block read in English', () => {
  for (const text of ['Check and correct metadata', 'LC reference in the document', 'Recognised – check', 'Not recognised / uncertain', 'Save working state', 'Confirm layout & learn', 'Show evidence']) assert.ok(html.includes(text), text);
  assert.ok(!/prüfen|Bearbeitungsstand|Fundstellen/.test(html), 'German leftover');
 });
+
+test('audit events are labelled in both languages, including actions without an old label', () => {
+ for (const code of ['LOGIN', 'DOCUMENT_UPLOADED', 'DOCUMENT_SET_GENERATED', 'LC_COPIED', 'DRAFT_CHECKED', 'AMENDMENT_REQUEST_CREATED', 'SUBMISSION_PACKAGE_CREATED', 'TASK_CLAIMED']) assert.ok(('audit.act.' + code) in en && ('audit.act.' + code) in de, code);
+ const source = fs.readFileSync(dir + 'app.js', 'utf8');
+ const pick = name => { const start = source.indexOf(`function ${name}(`); return source.slice(start, source.indexOf('\n', start)); };
+ for (const [language, pack, expected] of [['en', en, 'Document set created'], ['de', de, 'Dokumentensatz erzeugt']]) {
+  const context = vm.createContext({ LcI18n: { language: () => language, t: (key, values = {}) => String(pack[key] ?? key) }, auditLabels: { DOCUMENT_SET_GENERATED: 'x' } });
+  vm.runInContext([pick('tx'), pick('auditLabel')].join('\n'), context);
+  assert.equal(context.auditLabel('DOCUMENT_SET_GENERATED'), expected); assert.equal(context.auditLabel('SOMETHING_UNKNOWN'), 'SOMETHING_UNKNOWN');
+ }
+ const keys = [...fs.readFileSync(dir + 'app.js', 'utf8').matchAll(/tx\('([\w.]+)'/g)].map(m => m[1]);
+ const missing = [...new Set(keys)].filter(key => !key.endsWith('.') && (!(key in en) || !(key in de))); // keys that end with a dot are completed at run time
+ assert.deepEqual(missing, [], 'Schlüssel ohne Übersetzung in app.js');
+});
