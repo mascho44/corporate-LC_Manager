@@ -26,11 +26,11 @@ test('labels support translations without changing stored role values',()=>{
  const html=fixture({'audit.change.before':'Vorher','audit.change.after':'Nachher','audit.change.active':'Aktiv'}).render({entityType:'USER',newValue:JSON.stringify({role:'EDITOR',active:true})});assert.match(html,/Vorher/);assert.match(html,/Nachher/);assert.match(html,/EDITOR/);assert.match(html,/Aktiv/);
 });
 test('role events have their own filter and formatter loads before the app',()=>{
- const app=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/app.js'),'utf8');
+ const app=require('./app-source.cjs')();
  const source=app.match(/function auditArea\(event\)\{[^\n]*?return'LC'\}/)[0];const area=vm.runInNewContext('('+source+')');
  assert.equal(area({action:'ROLE_UPDATED'}),'ROLE');assert.equal(area({entityType:'ROLE'}),'ROLE');assert.equal(area({action:'USER_UPDATED'}),'USER');
  assert.equal(area({action:'TENANT_CREATED'}),'TENANT');assert.equal(area({action:'TENANT_SELECTED'}),'TENANT');assert.equal(area({entityType:'TENANT'}),'TENANT');assert.equal(area({action:'LOGIN',entityType:'SESSION'}),'SESSION');
- const html=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/index.html'),'utf8');assert.match(html,/<option value="ROLE"/);assert.ok(html.indexOf('/audit-changes.js?')<html.indexOf('/app.js?'));
+ const html=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/index.html'),'utf8');assert.match(html,/<option value="ROLE"/);assert.ok(html.indexOf('/audit-changes.js?')<html.indexOf('/app-inbox.js?'));
 });
 test('tenant settings show allowlisted name and language changes without role labels or credentials',()=>{
  const html=fixture().render({entityType:'TENANT',previousValue:JSON.stringify({name:'Synthetic old',defaultLanguage:'en'}),newValue:JSON.stringify({name:'<script>synthetic</script>',defaultLanguage:'de',passwordHash:'secret-not-rendered',token:'hidden-token'})});

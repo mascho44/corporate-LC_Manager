@@ -12,7 +12,7 @@ Die Oberfläche ist zweisprachig (Deutsch und Englisch). **Jeder neue sichtbare 
 
 | Wo | So |
 |---|---|
-| `app.js` | `tx('schluessel','Deutscher Rückfalltext',{wert:...})` |
+| `app-*.js` (frühere `app.js`) | `tx('schluessel','Deutscher Rückfalltext',{wert:...})` |
 | andere Skripte | lokaler Helfer `tr(...)` (siehe `kpis.js`, `document-set.js`), gleiche Form |
 | statisches HTML | `data-i18n="schluessel"` und `data-i18n-placeholder="schluessel"` |
 | innerhalb eines einfach angeführten JS-Strings | `'...'+tx('k','Text')+'...'`; `${...}` wirkt dort nicht |

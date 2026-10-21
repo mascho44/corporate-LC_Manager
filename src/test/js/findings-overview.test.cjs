@@ -52,6 +52,6 @@ test('chips can be built per dimension and filters combine',()=>{
 });
 test('the filter bar stays directly in front of the list because the existing filter reads the list as its next sibling',()=>{
  assert.match(source,/bar\.before\(tools, panel\)/);assert.doesNotMatch(source,/bar\.after\(/);
- const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ const app=require('./app-source.cjs')();
  assert.match(app,/toolbar=event\.target\.closest\('\.review-filter-bar'\),list=toolbar\.nextElementSibling/);
 });

@@ -7,7 +7,7 @@ test('hints are sorted by severity and unknown severities count as low',()=>{
  assert.deepEqual(Array.from(sorted,h=>h.check),['a','b','c','w']);
 });
 test('the hints button is hidden by default and the start page loads the script and styles',()=>{
- const index=fs.readFileSync(path.join(root,'index.html'),'utf8'),app=fs.readFileSync(path.join(root,'app.js'),'utf8');
+ const index=fs.readFileSync(path.join(root,'index.html'),'utf8'),app=require('./app-source.cjs')();
  assert.ok(index.includes('/ai.js')&&index.includes('/ai.css'));assert.ok(app.includes('data-ai-hints hidden'));
 });
 test('the settings line says whose configuration is in effect',()=>{
