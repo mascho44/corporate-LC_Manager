@@ -44,6 +44,7 @@
  // The buttons of the corporate workflow carry their text from the moment they were added; on a language change they are rebuilt by their observers.
  document.addEventListener('lc-language-changed', () => {
   document.querySelectorAll('#documentSetBtn,#submissionPackageBtn,#draftCheckBtn,#amendmentRequestBtn,#copyLcBtn,[data-lc-tool]').forEach(button => button.remove());
+  document.querySelector('#generateDocumentDialog')?.remove(); // built once with its texts; rebuilt on the next use
   try { render(); } catch (ignored) { }
  });
  let scheduled = false;

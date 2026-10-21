@@ -91,3 +91,18 @@ test('the draft states, the charge types and the condition names exist in both l
   assert.equal(context.draftStatusLabel('SUBMITTED'), expected); assert.equal(context.draftStatusLabel('SOMETHING'), 'SOMETHING');
  }
 });
+
+test('the credit list shows deadlines and counts in English', () => {
+ const source = fs.readFileSync(dir + 'app.js', 'utf8');
+ const pick = name => { const start = source.indexOf(`function ${name}(`); return source.slice(start, source.indexOf('\n', start)); };
+ const context = vm.createContext({ LcI18n: { language: () => 'en', t: (key, values = {}) => String(en[key] ?? key).replace(/\{(\w+)\}/g, (_, n) => String(values[n] ?? '')) },
+  fmtDate: v => v, daysUntil: d => d == null || d === 'x' ? 99999 : Number(d) });
+ vm.runInContext([pick('tx'), pick('statusLabel'), pick('deadlineInfo')].join('\n'), context);
+ assert.equal(context.deadlineInfo({ status: 'ACTIVE', expiryDate: '-3', latestShipmentDate: '10', followUpDate: 'x' }).text, 'Expired 3 days ago');
+ assert.equal(context.deadlineInfo({ status: 'ACTIVE', expiryDate: '5', latestShipmentDate: '10', followUpDate: 'x' }).text, 'Expires in 5 days');
+ assert.equal(context.deadlineInfo({ status: 'ACTIVE', expiryDate: null, latestShipmentDate: null, followUpDate: null }).text, 'No expiry date');
+ assert.equal(context.deadlineInfo({ status: 'CLOSED' }).text, 'Closed');
+ for (const key of ['gf.title', 'gf.cancel', 'gf.pdf', 'ls.none', 'hm.credits', 'hm.mine']) assert.ok(key in en && key in de, key);
+ const html = fs.readFileSync(dir + 'index.html', 'utf8');
+ for (const [, key] of html.matchAll(/data-i18n(?:-placeholder)?="([\w.]+)"/g)) assert.ok(key in en || key.startsWith('audit.') || key.startsWith('nav.') || key.startsWith('profile.'), key + ' fehlt im englischen Paket');
+});

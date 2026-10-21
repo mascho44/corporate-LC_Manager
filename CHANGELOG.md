@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Englische Oberfläche, siebter Teil: Formular „Dokument erstellen“ mit Positionen, Aktenliste (Zeilen, Fristentexte, Zähler, Filter, Sortierung, leere Liste) und die Startseiten-Kennzahlen sind zweisprachig.
 * Englische Oberfläche, sechster Teil: Die Dialoge „LC-Bedingungen“ und „Gebühren & Provisionen“ (Bedingungsnamen, Tarifprofile, Schätzungen) sowie der Bereich „Dokumententwürfe“ (Status, Freigabe-Ablauf, Knöpfe, Meldungen) sind zweisprachig.
 * Englische Oberfläche, fünfter Teil: Beschaffungsplan (Ampeln, Stände, Zieltermine, Vorlaufzeiten, Hinweise; neues Feld `hintEn` am Planpunkt), Status der Akte, Kopf der Akte mit Aktionen, Überschriften der Aktenbereiche, Menüeinträge Fristenkalender, EBICS-Bankanbindung und Gruppeninbox sowie der Arbeitsplatz-Block. Die Aktenbereiche werden nicht mehr am deutschen Überschriftentext erkannt, sondern an einem festen Schlüssel (`data-sect`).
 * Beschaffungsplan bei schmalem Fenster: Unter 680 Pixel Tabellenbreite erscheint jede Zeile als kleine Karte (Ampel und Zieltermin oben, darunter Dokument und Stand) statt einer abgeschnittenen Tabelle; bei breitem Fenster bekommt die Dokumentspalte eine Mindestbreite.
