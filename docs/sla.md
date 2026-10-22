@@ -16,6 +16,11 @@ Ein Start-Ereignis öffnet eine Uhr, solange keine offen ist; das nächste Stopp
 nach dem Starttag liegt (der Starttag zählt nicht). Laufend: **im Plan**, **knapp** (ab der Warnschwelle) oder **verletzt** (nach dem Fälligkeitstag).
 Beendet: **eingehalten** oder **zu spät erledigt**. In der Aktenübersicht steht der Block „SLA“ mit allen Uhren der Akte.
 
+## Eskalation und Liste
+- Je Regel lässt sich ein **Team** für die Eskalation wählen. Stündlich entsteht für jede **verletzte laufende Uhr** genau ein Auftrag in der Gruppeninbox dieses Teams
+  („SLA verletzt: Referenz – Regel (fällig …)“, höchstens einmal je Uhr).
+- In der Aktenliste zeigt jede Akte mit knapper oder verletzter Uhr das Kennzeichen „SLA knapp“ / „SLA verletzt“; der Filter „SLA“ erscheint, sobald es solche Akten gibt.
+
 ## Grenzen (Stand 0.5.1)
 - Ereignisse, die nicht an einer Akte protokolliert werden (zum Beispiel der Eingang im Posteingang vor der Zuordnung, Sanktionstreffer), sind noch keine SLA-Ereignisse.
-- Eskalation über die Gruppeninbox und Filter in der Aktenliste folgen.
+- Die Auswertung liest die Audit-Ereignisse der letzten 500 Tage.

@@ -18,5 +18,6 @@ public class SlaController {
  @PostMapping("/sla/rules") @ResponseStatus(HttpStatus.CREATED) public SlaService.RuleView create(@RequestBody SlaService.RuleRequest request,Authentication auth){return service.create(request,auth);}
  @PutMapping("/sla/rules/{id}") public SlaService.RuleView update(@PathVariable UUID id,@RequestBody SlaService.RuleRequest request,Authentication auth){return service.update(id,request,auth);}
  @DeleteMapping("/sla/rules/{id}") @ResponseStatus(HttpStatus.NO_CONTENT) public void delete(@PathVariable UUID id,Authentication auth){service.delete(id,auth);}
+ @GetMapping("/lcs/sla-status") public List<SlaService.ListEntry> listStates(){return service.listStates(LocalDate.now());}
  @GetMapping("/lcs/{lcId}/sla") public SlaService.FileStatus status(@PathVariable UUID lcId){return service.status(lcId,LocalDate.now());}
 }

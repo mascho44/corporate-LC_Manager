@@ -87,6 +87,16 @@ public class AutoTaskService {
   return create(DEADLINE,"Frist: "+lc.getReference()+" – "+label+" am "+DATE.format(date),lc.getId(),null,null,key,date).isPresent();
  }
 
+ /** A team task from another module (e.g. an SLA breach); the key keeps it from being created twice. Empty when the team is missing, inactive or the key is known. */
+ @Transactional public Optional<LcTask> createForTeam(UUID teamId,String source,String title,UUID lcId,String key,LocalDate due){
+  if(teamId==null)return Optional.empty();
+  var team=teams.one(teamId);if(!team.isActive()||tasks.autoKeyExists(key))return Optional.empty();
+  var task=new LcTask();
+  task.setLetterOfCreditId(lcId);task.setTitle(title.length()>500?title.substring(0,500):title);task.setDueDate(due);task.setCreatedBy(SYSTEM);
+  task.setTeamId(team.getId());task.setSource(source);task.setAutoKey(key);
+  return Optional.of(tasks.save(task));
+ }
+
  // ---- shared --------------------------------------------------------------------------------
  private Optional<LcTask> create(String trigger,String title,UUID lcId,String subjectType,UUID subjectId,String key,LocalDate due){
   var rule=rules.forTrigger(trigger).filter(AutomationRule::isEnabled).orElse(null);
