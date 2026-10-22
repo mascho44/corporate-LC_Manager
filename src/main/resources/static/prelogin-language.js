@@ -99,6 +99,7 @@
   return String(base ?? de).replace(/\{(\w+)\}/g, (m, name) => String(values[name] ?? m));
  };
  globalThis.tx = text;
+ if (typeof globalThis.fetch === 'function') { const baseFetch = globalThis.fetch.bind(globalThis); globalThis.fetch = (input, init = {}) => { try { const url = typeof input === 'string' ? input : (input && input.url) || ''; if (url.startsWith('/api/')) { const headers = new Headers(init.headers); if (!headers.has('X-LC-Language')) headers.set('X-LC-Language', language); init = { ...init, headers }; } } catch { /* sent without the language */ } return baseFetch(input, init); }; }
  globalThis.LcPrelogin = { D, text, language: () => language };
  if (typeof document === 'undefined' || !document.body) return;
 
