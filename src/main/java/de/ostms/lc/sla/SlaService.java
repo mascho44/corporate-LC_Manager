@@ -8,6 +8,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -74,7 +75,7 @@ public class SlaService {
   var fileIds=new HashSet<String>();lcs.findAll().forEach(lc->fileIds.add(lc.getId().toString()));
   var byFile=new HashMap<String,List<InstanceView>>();
   for(SlaRule rule:rules.findAll()){
-   if(!rule.isActive())continue;
+   if(!rule.isActive()||SlaCatalog.INBOX.equals(rule.getActivityKey()))continue;
    var actions=new ArrayList<>(rule.startActions());actions.addAll(rule.stopActions());
    var events=new LinkedHashMap<String,List<SlaEvaluator.Event>>();
    jdbc.query("select entity_id, action, occurred_at from audit_event where tenant_id=? and action = any(?) and successful and occurred_at > ? order by entity_id, occurred_at, id",rs->{
@@ -98,6 +99,20 @@ public class SlaService {
   statusOfAll(today).forEach((id,status)->{if(status.state().equals("WARNING")||status.state().equals("BREACHED"))out.add(new ListEntry(id,status.state()));});
   return out;
  }
+ public record InboxClock(UUID itemId,String filename,LocalDateTime receivedAt,LocalDate dueDate,int elapsedDays,int targetDays,String state,UUID ruleId){}
+ /** Clock of one open inbox document: from its arrival until it is assigned to a file (running clocks only). */
+ static SlaEvaluator.Instance inboxClock(LocalDateTime received,int targetDays,int warnPercent,LocalDate today){return SlaEvaluator.rate(received,null,targetDays,warnPercent,today);}
+ /** Open inbox documents rated by the active inbox rule (the first one when there are several). */
+ @Transactional(readOnly=true) public List<InboxClock> inboxStatus(LocalDate today){
+  var rule=rules.findAll().stream().filter(r->r.isActive()&&SlaCatalog.INBOX.equals(r.getActivityKey())).findFirst().orElse(null);
+  if(rule==null)return List.of();
+  var out=new ArrayList<InboxClock>();
+  jdbc.query("select id, original_filename, received_at from document_inbox_item where tenant_id=? and status='OPEN' order by received_at",rs->{
+   var clock=inboxClock(rs.getTimestamp("received_at").toLocalDateTime(),rule.getTargetDays(),rule.getWarnPercent(),today);
+   out.add(new InboxClock(rs.getObject("id",UUID.class),rs.getString("original_filename"),clock.startedAt(),clock.dueDate(),clock.elapsedDays(),clock.targetDays(),clock.state().name(),rule.getId()));
+  },TenantContext.currentId());
+  return out;
+ }
  /** Rules by id, for the escalation. */
  @Transactional(readOnly=true) public Map<UUID,SlaRule> activeRules(){var m=new HashMap<UUID,SlaRule>();rules.findAll().stream().filter(SlaRule::isActive).forEach(r->m.put(r.getId(),r));return m;}
 
@@ -106,7 +121,7 @@ public class SlaService {
   if(!lcs.existsById(lcId))throw new NoSuchElementException("Akte nicht gefunden.");
   var instances=new ArrayList<InstanceView>();var all=new ArrayList<SlaEvaluator.Instance>();
   for(SlaRule rule:rules.findAll()){
-   if(!rule.isActive())continue;
+   if(!rule.isActive()||SlaCatalog.INBOX.equals(rule.getActivityKey()))continue;
    var actions=new ArrayList<>(rule.startActions());actions.addAll(rule.stopActions());
    var events=jdbc.query("select action, occurred_at from audit_event where tenant_id=? and entity_id=? and action = any(?) and successful order by occurred_at, id",
      (rs,i)->new SlaEvaluator.Event(rs.getString("action"),rs.getTimestamp("occurred_at").toLocalDateTime()),TenantContext.currentId(),lcId.toString(),actions.toArray(new String[0]));
