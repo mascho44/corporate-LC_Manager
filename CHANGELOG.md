@@ -2,6 +2,8 @@
 
 ## 0.5.1 – in Arbeit
 
+* Import: Der Knopf „Prüfen“ erscheint nur noch bei manuell eingefügten Nachrichten; hochgeladene Dateien werden schon beim Laden geprüft.
+
 * Optik: Auf der SLA-Seite mehr Abstand über „Regel hinzufügen“.
 
 * Optik: SLA-Formular sauber ausgerichtet (zwei Spalten mit gleicher Einrückung, Beschriftungen über den Feldern, „Aktiv“ neben dem Haken, Speichern/Abbrechen in einer Zeile).
