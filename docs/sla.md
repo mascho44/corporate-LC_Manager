@@ -1,7 +1,7 @@
 # SLAs (Bank-Profil)
 
 Ein SLA beschreibt, wie lange eine Tätigkeit dauern darf. Die Regeln gelten je Mandant und stehen nur Mandanten mit Bank-Profil zur Verfügung
-(Einstellungen → **SLAs**, Recht „Einstellungen verwalten“).
+(Einstellungen → **SLAs**, **nur für Administratoren**; die Anzeige der SLAs in Akte und Aktenliste sehen alle).
 
 ## Regel
 - **Name** und **Tätigkeit**: Vorlagen für Erstbearbeitung der Akte, Dokumentenprüfung (Standard 5 Bankarbeitstage), Unstimmigkeitsmeldung erstellen (Abweichung bestätigt → Meldung erstellt), Änderung (MT707) bearbeiten,

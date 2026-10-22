@@ -29,7 +29,7 @@ globalThis.LcSla = {
 };
 
 async function setupSla() {
- if (typeof can !== 'function' || !can('SETTINGS_MANAGE')) return;
+ if (typeof can !== 'function' || !can('SETTINGS_MANAGE') || currentUser?.role !== 'ADMIN') return; // administrators only
  let rules, catalog, teams = [];
  try { [rules, catalog] = await Promise.all([json('/api/sla/rules'), json('/api/sla/catalog')]); } catch { return; }
  teams = await json('/api/teams').catch(() => []); // not a bank tenant: no SLA page
