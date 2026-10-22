@@ -1,6 +1,6 @@
 # Domain Events und Webhooks
 
-Webhooks (Einstellungen → **Webhooks**, Recht „Einstellungen verwalten“) schicken Ereignisse eines Mandanten per HTTPS-POST an externe Systeme.
+Webhooks (Einstellungen → **Webhooks**, **nur für Administratoren**) schicken Ereignisse eines Mandanten per HTTPS-POST an externe Systeme.
 
 ## Ereignisse
 Ereignisse entstehen aus den Audit-Aktionen; kein Modul muss etwas melden. Pro Webhook sind „alle Ereignisse“ oder eine Auswahl möglich.

@@ -1,7 +1,7 @@
 # Externe REST-API (Version 1)
 
 Systeme anderer Hersteller (ERP, Handelsplattform, Archiv) greifen mit einem **API-Schlüssel** auf einen Mandanten zu: Akten und Befunde lesen, eine Akte aus einer MT700 anlegen, Dokumente hochladen.
-Den Schlüssel legt ein Administrator unter **API-Schlüssel** an (Recht „Einstellungen verwalten“). Das Geheimnis (`lca_…`) wird **einmal** angezeigt; gespeichert wird nur sein SHA-256-Hash. Höchstens 20 aktive Schlüssel je Mandant, Widerruf jederzeit.
+Den Schlüssel legt ein **Administrator** unter **API-Schlüssel** an; die Verwaltung (Seite und Schnittstelle `/api/api-keys`) steht nur Administratoren offen. Das Geheimnis (`lca_…`) wird **einmal** angezeigt; gespeichert wird nur sein SHA-256-Hash. Höchstens 20 aktive Schlüssel je Mandant, Widerruf jederzeit.
 
 ## Berechtigungen
 Jeder Schlüssel trägt nur die gewählten Umfänge:

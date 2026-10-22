@@ -1,6 +1,6 @@
 /* Settings page "API-Schlüssel": keys for the external REST API (/api/v1), each with scopes; the secret is shown once. */
 async function setupApiKeys() {
- if (typeof can !== 'function' || !can('SETTINGS_MANAGE')) return;
+ if (typeof can !== 'function' || !can('SETTINGS_MANAGE') || currentUser?.role !== 'ADMIN') return; // administrators only
  let keys, scopes;
  try { [keys, scopes] = await Promise.all([json('/api/api-keys'), json('/api/api-keys/scopes')]); } catch { return; }
  const node = (tag, value, cls) => { const n = document.createElement(tag); if (value !== undefined) n.textContent = value; if (cls) n.className = cls; return n; };

@@ -44,3 +44,10 @@ test('the API key page has all its texts in both language packs and is wired in'
   assert.match(fs.readFileSync(dir + 'app-admin.js', 'utf8'), /apiKeys:\['apiKeySection'\]/);
   assert.match(fs.readFileSync(dir + 'app-audit-training.js', 'utf8'), /setupApiKeys\(\)/);
 });
+
+test('webhooks and API keys are offered to administrators only', () => {
+  ['webhook-settings.js', 'api-key-settings.js'].forEach(file => assert.match(fs.readFileSync(dir + file, 'utf8'), /currentUser\?\.role !== 'ADMIN'/, file));
+  const security = fs.readFileSync(path.join(__dirname, '../../main/java/de/ostms/lc/config/SecurityConfig.java'), 'utf8');
+  assert.match(security, /"\/api\/webhooks","\/api\/webhooks\/\*\*"\)\.hasRole\("ADMIN"\)/);
+  assert.match(security, /"\/api\/api-keys","\/api\/api-keys\/\*\*"\)\.hasRole\("ADMIN"\)/);
+});

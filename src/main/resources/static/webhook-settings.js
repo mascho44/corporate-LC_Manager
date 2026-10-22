@@ -1,6 +1,6 @@
 /* Settings page "Webhooks": target URLs that receive domain events, signed with a secret that is shown once. */
 async function setupWebhooks() {
- if (typeof can !== 'function' || !can('SETTINGS_MANAGE')) return;
+ if (typeof can !== 'function' || !can('SETTINGS_MANAGE') || currentUser?.role !== 'ADMIN') return; // administrators only
  let hooks, events;
  try { [hooks, events] = await Promise.all([json('/api/webhooks'), json('/api/webhooks/events')]); } catch { return; }
  const node = (tag, value, cls) => { const n = document.createElement(tag); if (value !== undefined) n.textContent = value; if (cls) n.className = cls; return n; };
