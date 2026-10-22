@@ -3277,5 +3277,21 @@
   "cb.channel.PORTAL": "Bankportal",
   "audit.act.CORRESPONDENT_BANK_CREATED": "Korrespondenzbank angelegt",
   "audit.act.CORRESPONDENT_BANK_UPDATED": "Korrespondenzbank geändert",
-  "audit.act.CORRESPONDENT_BANK_DELETED": "Korrespondenzbank gelöscht"
+  "audit.act.CORRESPONDENT_BANK_DELETED": "Korrespondenzbank gelöscht",
+  "sla.s.paused": "pausiert",
+  "sla.clockPaused": "{name}: pausiert · {elapsed} von {target} Bankarbeitstagen",
+  "sla.reportTitle": "Einhaltung der SLAs",
+  "sla.reportDays": "Letzte {n} Tage",
+  "sla.reportCsv": "Als CSV speichern",
+  "sla.colRule": "Regel",
+  "sla.colInTime": "Eingehalten",
+  "sla.colLate": "Zu spät",
+  "sla.colRunning": "Laufend",
+  "sla.colWarning": "Knapp",
+  "sla.colBreached": "Verletzt",
+  "sla.colPaused": "Pausiert",
+  "sla.colQuota": "Quote (%)",
+  "sla.reportNone": "Noch keine Auswertung möglich.",
+  "sla.pause": "Pause-Ereignisse (optional, z. B. Rückfrage an den Kunden)",
+  "sla.resume": "Fortsetzen-Ereignisse (z. B. Antwort eingegangen)"
 }

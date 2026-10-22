@@ -127,3 +127,9 @@ html body #correspondentSection form.cb-form>.cb-actions{grid-column:1/-1;displa
 html body #correspondentSection .cb-add{margin-top:14px}
 @media(max-width:700px){html body #correspondentSection form.cb-form{grid-template-columns:minmax(0,1fr)}}
 html body #correspondentSection form.cb-form textarea{min-height:72px;height:84px;resize:vertical}
+html body .sla-list li.paused{border-left-color:#6366f1;background:#eef2ff}html body .sla-badge.paused{background:#e0e7ff;color:#3730a3}
+html body #slaSection .sla-report-bar{display:flex;gap:10px;align-items:center;margin:6px 0 10px}
+html body #slaSection .sla-report-wrap{overflow-x:auto}
+html body #slaSection table.sla-report{border-collapse:collapse;width:100%;font-size:13px}
+html body #slaSection table.sla-report th,html body #slaSection table.sla-report td{padding:6px 10px;border-bottom:1px solid #e5e9ef;text-align:right;white-space:nowrap}
+html body #slaSection table.sla-report th:first-child,html body #slaSection table.sla-report td:first-child{text-align:left;white-space:normal}

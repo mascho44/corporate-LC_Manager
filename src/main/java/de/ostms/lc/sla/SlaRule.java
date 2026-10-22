@@ -13,6 +13,8 @@ public class SlaRule extends TenantOwnedEntity {
  @Column(nullable=false,length=120) private String name;
  @Column(name="start_actions",nullable=false,length=400) private String startActions;
  @Column(name="stop_actions",nullable=false,length=400) private String stopActions;
+ @Column(name="pause_actions",nullable=false,length=400) private String pauseActions="";
+ @Column(name="resume_actions",nullable=false,length=400) private String resumeActions="";
  @Column(name="target_days",nullable=false) private int targetDays;
  @Column(name="warn_percent",nullable=false) private int warnPercent=80;
  @Column(nullable=false) private boolean active=true;
@@ -21,10 +23,12 @@ public class SlaRule extends TenantOwnedEntity {
  @Column(name="changed_at",nullable=false) private LocalDateTime changedAt=LocalDateTime.now();
  public UUID getId(){return id;} public String getActivityKey(){return activityKey;} public String getName(){return name;}
  public java.util.List<String> startActions(){return split(startActions);} public java.util.List<String> stopActions(){return split(stopActions);}
+ public java.util.List<String> pauseActions(){return split(pauseActions);} public java.util.List<String> resumeActions(){return split(resumeActions);}
  public int getTargetDays(){return targetDays;} public int getWarnPercent(){return warnPercent;} public boolean isActive(){return active;} public UUID getEscalationTeamId(){return escalationTeamId;}
  public String getChangedBy(){return changedBy;} public LocalDateTime getChangedAt(){return changedAt;}
  static java.util.List<String> split(String value){return value==null||value.isBlank()?java.util.List.of():java.util.Arrays.stream(value.split(",")).map(String::trim).filter(s->!s.isEmpty()).toList();}
- public void set(String activityKey,String name,java.util.List<String> start,java.util.List<String> stop,int targetDays,int warnPercent,boolean active,UUID escalationTeamId,String user){
-  this.activityKey=activityKey;this.name=name;this.startActions=String.join(",",start);this.stopActions=String.join(",",stop);this.targetDays=targetDays;this.warnPercent=warnPercent;this.active=active;this.escalationTeamId=escalationTeamId;this.changedBy=user;this.changedAt=LocalDateTime.now();
+ public void set(String activityKey,String name,java.util.List<String> start,java.util.List<String> stop,int targetDays,int warnPercent,boolean active,UUID escalationTeamId,String user){set(activityKey,name,start,stop,java.util.List.of(),java.util.List.of(),targetDays,warnPercent,active,escalationTeamId,user);}
+ public void set(String activityKey,String name,java.util.List<String> start,java.util.List<String> stop,java.util.List<String> pause,java.util.List<String> resume,int targetDays,int warnPercent,boolean active,UUID escalationTeamId,String user){
+  this.activityKey=activityKey;this.name=name;this.startActions=String.join(",",start);this.stopActions=String.join(",",stop);this.pauseActions=String.join(",",pause);this.resumeActions=String.join(",",resume);this.targetDays=targetDays;this.warnPercent=warnPercent;this.active=active;this.escalationTeamId=escalationTeamId;this.changedBy=user;this.changedAt=LocalDateTime.now();
  }
 }

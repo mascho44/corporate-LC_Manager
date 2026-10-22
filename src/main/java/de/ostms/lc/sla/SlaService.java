@@ -16,14 +16,16 @@ import java.util.regex.Pattern;
 @Service
 public class SlaService {
  private static final Pattern ACTION=Pattern.compile("[A-Z][A-Z0-9_]{2,79}");
- public record RuleView(UUID id,String activityKey,String name,List<String> startActions,List<String> stopActions,int targetDays,int warnPercent,boolean active,UUID escalationTeamId){}
- public record RuleRequest(String activityKey,String name,List<String> startActions,List<String> stopActions,Integer targetDays,Integer warnPercent,Boolean active,UUID escalationTeamId){}
+ public record RuleView(UUID id,String activityKey,String name,List<String> startActions,List<String> stopActions,List<String> pauseActions,List<String> resumeActions,int targetDays,int warnPercent,boolean active,UUID escalationTeamId){}
+ public record RuleRequest(String activityKey,String name,List<String> startActions,List<String> stopActions,List<String> pauseActions,List<String> resumeActions,Integer targetDays,Integer warnPercent,Boolean active,UUID escalationTeamId){
+  public RuleRequest(String activityKey,String name,List<String> startActions,List<String> stopActions,Integer targetDays,Integer warnPercent,Boolean active,UUID escalationTeamId){this(activityKey,name,startActions,stopActions,List.of(),List.of(),targetDays,warnPercent,active,escalationTeamId);}
+ }
  public record InstanceView(UUID ruleId,String ruleName,String activityKey,SlaEvaluator.Instance clock){}
  public record FileStatus(String state,List<InstanceView> instances){}
  private final SlaRuleRepository rules;private final JdbcTemplate jdbc;private final LetterOfCreditRepository lcs;private final AuditService audit;
  public SlaService(SlaRuleRepository rules,JdbcTemplate jdbc,LetterOfCreditRepository lcs,AuditService audit){this.rules=rules;this.jdbc=jdbc;this.lcs=lcs;this.audit=audit;}
 
- static RuleView view(SlaRule r){return new RuleView(r.getId(),r.getActivityKey(),r.getName(),r.startActions(),r.stopActions(),r.getTargetDays(),r.getWarnPercent(),r.isActive(),r.getEscalationTeamId());}
+ static RuleView view(SlaRule r){return new RuleView(r.getId(),r.getActivityKey(),r.getName(),r.startActions(),r.stopActions(),r.pauseActions(),r.resumeActions(),r.getTargetDays(),r.getWarnPercent(),r.isActive(),r.getEscalationTeamId());}
  @Transactional(readOnly=true) public List<RuleView> list(){return rules.findAll().stream().map(SlaService::view).toList();}
 
  /** Known audit actions of this tenant plus those of the catalog: what can be chosen as start or stop event. */
@@ -40,6 +42,11 @@ public class SlaService {
   if(start.isEmpty()||stop.isEmpty())throw new IllegalArgumentException("Bitte mindestens ein Start- und ein Stopp-Ereignis wählen.");
   if(start.size()>8||stop.size()>8)throw new IllegalArgumentException("Höchstens 8 Ereignisse je Seite.");
   if(!Collections.disjoint(start,stop))throw new IllegalArgumentException("Ein Ereignis kann nicht gleichzeitig starten und stoppen.");
+  List<String> pause=clean(r.pauseActions()),resume=clean(r.resumeActions());
+  if(pause.isEmpty()!=resume.isEmpty())throw new IllegalArgumentException("Pause- und Wiederaufnahme-Ereignisse gehören zusammen: bitte beide Seiten wählen oder beide leer lassen.");
+  if(pause.size()>8||resume.size()>8)throw new IllegalArgumentException("Höchstens 8 Ereignisse je Seite.");
+  var used=new HashSet<String>();used.addAll(start);used.addAll(stop);
+  if(!Collections.disjoint(pause,resume)||!Collections.disjoint(pause,used)||!Collections.disjoint(resume,used))throw new IllegalArgumentException("Ein Ereignis darf nur eine Aufgabe haben: starten, stoppen, pausieren oder fortsetzen.");
   if(r.targetDays()==null||r.targetDays()<1||r.targetDays()>60)throw new IllegalArgumentException("Die Zielzeit muss zwischen 1 und 60 Bankarbeitstagen liegen.");
   int warn=r.warnPercent()==null?80:r.warnPercent();
   if(warn<10||warn>99)throw new IllegalArgumentException("Die Warnschwelle muss zwischen 10 und 99 Prozent liegen.");
@@ -54,14 +61,14 @@ public class SlaService {
 
  @Transactional public RuleView create(RuleRequest r,Authentication auth){
   validate(r,Set.of(),null,rules::byName);
-  var rule=new SlaRule();rule.set(activityKey(r.activityKey()),r.name().trim(),clean(r.startActions()),clean(r.stopActions()),r.targetDays(),r.warnPercent()==null?80:r.warnPercent(),r.active()==null||r.active(),r.escalationTeamId(),auth==null?null:auth.getName());
+  var rule=new SlaRule();rule.set(activityKey(r.activityKey()),r.name().trim(),clean(r.startActions()),clean(r.stopActions()),clean(r.pauseActions()),clean(r.resumeActions()),r.targetDays(),r.warnPercent()==null?80:r.warnPercent(),r.active()==null||r.active(),r.escalationTeamId(),auth==null?null:auth.getName());
   rules.save(rule);audit.recordInTransaction(auth,"SLA_RULE_CREATED","SLA_RULE",rule.getId(),rule.getName()+" · "+rule.getTargetDays()+" Bankarbeitstage");
   return view(rule);
  }
  @Transactional public RuleView update(UUID id,RuleRequest r,Authentication auth){
   var rule=rules.findById(id).orElseThrow(()->new NoSuchElementException("SLA-Regel nicht gefunden."));
   validate(r,Set.of(),id,rules::byName);
-  rule.set(activityKey(r.activityKey()),r.name().trim(),clean(r.startActions()),clean(r.stopActions()),r.targetDays(),r.warnPercent()==null?80:r.warnPercent(),r.active()==null||r.active(),r.escalationTeamId(),auth==null?null:auth.getName());
+  rule.set(activityKey(r.activityKey()),r.name().trim(),clean(r.startActions()),clean(r.stopActions()),clean(r.pauseActions()),clean(r.resumeActions()),r.targetDays(),r.warnPercent()==null?80:r.warnPercent(),r.active()==null||r.active(),r.escalationTeamId(),auth==null?null:auth.getName());
   rules.save(rule);audit.recordInTransaction(auth,"SLA_RULE_UPDATED","SLA_RULE",id,rule.getName()+" · "+rule.getTargetDays()+" Bankarbeitstage"+(rule.isActive()?"":" · inaktiv"));
   return view(rule);
  }
@@ -76,13 +83,13 @@ public class SlaService {
   var byFile=new HashMap<String,List<InstanceView>>();
   for(SlaRule rule:rules.findAll()){
    if(!rule.isActive()||SlaCatalog.INBOX.equals(rule.getActivityKey()))continue;
-   var actions=new ArrayList<>(rule.startActions());actions.addAll(rule.stopActions());
+   var actions=new ArrayList<>(rule.startActions());actions.addAll(rule.stopActions());actions.addAll(rule.pauseActions());actions.addAll(rule.resumeActions());
    var events=new LinkedHashMap<String,List<SlaEvaluator.Event>>();
    jdbc.query("select entity_id, action, occurred_at from audit_event where tenant_id=? and action = any(?) and successful and occurred_at > ? order by entity_id, occurred_at, id",rs->{
      String id=rs.getString("entity_id");if(!fileIds.contains(id))return;
      events.computeIfAbsent(id,k->new ArrayList<>()).add(new SlaEvaluator.Event(rs.getString("action"),rs.getTimestamp("occurred_at").toLocalDateTime()));
     },TenantContext.currentId(),actions.toArray(new String[0]),java.sql.Timestamp.valueOf(today.minusDays(500).atStartOfDay()));
-   events.forEach((id,list)->{for(var clock:SlaEvaluator.evaluate(list,rule.startActions(),rule.stopActions(),rule.getTargetDays(),rule.getWarnPercent(),today))byFile.computeIfAbsent(id,k->new ArrayList<>()).add(new InstanceView(rule.getId(),rule.getName(),rule.getActivityKey(),clock));});
+   events.forEach((id,list)->{for(var clock:SlaEvaluator.evaluate(list,rule.startActions(),rule.stopActions(),rule.pauseActions(),rule.resumeActions(),rule.getTargetDays(),rule.getWarnPercent(),today))byFile.computeIfAbsent(id,k->new ArrayList<>()).add(new InstanceView(rule.getId(),rule.getName(),rule.getActivityKey(),clock));});
   }
   var out=new HashMap<UUID,FileStatus>();
   byFile.forEach((id,list)->{
@@ -91,6 +98,30 @@ public class SlaService {
    out.put(UUID.fromString(id),new FileStatus(worst==null?"NONE":worst.name(),List.copyOf(list)));
   });
   return out;
+ }
+ /** Compliance of one rule: finished clocks of the period (in time / late), running ones by state, and the share kept in time. */
+ public record RuleReport(UUID ruleId,String name,int doneInTime,int doneLate,int running,int warning,int breached,int paused,Integer quotaPercent){}
+ public record Report(int days,LocalDate from,LocalDate to,List<RuleReport> rules){}
+ /** Counts the clocks of one rule: finished ones only from {@code from} on, running ones always. */
+ static RuleReport summarize(UUID ruleId,String name,List<SlaEvaluator.Instance> clocks,LocalDate from){
+  int inTime=0,late=0,running=0,warning=0,breached=0,paused=0;
+  for(var clock:clocks){
+   if(clock.stoppedAt()!=null){if(clock.stoppedAt().toLocalDate().isBefore(from))continue;if(clock.state()==SlaEvaluator.State.DONE_LATE)late++;else inTime++;}
+   else switch(clock.state()){case PAUSED->paused++;case BREACHED->breached++;case WARNING->warning++;default->running++;}
+  }
+  return new RuleReport(ruleId,name,inTime,late,running,warning,breached,paused,inTime+late==0?null:Math.round(inTime*100f/(inTime+late)));
+ }
+ /** Evaluation of all active file rules: clocks stopped within the last {@code days} days plus everything still running. */
+ @Transactional(readOnly=true) public Report report(int days,LocalDate today){
+  if(days<1||days>365)throw new IllegalArgumentException("Der Zeitraum muss zwischen 1 und 365 Tagen liegen.");
+  var from=today.minusDays(days);var views=new HashMap<UUID,List<InstanceView>>();
+  statusOfAll(today).values().forEach(status->status.instances().forEach(i->views.computeIfAbsent(i.ruleId(),k->new ArrayList<>()).add(i)));
+  var out=new ArrayList<RuleReport>();
+  for(SlaRule rule:rules.findAll()){
+   if(!rule.isActive()||SlaCatalog.INBOX.equals(rule.getActivityKey()))continue;
+   out.add(summarize(rule.getId(),rule.getName(),views.getOrDefault(rule.getId(),List.of()).stream().map(InstanceView::clock).toList(),from));
+  }
+  return new Report(days,from,today,out);
  }
  public record ListEntry(UUID lcId,String state){}
  /** Worst running state per file, only for files with a running clock that is tight or breached. */
@@ -122,10 +153,10 @@ public class SlaService {
   var instances=new ArrayList<InstanceView>();var all=new ArrayList<SlaEvaluator.Instance>();
   for(SlaRule rule:rules.findAll()){
    if(!rule.isActive()||SlaCatalog.INBOX.equals(rule.getActivityKey()))continue;
-   var actions=new ArrayList<>(rule.startActions());actions.addAll(rule.stopActions());
+   var actions=new ArrayList<>(rule.startActions());actions.addAll(rule.stopActions());actions.addAll(rule.pauseActions());actions.addAll(rule.resumeActions());
    var events=jdbc.query("select action, occurred_at from audit_event where tenant_id=? and entity_id=? and action = any(?) and successful order by occurred_at, id",
      (rs,i)->new SlaEvaluator.Event(rs.getString("action"),rs.getTimestamp("occurred_at").toLocalDateTime()),TenantContext.currentId(),lcId.toString(),actions.toArray(new String[0]));
-   for(var clock:SlaEvaluator.evaluate(events,rule.startActions(),rule.stopActions(),rule.getTargetDays(),rule.getWarnPercent(),today)){instances.add(new InstanceView(rule.getId(),rule.getName(),rule.getActivityKey(),clock));all.add(clock);}
+   for(var clock:SlaEvaluator.evaluate(events,rule.startActions(),rule.stopActions(),rule.pauseActions(),rule.resumeActions(),rule.getTargetDays(),rule.getWarnPercent(),today)){instances.add(new InstanceView(rule.getId(),rule.getName(),rule.getActivityKey(),clock));all.add(clock);}
   }
   var worst=SlaEvaluator.worstRunning(all);
   instances.sort(Comparator.comparing((InstanceView i)->i.clock().stoppedAt()!=null).thenComparing(i->i.clock().dueDate()));
