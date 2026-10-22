@@ -51,3 +51,11 @@ test('webhooks and API keys are offered to administrators only', () => {
   assert.match(security, /"\/api\/webhooks","\/api\/webhooks\/\*\*"\)\.hasRole\("ADMIN"\)/);
   assert.match(security, /"\/api\/api-keys","\/api\/api-keys\/\*\*"\)\.hasRole\("ADMIN"\)/);
 });
+
+test('the SLA settings are offered to administrators only, the SLA display stays open', () => {
+  assert.match(fs.readFileSync(dir + 'sla-settings.js', 'utf8'), /currentUser\?\.role !== 'ADMIN'/);
+  const security = fs.readFileSync(path.join(__dirname, '../../main/java/de/ostms/lc/config/SecurityConfig.java'), 'utf8');
+  assert.match(security, /GET,"\/api\/sla\/rules","\/api\/sla\/catalog","\/api\/sla\/report"\)\.hasRole\("ADMIN"\)/);
+  ['POST', 'PUT', 'DELETE'].forEach(m => assert.match(security, new RegExp(m + ',"/api/sla/\\*\\*"\\)\\.hasRole\\("ADMIN"\\)')));
+  assert.ok(!/"\/api\/lcs\/\*\/sla"[^\n]*hasRole/.test(security));
+});
