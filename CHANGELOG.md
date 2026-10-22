@@ -2,6 +2,8 @@
 
 ## 0.5.1 – in Arbeit
 
+* Optik: Einheitlicher Innenabstand auf den Seiten EBICS, SLA, Gruppeninbox, Mandant und Fristenkalender; Kopfbereiche von Training und Import eingerückt; auf schmalen Bildschirmen blieb der Cockpit-Kopf sichtbar (jetzt ausgeblendet); SLA-Formular einspaltig auf dem Handy; Filterzeile im Plattform-Protokoll bündig.
+
 * SLAs (Teil 3): Neue Tätigkeiten „Unstimmigkeitsmeldung erstellen“ (neue Audit-Ereignisse `DOCUMENT_DISCREPANCY_CONFIRMED` beim Bestätigen einer Abweichung und `DISCREPANCY_NOTICE_CREATED` beim Erstellen der Meldung) und „Dokument im Posteingang zuordnen“ (Uhr ab Eingang eines offenen Posteingangsdokuments; Übersicht auf der SLA-Seite, Eskalation als Auftrag in der Gruppeninbox).
 * SLAs (Teil 2): Je Regel ein Eskalationsteam; stündlich entsteht für jede verletzte laufende Uhr ein Auftrag in der Gruppeninbox (einmal je Uhr). Die Aktenliste zeigt „SLA knapp“ / „SLA verletzt“ an der Akte und hat einen Filter.
 * SLAs für Mandanten mit Bank-Profil (Teil 1): einstellbare Regeln (Einstellungen → SLAs, Migration V135) mit Start- und Stopp-Ereignissen aus dem Audit-Protokoll der Akte, Zielzeit in Bankarbeitstagen (ohne bundesweite Feiertage) und Warnschwelle; Vorlagen für Erstbearbeitung, Dokumentenprüfung (5 Tage), Änderung MT707 und Aufgabe. Die Aktenübersicht zeigt den Block „SLA“ mit im Plan / knapp / verletzt. Beschreibung in `docs/sla.md`. Eskalation über die Gruppeninbox und Listenfilter folgen.

@@ -75,7 +75,7 @@ async function setupSla() {
   catalog.activities.forEach(a => { const o = node('option', globalThis.LcI18n?.language?.() === 'en' ? a.nameEn : a.name); o.value = a.key; template.append(o); });
   if (!rule) field(tx('sla.template', 'Vorlage'), template);
   const name = field(tx('sla.name', 'Name'), document.createElement('input')); name.required = true; name.maxLength = 120;
-  const mk = () => { const s = document.createElement('select'); s.multiple = true; s.size = 6; catalog.actions.forEach(code => { const o = node('option', action(code) + ' (' + code + ')'); o.value = code; s.append(o); }); return s; };
+  const mk = () => { const s = document.createElement('select'); s.multiple = true; s.size = 6; s.dataset.noLayoutSize = ''; catalog.actions.forEach(code => { const o = node('option', action(code) + ' (' + code + ')'); o.value = code; s.append(o); }); return s; };
   const start = field(tx('sla.start', 'Start-Ereignisse'), mk()), stop = field(tx('sla.stop', 'Stopp-Ereignisse'), mk());
   const days = field(tx('sla.days', 'Zielzeit (Bankarbeitstage)'), document.createElement('input')); days.type = 'number'; days.min = 1; days.max = 60; days.value = 3;
   const warn = field(tx('sla.warn', 'Warnung ab (%)'), document.createElement('input')); warn.type = 'number'; warn.min = 10; warn.max = 99; warn.value = 80;
