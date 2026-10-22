@@ -21,3 +21,14 @@ test('the page is wired into navigation and start-up', () => {
   assert.match(start, /setupCorrespondentBanks\(\)/);
   assert.match(source, /appNavigate\('correspondent'/);
 });
+
+test('the webhook page has all its texts in both language packs and is wired in', () => {
+  const hook = fs.readFileSync(dir + 'webhook-settings.js', 'utf8');
+  const keys = [...hook.matchAll(/tx\('(wh\.[A-Za-z.]+)',\s*'((?:[^'\\]|\\.)*)'/g)];
+  assert.ok(keys.length > 30);
+  for (const [, key, text] of keys) { assert.ok(de[key], 'missing de ' + key); assert.ok(en[key], 'missing en ' + key); assert.strictEqual(de[key], text.replace(/\\'/g, "'"), 'default text differs for ' + key); }
+  ['CREATED', 'UPDATED', 'DELETED', 'SECRET_ROTATED', 'TESTED', 'DELIVERY_RETRIED'].forEach(a => { assert.ok(de['audit.act.WEBHOOK_' + a]); assert.ok(en['audit.act.WEBHOOK_' + a]); });
+  assert.match(fs.readFileSync(dir + 'index.html', 'utf8'), /webhook-settings\.js\?v=/);
+  assert.match(fs.readFileSync(dir + 'app-admin.js', 'utf8'), /webhooks:\['webhookSection'\]/);
+  assert.match(fs.readFileSync(dir + 'app-audit-training.js', 'utf8'), /setupWebhooks\(\)/);
+});

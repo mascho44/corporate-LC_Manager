@@ -27,6 +27,7 @@ versionierte Inventar der Java-Laufzeitbibliotheken.
 - [Corporate: Beschaffungsplan](corporate-beschaffungsplan.md) · [Packliste: CSV-Import](packliste-csv-import.md)
 - [Teams und Gruppeninbox](gruppeninbox.md)
 - [Korrespondenzbanken](korrespondenzbanken.md)
+- [Domain Events und Webhooks](webhooks.md)
 ## Posteingang, Erkennung und Training
 - [Gemischte Sammel-PDFs aufteilen](inbox-pdf-splitting.md) · [Automatisches Aufteilen](inbox-auto-split.md)
 - [Training der Dokumentart (inkl. Absender-Layouts)](dokumentart-training.md)

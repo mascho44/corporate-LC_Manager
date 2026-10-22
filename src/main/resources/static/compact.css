@@ -93,7 +93,7 @@ html body .sla-rule.inactive{opacity:.6}
 html body .sla-form select[multiple]{min-height:110px}
 
 /* Seiten, die ihren Inhalt ohne eigenen Kopfbereich aufbauen: gleicher Innenabstand (22px) wie alle anderen Karten */
-html body #ebicsSection,html body #slaSection,html body #correspondentSection,html body #groupInboxSection,html body #tenantSection,html body #deadlineCalendarSection{padding:16px 22px 22px}
+html body #ebicsSection,html body #slaSection,html body #correspondentSection,html body #webhookSection,html body #groupInboxSection,html body #tenantSection,html body #deadlineCalendarSection{padding:16px 22px 22px}
 html body #trainingSection .module-hero,html body #importSection .module-hero{padding-left:22px;padding-right:22px}
 html body #slaSection form.sla-form,html body #ebicsSection form{margin-top:10px}
 html body .sla-form{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px;align-items:start}
@@ -133,3 +133,17 @@ html body #slaSection .sla-report-wrap{overflow-x:auto}
 html body #slaSection table.sla-report{border-collapse:collapse;width:100%;font-size:13px}
 html body #slaSection table.sla-report th,html body #slaSection table.sla-report td{padding:6px 10px;border-bottom:1px solid #e5e9ef;text-align:right;white-space:nowrap}
 html body #slaSection table.sla-report th:first-child,html body #slaSection table.sla-report td:first-child{text-align:left;white-space:normal}
+html body #webhookSection form.wh-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 20px;align-items:start;padding:0;margin:12px 0 0}
+html body #webhookSection form.wh-form>label{display:flex;flex-direction:column;align-items:stretch;gap:6px;margin:0;padding:0;border:0;background:none;box-shadow:none;min-width:0}
+html body #webhookSection form.wh-form>label>input:not([type=checkbox]){width:100%;margin:0;box-sizing:border-box}
+html body #webhookSection form.wh-form>label:has(>input[type=checkbox]){flex-direction:row;align-items:center;gap:8px;grid-column:1/-1}
+html body #webhookSection .wh-events{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px 18px;margin:0;padding:0;border:0}
+html body #webhookSection .wh-events legend{padding:0;margin:0 0 6px;font-weight:600;width:100%}
+html body #webhookSection .wh-events label{display:flex;align-items:center;gap:6px;margin:0}
+html body #webhookSection form.wh-form>.wh-actions{grid-column:1/-1;display:flex;gap:10px;margin:0}
+html body #webhookSection .wh-buttons{display:flex;flex-wrap:wrap;gap:6px}
+html body #webhookSection .wh-add{margin-top:14px}
+html body #webhookSection .wh-secret{margin:10px 0;padding:12px 14px;border:1px solid #f59e0b;background:#fffbeb;border-radius:8px}
+html body #webhookSection .wh-secret code{display:block;margin:8px 0;word-break:break-all;font-size:13px}
+html body #webhookSection .wh-secret button{margin-right:8px}
+@media(max-width:700px){html body #webhookSection form.wh-form{grid-template-columns:minmax(0,1fr)}}

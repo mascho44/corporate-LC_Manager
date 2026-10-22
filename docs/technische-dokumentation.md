@@ -163,6 +163,7 @@ Wichtige Variablen:
 | `LC_OCR_CONFIDENCE_THRESHOLD` | OCR-Prüfschwelle für neue Extraktionen |
 | `INTAKE_FOLDER_ROOT` | Wurzel der Eingangsordner (Standard `/data/intake`; im Betrieb als Volume einbinden, siehe [Eingangskanäle](eingangskanaele.md)) |
 | `INTAKE_ENCRYPTION_KEY` | Schlüssel (mindestens 32 Zeichen) für die verschlüsselte Ablage der Postfach-Kennwörter; ohne ihn lassen sich keine Postfächer einrichten |
+| `WEBHOOK_ENCRYPTION_KEY` | Schlüssel (mindestens 32 Zeichen) für die verschlüsselten Webhook-Geheimnisse; fällt auf `EBICS_ENCRYPTION_KEY` zurück (siehe `docs/webhooks.md`). `WEBHOOK_ALLOW_PRIVATE_TARGETS` nur für Tests. |
 | `INTAKE_ALLOWED_HOSTS` | Komma-Liste interner Mailserver, die der Server aufrufen darf (sonst nur öffentliche Adressen) |
 | `INTAKE_SETTLE_SECONDS`, `INTAKE_POLL_MS` | Ruhezeit einer Datei im Eingangsordner (10 s) und Takt des Abrufs (30000 ms) |
 
