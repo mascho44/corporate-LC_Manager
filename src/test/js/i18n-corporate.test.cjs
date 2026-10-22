@@ -251,3 +251,11 @@ test('lcLazy recomputes labels on access so they follow the current language', (
   assert.deepEqual(JSON.parse(JSON.stringify(Object.keys(map))), ['expiry']);
   assert.deepEqual([...list].map(String), ['Expiry', 'x']); assert.equal(list.map(x => x + '!').join(), 'Expiry!,x!');
 });
+
+test('requests to /api/ carry the language of the screen so the server can answer in it', async () => {
+  const seen = [];
+  const context = vm.createContext({ globalThis: null, document: { addEventListener() {} }, Headers, Request, location: { origin: 'https://lc.example' }, fetch: async (input, init) => { seen.push([typeof input === 'string' ? input : input.url, new Headers(init?.headers).get('X-LC-Language')]); return {}; } }); context.globalThis = context;
+  vm.runInContext(fs.readFileSync(dir + 'i18n.js', 'utf8'), context);
+  await context.fetch('/api/lcs'); await context.fetch('/language-en.json'); await context.fetch('/api/x', { headers: { 'X-LC-Language': 'de' } });
+  assert.deepEqual(JSON.parse(JSON.stringify(seen)), [['/api/lcs', 'en'], ['/language-en.json', null], ['/api/x', 'de']]);
+});

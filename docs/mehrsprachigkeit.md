@@ -44,3 +44,6 @@ Dokumente, die die App erzeugt (Rechnung, Packliste, Zertifikate, Begleitschreib
 ## Stand
 
 Zweisprachig sind der Corporate-Arbeitsablauf, die Befunde, Verlauf und Audit, Aktenansicht und -liste, Posteingang (Kern), Beschaffungsplan, Entwürfe, Menü-Übersichten. Noch deutsch sind Spezialfunktionen (Sammel-PDF aufteilen, Layoutlernen, Training, Prüfbereiche der Bank), die Fehlermeldungen des Servers und Teile der Plattformverwaltung. Beim Anfassen eines dieser Bereiche gleich mit übersetzen.
+
+## Servermeldungen
+Fehlertexte des Servers (`IllegalArgumentException`, `NoSuchElementException`, `ResponseStatusException`, Antworten mit `error` oder `message`) bleiben im Code deutsch. Für Englisch steht der englische Text im Katalog `src/main/resources/server-messages-en.json` (`exact`: genauer deutscher Text, `patterns`: Vorlagen mit `{}` für variable Teile und `{1}`, `{2}` im englischen Text). Der Browser schickt die Sprache der Oberfläche in der Kopfzeile `X-LC-Language`; `ServerMessages.translate` übersetzt in `ApiExceptionHandler` und `ServerMessageTranslation`. Neue deutsche Meldungen ohne Katalogeintrag lässt `ServerMessagesTest` durchfallen.

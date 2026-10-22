@@ -54,13 +54,13 @@ public class CredentialSessionFilter extends OncePerRequestFilter {
                 }
             }
             if(!valid&&tenantless){
-                if(request.getRequestURI().startsWith("/api/")){response.setStatus(403);response.setContentType("application/json");response.getWriter().write("{\"error\":\"Kein Mandantenzugriff. Bitte die Plattformverwaltung nutzen.\"}");}
+                if(request.getRequestURI().startsWith("/api/")){response.setStatus(403);response.setContentType("application/json");response.getWriter().write("{\"error\":\""+ServerMessages.translate("Kein Mandantenzugriff. Bitte die Plattformverwaltung nutzen.",request.getHeader("X-LC-Language"))+"\"}");}
                 else if(request.getRequestURI().equals("/")||request.getRequestURI().endsWith(".html"))response.sendRedirect("/platform.html");
                 else response.setStatus(404);
                 return;
             }
             if(!valid){if(request.getAttribute(AccessDenialFilter.REASON)==null)request.setAttribute(AccessDenialFilter.REASON,"Sitzung abgelaufen, Zugangsdaten oder Rechte geändert");if(session!=null)session.invalidate();SecurityContextHolder.clearContext();
-                if(request.getRequestURI().startsWith("/api/")){response.setStatus(401);response.setContentType("application/json");response.getWriter().write("{\"error\":\"Bitte erneut anmelden.\"}");}
+                if(request.getRequestURI().startsWith("/api/")){response.setStatus(401);response.setContentType("application/json");response.getWriter().write("{\"error\":\""+ServerMessages.translate("Bitte erneut anmelden.",request.getHeader("X-LC-Language"))+"\"}");}
                 else response.sendRedirect(uri.equals("/platform")||uri.startsWith("/platform.")||uri.startsWith("/platform-")?"/platform-login.html":"/login.html");
                 return;
             }
