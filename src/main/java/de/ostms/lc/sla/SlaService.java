@@ -69,6 +69,38 @@ public class SlaService {
   rules.delete(rule);audit.recordInTransaction(auth,"SLA_RULE_DELETED","SLA_RULE",id,rule.getName());
  }
 
+ /** The clocks of all files for the active rules, for the list and the escalation: one query per rule instead of one per file. */
+ @Transactional(readOnly=true) public Map<UUID,FileStatus> statusOfAll(LocalDate today){
+  var fileIds=new HashSet<String>();lcs.findAll().forEach(lc->fileIds.add(lc.getId().toString()));
+  var byFile=new HashMap<String,List<InstanceView>>();
+  for(SlaRule rule:rules.findAll()){
+   if(!rule.isActive())continue;
+   var actions=new ArrayList<>(rule.startActions());actions.addAll(rule.stopActions());
+   var events=new LinkedHashMap<String,List<SlaEvaluator.Event>>();
+   jdbc.query("select entity_id, action, occurred_at from audit_event where tenant_id=? and action = any(?) and successful and occurred_at > ? order by entity_id, occurred_at, id",rs->{
+     String id=rs.getString("entity_id");if(!fileIds.contains(id))return;
+     events.computeIfAbsent(id,k->new ArrayList<>()).add(new SlaEvaluator.Event(rs.getString("action"),rs.getTimestamp("occurred_at").toLocalDateTime()));
+    },TenantContext.currentId(),actions.toArray(new String[0]),java.sql.Timestamp.valueOf(today.minusDays(500).atStartOfDay()));
+   events.forEach((id,list)->{for(var clock:SlaEvaluator.evaluate(list,rule.startActions(),rule.stopActions(),rule.getTargetDays(),rule.getWarnPercent(),today))byFile.computeIfAbsent(id,k->new ArrayList<>()).add(new InstanceView(rule.getId(),rule.getName(),rule.getActivityKey(),clock));});
+  }
+  var out=new HashMap<UUID,FileStatus>();
+  byFile.forEach((id,list)->{
+   var worst=SlaEvaluator.worstRunning(list.stream().map(InstanceView::clock).toList());
+   list.sort(Comparator.comparing((InstanceView i)->i.clock().stoppedAt()!=null).thenComparing(i->i.clock().dueDate()));
+   out.put(UUID.fromString(id),new FileStatus(worst==null?"NONE":worst.name(),List.copyOf(list)));
+  });
+  return out;
+ }
+ public record ListEntry(UUID lcId,String state){}
+ /** Worst running state per file, only for files with a running clock that is tight or breached. */
+ @Transactional(readOnly=true) public List<ListEntry> listStates(LocalDate today){
+  var out=new ArrayList<ListEntry>();
+  statusOfAll(today).forEach((id,status)->{if(status.state().equals("WARNING")||status.state().equals("BREACHED"))out.add(new ListEntry(id,status.state()));});
+  return out;
+ }
+ /** Rules by id, for the escalation. */
+ @Transactional(readOnly=true) public Map<UUID,SlaRule> activeRules(){var m=new HashMap<UUID,SlaRule>();rules.findAll().stream().filter(SlaRule::isActive).forEach(r->m.put(r.getId(),r));return m;}
+
  /** All clocks of the active rules for one file and the worst state of those still running ("NONE" when nothing runs). */
  @Transactional(readOnly=true) public FileStatus status(UUID lcId,LocalDate today){
   if(!lcs.existsById(lcId))throw new NoSuchElementException("Akte nicht gefunden.");
