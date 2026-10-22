@@ -14,8 +14,8 @@ import java.util.*;
 @Service
 public class ApiKeyService {
  public static final String PREFIX="lca_";
- /** READ: look at files, documents and findings. LC_CREATE: create a file from an MT700. DOCUMENT_UPLOAD: attach documents to a file. */
- public static final List<String> SCOPES=List.of("READ","LC_CREATE","DOCUMENT_UPLOAD");
+ /** READ: look at files, documents and findings. LC_CREATE: create a file from an MT700. DOCUMENT_UPLOAD: attach documents to a file. PAYMENT: report a payment received for a file. */
+ public static final List<String> SCOPES=List.of("READ","LC_CREATE","DOCUMENT_UPLOAD","PAYMENT");
  static final int MAX_ACTIVE=20;
  public record View(UUID id,String name,String prefix,List<String> scopes,String createdBy,LocalDateTime createdAt,LocalDateTime lastUsedAt,boolean revoked){}
  public record Created(View key,String secret){}

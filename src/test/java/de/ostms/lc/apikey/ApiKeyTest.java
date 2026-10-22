@@ -79,7 +79,7 @@ class ApiKeyTest {
   var denied=new MockHttpServletResponse();seen.set(null);filter.doFilter(request("POST","/api/v1/lcs/"+UUID.randomUUID()+"/documents","lca_secret1"),denied,chain);
   assertThat(denied.getStatus()).isEqualTo(403);assertThat(denied.getContentAsString()).contains("DOCUMENT_UPLOAD");assertThat(seen.get()).isNull();
   var unknown=new MockHttpServletResponse();filter.doFilter(request("DELETE","/api/v1/lcs/x","lca_secret1"),unknown,chain);assertThat(unknown.getStatus()).isEqualTo(403);
-  assertThat(ApiKeyFilter.requiredScope("GET","/api/v1/lcs/1/findings")).isEqualTo("READ");assertThat(ApiKeyFilter.requiredScope("POST","/api/v1/lcs")).isEqualTo("LC_CREATE");assertThat(ApiKeyFilter.requiredScope("PUT","/api/v1/lcs")).isNull();
+  assertThat(ApiKeyFilter.requiredScope("GET","/api/v1/lcs/1/findings")).isEqualTo("READ");assertThat(ApiKeyFilter.requiredScope("POST","/api/v1/lcs")).isEqualTo("LC_CREATE");assertThat(ApiKeyFilter.requiredScope("PUT","/api/v1/lcs")).isNull();assertThat(ApiKeyFilter.requiredScope("POST","/api/v1/lcs/abc/payments")).isEqualTo("PAYMENT");
   // without an API key the request passes through untouched
   var plain=new MockHttpServletResponse();var passed=new AtomicReference<Boolean>(false);filter.doFilter(request("GET","/api/lcs",null),plain,(a,b)->passed.set(true));
   assertThat(passed.get()).isTrue();assertThat(ApiKeyFilter.isApiKeyRequest(request("POST","/api/v1/lcs","lca_x"))).isTrue();assertThat(ApiKeyFilter.isApiKeyRequest(request("POST","/api/lcs",null))).isFalse();

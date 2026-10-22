@@ -10,7 +10,9 @@ Jeder Schlüssel trägt nur die gewählten Umfänge:
 |---|---|
 | `READ` | alle `GET`-Aufrufe |
 | `LC_CREATE` | `POST /api/v1/lcs` |
-| `DOCUMENT_UPLOAD` | `POST /api/v1/lcs/{id}/documents` |
+| `DOCUMENT_UPLOAD` | `POST /api/v1/lcs/{id}/payments` | meldet einen Zahlungseingang (`201`): JSON `receivedOn`, `amount`, `currency` (Vorgabe: Währung des Akkreditivs), `reference`, `note`; siehe [Zahlungsstatus](zahlungsstatus.md) |
+| `POST /api/v1/lcs/{id}/documents` |
+| `PAYMENT` | `POST /api/v1/lcs/{id}/payments` |
 
 Ein Schlüssel gilt **nur unter `/api/v1/`** und für den Mandanten, in dem er angelegt wurde. Er hat keine Benutzerrechte, keine Sitzung und braucht keinen CSRF-Token. Fehlt der Umfang, antwortet die API mit `403` und nennt ihn;
 ein ungültiger oder widerrufener Schlüssel ergibt `401`; ein Schlüssel eines stillgelegten Mandanten wird nicht akzeptiert. Angelegt, widerrufen und die Aufrufe selbst stehen im Audit-Protokoll (Benutzer `api:<Name>`).
@@ -24,6 +26,7 @@ Alle mit `Authorization: Bearer lca_…`. Fehler kommen als `{"error":"…"}`; m
 | `GET /api/v1/lcs/{id}` | `lc` (wie oben), `requiredDocuments`, `documents`, `review` (`status` GREEN/YELLOW/RED, `discrepancies`, `warnings`, `passed`) |
 | `GET /api/v1/lcs/{id}/findings` | `review` und `findings`: `severity`, `automaticSeverity`, `code`, `message`, `document`, `lcCondition`, `evidence`, `decision` |
 | `GET /api/v1/lcs/{id}/documents` | Dokumentliste der Akte |
+| `GET /api/v1/lcs/{id}/payments` | `summary` (Status, eingegangen, offen, erwartet, überfällig) und `payments`; die Zusammenfassung steht auch als `payment` in `GET /api/v1/lcs/{id}` |
 | `POST /api/v1/lcs` | legt die Akte aus einer MT700 an (`201`); Text: `Content-Type: text/plain` mit der Nachricht, oder JSON `{"rawMessage":"…"}` |
 | `POST /api/v1/lcs/{id}/documents` | `multipart/form-data`: `file`, `type` (z. B. `COMMERCIAL_INVOICE`), optional `documentDate` (`2026-09-18`), `amount`, `currency`, `copyNumber`; `201` mit dem Dokument |
 

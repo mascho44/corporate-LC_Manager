@@ -13,6 +13,7 @@ public enum DomainEvent {
  LC_CREATED("LcCreated","Akte angelegt","File created",List.of("LC_CREATED","LC_IMPORTED","SWIFT_IMPORTED")),
  AMENDMENT_RECEIVED("AmendmentReceived","Änderung (MT707) eingegangen","Amendment (MT707) received",List.of("MT707_IMPORTED")),
  AMENDMENT_DECIDED("AmendmentDecided","Änderung angenommen oder abgelehnt","Amendment accepted or rejected",List.of("AMENDMENT_ACCEPTED","AMENDMENT_REJECTED")),
+ PAYMENT_RECEIVED("PaymentReceived","Zahlungseingang erfasst","Payment recorded",List.of("LC_PAYMENT_RECORDED")),
  EBICS_ORDER_FAILED("EbicsOrderFailed","EBICS-Auftrag fehlgeschlagen","EBICS order failed",List.of("EBICS_FETCH_FAILED","EBICS_KEYS_FAILED","EBICS_BANK_KEYS_FAILED"));
 
  private final String eventName,german,english;private final List<String> actions;

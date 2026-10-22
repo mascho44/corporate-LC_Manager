@@ -12,4 +12,4 @@ Er ist immer eine **Schätzung** („nicht gesichert“) mit dem Hinweis, die Za
 
 - **Tage:** Standard sind Kalendertage. Steht `banking days`, `business days`, `working days`, `Bankarbeitstage` oder `Werktage` in der Klausel, zählen Bankarbeitstage (Montag bis Freitag ohne bundesweite Feiertage, wie bei den [SLAs](sla.md)).
 - **Nicht erkannt:** andere Fristbeginne (zum Beispiel nach Akzept), Zahlung nach festem Datum und Teilzahlungen. Dort entsteht kein Termin.
-- **Tatsächlicher Zahlungseingang:** wird nicht erfasst (siehe Issue 45, braucht Zahlungsdaten).
+- **Tatsächlicher Zahlungseingang:** wird in der Akte erfasst, von Hand oder per API ([Zahlungsstatus](zahlungsstatus.md)); LCM liest keine Kontoauszüge.

@@ -9,6 +9,7 @@ import de.ostms.lc.document.domain.DocumentType;
 import de.ostms.lc.document.service.DocumentService;
 import de.ostms.lc.lc.domain.LetterOfCredit;
 import de.ostms.lc.lc.service.LetterOfCreditService;
+import de.ostms.lc.payment.PaymentService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -31,27 +32,32 @@ public class ApiV1Controller {
   static LcSummary of(LetterOfCredit lc){return new LcSummary(lc.getId(),lc.getReference(),String.valueOf(lc.getStatus()),lc.getInstrumentType(),lc.getApplicant(),lc.getBeneficiary(),lc.getCurrency(),lc.getAmount(),lc.getIssueDate(),lc.getExpiryDate(),lc.getLatestShipmentDate());}
  }
  public record Review(String status,long discrepancies,long warnings,long passed){}
- public record LcDetail(LcSummary lc,List<String> requiredDocuments,List<DocumentView> documents,Review review){}
+ public record LcDetail(LcSummary lc,List<String> requiredDocuments,List<DocumentView> documents,Review review,PaymentService.Summary payment){}
  public record Finding(String severity,String automaticSeverity,String code,String message,String document,String lcCondition,String evidence,String decision){
   static Finding of(CheckResult r){return new Finding(r.severity().name(),r.automaticSeverity()==null?null:r.automaticSeverity().name(),r.code(),r.message(),r.documentName(),r.lcCondition(),r.documentEvidence(),r.reviewDecision());}
  }
  public record Findings(Review review,List<Finding> findings){}
  public record CreateRequest(String rawMessage){}
- private final LetterOfCreditService lcs;private final DocumentService documents;private final DocumentCheckService checks;private final DocumentController uploads;private final AuditService audit;
- public ApiV1Controller(LetterOfCreditService lcs,DocumentService documents,DocumentCheckService checks,DocumentController uploads,AuditService audit){this.lcs=lcs;this.documents=documents;this.checks=checks;this.uploads=uploads;this.audit=audit;}
+ private final LetterOfCreditService lcs;private final DocumentService documents;private final DocumentCheckService checks;private final DocumentController uploads;private final AuditService audit;private final PaymentService payments;
+ public ApiV1Controller(LetterOfCreditService lcs,DocumentService documents,DocumentCheckService checks,DocumentController uploads,AuditService audit,PaymentService payments){this.lcs=lcs;this.documents=documents;this.checks=checks;this.uploads=uploads;this.audit=audit;this.payments=payments;}
 
  @GetMapping("/lcs") public List<LcSummary> list(@RequestParam(required=false) String reference){
   return lcs.all().stream().filter(lc->reference==null||reference.isBlank()||reference.equalsIgnoreCase(lc.getReference())).map(LcSummary::of).toList();
  }
  @GetMapping("/lcs/{id}") public LcDetail one(@PathVariable UUID id){
   var lc=lcs.one(id);var review=checks.check(id);
-  return new LcDetail(LcSummary.of(lc),lc.getRequiredDocuments(),documents.forLc(id),new Review(review.status(),review.discrepancies(),review.warnings(),review.passed()));
+  return new LcDetail(LcSummary.of(lc),lc.getRequiredDocuments(),documents.forLc(id),new Review(review.status(),review.discrepancies(),review.warnings(),review.passed()),payments.summary(id,java.time.LocalDate.now()));
  }
  @GetMapping("/lcs/{id}/findings") public Findings findings(@PathVariable UUID id){
   lcs.one(id);var review=checks.check(id);
   return new Findings(new Review(review.status(),review.discrepancies(),review.warnings(),review.passed()),review.results().stream().map(Finding::of).toList());
  }
  @GetMapping("/lcs/{id}/documents") public List<DocumentView> documents(@PathVariable UUID id){lcs.one(id);return documents.forLc(id);}
+
+ @GetMapping("/lcs/{id}/payments") public PaymentService.Payments payments(@PathVariable UUID id){return payments.forLc(id,java.time.LocalDate.now());}
+ /** Reports a payment received for a file (JSON: receivedOn, amount, currency, reference, note); another system, for example accounting, tells LCM. */
+ @PostMapping(value="/lcs/{id}/payments",consumes=MediaType.APPLICATION_JSON_VALUE) @ResponseStatus(HttpStatus.CREATED)
+ public PaymentService.View recordPayment(@PathVariable UUID id,@RequestBody PaymentService.Request request,Authentication authentication){return payments.record(id,request,"API",authentication);}
 
  /** Creates a file from an MT700 (plain text body or JSON {"rawMessage":"…"}). */
  @PostMapping(value="/lcs",consumes=MediaType.TEXT_PLAIN_VALUE) @ResponseStatus(HttpStatus.CREATED)

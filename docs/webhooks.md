@@ -15,9 +15,10 @@ Ereignisse entstehen aus den Audit-Aktionen; kein Modul muss etwas melden. Pro W
 | `LcCreated` | `LC_CREATED`, `LC_IMPORTED`, `SWIFT_IMPORTED` |
 | `AmendmentReceived` | `MT707_IMPORTED` |
 | `AmendmentDecided` | `AMENDMENT_ACCEPTED`, `AMENDMENT_REJECTED` |
+| `PaymentReceived` | `LC_PAYMENT_RECORDED` (Zahlung von Hand oder per API erfasst) |
 | `EbicsOrderFailed` | `EBICS_FETCH_FAILED`, `EBICS_KEYS_FAILED`, `EBICS_BANK_KEYS_FAILED` |
 
-Noch nicht erzeugt werden `ApprovalRequired`, `StatementReceived` und `PaymentReceived` (es gibt weder Freigabe-Anforderung als Ereignis noch Kontoauszüge oder Zahlungen). Fehlgeschlagene Aktionen lösen nur `EbicsOrderFailed` aus.
+Nicht erzeugt werden `ApprovalRequired` (keine Freigabe-Anforderung als Ereignis) und `StatementReceived` (LCM liest keine Kontoauszüge). Fehlgeschlagene Aktionen lösen nur `EbicsOrderFailed` aus.
 
 ## Nachricht
 `POST` mit `Content-Type: application/json`:
