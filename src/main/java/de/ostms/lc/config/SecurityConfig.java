@@ -34,6 +34,7 @@ import de.ostms.lc.user.service.AppUserDetailsService; import jakarta.servlet.ht
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/correspondent-banks/**","/api/correspondent-banks").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/correspondent-banks/**").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers(org.springframework.http.HttpMethod.DELETE,"/api/correspondent-banks/**").hasAuthority("PERM_SETTINGS_MANAGE")
+   .requestMatchers("/api/webhooks","/api/webhooks/**").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers("/api/ebics/**").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers("/api/intake/**").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/scan-profile").hasAuthority("PERM_SETTINGS_MANAGE")

@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Domain Events und Webhooks (Issues 53 und 56): Aus den Audit-Aktionen entstehen benannte Ereignisse (`DocumentUploaded`, `ValidationCompleted`, `DiscrepancyDetected`, `LcCreated`, `AmendmentReceived`, `EbicsOrderFailed` u. a.). Neue Seite „Webhooks“: Ziel-URL (nur https, keine internen Adressen), Ereignisauswahl, Geheimnis (einmal sichtbar, verschlüsselt gespeichert), Signatur HMAC-SHA256 (`X-LCM-Signature`), Wiederholung mit Wartezeit, Zustellungsliste, Test und erneutes Senden. Migration V139, Schnittstelle `/api/webhooks`, Beschreibung in `docs/webhooks.md`.
 * SLAs (Issue 71): Pausen und Auswertung. Je Regel lassen sich Pause- und Fortsetzen-Ereignisse wählen (z. B. Rückfrage an den Kunden / Antwort eingegangen, Migration V138); die Pause zählt nicht mit, die Fälligkeit verschiebt sich, die Uhr zeigt „pausiert“. Neue Tabelle „Einhaltung der SLAs“ auf der SLA-Seite (letzte 30/90/365 Tage: eingehalten, zu spät, laufend, knapp, verletzt, pausiert, Quote) mit CSV-Export, Schnittstelle `GET /api/sla/report`. Beschreibung in `docs/sla.md`.
 * Korrespondenzbanken (Issue 61): neue Seite „Korrespondenzbanken“ mit BIC, Land, Ort, Kommunikationswegen (SWIFT, EBICS, E-Mail, Bankportal), bevorzugtem Weg, Weiterleitungs-BIC, Kontakt und Hinweisen; je Mandant getrennt (Migration V137), Änderungen im Audit-Protokoll, Schnittstelle `/api/correspondent-banks`. Beschreibung in `docs/korrespondenzbanken.md`.
 

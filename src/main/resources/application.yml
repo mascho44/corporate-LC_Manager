@@ -71,6 +71,12 @@ app:
     encryption-key: ${EBICS_ENCRYPTION_KEY:}
     allowed-hosts: ${EBICS_ALLOWED_HOSTS:}
     message-types: ${EBICS_MESSAGE_TYPES:MT700,MT707,MT710,MT760}
+  webhooks:
+    # Schluessel fuer die Webhook-Geheimnisse; faellt auf EBICS_ENCRYPTION_KEY zurueck.
+    encryption-key: ${WEBHOOK_ENCRYPTION_KEY:${EBICS_ENCRYPTION_KEY:}}
+    # Nur fuer Entwicklung und Tests: Ziele im internen Netz und http:// erlauben.
+    allow-private-targets: ${WEBHOOK_ALLOW_PRIVATE_TARGETS:false}
+    max-attempts: ${WEBHOOK_MAX_ATTEMPTS:8}
   intake:
     folder-root: ${INTAKE_FOLDER_ROOT:/data/intake}
     settle-seconds: ${INTAKE_SETTLE_SECONDS:10}

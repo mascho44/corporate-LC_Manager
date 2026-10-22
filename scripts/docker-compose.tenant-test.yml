@@ -27,6 +27,8 @@ services:
       # The synthetic run uses one identity as platform and tenant administrator; production keeps the separation (default true).
       LC_SEPARATE_PLATFORM_ADMIN: "false"
       TOTP_ENCRYPTION_KEY: SyntheticTestEncryptionKeyOnly20261007
+      WEBHOOK_ENCRYPTION_KEY: SyntheticWebhookEncryptionKeyOnly20261023
+      WEBHOOK_ALLOW_PRIVATE_TARGETS: "true"
       SESSION_COOKIE_SECURE: "false"
       LC_TENANTS_TEST_PURGE_ENABLED: "true"
       SMTP_ENABLED: "true"
