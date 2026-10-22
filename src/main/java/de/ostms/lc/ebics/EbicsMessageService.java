@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
 public class EbicsMessageService {
  /** Message types the bank can deliver; which of them are fetched is configured in app.ebics.message-types. */
  public static final List<String> TYPES=List.of("MT700","MT707","MT710","MT760");
- public static final List<String> SUPPORTED=List.of("MT199","MT700","MT707","MT710","MT720","MT760","MT799");
+ public static final List<String> SUPPORTED=List.of("MT199","MT700","MT701","MT707","MT710","MT720","MT734","MT750","MT760","MT799");
  @org.springframework.beans.factory.annotation.Value("${app.ebics.message-types:MT700,MT707,MT710,MT760}") private String configuredTypes="MT700,MT707,MT710,MT760";
  List<String> fetchTypes(){
   var types=new ArrayList<String>();
