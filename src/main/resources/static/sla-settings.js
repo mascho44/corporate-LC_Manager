@@ -88,7 +88,7 @@ async function setupSla() {
   if (rule) fill(rule);
   template.onchange = () => { const a = catalog.activities.find(x => x.key === template.value); if (a) { fill({ name: globalThis.LcI18n?.language?.() === 'en' ? a.nameEn : a.name, startActions: a.startActions, stopActions: a.stopActions, targetDays: a.defaultDays, warnPercent: 80, active: true, activityKey: a.key }); } else key = 'CUSTOM'; };
   const save = node('button', tx('sla.save', 'Speichern')); save.type = 'submit'; const cancel = node('button', tx('sla.cancel', 'Abbrechen'), 'secondary'); cancel.type = 'button'; cancel.onclick = () => formBox.replaceChildren();
-  f.append(save, cancel);
+  const bar = document.createElement('div'); bar.className = 'sla-actions'; bar.append(save, cancel); f.append(bar);
   f.onsubmit = async event => {
    event.preventDefault();
    const body = { activityKey: key, name: name.value.trim(), startActions: [...start.selectedOptions].map(o => o.value), stopActions: [...stop.selectedOptions].map(o => o.value), targetDays: Number(days.value), warnPercent: Number(warn.value), active: active.checked, escalationTeamId: escalation.value || null };
