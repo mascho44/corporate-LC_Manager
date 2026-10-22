@@ -104,3 +104,11 @@ html body .sla-rule{margin:0 0 6px}
 html body .hero.hidden,html body section.hidden,html body .hidden{display:none}
 html body #slaSection form,html body #ebicsSection form,html body #groupInboxSection form{padding-left:0;padding-right:0;margin-left:0;margin-right:0}
 @media(max-width:700px){html body .sla-form{grid-template-columns:minmax(0,1fr)}}
+html body #slaSection form.sla-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 20px;align-items:start;padding:0;margin:12px 0 0}
+html body #slaSection form.sla-form>label{display:flex;flex-direction:column;align-items:stretch;gap:6px;margin:0;padding:0;border:0;background:none;box-shadow:none;min-width:0}
+html body #slaSection form.sla-form>label>:is(input:not([type=checkbox]),select){width:100%;margin:0;box-sizing:border-box}
+html body #slaSection form.sla-form>label:has(>input[type=checkbox]){flex-direction:row;align-items:center;gap:8px;grid-column:1/-1}
+html body #slaSection form.sla-form>label>input[type=checkbox]{width:auto;margin:0}
+html body #slaSection form.sla-form>button{grid-column:auto;justify-self:start}
+@media(max-width:700px){html body #slaSection form.sla-form{grid-template-columns:minmax(0,1fr)}}
+html body #slaSection form.sla-form>.sla-actions{grid-column:1/-1;display:flex;gap:10px;margin:0}
