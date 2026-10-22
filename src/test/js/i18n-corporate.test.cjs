@@ -259,3 +259,14 @@ test('requests to /api/ carry the language of the screen so the server can answe
   await context.fetch('/api/lcs'); await context.fetch('/language-en.json'); await context.fetch('/api/x', { headers: { 'X-LC-Language': 'de' } });
   assert.deepEqual(JSON.parse(JSON.stringify(seen)), [['/api/lcs', 'en'], ['/language-en.json', null], ['/api/x', 'de']]);
 });
+
+test('SLA states have colours and texts, and a clock is described in banking days', () => {
+  const context = vm.createContext({ globalThis: null, tx: (key, de, values = {}) => String(de).replace(/\{(\w+)\}/g, (m, k) => values[k] ?? m) }); context.globalThis = context;
+  vm.runInContext(fs.readFileSync(dir + 'sla-settings.js', 'utf8'), context);
+  const sla = context.LcSla;
+  assert.equal(sla.tone('BREACHED'), 'bad'); assert.equal(sla.tone('WARNING'), 'warn'); assert.equal(sla.tone('ON_TRACK'), 'ok'); assert.equal(sla.tone('?'), 'none');
+  assert.equal(sla.label('DONE_LATE'), 'zu spät erledigt');
+  const running = sla.describe({ ruleName: 'Dokumentenprüfung', clock: { state: 'WARNING', stoppedAt: null, dueDate: '2026-10-26', elapsedDays: 4, targetDays: 5 } });
+  assert.equal(running, 'Dokumentenprüfung: knapp · fällig 2026-10-26 · 4 von 5 Bankarbeitstagen');
+  assert.match(sla.describe({ ruleName: 'X', clock: { state: 'DONE_IN_TIME', stoppedAt: 'x', elapsedDays: 2, targetDays: 5 } }), /eingehalten · 2 von 5/);
+});
