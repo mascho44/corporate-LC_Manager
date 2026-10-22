@@ -79,3 +79,7 @@ body.platform-shell>.platform-header{position:static;display:flex;align-items:ce
 .platform-audit-table td.muted{color:#98a2b3}
 .platform-audit-table tr.failed td{background:#fff5f5}
 .platform-audit-table tr:hover td{background:#f8fafc}
+
+/* Plattform-Protokoll: Filter und Knoepfe in einer Reihe, nicht einzeln untereinander */
+.platform-pane[data-pane=log]>section>input{display:inline-block;width:min(320px,100%);margin:6px 8px 6px 0;vertical-align:middle}
+.platform-pane[data-pane=log]>section>button{margin:6px 8px 6px 0;vertical-align:middle}
