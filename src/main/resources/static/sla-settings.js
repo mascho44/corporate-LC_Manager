@@ -38,11 +38,22 @@ async function setupSla() {
  document.querySelector('#appNav nav').append(nav);
  const section = document.createElement('section'); section.id = 'slaSection'; section.className = 'panel hidden';
  const message = node('p', ''); message.setAttribute('role', 'status');
- const table = document.createElement('div'); const formBox = document.createElement('div');
- section.append(node('h2', tx('sla.title', 'SLA')), node('p', tx('sla.intro', 'Zielzeiten für Tätigkeiten in Bankarbeitstagen (Montag bis Freitag ohne bundesweite Feiertage). Die Uhr startet mit einem Start-Ereignis an der Akte und stoppt mit einem Stopp-Ereignis.')), message, table, formBox);
+ const table = document.createElement('div'); const inboxBox = document.createElement('div'); const formBox = document.createElement('div');
+ section.append(node('h2', tx('sla.title', 'SLA')), node('p', tx('sla.intro', 'Zielzeiten für Tätigkeiten in Bankarbeitstagen (Montag bis Freitag ohne bundesweite Feiertage). Die Uhr startet mit einem Start-Ereignis an der Akte und stoppt mit einem Stopp-Ereignis.')), message, table, inboxBox, formBox);
  document.querySelector('main').append(section);
 
+ async function drawInbox() {
+  inboxBox.replaceChildren();
+  if (!rules.some(r => r.active && r.activityKey === 'INBOX_ASSIGNMENT')) return;
+  let clocks; try { clocks = (await json('/api/sla/inbox')).filter(c => c.state === 'WARNING' || c.state === 'BREACHED'); } catch { return; }
+  inboxBox.append(node('h3', tx('sla.inboxTitle', 'Offene Posteingangsdokumente')));
+  if (!clocks.length) { inboxBox.append(node('p', tx('sla.inboxNone', 'Keines ist knapp oder überfällig.'))); return; }
+  const list = node('ul', undefined, 'sla-list');
+  clocks.forEach(c => { const li = node('li', tx('sla.inboxLine', '{name}: {state} · eingegangen {received} · fällig {due}', { name: c.filename, state: LcSla.label(c.state), received: String(c.receivedAt).slice(0, 10), due: c.dueDate }), LcSla.tone(c.state)); list.append(li); });
+  inboxBox.append(list);
+ }
  function draw() {
+  drawInbox();
   table.replaceChildren();
   if (!rules.length) table.append(node('p', tx('sla.none', 'Noch keine SLA-Regeln.')));
   rules.forEach(rule => {

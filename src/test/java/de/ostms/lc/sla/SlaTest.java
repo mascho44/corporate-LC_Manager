@@ -64,4 +64,11 @@ class SlaTest {
         assertThatThrownBy(() -> SlaService.validate(new SlaService.RuleRequest(null, "x", List.of("ABC"), List.of("DEF"), 3, 5, true, null), Set.of(), null, none)).hasMessageContaining("Warnschwelle");
         assertThatThrownBy(() -> SlaService.validate(new SlaService.RuleRequest(null, "x", List.of("abc"), List.of("DEF"), 3, 80, true, null), Set.of(), null, none)).hasMessageContaining("Ungültiges Ereignis");
     }
+
+    @Test void anOpenInboxDocumentIsRatedFromItsArrival() {
+        var received = LocalDateTime.of(2026, 10, 19, 10, 0);
+        assertThat(SlaService.inboxClock(received, 1, 80, LocalDate.of(2026, 10, 19)).state()).isEqualTo(SlaEvaluator.State.ON_TRACK);
+        assertThat(SlaService.inboxClock(received, 1, 80, LocalDate.of(2026, 10, 20)).state()).isEqualTo(SlaEvaluator.State.WARNING);
+        assertThat(SlaService.inboxClock(received, 1, 80, LocalDate.of(2026, 10, 21)).state()).isEqualTo(SlaEvaluator.State.BREACHED);
+    }
 }

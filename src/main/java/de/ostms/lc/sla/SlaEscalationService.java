@@ -25,6 +25,11 @@ public class SlaEscalationService {
     if(tasks.createForTeam(rule.getEscalationTeamId(),"AUTO_SLA",title,entry.getKey(),key,today).isPresent())created++;
    }
   }
+  for(var clock:sla.inboxStatus(today)){
+   var rule=rules.get(clock.ruleId());
+   if(rule==null||rule.getEscalationTeamId()==null||!"BREACHED".equals(clock.state()))continue;
+   if(tasks.createForTeam(rule.getEscalationTeamId(),"AUTO_SLA","SLA verletzt: Posteingang – "+clock.filename()+" (fällig "+clock.dueDate()+")",null,"SLA:INBOX:"+rule.getId()+":"+clock.itemId(),today).isPresent())created++;
+  }
   return created;
  }
 }
