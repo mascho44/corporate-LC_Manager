@@ -30,6 +30,7 @@ public class ApiKeyFilter extends OncePerRequestFilter {
   if("GET".equals(method))return "READ";
   if("POST".equals(method)&&(path.equals("/api/v1/lcs")||path.equals("/api/v1/lcs/")))return "LC_CREATE";
   if("POST".equals(method)&&path.matches("/api/v1/lcs/[^/]+/documents/?"))return "DOCUMENT_UPLOAD";
+  if("POST".equals(method)&&path.matches("/api/v1/lcs/[^/]+/payments/?"))return "PAYMENT";
   return null;
  }
  /** Requests with an API key use no cookie and need no CSRF token. */

@@ -447,7 +447,12 @@
   "Bitte mindestens einen Berechtigungsumfang wählen.": "Please choose at least one scope.",
   "Unbekannter Berechtigungsumfang.": "Unknown scope.",
   "API-Schlüssel nicht gefunden.": "API key not found.",
-  "Bitte die SWIFT-Nachricht (MT700) mitschicken.": "Please send the SWIFT message (MT700) with the request."
+  "Bitte die SWIFT-Nachricht (MT700) mitschicken.": "Please send the SWIFT message (MT700) with the request.",
+  "Bitte einen Betrag größer als 0 angeben.": "Please enter an amount greater than 0.",
+  "Der Betrag ist zu groß.": "The amount is too large.",
+  "Bitte eine Währung mit drei Buchstaben angeben.": "Please enter a currency of three letters.",
+  "Das Eingangsdatum darf nicht in der Zukunft liegen.": "The date received must not be in the future.",
+  "Zahlung nicht gefunden.": "Payment not found."
  },
  "patterns": [
   {
@@ -605,6 +610,10 @@
   {
    "de": "Es sind bereits {} API-Schlüssel aktiv. Bitte nicht mehr benötigte widerrufen.",
    "en": "There are already {1} API keys active. Please revoke those no longer needed."
+  },
+  {
+   "de": "Es sind höchstens {} Zahlungen je Akte möglich.",
+   "en": "At most {1} payments per file are possible."
   }
  ]
 }

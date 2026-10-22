@@ -162,3 +162,8 @@ html body #apiKeySection .wh-secret{margin:10px 0;padding:12px 14px;border:1px s
 html body #apiKeySection .wh-secret code{display:block;margin:8px 0;word-break:break-all;font-size:13px}
 html body #apiKeySection .wh-secret button{margin-right:8px}
 html body #apiKeySection form.wh-form{grid-template-columns:minmax(0,1fr)}
+html body .payment-block .payment-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 14px;align-items:end;margin:10px 0 0}
+html body .payment-block .payment-form>label{display:flex;flex-direction:column;gap:4px;margin:0}
+html body .payment-block .payment-form>label>input{width:100%;box-sizing:border-box}
+html body .payment-block .payment-actions{grid-column:1/-1;display:flex;gap:10px}
+html body .payment-block>button{margin-top:8px}

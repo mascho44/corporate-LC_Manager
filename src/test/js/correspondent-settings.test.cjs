@@ -59,3 +59,13 @@ test('the SLA settings are offered to administrators only, the SLA display stays
   ['POST', 'PUT', 'DELETE'].forEach(m => assert.match(security, new RegExp(m + ',"/api/sla/\\*\\*"\\)\\.hasRole\\("ADMIN"\\)')));
   assert.ok(!/"\/api\/lcs\/\*\/sla"[^\n]*hasRole/.test(security));
 });
+
+test('the payment block has all its texts in both language packs and is wired into the file view', () => {
+  const page = fs.readFileSync(dir + 'payments.js', 'utf8');
+  const keys = [...page.matchAll(/tx\('(pay\.[A-Za-z.]+)',\s*'((?:[^'\\]|\\.)*)'/g)];
+  assert.ok(keys.length >= 18);
+  for (const [, key, text] of keys) { assert.ok(de[key], 'missing de ' + key); assert.ok(en[key], 'missing en ' + key); assert.strictEqual(de[key], text.replace(/\\'/g, "'"), 'default text differs for ' + key); }
+  ['apik.scope.PAYMENT', 'apik.scopeHint.PAYMENT', 'audit.act.LC_PAYMENT_RECORDED', 'audit.act.LC_PAYMENT_DELETED'].forEach(k => { assert.ok(de[k], k); assert.ok(en[k], k); });
+  assert.match(fs.readFileSync(dir + 'index.html', 'utf8'), /payments\.js\?v=/);
+  assert.match(fs.readFileSync(dir + 'app-workspace.js', 'utf8'), /LcPayments\?\.render\(block,id\)/);
+});
