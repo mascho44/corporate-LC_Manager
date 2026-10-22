@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-/** A stored MT199/MT799 free-format message, linked to a dossier when its reference matches one. */
+/** A stored MT199/MT799 free-format or MT701/MT734/MT750 structured message, linked to a dossier when its reference matches one. */
 @Entity @Table(name="swift_message")
 public class SwiftMessage extends TenantOwnedEntity {
  @Id private UUID id=UUID.randomUUID();
@@ -17,10 +17,13 @@ public class SwiftMessage extends TenantOwnedEntity {
  @Column(nullable=false,length=20) private String source="IMPORT";
  @Column(name="imported_by",length=100) private String importedBy;
  @Column(name="imported_at",nullable=false,updatable=false) private LocalDateTime importedAt=LocalDateTime.now();
+ @Column(name="fields_json",columnDefinition="text") private String fieldsJson;
  protected SwiftMessage(){}
  public SwiftMessage(UUID lcId,String messageType,String reference,String relatedReference,String narrative,String rawMessage,String source,String importedBy){
   this.lcId=lcId;this.messageType=messageType;this.reference=reference;this.relatedReference=relatedReference;this.narrative=narrative;this.rawMessage=rawMessage;this.source=source;this.importedBy=importedBy;
  }
+ public SwiftMessage(UUID lcId,String messageType,String reference,String relatedReference,String narrative,String rawMessage,String source,String importedBy,String fieldsJson){this(lcId,messageType,reference,relatedReference,narrative,rawMessage,source,importedBy);this.fieldsJson=fieldsJson;}
+ public String getFieldsJson(){return fieldsJson;}
  public UUID getId(){return id;} public UUID getLcId(){return lcId;} public String getMessageType(){return messageType;} public String getReference(){return reference;}
  public String getRelatedReference(){return relatedReference;} public String getNarrative(){return narrative;} public String getSource(){return source;}
  public String getImportedBy(){return importedBy;} public LocalDateTime getImportedAt(){return importedAt;}

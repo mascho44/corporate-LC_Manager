@@ -217,6 +217,13 @@ einer Akte zugeordnet werden. Die Mitteilungen erscheinen in der Akte unter „B
 
 Beide Typen laufen über den bestehenden SWIFT-Import (Vorschau, dann Import) und, falls die Bank sie liefert, über den EBICS-Abruf.
 
+### Strukturierte Bankmitteilungen: MT734, MT750, MT701
+- **MT734** (Ablehnung der Dokumente, Unstimmigkeitsmeldung): Pflicht `:20:` und `:77J:` (Abweichungen); `:21:` Referenz der einreichenden Bank, `:32A:`, `:73A:`, `:77B:`, `:72Z:`.
+- **MT750** (Hinweis auf Abweichungen/Abzüge): Pflicht `:20:` und `:77J:`; `:21:`, `:32B:`, `:33B:`, `:34B:`, `:71D:`, `:73A:`, `:57A:`, `:72Z:`.
+- **MT701** (Fortsetzung eines MT700): Pflicht `:27:` (Folgenummer), `:20:` (Akkreditivnummer) und mindestens eines von `:45A:`, `:46A:`, `:47A:`.
+Die Felder werden nach Nummer gespeichert (`fields_json`) und mit deutschen Feldnamen als lesbarer Text in der Akte unter „Bankmitteilungen“ angezeigt. Zuordnung, Duplikatschutz, Vorschau und Protokoll wie bei MT199/MT799 (Akte über `:21:`, sonst `:20:`; bei MT701 über `:20:`).
+Erkennung am Block `{2:…734/750/701`, am Text „MT 734“ usw. oder am Feldprofil (`:77J:` mit `:32A:` = MT734, `:77J:` mit `:32B:`/`:33B:`/`:34B:`/`:71D:` = MT750, `:27:` mit `:45A:`/`:46A:`/`:47A:` ohne `:31D:` = MT701). Migration V136.
+
 ## Änderungen (MT707): Zustimmung und Zuordnung
 - **Zuordnung:** Die Akte wird über die Referenz in `:21:`, `:23:` oder `:20:` gefunden (in dieser Reihenfolge; die Bank schreibt die Akkreditivnummer je nach Haus in eines der Felder).
   Passen die Referenzen zu **mehreren** Akten, wird nichts importiert; ohne Treffer nennt die Meldung die geprüften Referenzen.

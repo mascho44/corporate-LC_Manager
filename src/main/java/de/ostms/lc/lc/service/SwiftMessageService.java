@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-/** Stores MT199/MT799 free-format messages and links them to the dossier whose reference they name (:21: first, then :20:). */
+/** Stores MT199/MT799 free-format and MT701/MT734/MT750 structured messages and links them to the dossier whose reference they name (:21: first, then :20:). */
 @Service
 public class SwiftMessageService {
  private final SwiftMessageRepository messages;private final LetterOfCreditRepository lcs;
@@ -26,7 +26,9 @@ public class SwiftMessageService {
   var parsed=FreeFormatMessage.parse(type,raw);
   if(messages.existsSame(type,parsed.reference(),raw))throw new IllegalArgumentException("Diese Mitteilung wurde bereits importiert.");
   UUID lc=findTarget(parsed).map(LetterOfCredit::getId).orElse(null);
-  return messages.save(new SwiftMessage(lc,type,parsed.reference(),parsed.relatedReference(),parsed.narrative(),raw,source,user));
+  String fields=null;
+  if(!parsed.fields().isEmpty()){try{fields=new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(new java.util.TreeMap<>(parsed.fields()));}catch(com.fasterxml.jackson.core.JsonProcessingException e){throw new IllegalStateException(e);}}
+  return messages.save(new SwiftMessage(lc,type,parsed.reference(),parsed.relatedReference(),parsed.narrative(),raw,source,user,fields));
  }
  @Transactional(readOnly=true) public List<SwiftMessage> forLc(UUID lcId){return messages.forLc(lcId);}
  @Transactional(readOnly=true) public List<SwiftMessage> unassigned(){return messages.unassigned();}

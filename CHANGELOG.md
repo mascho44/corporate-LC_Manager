@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* SWIFT-Import: MT734 (Unstimmigkeitsmeldung/Ablehnung), MT750 (Hinweis auf Abweichungen) und MT701 (Fortsetzung eines MT700) lassen sich einlesen: Erkennung, Pflichtfelder, Vorschau mit deutschen Feldnamen, Speicherung der Felder nach Nummer (Migration V136), Zuordnung zur Akte über `:21:`/`:20:`, Anzeige unter „Bankmitteilungen“, Duplikatschutz, Protokoll und EBICS-Abruf. Außerdem nennen die Hilfetexte im Import alle importierbaren Nachrichtentypen (MT710 war schon vorher importierbar). Beschreibung in `docs/fachliche-dokumentation.md`.
 * Import: Der Knopf „Prüfen“ erscheint nur noch bei manuell eingefügten Nachrichten; hochgeladene Dateien werden schon beim Laden geprüft.
 
 * Optik: Auf der SLA-Seite mehr Abstand über „Regel hinzufügen“.

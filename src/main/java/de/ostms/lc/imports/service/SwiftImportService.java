@@ -133,7 +133,7 @@ public class SwiftImportService {
     @org.springframework.beans.factory.annotation.Autowired(required=false) private de.ostms.lc.lc.service.SwiftMessageService freeMessages;
     private static final Map<String,String> MT79X_TARGETS = Map.ofEntries(Map.entry("20","reference"),Map.entry("21","relatedReference"),Map.entry("79","narrative"));
     private static final Map<String,String> MT79X_LABELS = Map.ofEntries(Map.entry("20","Referenz (Transaction Reference Number)"),Map.entry("21","Bezugsreferenz (Related Reference)"),Map.entry("79","Mitteilungstext (Narrative)"));
-    private static boolean freeFormat(String type){return type.equals("MT199")||type.equals("MT799");}
+    private static boolean freeFormat(String type){return de.ostms.lc.swift.FreeFormatMessage.supports(type);}
     private final Mt700Parser mt700;
     private final Mt707Parser mt707;
     private final LetterOfCreditRepository lcs;
@@ -264,7 +264,7 @@ public class SwiftImportService {
             Object result=switch(p.messageType()){
                 case "MT707"->amendmentService.importMt707(adapted.rawMessage());
                 case "MT760"->lcService.importMt760(adapted.rawMessage());
-                case "MT199","MT799"->importFreeFormat(p.messageType(),adapted.rawMessage());
+                case "MT199","MT799","MT701","MT734","MT750"->importFreeFormat(p.messageType(),adapted.rawMessage());
                 default->lcService.importMt700(adapted.rawMessage());
             };
             history.record(adapted.filename(),p.messageType(),p.reference(),"SUCCESS","Import erfolgreich"); return result;
@@ -285,6 +285,10 @@ public class SwiftImportService {
         if(upper.matches("(?s).*\\{2:[IO]799.*")||upper.matches("(?s).*\\bMT\\s*799\\b.*")) return "MT799";
         if(upper.matches("(?ms).*^:79:.*")&&!upper.matches("(?ms).*^:(32B|31D|31E|40C|77C|77U|26E|45A|46A):.*")) return "MT799";
         if(upper.matches("(?s).*\\{2:[IO]760.*")||upper.matches("(?s).*\\bMT\\s*760\\b.*")||upper.matches("(?ms).*^:(40C|77C|77U|22D|23H|45L):.*")) return "MT760";
+        // MT734 (advice of refusal) and MT750 (advice of discrepancy) carry :77J:; MT734 has :32A:, MT750 :32B:/:33B:/:34B:/:71D:. MT701 continues an MT700 (:27: without :31D:).
+        if(upper.matches("(?s).*\\{2:[IO]734.*")||upper.matches("(?s).*\\bMT\\s*734\\b.*")||(upper.matches("(?ms).*^:77J:.*")&&upper.matches("(?ms).*^:32A:.*")))return "MT734";
+        if(upper.matches("(?s).*\\{2:[IO]750.*")||upper.matches("(?s).*\\bMT\\s*750\\b.*")||(upper.matches("(?ms).*^:77J:.*")&&upper.matches("(?ms).*^:(32B|33B|34B|71D):.*")))return "MT750";
+        if(upper.matches("(?s).*\\{2:[IO]701.*")||upper.matches("(?s).*\\bMT\\s*701\\b.*")||(upper.matches("(?ms).*^:27:.*")&&upper.matches("(?ms).*^:(45A|46A|47A):.*")&&!upper.matches("(?ms).*^:(31D|32B|40A):.*")))return "MT701";
         if(upper.matches("(?s).*\\{2:[IO]707.*")||upper.matches("(?s).*\\bMT\\s*707\\b.*")||upper.matches("(?ms).*^:(26E|31E|45B|46B|47B):.*")) return "MT707";
         // MT720 (transfer of a documentary credit): like MT710 the credit number is :21:, the form of the transfer is :40B:.
         if(upper.matches("(?s).*\\{2:[IO]720.*")||upper.matches("(?s).*\\bMT\\s*720\\b.*")||upper.matches("(?ms).*^:40B:.*"))return "MT720";
@@ -335,10 +339,10 @@ public class SwiftImportService {
 
     private Map<String,String> parseFields(String raw){Map<String,String> values=new LinkedHashMap<>();var m=FIELD.matcher(raw.strip());while(m.find())values.put(m.group(1),m.group(2).trim());return values;}
     private Map<String,String> targets(String type){return freeFormat(type)?MT79X_TARGETS:(type.equals("MT710")||type.equals("MT720"))?MT710_TARGETS:type.equals("MT760")?MT760_TARGETS:type.equals("MT707")?MT707_TARGETS:MT700_TARGETS;}
-    private String label(String type,String code){if(type.equals("MT720")&&MT720_LABELS.containsKey(code))return MT720_LABELS.get(code);String special=freeFormat(type)&&MT79X_LABELS.containsKey(code)?MT79X_LABELS.get(code):(type.equals("MT710")||type.equals("MT720"))&&MT710_LABELS.containsKey(code)?MT710_LABELS.get(code):type.equals("MT760")?MT760_LABELS.get(code):type.equals("MT707")?MT707_LABELS.get(code):MT700_LABELS.get(code);return special!=null?special:COMMON_LABELS.getOrDefault(code,"Weiteres SWIFT-Feld");}
+    private String label(String type,String code){String own=de.ostms.lc.swift.FreeFormatMessage.label(type,code);if(own!=null)return own;if(type.equals("MT720")&&MT720_LABELS.containsKey(code))return MT720_LABELS.get(code);String special=freeFormat(type)&&MT79X_LABELS.containsKey(code)?MT79X_LABELS.get(code):(type.equals("MT710")||type.equals("MT720"))&&MT710_LABELS.containsKey(code)?MT710_LABELS.get(code):type.equals("MT760")?MT760_LABELS.get(code):type.equals("MT707")?MT707_LABELS.get(code):MT700_LABELS.get(code);return special!=null?special:COMMON_LABELS.getOrDefault(code,"Weiteres SWIFT-Feld");}
     private void require(Map<String,String> values,String code,String name,List<String> errors){if(blank(values.get(code)))errors.add("Pflichtfeld :"+code+": ("+name+") fehlt.");}
     private boolean blank(String value){return value==null||value.isBlank();}
-    private boolean standardField(String type,String code){return MT700_LABELS.containsKey(code)||COMMON_LABELS.containsKey(code)||(type.equals("MT707")&&MT707_LABELS.containsKey(code))||(type.equals("MT760")&&MT760_LABELS.containsKey(code))||((type.equals("MT710")||type.equals("MT720"))&&MT710_LABELS.containsKey(code))||(freeFormat(type)&&MT79X_LABELS.containsKey(code));}
+    private boolean standardField(String type,String code){return de.ostms.lc.swift.FreeFormatMessage.label(type,code)!=null||MT700_LABELS.containsKey(code)||COMMON_LABELS.containsKey(code)||(type.equals("MT707")&&MT707_LABELS.containsKey(code))||(type.equals("MT760")&&MT760_LABELS.containsKey(code))||((type.equals("MT710")||type.equals("MT720"))&&MT710_LABELS.containsKey(code))||(freeFormat(type)&&MT79X_LABELS.containsKey(code));}
     private String inferTarget(String value){String text=value==null?"":value.toLowerCase(Locale.ROOT);if(text.matches("(?s).*\\b(applicant|auftraggeber|antragsteller)\\b.*"))return "applicant";if(text.matches("(?s).*\\b(beneficiary|begünstigte[rrn]?)\\b.*"))return "beneficiary";if(text.matches("(?s).*\\b(expiry|expiration|ablaufdatum|valid until)\\b.*"))return "expiryDateAndPlace";if(text.matches("(?s).*\\b(latest shipment|späteste[rn]? versand)\\b.*"))return "latestShipmentDate";if(text.matches("(?s).*\\b(documents required|required documents|vorzulegende dokumente)\\b.*"))return "requiredDocuments";if(text.matches("(?s).*\\b(amount|betrag|total)\\b.*\\b(eur|usd|gbp|chf|jpy)\\b.*"))return "amountAndCurrency";return null;}
     private String requireRaw(SwiftImportRequest r){if(r==null||r.rawMessage()==null||r.rawMessage().isBlank())throw new IllegalArgumentException("Bitte eine SWIFT-Nachricht auswählen oder einfügen.");return r.rawMessage();}
     private String readable(RuntimeException ex){return ex.getMessage()==null?"SWIFT-Nachricht konnte nicht gelesen werden.":ex.getMessage();}
