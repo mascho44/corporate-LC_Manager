@@ -29,6 +29,7 @@ versionierte Inventar der Java-Laufzeitbibliotheken.
 - [Korrespondenzbanken](korrespondenzbanken.md)
 - [Domain Events und Webhooks](webhooks.md)
 - [Externe REST-API und API-Schlüssel](rest-api.md)
+- [Erwarteter Geldeingang in den Fristen](erwarteter-geldeingang.md)
 ## Posteingang, Erkennung und Training
 - [Gemischte Sammel-PDFs aufteilen](inbox-pdf-splitting.md) · [Automatisches Aufteilen](inbox-auto-split.md)
 - [Training der Dokumentart (inkl. Absender-Layouts)](dokumentart-training.md)
