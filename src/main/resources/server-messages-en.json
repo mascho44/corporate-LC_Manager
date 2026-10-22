@@ -399,7 +399,15 @@
   "Antwort nicht verwertbar": "Response not usable",
   "Der Dienst antwortet, aber nicht mit auswertbarem JSON.": "The service responds, but not with evaluable JSON.",
   "Verbindung funktioniert": "Connection works",
-  "API-Schlüssel entfernt, KI-Vorschläge ausgeschaltet": "API key removed, AI suggestions switched off"
+  "API-Schlüssel entfernt, KI-Vorschläge ausgeschaltet": "API key removed, AI suggestions switched off",
+  "Bitte einen Namen (höchstens 120 Zeichen) angeben.": "Please enter a name (at most 120 characters).",
+  "Bitte mindestens ein Start- und ein Stopp-Ereignis wählen.": "Please choose at least one start and one stop event.",
+  "Höchstens 8 Ereignisse je Seite.": "At most 8 events per side.",
+  "Ein Ereignis kann nicht gleichzeitig starten und stoppen.": "An event cannot start and stop at the same time.",
+  "Die Zielzeit muss zwischen 1 und 60 Bankarbeitstagen liegen.": "The target time must be between 1 and 60 banking days.",
+  "Die Warnschwelle muss zwischen 10 und 99 Prozent liegen.": "The warning threshold must be between 10 and 99 percent.",
+  "Es gibt schon eine SLA-Regel mit diesem Namen.": "An SLA rule with this name already exists.",
+  "SLA-Regel nicht gefunden.": "SLA rule not found."
  },
  "patterns": [
   {
@@ -549,6 +557,10 @@
   {
    "de": "Im Zielmandanten fehlt die Rolle „{}“ und eine Standardrolle gleicher Art. Bitte zuerst anlegen.",
    "en": "The role “{1}” and a default role of the same kind are missing in the target tenant. Please create them first."
+  },
+  {
+   "de": "Ungültiges Ereignis: {}",
+   "en": "Invalid event: {1}"
   }
  ]
 }
