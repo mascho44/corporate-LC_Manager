@@ -2,6 +2,9 @@
 
 ## 0.5.1 – in Arbeit
 
+* Befunde (Issue 12): Auch die eingebauten Datumsprüfungen erklären die Abweichung in Worten, z. B. „LC verlangt spätestens 20.09.2026, Konnossement nennt 21.09.2026: 1 Tag zu spät.“ – für Konnossement, Luftfrachtbrief, CMR und Dokumente nach dem Ablaufdatum. Bisher gab es die Rechnung nur für Regelpakete und den Rechnungsbetrag.
+* Neu: `AGENTS.md` mit Arbeitsregeln für Coding-Agenten (Bauen und Testen, Freigabe vor Merge und Deploy, Mehrsprachigkeit, Oberfläche, Backend).
+
 * Import: Der Knopf „Prüfen“ erscheint nur noch bei manuell eingefügten Nachrichten; hochgeladene Dateien werden schon beim Laden geprüft.
 
 * Optik: Auf der SLA-Seite mehr Abstand über „Regel hinzufügen“.
