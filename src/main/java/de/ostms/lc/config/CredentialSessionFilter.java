@@ -22,6 +22,8 @@ public class CredentialSessionFilter extends OncePerRequestFilter {
         var auth=SecurityContextHolder.getContext().getAuthentication();
         // A scan-station token was already checked (and the tenant opened) by CaptureTokenFilter; there is no session to validate.
         if(auth!=null&&auth.getName()!=null&&auth.getName().startsWith("capture:")&&request.getHeader("Authorization")!=null){chain.doFilter(request,response);return;}
+        // An API key was already checked (and the tenant opened) by ApiKeyFilter, which marks the request itself (a client cannot set request attributes); there is no session to validate either.
+        if(auth!=null&&Boolean.TRUE.equals(request.getAttribute(de.ostms.lc.apikey.ApiKeyFilter.AUTHENTICATED))){chain.doFilter(request,response);return;}
         var session=request.getSession(false);
         if(auth!=null&&auth.isAuthenticated()&&!(auth instanceof AnonymousAuthenticationToken)){
             Object stamp=session==null?null:session.getAttribute(STAMP);

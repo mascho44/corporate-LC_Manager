@@ -3,7 +3,7 @@ import de.ostms.lc.user.service.AppUserDetailsService; import jakarta.servlet.ht
 @Configuration public class SecurityConfig {
  @Bean PasswordEncoder passwordEncoder(){return new BCryptPasswordEncoder();}
  @Bean AuthenticationManager authenticationManager(AuthenticationConfiguration c)throws Exception{return c.getAuthenticationManager();}
- @Bean SecurityFilterChain security(HttpSecurity http,org.springframework.beans.factory.ObjectProvider<de.ostms.lc.capture.CaptureTokenService> captureTokens,org.springframework.beans.factory.ObjectProvider<AccessDenialLog> denialLogs,AppUserDetailsService users,de.ostms.lc.user.repository.AppUserRepository accounts,de.ostms.lc.tenant.service.TenantMembershipService memberships)throws Exception{return http.userDetailsService(users)
+ @Bean SecurityFilterChain security(HttpSecurity http,org.springframework.beans.factory.ObjectProvider<de.ostms.lc.capture.CaptureTokenService> captureTokens,org.springframework.beans.factory.ObjectProvider<de.ostms.lc.apikey.ApiKeyService> apiKeys,org.springframework.beans.factory.ObjectProvider<AccessDenialLog> denialLogs,AppUserDetailsService users,de.ostms.lc.user.repository.AppUserRepository accounts,de.ostms.lc.tenant.service.TenantMembershipService memberships)throws Exception{return http.userDetailsService(users)
   .authorizeHttpRequests(a->a
    .requestMatchers("/prelogin-language.js").permitAll()
    .requestMatchers("/favicon.ico","/apple-touch-icon.png","/apple-touch-icon-precomposed.png","/robots.txt").permitAll() // browsers ask for these by themselves; without login they get 404 instead of 401
@@ -35,6 +35,11 @@ import de.ostms.lc.user.service.AppUserDetailsService; import jakarta.servlet.ht
    .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/correspondent-banks/**").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers(org.springframework.http.HttpMethod.DELETE,"/api/correspondent-banks/**").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers("/api/webhooks","/api/webhooks/**").hasAuthority("PERM_SETTINGS_MANAGE")
+   .requestMatchers("/api/api-keys","/api/api-keys/**").hasAuthority("PERM_SETTINGS_MANAGE")
+   .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/v1/**").hasAuthority("PERM_API_READ")
+   .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/v1/lcs").hasAuthority("PERM_API_LC_CREATE")
+   .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/v1/lcs/*/documents").hasAuthority("PERM_API_DOCUMENT_UPLOAD")
+   .requestMatchers("/api/v1/**").denyAll()
    .requestMatchers("/api/ebics/**").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers("/api/intake/**").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/scan-profile").hasAuthority("PERM_SETTINGS_MANAGE")
@@ -117,9 +122,10 @@ import de.ostms.lc.user.service.AppUserDetailsService; import jakarta.servlet.ht
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/charge-profiles").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/lcs/*/charges").hasAuthority("PERM_LC_EDIT")
    .anyRequest().authenticated())
-  .csrf(c->c.ignoringRequestMatchers(de.ostms.lc.capture.CaptureTokenFilter::isCaptureRequest).ignoringRequestMatchers("/api/auth/login","/api/auth/login/totp","/api/auth/password-reset/request","/api/auth/password-reset/complete","/api/auth/invitation/accept"))
+  .csrf(c->c.ignoringRequestMatchers(de.ostms.lc.capture.CaptureTokenFilter::isCaptureRequest).ignoringRequestMatchers(de.ostms.lc.apikey.ApiKeyFilter::isApiKeyRequest).ignoringRequestMatchers("/api/auth/login","/api/auth/login/totp","/api/auth/password-reset/request","/api/auth/password-reset/complete","/api/auth/invitation/accept"))
   .addFilterAfter(new AccessDenialFilter(denialLogs.getIfAvailable(AccessDenialLog::new)),org.springframework.security.web.context.SecurityContextHolderFilter.class)
   .addFilterAfter(new de.ostms.lc.capture.CaptureTokenFilter(captureTokens::getIfAvailable),org.springframework.security.web.context.SecurityContextHolderFilter.class)
+  .addFilterAfter(new de.ostms.lc.apikey.ApiKeyFilter(apiKeys::getIfAvailable),org.springframework.security.web.context.SecurityContextHolderFilter.class)
   .addFilterAfter(new CredentialSessionFilter(accounts,memberships),org.springframework.security.web.context.SecurityContextHolderFilter.class)
   .exceptionHandling(e->e.defaultAuthenticationEntryPointFor(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),new AntPathRequestMatcher("/api/**")).defaultAuthenticationEntryPointFor(new org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint("/platform-login.html"),new org.springframework.security.web.util.matcher.OrRequestMatcher(new AntPathRequestMatcher("/platform"),new AntPathRequestMatcher("/platform.html"))))
   .formLogin(f->f.loginPage("/login.html").permitAll()).logout(l->l.disable())

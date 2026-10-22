@@ -262,7 +262,6 @@
   "Die Webhook-Adresse muss mit https:// beginnen.": "The webhook address must start with https://.",
   "Die Webhook-Adresse muss mit https:// (oder http://) beginnen.": "The webhook address must start with https:// (or http://).",
   "Bitte die Angaben zur Korrespondenzbank ausfüllen.": "Please fill in the details of the correspondent bank.",
-  "Die BIC ist ungültig (8 oder 11 Zeichen).": "The BIC is invalid (8 or 11 characters).",
   "Die Weiterleitungs-BIC ist ungültig (8 oder 11 Zeichen).": "The routing BIC is invalid (8 or 11 characters).",
   "Bitte einen Namen angeben.": "Please enter a name.",
   "Der Ländercode muss aus zwei Buchstaben bestehen.": "The country code must consist of two letters.",
@@ -443,7 +442,12 @@
   "Die Zielzeit muss zwischen 1 und 60 Bankarbeitstagen liegen.": "The target time must be between 1 and 60 banking days.",
   "Die Warnschwelle muss zwischen 10 und 99 Prozent liegen.": "The warning threshold must be between 10 and 99 percent.",
   "Es gibt schon eine SLA-Regel mit diesem Namen.": "An SLA rule with this name already exists.",
-  "SLA-Regel nicht gefunden.": "SLA rule not found."
+  "SLA-Regel nicht gefunden.": "SLA rule not found.",
+  "Bitte einen Namen (höchstens 100 Zeichen) angeben, zum Beispiel „ERP-Anbindung“.": "Please enter a name (at most 100 characters), for example “ERP integration”.",
+  "Bitte mindestens einen Berechtigungsumfang wählen.": "Please choose at least one scope.",
+  "Unbekannter Berechtigungsumfang.": "Unknown scope.",
+  "API-Schlüssel nicht gefunden.": "API key not found.",
+  "Bitte die SWIFT-Nachricht (MT700) mitschicken.": "Please send the SWIFT message (MT700) with the request."
  },
  "patterns": [
   {
@@ -597,6 +601,10 @@
   {
    "de": "Ungültiges Ereignis: {}",
    "en": "Invalid event: {1}"
+  },
+  {
+   "de": "Es sind bereits {} API-Schlüssel aktiv. Bitte nicht mehr benötigte widerrufen.",
+   "en": "There are already {1} API keys active. Please revoke those no longer needed."
   }
  ]
 }
