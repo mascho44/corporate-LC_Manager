@@ -93,7 +93,7 @@ html body .sla-rule.inactive{opacity:.6}
 html body .sla-form select[multiple]{min-height:110px}
 
 /* Seiten, die ihren Inhalt ohne eigenen Kopfbereich aufbauen: gleicher Innenabstand (22px) wie alle anderen Karten */
-html body #ebicsSection,html body #slaSection,html body #groupInboxSection,html body #tenantSection,html body #deadlineCalendarSection{padding:16px 22px 22px}
+html body #ebicsSection,html body #slaSection,html body #correspondentSection,html body #groupInboxSection,html body #tenantSection,html body #deadlineCalendarSection{padding:16px 22px 22px}
 html body #trainingSection .module-hero,html body #importSection .module-hero{padding-left:22px;padding-right:22px}
 html body #slaSection form.sla-form,html body #ebicsSection form{margin-top:10px}
 html body .sla-form{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px;align-items:start}
@@ -113,3 +113,17 @@ html body #slaSection form.sla-form>button{grid-column:auto;justify-self:start}
 @media(max-width:700px){html body #slaSection form.sla-form{grid-template-columns:minmax(0,1fr)}}
 html body #slaSection form.sla-form>.sla-actions{grid-column:1/-1;display:flex;gap:10px;margin:0}
 html body #slaSection .sla-add{margin-top:14px}
+html body #correspondentSection form,html body #correspondentSection .cb-form{padding-left:0;padding-right:0;margin:12px 0 0}
+html body #correspondentSection form.cb-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 20px;align-items:start;padding:0}
+html body #correspondentSection form.cb-form>label{display:flex;flex-direction:column;align-items:stretch;gap:6px;margin:0;padding:0;border:0;background:none;box-shadow:none;min-width:0}
+html body #correspondentSection form.cb-form>label>:is(input:not([type=checkbox]),select,textarea){width:100%;margin:0;box-sizing:border-box}
+html body #correspondentSection form.cb-form>label:has(>input[type=checkbox]){flex-direction:row;align-items:center;gap:8px;grid-column:1/-1}
+html body #correspondentSection form.cb-form>label>input[type=checkbox]{width:auto;margin:0}
+html body #correspondentSection form.cb-form>label:has(>textarea){grid-column:1/-1}
+html body #correspondentSection .cb-channels{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px 18px;margin:0;padding:0;border:0}
+html body #correspondentSection .cb-channels legend{padding:0;margin:0 0 6px;font-weight:600}
+html body #correspondentSection .cb-channels label{display:flex;align-items:center;gap:6px;margin:0}
+html body #correspondentSection form.cb-form>.cb-actions{grid-column:1/-1;display:flex;gap:10px;margin:0}
+html body #correspondentSection .cb-add{margin-top:14px}
+@media(max-width:700px){html body #correspondentSection form.cb-form{grid-template-columns:minmax(0,1fr)}}
+html body #correspondentSection form.cb-form textarea{min-height:72px;height:84px;resize:vertical}

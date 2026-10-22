@@ -2,6 +2,8 @@
 
 ## 0.5.1 – in Arbeit
 
+* Korrespondenzbanken (Issue 61): neue Seite „Korrespondenzbanken“ mit BIC, Land, Ort, Kommunikationswegen (SWIFT, EBICS, E-Mail, Bankportal), bevorzugtem Weg, Weiterleitungs-BIC, Kontakt und Hinweisen; je Mandant getrennt (Migration V137), Änderungen im Audit-Protokoll, Schnittstelle `/api/correspondent-banks`. Beschreibung in `docs/korrespondenzbanken.md`.
+
 * SWIFT-Import: MT734 (Unstimmigkeitsmeldung/Ablehnung), MT750 (Hinweis auf Abweichungen) und MT701 (Fortsetzung eines MT700) lassen sich einlesen: Erkennung, Pflichtfelder, Vorschau mit deutschen Feldnamen, Speicherung der Felder nach Nummer (Migration V136), Zuordnung zur Akte über `:21:`/`:20:`, Anzeige unter „Bankmitteilungen“, Duplikatschutz, Protokoll und EBICS-Abruf. Außerdem nennen die Hilfetexte im Import alle importierbaren Nachrichtentypen (MT710 war schon vorher importierbar). Beschreibung in `docs/fachliche-dokumentation.md`.
 * Befunde (Issue 12): Auch die eingebauten Datumsprüfungen erklären die Abweichung in Worten, z. B. „LC verlangt spätestens 20.09.2026, Konnossement nennt 21.09.2026: 1 Tag zu spät.“ – für Konnossement, Luftfrachtbrief, CMR und Dokumente nach dem Ablaufdatum. Bisher gab es die Rechnung nur für Regelpakete und den Rechnungsbetrag.
 * Neu: `AGENTS.md` mit Arbeitsregeln für Coding-Agenten (Bauen und Testen, Freigabe vor Merge und Deploy, Mehrsprachigkeit, Oberfläche, Backend).
