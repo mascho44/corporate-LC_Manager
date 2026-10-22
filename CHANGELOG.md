@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* SLAs (Issue 71): Pausen und Auswertung. Je Regel lassen sich Pause- und Fortsetzen-Ereignisse wählen (z. B. Rückfrage an den Kunden / Antwort eingegangen, Migration V138); die Pause zählt nicht mit, die Fälligkeit verschiebt sich, die Uhr zeigt „pausiert“. Neue Tabelle „Einhaltung der SLAs“ auf der SLA-Seite (letzte 30/90/365 Tage: eingehalten, zu spät, laufend, knapp, verletzt, pausiert, Quote) mit CSV-Export, Schnittstelle `GET /api/sla/report`. Beschreibung in `docs/sla.md`.
 * Korrespondenzbanken (Issue 61): neue Seite „Korrespondenzbanken“ mit BIC, Land, Ort, Kommunikationswegen (SWIFT, EBICS, E-Mail, Bankportal), bevorzugtem Weg, Weiterleitungs-BIC, Kontakt und Hinweisen; je Mandant getrennt (Migration V137), Änderungen im Audit-Protokoll, Schnittstelle `/api/correspondent-banks`. Beschreibung in `docs/korrespondenzbanken.md`.
 
 * SWIFT-Import: MT734 (Unstimmigkeitsmeldung/Ablehnung), MT750 (Hinweis auf Abweichungen) und MT701 (Fortsetzung eines MT700) lassen sich einlesen: Erkennung, Pflichtfelder, Vorschau mit deutschen Feldnamen, Speicherung der Felder nach Nummer (Migration V136), Zuordnung zur Akte über `:21:`/`:20:`, Anzeige unter „Bankmitteilungen“, Duplikatschutz, Protokoll und EBICS-Abruf. Außerdem nennen die Hilfetexte im Import alle importierbaren Nachrichtentypen (MT710 war schon vorher importierbar). Beschreibung in `docs/fachliche-dokumentation.md`.

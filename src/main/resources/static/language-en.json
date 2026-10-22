@@ -3277,5 +3277,21 @@
   "cb.channel.PORTAL": "Bank portal",
   "audit.act.CORRESPONDENT_BANK_CREATED": "Correspondent bank created",
   "audit.act.CORRESPONDENT_BANK_UPDATED": "Correspondent bank changed",
-  "audit.act.CORRESPONDENT_BANK_DELETED": "Correspondent bank deleted"
+  "audit.act.CORRESPONDENT_BANK_DELETED": "Correspondent bank deleted",
+  "sla.s.paused": "paused",
+  "sla.clockPaused": "{name}: paused · {elapsed} of {target} banking days",
+  "sla.reportTitle": "SLA compliance",
+  "sla.reportDays": "Last {n} days",
+  "sla.reportCsv": "Save as CSV",
+  "sla.colRule": "Rule",
+  "sla.colInTime": "Kept",
+  "sla.colLate": "Late",
+  "sla.colRunning": "Running",
+  "sla.colWarning": "Tight",
+  "sla.colBreached": "Breached",
+  "sla.colPaused": "Paused",
+  "sla.colQuota": "Rate (%)",
+  "sla.reportNone": "No evaluation possible yet.",
+  "sla.pause": "Pause events (optional, e.g. query to the customer)",
+  "sla.resume": "Resume events (e.g. reply received)"
 }
