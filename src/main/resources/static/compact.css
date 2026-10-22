@@ -112,3 +112,4 @@ html body #slaSection form.sla-form>label>input[type=checkbox]{width:auto;margin
 html body #slaSection form.sla-form>button{grid-column:auto;justify-self:start}
 @media(max-width:700px){html body #slaSection form.sla-form{grid-template-columns:minmax(0,1fr)}}
 html body #slaSection form.sla-form>.sla-actions{grid-column:1/-1;display:flex;gap:10px;margin:0}
+html body #slaSection .sla-add{margin-top:14px}

@@ -2,6 +2,8 @@
 
 ## 0.5.1 – in Arbeit
 
+* Optik: Auf der SLA-Seite mehr Abstand über „Regel hinzufügen“.
+
 * Optik: SLA-Formular sauber ausgerichtet (zwei Spalten mit gleicher Einrückung, Beschriftungen über den Feldern, „Aktiv“ neben dem Haken, Speichern/Abbrechen in einer Zeile).
 
 * Optik: Einheitlicher Innenabstand auf den Seiten EBICS, SLA, Gruppeninbox, Mandant und Fristenkalender; Kopfbereiche von Training und Import eingerückt; auf schmalen Bildschirmen blieb der Cockpit-Kopf sichtbar (jetzt ausgeblendet); SLA-Formular einspaltig auf dem Handy; Filterzeile im Plattform-Protokoll bündig.

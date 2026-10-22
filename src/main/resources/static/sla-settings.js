@@ -64,7 +64,7 @@ async function setupSla() {
    del.onclick = async () => { if (!await confirmAction(tx('sla.confirmDelete', 'SLA-Regel „{name}“ löschen?', { name: rule.name }))) return; try { await json('/api/sla/rules/' + rule.id, { method: 'DELETE' }); rules = rules.filter(r => r.id !== rule.id); message.textContent = tx('sla.deleted', 'Regel gelöscht.'); draw(); } catch (error) { message.textContent = error.message; } };
    row.append(text, edit, del); table.append(row);
   });
-  const add = node('button', tx('sla.add', 'Regel hinzufügen')); add.type = 'button'; add.onclick = () => form(null); table.append(add);
+  const add = node('button', tx('sla.add', 'Regel hinzufügen')); add.type = 'button'; add.className = 'sla-add'; add.onclick = () => form(null); table.append(add);
  }
  function pick(select, values) { [...select.options].forEach(o => { o.selected = values.includes(o.value); }); }
  function form(rule) {
