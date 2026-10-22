@@ -20,7 +20,7 @@ Aus der Akte („Dokumentweise prüfen") oder direkt aus der Aktenliste (Knopf *
 
 ## Erklärung der Abweichung
 
-Bei verletzten Datums- und Zahlenvergleichen steht unter dem Befund eine „Rechnung“ in Worten, zum Beispiel: *Versanddatum 18.09.2026, spätestens zulässiges Versanddatum 15.09.2026: 3 Tage nach der zulässigen Grenze.* Beim Rechnungsbetrag zeigt sie LC-Betrag, Toleranz, Höchstbetrag und den Überschuss. Nur bei lesbaren Werten und einfachen Vergleichen (gleich, höchstens, mindestens); sonst bleibt der Befund wie bisher. Die Erklärung ändert weder Schweregrad noch Prüffingerabdruck.
+Bei verletzten Datums- und Zahlenvergleichen steht unter dem Befund eine „Rechnung“ in Worten, zum Beispiel: *Versanddatum 18.09.2026, spätestens zulässiges Versanddatum 15.09.2026: 3 Tage nach der zulässigen Grenze.* Die eingebauten Prüfungen von Konnossement, Luftfrachtbrief, CMR und „Dokument nach Ablaufdatum“ erklären ebenso (*LC verlangt spätestens 15.09.2026, Konnossement nennt 18.09.2026: 3 Tage zu spät.*). Beim Rechnungsbetrag zeigt sie LC-Betrag, Toleranz, Höchstbetrag und den Überschuss. Nur bei lesbaren Werten und einfachen Vergleichen (gleich, höchstens, mindestens); sonst bleibt der Befund wie bisher. Die Erklärung ändert weder Schweregrad noch Prüffingerabdruck.
 
 ## Zusatzbedingungen (:47A:)
 
