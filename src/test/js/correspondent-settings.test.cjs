@@ -32,3 +32,15 @@ test('the webhook page has all its texts in both language packs and is wired in'
   assert.match(fs.readFileSync(dir + 'app-admin.js', 'utf8'), /webhooks:\['webhookSection'\]/);
   assert.match(fs.readFileSync(dir + 'app-audit-training.js', 'utf8'), /setupWebhooks\(\)/);
 });
+
+test('the API key page has all its texts in both language packs and is wired in', () => {
+  const page = fs.readFileSync(dir + 'api-key-settings.js', 'utf8');
+  const keys = [...page.matchAll(/tx\('(apik\.[A-Za-z.]+)',\s*'((?:[^'\\]|\\.)*)'/g)];
+  assert.ok(keys.length >= 18);
+  for (const [, key, text] of keys) { assert.ok(de[key], 'missing de ' + key); assert.ok(en[key], 'missing en ' + key); assert.strictEqual(de[key], text.replace(/\\'/g, "'"), 'default text differs for ' + key); }
+  ['READ', 'LC_CREATE', 'DOCUMENT_UPLOAD'].forEach(s => { ['apik.scope.', 'apik.scopeHint.'].forEach(p => { assert.ok(de[p + s]); assert.ok(en[p + s]); }); });
+  ['CREATED', 'REVOKED'].forEach(a => { assert.ok(de['audit.act.API_KEY_' + a]); assert.ok(en['audit.act.API_KEY_' + a]); });
+  assert.match(fs.readFileSync(dir + 'index.html', 'utf8'), /api-key-settings\.js\?v=/);
+  assert.match(fs.readFileSync(dir + 'app-admin.js', 'utf8'), /apiKeys:\['apiKeySection'\]/);
+  assert.match(fs.readFileSync(dir + 'app-audit-training.js', 'utf8'), /setupApiKeys\(\)/);
+});

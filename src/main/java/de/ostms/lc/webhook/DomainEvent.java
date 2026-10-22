@@ -10,7 +10,7 @@ public enum DomainEvent {
  VALIDATION_COMPLETED("ValidationCompleted","Dokumentenprüfung abgeschlossen","Document check completed",List.of("DOCUMENT_CHECK_REPORT_CREATED")),
  DISCREPANCY_DETECTED("DiscrepancyDetected","Abweichung bestätigt","Discrepancy confirmed",List.of("DOCUMENT_DISCREPANCY_CONFIRMED")),
  APPROVAL_RECORDED("ApprovalRecorded","Freigabe erfasst","Approval recorded",List.of("DOCUMENT_DRAFT_APPROVAL_RECORDED")),
- LC_CREATED("LcCreated","Akte angelegt","File created",List.of("LC_CREATED","SWIFT_IMPORTED")),
+ LC_CREATED("LcCreated","Akte angelegt","File created",List.of("LC_CREATED","LC_IMPORTED","SWIFT_IMPORTED")),
  AMENDMENT_RECEIVED("AmendmentReceived","Änderung (MT707) eingegangen","Amendment (MT707) received",List.of("MT707_IMPORTED")),
  AMENDMENT_DECIDED("AmendmentDecided","Änderung angenommen oder abgelehnt","Amendment accepted or rejected",List.of("AMENDMENT_ACCEPTED","AMENDMENT_REJECTED")),
  EBICS_ORDER_FAILED("EbicsOrderFailed","EBICS-Auftrag fehlgeschlagen","EBICS order failed",List.of("EBICS_FETCH_FAILED","EBICS_KEYS_FAILED","EBICS_BANK_KEYS_FAILED"));

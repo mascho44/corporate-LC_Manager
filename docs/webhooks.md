@@ -12,7 +12,7 @@ Ereignisse entstehen aus den Audit-Aktionen; kein Modul muss etwas melden. Pro W
 | `ValidationCompleted` | `DOCUMENT_CHECK_REPORT_CREATED` |
 | `DiscrepancyDetected` | `DOCUMENT_DISCREPANCY_CONFIRMED` |
 | `ApprovalRecorded` | `DOCUMENT_DRAFT_APPROVAL_RECORDED` |
-| `LcCreated` | `LC_CREATED`, `SWIFT_IMPORTED` |
+| `LcCreated` | `LC_CREATED`, `LC_IMPORTED`, `SWIFT_IMPORTED` |
 | `AmendmentReceived` | `MT707_IMPORTED` |
 | `AmendmentDecided` | `AMENDMENT_ACCEPTED`, `AMENDMENT_REJECTED` |
 | `EbicsOrderFailed` | `EBICS_FETCH_FAILED`, `EBICS_KEYS_FAILED`, `EBICS_BANK_KEYS_FAILED` |
