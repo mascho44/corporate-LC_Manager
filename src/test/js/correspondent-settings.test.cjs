@@ -69,3 +69,13 @@ test('the payment block has all its texts in both language packs and is wired in
   assert.match(fs.readFileSync(dir + 'index.html', 'utf8'), /payments\.js\?v=/);
   assert.match(fs.readFileSync(dir + 'app-workspace.js', 'utf8'), /LcPayments\?\.render\(block,id\)/);
 });
+
+test('the liquidity page has all its texts in both language packs and is wired in', () => {
+  const page = fs.readFileSync(dir + 'liquidity.js', 'utf8');
+  const keys = [...page.matchAll(/tx\('(liq\.[A-Za-z.]+)',\s*'((?:[^'\\]|\\.)*)'/g)];
+  assert.ok(keys.length >= 18);
+  for (const [, key, text] of keys) { assert.ok(de[key], 'missing de ' + key); assert.ok(en[key], 'missing en ' + key); assert.strictEqual(de[key], text.replace(/\\'/g, "'"), 'default text differs for ' + key); }
+  assert.match(fs.readFileSync(dir + 'index.html', 'utf8'), /liquidity\.js\?v=/);
+  assert.match(fs.readFileSync(dir + 'app-admin.js', 'utf8'), /liquidity:\['liquiditySection'\]/);
+  assert.match(fs.readFileSync(dir + 'app-audit-training.js', 'utf8'), /setupLiquidity\(\)/);
+});

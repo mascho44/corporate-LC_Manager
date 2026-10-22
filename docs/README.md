@@ -31,6 +31,7 @@ versionierte Inventar der Java-Laufzeitbibliotheken.
 - [Externe REST-API und API-Schlüssel](rest-api.md)
 - [Erwarteter Geldeingang in den Fristen](erwarteter-geldeingang.md)
 - [Zahlungsstatus der Akte](zahlungsstatus.md)
+- [Liquiditätsvorschau (Corporate)](liquiditaetsvorschau.md)
 ## Posteingang, Erkennung und Training
 - [Gemischte Sammel-PDFs aufteilen](inbox-pdf-splitting.md) · [Automatisches Aufteilen](inbox-auto-split.md)
 - [Training der Dokumentart (inkl. Absender-Layouts)](dokumentart-training.md)

@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Liquiditätsvorschau (nur Corporate-Profil): Neue Seite mit den erwarteten Zahlungen der offenen Akkreditive nach Kalenderwochen oder Monaten und Währung, Eingänge aus Export-Akkreditiven, Ausgänge aus Import-Akkreditiven, mit Zeilen „Überfällig“ und „Ohne Termin“ und CSV-Export. Termine aus den Fristen, Beträge aus Rechnungen oder Akkreditivbetrag abzüglich erfasster Zahlungen; alles als Schätzung. Beschreibung in `docs/liquiditaetsvorschau.md`.
 * Zahlungsstatus der Akte (Issue 20): Neuer Block „Zahlung“ mit Status (noch keine Zahlung, teilweise bezahlt, bezahlt, mehr als der Akkreditivbetrag), eingegangenem und offenem Betrag und dem erwarteten Termin aus den Fristen („überfällig“, wenn er vorbei ist). Zahlungen werden von Hand erfasst (Recht „LC-Akten bearbeiten“, Teilzahlungen möglich) oder von einem anderen System über die API gemeldet (neuer Schlüsselumfang `PAYMENT`, `POST /api/v1/lcs/{id}/payments`). LCM liest bewusst keine Kontoauszüge. Webhook-Ereignis `PaymentReceived`, Migration V141, Beschreibung in `docs/zahlungsstatus.md`.
 * SLAs: Die Einstellungsseite (Regeln, Pausen, Auswertung) und die zugehörigen Schnittstellen sind nur noch für Administratoren; die SLA-Anzeige in Akte, Aktenliste und Posteingang bleibt für alle sichtbar.
 * Webhooks und API-Schlüssel sind nur noch für Administratoren (Rolle Administrator) sichtbar und verwaltbar; das Recht „Einstellungen verwalten“ genügt nicht mehr (Schnittstellen `/api/webhooks` und `/api/api-keys`, Menüpunkte).

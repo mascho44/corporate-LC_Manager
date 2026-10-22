@@ -93,7 +93,7 @@ html body .sla-rule.inactive{opacity:.6}
 html body .sla-form select[multiple]{min-height:110px}
 
 /* Seiten, die ihren Inhalt ohne eigenen Kopfbereich aufbauen: gleicher Innenabstand (22px) wie alle anderen Karten */
-html body #ebicsSection,html body #slaSection,html body #correspondentSection,html body #webhookSection,html body #apiKeySection,html body #apiKeySection,html body #groupInboxSection,html body #tenantSection,html body #deadlineCalendarSection{padding:16px 22px 22px}
+html body #ebicsSection,html body #slaSection,html body #correspondentSection,html body #webhookSection,html body #apiKeySection,html body #liquiditySection,html body #apiKeySection,html body #groupInboxSection,html body #tenantSection,html body #deadlineCalendarSection{padding:16px 22px 22px}
 html body #trainingSection .module-hero,html body #importSection .module-hero{padding-left:22px;padding-right:22px}
 html body #slaSection form.sla-form,html body #ebicsSection form{margin-top:10px}
 html body .sla-form{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px;align-items:start}
@@ -167,3 +167,9 @@ html body .payment-block .payment-form>label{display:flex;flex-direction:column;
 html body .payment-block .payment-form>label>input{width:100%;box-sizing:border-box}
 html body .payment-block .payment-actions{grid-column:1/-1;display:flex;gap:10px}
 html body .payment-block>button{margin-top:8px}
+html body #liquiditySection .liq-bar{display:flex;gap:10px;align-items:center;margin:6px 0 10px}
+html body #liquiditySection table.liq-table{border-collapse:collapse;width:100%;font-size:13px}
+html body #liquiditySection table.liq-table th,html body #liquiditySection table.liq-table td{padding:6px 10px;border-bottom:1px solid #e5e9ef;text-align:right;white-space:nowrap}
+html body #liquiditySection table.liq-table th:first-child{text-align:left}
+html body #liquiditySection tr.liq-overdue th,html body #liquiditySection tr.liq-overdue td{color:#991b1b}
+html body #liquiditySection .liq-negative{color:#991b1b}
