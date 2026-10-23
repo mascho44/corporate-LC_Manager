@@ -83,7 +83,7 @@ test('the liquidity page has all its texts in both language packs and is wired i
 test('the guarantee page has all its texts in both language packs and is wired in', () => {
   const page = fs.readFileSync(dir + 'guarantees.js', 'utf8');
   const keys = [...page.matchAll(/tx\('((?:gar|cl)\.[A-Za-z.]+)',\s*'((?:[^'\\]|\\.)*)'/g)];
-  assert.ok(keys.length >= 70);
+  assert.ok(keys.length >= 90);
   for (const [, key, text] of keys) { assert.ok(de[key], 'missing de ' + key); assert.ok(en[key], 'missing en ' + key); assert.strictEqual(de[key], text.replace(/\\'/g, "'"), 'default text differs for ' + key); }
   ['ADVANCE_PAYMENT', 'PERFORMANCE', 'WARRANTY', 'BID', 'PAYMENT', 'CUSTOMS', 'RENT', 'OTHER'].forEach(t => { assert.ok(de['gar.type.' + t], t); assert.ok(en['gar.type.' + t], t); });
   ['REQUESTED', 'ACTIVE', 'RETURNED', 'CLAIMED', 'EXPIRED'].forEach(s => { assert.ok(de['gar.status.' + s], s); assert.ok(en['gar.status.' + s], s); });

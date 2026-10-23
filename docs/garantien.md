@@ -35,5 +35,14 @@ Auf der Seite „Garantien“ steht oben **Linien und Auslastung** (Migration V1
 - **Rechte:** Anlegen, Ändern und Löschen mit dem Recht „Einstellungen verwalten“, Ansehen für alle. Audit: `CREDIT_LINE_CREATED`, `_UPDATED`, `_DELETED`.
 - Nicht enthalten: Beträge in anderen Währungen werden nicht umgerechnet; eine Garantie in einer Währung ohne Linie steht unter „Ohne Linie“.
 
+## Beauftragung (der einfache Weg)
+Eine Garantie kann mit dem Status *beantragt* angelegt werden; in ihrer Akte steht dann der Block **Antrag bei der Bank** (Migration V145, `/api/guarantees/{id}/request`).
+1. **Antrag vorbereiten:** *Antrag bearbeiten* (Empfänger, Unser Zeichen, gewünschter Wortlaut, Bemerkungen, Antwort erwartet bis).
+2. **Als Word erzeugen:** *Antrag als Word (Deutsch)* oder *(Englisch)* erstellt einen Brief mit Briefkopf aus dem Firmenprofil, den Angaben der Garantie (Art, Begünstigter, Betrag, Gültigkeit, Inanspruchnahme, Verlängerung, Grundgeschäft), dem Wortlaut und einer Unterschriftszeile. LCM **versendet nichts**: Sie unterschreiben und senden den Antrag selbst (E-Mail, Portal, Post).
+3. **Status verfolgen:** *Antragsstatus ändern*: Entwurf → gesendet → Rückfrage der Bank → zugesagt → ausgestellt, oder abgelehnt / zurückgezogen (mit Datum, Hinweis und Referenz der Bank). Der erste Sendetermin bleibt erhalten.
+   - **Ausgestellt** macht die Garantie **aktiv**. **Abgelehnt** oder **zurückgezogen** schließt sie als *nicht zustande gekommen* (Status der Garantie `CANCELLED`, keine Erinnerungen mehr). Ein abgeschlossener Antrag lässt sich nicht mehr ändern.
+4. **Frist:** Ist der Antrag gesendet oder mit Rückfrage offen und „Antwort erwartet bis“ gesetzt, erscheint der Termin „Antwort der Bank auf den Garantieantrag erwartet“ in den Fristen und im Fristenkalender.
+Audit: `GUARANTEE_REQUEST_SAVED`, `GUARANTEE_REQUEST_STATUS_CHANGED`, `GUARANTEE_REQUEST_DOCUMENT_CREATED`. Schreiben mit dem Recht „LC-Akten bearbeiten“.
+
 ## Geplant (weitere Bausteine)
-Beauftragung per E-Mail mit Statusverfolgung, Einlesen von Mustertexten und Textabgleich (siehe Issue 509).
+Versand aus LCM per E-Mail oder EBICS, Einlesen von Mustertexten und Textabgleich (siehe Issue 509).

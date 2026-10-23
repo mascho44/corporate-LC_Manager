@@ -188,3 +188,5 @@ html body .gar-bar{height:8px;border-radius:999px;background:#e5e9ef;overflow:hi
 html body .gar-bar span{display:block;height:100%;background:#16a34a}
 html body .gar-bar.warn span{background:#f59e0b}html body .gar-bar.bad span{background:#dc2626}
 html body .gar-without{color:#92400e;font-size:13px}
+html body .guarantee-block h4{margin:10px 0 4px;font-size:14px}
+html body .gar-form textarea{width:100%;box-sizing:border-box}

@@ -108,7 +108,7 @@ public class DocxTemplateService {
     }
 
     /** Letterhead and footer values of the company behind the credit, for letters drawn elsewhere. */
-    Map<String, Object> companyData(LetterOfCredit lc) {
+    public Map<String, Object> companyData(LetterOfCredit lc) {
         de.ostms.lc.tenant.domain.TenantContext.require(lc.getTenantId());
         Map<String, Object> data = new LinkedHashMap<>();
         putCompany(data, lc);
