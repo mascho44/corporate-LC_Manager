@@ -23,5 +23,9 @@ Für offene Garantien erscheinen in den Fristen der Akte und im Fristenkalender 
 ## Schnittstelle
 `GET /api/guarantees` (Liste: offene zuerst, nach Ablauf; „läuft in höchstens 90 Tagen ab“ ist gekennzeichnet), `GET /api/guarantees/options`, `GET /api/guarantees/{id}`, `POST /api/guarantees`, `PUT /api/guarantees/{id}`, `POST /api/guarantees/{id}/status`. Lesen für alle Angemeldeten, Schreiben mit dem Recht „LC-Akten bearbeiten“. Audit: `GUARANTEE_CREATED`, `GUARANTEE_UPDATED`, `GUARANTEE_STATUS_CHANGED`.
 
+## Oberfläche
+- **Seite „Garantien“** (Menü, nur Corporate-Profil): Liste mit Art, Status, Bank, Begünstigtem, Betrag, Ablauf, Restlaufzeit, Entscheidungstermin und Hinweis auf automatische Verlängerung; Ansichten *Offene*, *Laufen in 90 Tagen ab*, *Erledigte*, *Alle* und Suche (Referenz, Bank, Begünstigter, Grundgeschäft). *Garantie anlegen* öffnet das Formular (Recht „LC-Akten bearbeiten“); *Akte öffnen* springt in die Akte.
+- **Block „Garantie“ in der Akte** (nur Akten der Art Garantie): Status, Art, Bank, Begünstigter, Betrag, Ablauf, Frist für die Inanspruchnahme, Entscheidungstermin, Grundgeschäft; Knöpfe *Garantie bearbeiten* und *Status ändern* (Datum und Hinweis). Fehlen bei einer eingelesenen Garantie die Angaben, steht dort ein Hinweis.
+
 ## Geplant (weitere Bausteine)
-Oberfläche (Seite „Garantien“ und Block in der Akte), Linien (Avallinien) mit Auslastung, Beauftragung per E-Mail mit Statusverfolgung, Einlesen von Mustertexten und Textabgleich.
+Linien (Avallinien) mit Auslastung, Beauftragung per E-Mail mit Statusverfolgung, Einlesen von Mustertexten und Textabgleich (siehe Issue 509).
