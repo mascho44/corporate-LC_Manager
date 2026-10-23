@@ -134,6 +134,7 @@ globalThis.LcGuarantees = {
  },
  /** The block in the file of a guarantee: facts, deadlines hint, change and status buttons. */
  async render(container, lcId) {
+  document.body.classList.toggle('guarantee-file', typeof activeLc !== 'undefined' && activeLc?.instrumentType === 'GUARANTEE');
   if (typeof activeLc !== 'undefined' && activeLc && activeLc.instrumentType && activeLc.instrumentType !== 'GUARANTEE') return;
   let g; try { g = await json('/api/guarantees/' + encodeURIComponent(lcId)); } catch { return; }
   if (!container.isConnected) return;

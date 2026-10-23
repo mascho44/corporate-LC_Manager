@@ -110,3 +110,6 @@ body .dossier-nav>button{flex:0 0 auto;align-self:center;min-height:44px;height:
 .prelogin-lang{position:fixed;top:12px;right:14px;display:flex;gap:2px;padding:2px;border:1px solid rgba(100,116,139,.4);border-radius:8px;background:rgba(255,255,255,.9);z-index:20}
 .prelogin-lang button{border:0;background:transparent;padding:4px 10px;border-radius:6px;font:inherit;font-size:13px;cursor:pointer;color:#344054}
 .prelogin-lang button[aria-pressed="true"]{background:#2f6fed;color:#fff}
+
+/* Guarantee files: LC-only tools do not apply (conditions, charges, document set, submission package, draft check, amendment request, copy) */
+body.guarantee-file #documentSetBtn,body.guarantee-file #submissionPackageBtn,body.guarantee-file #draftCheckBtn,body.guarantee-file #amendmentRequestBtn,body.guarantee-file #copyLcBtn,body.guarantee-file [data-lc-tool],body.guarantee-file .party-role > label:first-child,body.guarantee-file .party-role > small{display:none!important}
