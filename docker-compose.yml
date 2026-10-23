@@ -2,7 +2,7 @@ services:
   app:
     build:
       context: .
-    image: corporate-lc-manager:0.5.0
+    image: corporate-lc-manager:0.6.0
     restart: unless-stopped
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/lcmanager

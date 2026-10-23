@@ -41,7 +41,7 @@ curl -X POST -H "Authorization: Bearer lca_…" -F file=@rechnung.pdf -F type=CO
 ## Ereignisse statt Abfragen
 Für Benachrichtigungen bei Änderungen (Dokument geprüft, Abweichung bestätigt …) gibt es die [Webhooks](webhooks.md); die API ergänzt sie um die Abfrage.
 
-## Grenzen (Stand 0.5.1)
+## Grenzen (Stand 0.6.0)
 - Keine Begrenzung der Aufrufrate je Schlüssel; Begrenzung am vorgeschalteten Reverse-Proxy einrichten.
 - Version 1 kennt keine Änderungen (MT707), keine Entscheidungen über Befunde und kein Löschen; Seitenweise Abfrage fehlt (die Liste enthält alle Akten des Mandanten).
 - Dokumente werden einzeln hochgeladen; eine Prüfung läuft wie bei einem Upload in der Oberfläche (Befunde neu berechnen).
