@@ -20,3 +20,12 @@ dialog::backdrop{background:#0f172a8f}
 
 /* Vorerst ausgeblendet (kein Mehrwert im Alltag): Training & Erkennung. Zum Wiedereinblenden diese Regel entfernen. */
 #appNavTraining{display:none!important}
+/* Dialogs: never wider/taller than the window, scroll inside; plain dialogs (title + text) get inner spacing; tool dialogs (conditions, charges) get a tidy field grid */
+dialog{max-width:94vw;max-height:92vh;overflow:auto;box-sizing:border-box}
+dialog:not(:has(>.dialoghead)){padding:20px 24px}
+dialog .tool-content{padding:0 22px 22px}
+dialog .tool-content .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(14rem,1fr));gap:12px}
+dialog .tool-content label{display:flex;flex-direction:column;gap:.25rem;min-width:0}
+dialog .tool-content input,dialog .tool-content select,dialog .tool-content textarea{width:100%;box-sizing:border-box}
+dialog .tool-content textarea{min-height:0;height:4.5rem;resize:vertical}
+dialog>p.error:empty{display:none}
