@@ -93,4 +93,6 @@ test('the guarantee page has all its texts in both language packs and is wired i
   assert.match(fs.readFileSync(dir + 'app-admin.js', 'utf8'), /guarantees:\['guaranteeSection'\]/);
   assert.match(fs.readFileSync(dir + 'app-audit-training.js', 'utf8'), /setupGuarantees\(\)/);
   assert.match(fs.readFileSync(dir + 'app-workspace.js', 'utf8'), /LcGuarantees\?\.render\(block,id\)/);
+  assert.match(fs.readFileSync(dir + 'app-admin.js', 'utf8'), /creditLines:\['creditLineSection'\]/);
+  assert.match(fs.readFileSync(dir + 'app-audit-training.js', 'utf8'), /setupCreditLines\(\)/);
 });

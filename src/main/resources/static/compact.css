@@ -93,7 +93,7 @@ html body .sla-rule.inactive{opacity:.6}
 html body .sla-form select[multiple]{min-height:110px}
 
 /* Seiten, die ihren Inhalt ohne eigenen Kopfbereich aufbauen: gleicher Innenabstand (22px) wie alle anderen Karten */
-html body #ebicsSection,html body #slaSection,html body #correspondentSection,html body #webhookSection,html body #apiKeySection,html body #liquiditySection,html body #guaranteeSection,html body #apiKeySection,html body #groupInboxSection,html body #tenantSection,html body #deadlineCalendarSection{padding:16px 22px 22px}
+html body #ebicsSection,html body #slaSection,html body #correspondentSection,html body #webhookSection,html body #apiKeySection,html body #liquiditySection,html body #guaranteeSection,html body #creditLineSection,html body #apiKeySection,html body #groupInboxSection,html body #tenantSection,html body #deadlineCalendarSection{padding:16px 22px 22px}
 html body #trainingSection .module-hero,html body #importSection .module-hero{padding-left:22px;padding-right:22px}
 html body #slaSection form.sla-form,html body #ebicsSection form{margin-top:10px}
 html body .sla-form{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px;align-items:start}
@@ -190,3 +190,11 @@ html body .gar-bar.warn span{background:#f59e0b}html body .gar-bar.bad span{back
 html body .gar-without{color:#92400e;font-size:13px}
 html body .guarantee-block h4{margin:10px 0 4px;font-size:14px}
 html body .gar-form textarea{width:100%;box-sizing:border-box}
+html body .gar-bar-pair{position:relative;display:flex}
+html body .gar-bar-pair span{display:block;height:100%}
+html body .gar-bar-pair .gar-bar-before{background:#94a3b8}
+html body .gar-bar-pair .gar-bar-added{background:#16a34a}
+html body .gar-bar-pair.warn .gar-bar-added{background:#f59e0b}html body .gar-bar-pair.bad .gar-bar-added{background:#dc2626}
+html body #creditLineSection{padding:16px 22px 22px}
+html body .app-nav nav small.admin-nav-sub{display:block;margin:10px 0 2px;padding:0 12px;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;opacity:.65}
+html body .app-nav nav small.admin-nav-sub.hidden{display:none}
