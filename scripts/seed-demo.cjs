@@ -68,16 +68,23 @@ const LINES=[
   }
   console.log('Akkreditiv',ref);
  }
- const known=new Set((await call('/api/guarantees')).map(g=>g.reference));
+ const byRef=new Map((await call('/api/guarantees')).map(g=>[g.reference,g]));
+ const PATH={SENT:['SENT'],ISSUED:['SENT','ISSUED']};
  for(const g of GUARANTEES){
-  if(known.has(g.reference))continue;
-  const created=await call('/api/guarantees','POST',{reference:g.reference,guaranteeType:g.guaranteeType,bank:g.bank,beneficiary:g.beneficiary,currency:g.currency,amount:g.amount,issueDate:iso(g.issue),validFrom:iso(g.from),expiryDate:iso(g.expiry),claimUntil:iso(g.claim),autoExtension:!!g.auto,extensionNoticeDays:g.notice||null,underlying:g.underlying,beneficiaryReference:g.ref,status:g.status==='RETURNED'?'ACTIVE':g.status});
-  if(g.status==='RETURNED')await call(`/api/guarantees/${created.id}/status`,'POST',{status:'RETURNED',date:iso(-12),note:'Original vom Beguenstigten zurueckgesandt'});
-  if(g.request){
-   await call(`/api/guarantees/${created.id}/request`,'PUT',{recipient:g.bank,ourReference:g.reference,wording:g.request.wording||'Wortlaut gemaess Vorlage des Beguenstigten.',remarks:'',responseDue:g.request.due!=null?iso(g.request.due):null});
-   if(g.request.status!=='DRAFT')await call(`/api/guarantees/${created.id}/request/status`,'POST',{status:g.request.status,date:iso(-1),note:'Demo',bankReference:null});
+  let created=byRef.get(g.reference);
+  if(!created){
+   created=await call('/api/guarantees','POST',{reference:g.reference,guaranteeType:g.guaranteeType,bank:g.bank,beneficiary:g.beneficiary,currency:g.currency,amount:g.amount,issueDate:iso(g.issue),validFrom:iso(g.from),expiryDate:iso(g.expiry),claimUntil:iso(g.claim),autoExtension:!!g.auto,extensionNoticeDays:g.notice||null,underlying:g.underlying,beneficiaryReference:g.ref,status:g.status==='RETURNED'?'ACTIVE':g.status});
+   if(g.status==='RETURNED')await call(`/api/guarantees/${created.id}/status`,'POST',{status:'RETURNED',date:iso(-12),note:'Original vom Beguenstigten zurueckgesandt'});
+   console.log('Garantie',g.reference);
   }
-  console.log('Garantie',g.reference);
+  if(g.request){
+   const current=await call(`/api/guarantees/${created.id}/request`);
+   if(!current.exists)await call(`/api/guarantees/${created.id}/request`,'PUT',{recipient:g.bank,ourReference:g.reference,wording:g.request.wording||'Wortlaut gemaess Vorlage des Beguenstigten.',remarks:'',responseDue:g.request.due!=null?iso(g.request.due):null});
+   // the request moves step by step: draft, sent, then issued
+   const done=current.exists?current.status:'DRAFT';
+   const todo=(PATH[g.request.status]||[]).filter(x=>done==='DRAFT'||(done==='SENT'&&x==='ISSUED'));
+   for(const step of todo)await call(`/api/guarantees/${created.id}/request/status`,'POST',{status:step,date:iso(-1),note:'Demo',bankReference:step==='ISSUED'?g.ref:null});
+  }
  }
  const lines=(await call('/api/credit-lines')).lines||[];
  for(const l of LINES)if(!lines.some(x=>x.name===l.name))await call('/api/credit-lines','POST',{active:true,...l});
