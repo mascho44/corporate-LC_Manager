@@ -3415,5 +3415,6 @@
   "eb.folderLast": "Letzter Lauf {when}: {result}",
   "eb.sourceFolder": "Ordner: {file}",
   "audit.act.SWIFT_FOLDER_RECEIVED": "SWIFT-Nachricht aus dem Ordner abgelegt",
-  "audit.act.SWIFT_FOLDER_REFUSED": "Datei aus dem SWIFT-Ordner abgelehnt"
+  "audit.act.SWIFT_FOLDER_REFUSED": "Datei aus dem SWIFT-Ordner abgelehnt",
+  "audit.act.DOCUMENT_DRAFT_APPROVAL_REQUIRED": "Freigabe oder Prüfung erforderlich"
 }

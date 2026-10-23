@@ -9,6 +9,7 @@ public enum DomainEvent {
  OCR_COMPLETED("OcrCompleted","Texterkennung erneut abgeschlossen","Text recognition completed again",List.of("DOCUMENT_RE_RECOGNIZED","DOCUMENT_INBOX_EXTRACTION_RETRIED")),
  VALIDATION_COMPLETED("ValidationCompleted","Dokumentenprüfung abgeschlossen","Document check completed",List.of("DOCUMENT_CHECK_REPORT_CREATED")),
  DISCREPANCY_DETECTED("DiscrepancyDetected","Abweichung bestätigt","Discrepancy confirmed",List.of("DOCUMENT_DISCREPANCY_CONFIRMED")),
+ APPROVAL_REQUIRED("ApprovalRequired","Freigabe oder Prüfung erforderlich","Approval or review required",List.of("DOCUMENT_DRAFT_APPROVAL_REQUIRED")),
  APPROVAL_RECORDED("ApprovalRecorded","Freigabe erfasst","Approval recorded",List.of("DOCUMENT_DRAFT_APPROVAL_RECORDED")),
  LC_CREATED("LcCreated","Akte angelegt","File created",List.of("LC_CREATED","LC_IMPORTED","SWIFT_IMPORTED")),
  AMENDMENT_RECEIVED("AmendmentReceived","Änderung (MT707) eingegangen","Amendment (MT707) received",List.of("MT707_IMPORTED")),

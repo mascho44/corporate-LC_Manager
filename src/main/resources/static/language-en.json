@@ -3415,5 +3415,6 @@
   "eb.folderLast": "Last run {when}: {result}",
   "eb.sourceFolder": "Folder: {file}",
   "audit.act.SWIFT_FOLDER_RECEIVED": "SWIFT message stored from the folder",
-  "audit.act.SWIFT_FOLDER_REFUSED": "File from the SWIFT folder refused"
+  "audit.act.SWIFT_FOLDER_REFUSED": "File from the SWIFT folder refused",
+  "audit.act.DOCUMENT_DRAFT_APPROVAL_REQUIRED": "Approval or review required"
 }
