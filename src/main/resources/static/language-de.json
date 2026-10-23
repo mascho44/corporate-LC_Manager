@@ -3416,5 +3416,8 @@
   "eb.sourceFolder": "Ordner: {file}",
   "audit.act.SWIFT_FOLDER_RECEIVED": "SWIFT-Nachricht aus dem Ordner abgelegt",
   "audit.act.SWIFT_FOLDER_REFUSED": "Datei aus dem SWIFT-Ordner abgelehnt",
-  "audit.act.DOCUMENT_DRAFT_APPROVAL_REQUIRED": "Freigabe oder Prüfung erforderlich"
+  "audit.act.DOCUMENT_DRAFT_APPROVAL_REQUIRED": "Freigabe oder Prüfung erforderlich",
+  "audit.act.GUARANTEE_CREATED": "Garantie angelegt",
+  "audit.act.GUARANTEE_UPDATED": "Garantie geändert",
+  "audit.act.GUARANTEE_STATUS_CHANGED": "Status der Garantie geändert"
 }

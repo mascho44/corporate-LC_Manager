@@ -455,7 +455,19 @@
   "Zahlung nicht gefunden.": "Payment not found.",
   "Die Datei ist größer als 512 KB.": "The file is larger than 512 KB.",
   "Die Datei ist kein gültiger Text (UTF-8).": "The file is not valid text (UTF-8).",
-  "Die Datei enthält keine Nachricht.": "The file contains no message."
+  "Die Datei enthält keine Nachricht.": "The file contains no message.",
+  "Unbekannter Status der Garantie.": "Unknown guarantee status.",
+  "Das Datum darf nicht in der Zukunft liegen.": "The date must not be in the future.",
+  "Garantie nicht gefunden.": "Guarantee not found.",
+  "Bitte die Angaben zur Garantie ausfüllen.": "Please fill in the details of the guarantee.",
+  "Bitte eine Referenz angeben.": "Please enter a reference.",
+  "Bitte den Begünstigten angeben.": "Please enter the beneficiary.",
+  "Bitte die ausstellende Bank angeben.": "Please enter the issuing bank.",
+  "Bitte das Ablaufdatum angeben (oder die automatische Verlängerung ohne festes Ende wählen).": "Please enter the expiry date (or choose automatic extension without a fixed end).",
+  "Das Ablaufdatum liegt vor dem Beginn der Gültigkeit.": "The expiry date is before the start of validity.",
+  "Die Frist für die Inanspruchnahme darf nicht vor dem Ablauf liegen.": "The claim period must not end before the expiry.",
+  "Die Frist für die Entscheidung muss zwischen 0 und 730 Tagen liegen.": "The period for the decision must be between 0 and 730 days.",
+  "Unbekannte Garantieart.": "Unknown type of guarantee."
  },
  "patterns": [
   {

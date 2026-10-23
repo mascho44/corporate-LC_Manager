@@ -22,6 +22,7 @@ public class LcDeadlineService {
     static final int SIGHT_EXAMINATION_BANKING_DAYS = 5;
     private final LetterOfCreditRepository lettersOfCredit;
     private final LcDocumentRepository documents;
+    @org.springframework.beans.factory.annotation.Autowired(required = false) private de.ostms.lc.guarantee.GuaranteeDetailRepository guarantees;
 
     public LcDeadlineService(LetterOfCreditRepository lettersOfCredit, LcDocumentRepository documents) {
         this.lettersOfCredit = lettersOfCredit;
@@ -31,8 +32,10 @@ public class LcDeadlineService {
     public List<LcDeadlineView> forLc(UUID lcId) {
         LetterOfCredit lc = lettersOfCredit.findById(lcId).orElseThrow(() -> new NoSuchElementException("Akkreditiv nicht gefunden."));
         List<LcDeadlineView> result = new ArrayList<>();
-        add(result, "EXPIRY", "Ablauf des Akkreditivs", lc.getExpiryDate(), "SWIFT-Feld :31D:", "Verbindliches Ablaufdatum des Akkreditivs.");
-        add(result, "LATEST_SHIPMENT", "Spätester Versand", lc.getLatestShipmentDate(), "SWIFT-Feld :44C:", "Im Akkreditiv angegebener spätester Versandtermin.");
+        boolean guarantee = "GUARANTEE".equals(lc.getInstrumentType());
+        if (guarantee) guaranteeDeadlines(lc, result);
+        else add(result, "EXPIRY", "Ablauf des Akkreditivs", lc.getExpiryDate(), "SWIFT-Feld :31D:", "Verbindliches Ablaufdatum des Akkreditivs.");
+        if (!guarantee) add(result, "LATEST_SHIPMENT", "Spätester Versand", lc.getLatestShipmentDate(), "SWIFT-Feld :44C:", "Im Akkreditiv angegebener spätester Versandtermin.");
         add(result, "FOLLOW_UP", "Wiedervorlage", lc.getFollowUpDate(), "Manuell erfasst", "Interner Bearbeitungstermin.");
 
         String field48 = field(lc, "48");
@@ -89,6 +92,20 @@ public class LcDeadlineService {
             String value = de.ostms.lc.rulepack.RuleFacts.read(lc.getRuleFactsJson()).get(de.ostms.lc.rulepack.PackDefinition.Field.LC_PRESENTATION_DATE);
             return value == null || value.isBlank() ? null : LocalDate.parse(value.trim());
         } catch (RuntimeException unreadable) { return null; }
+    }
+
+    /** Deadlines of a guarantee of the company: expiry, end of the claim period and the date by which to decide on extension or return. Open guarantees only. */
+    private void guaranteeDeadlines(LetterOfCredit lc, List<LcDeadlineView> result) {
+        var detail = guarantees == null ? java.util.Optional.<de.ostms.lc.guarantee.GuaranteeDetail>empty() : guarantees.byLc(lc.getId());
+        boolean open = detail.map(d -> "REQUESTED".equals(d.getStatus()) || "ACTIVE".equals(d.getStatus())).orElse(true);
+        if (!open) return;
+        add(result, "EXPIRY", "Ablauf der Garantie", lc.getExpiryDate(), "Garantie", "Gültig bis; danach erlischt die Garantie, sofern sie nicht verlängert wird.");
+        detail.ifPresent(d -> {
+            add(result, "CLAIM_UNTIL", "Ende der Frist für die Inanspruchnahme", d.getClaimUntil(), "Garantie", "Bis dahin kann der Begünstigte noch Ansprüche stellen; die Garantie ist erst danach sicher erledigt.");
+            if (d.decisionDate(lc.getExpiryDate()) != null)
+                add(result, "EXTENSION_DECISION", d.isAutoExtension() ? "Entscheiden: Verlängerung verhindern oder Rückgabe verlangen" : "Entscheiden: Verlängerung beantragen oder Rückgabe verlangen", d.decisionDate(lc.getExpiryDate()), "Garantie",
+                    d.getExtensionNoticeDays() + " Tage vor Ablauf" + (d.isAutoExtension() ? "; sonst verlängert sich die Garantie automatisch." : "."));
+        });
     }
 
     private String field(LetterOfCredit lc, String tag) {
