@@ -3410,5 +3410,10 @@
   "liq.basis.invoice": "invoice",
   "liq.basis.credit": "credit amount",
   "liq.in": "inflow",
-  "liq.out": "outflow"
+  "liq.out": "outflow",
+  "eb.folderInfo": "SWIFT folder (receive only): {path}",
+  "eb.folderLast": "Last run {when}: {result}",
+  "eb.sourceFolder": "Folder: {file}",
+  "audit.act.SWIFT_FOLDER_RECEIVED": "SWIFT message stored from the folder",
+  "audit.act.SWIFT_FOLDER_REFUSED": "File from the SWIFT folder refused"
 }

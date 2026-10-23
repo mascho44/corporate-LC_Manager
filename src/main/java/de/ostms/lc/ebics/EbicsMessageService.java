@@ -28,7 +28,7 @@ public class EbicsMessageService {
   for(String t:configuredTypes.split(","))if(SUPPORTED.contains(t.trim().toUpperCase(Locale.ROOT))&&!types.contains(t.trim().toUpperCase(Locale.ROOT)))types.add(t.trim().toUpperCase(Locale.ROOT));
   return types.isEmpty()?TYPES:types;
  }
- public record View(UUID id,String messageType,String reference,String status,String note,java.time.LocalDateTime receivedAt,boolean importable){}
+ public record View(UUID id,String messageType,String reference,String status,String note,java.time.LocalDateTime receivedAt,boolean importable,String source,String origin){}
  public record FetchResult(int fetched,int alreadyKnown,List<String> errors){}
  private static final Pattern REFERENCE=Pattern.compile("(?m)^:(20|21):(.*)$");
  @org.springframework.beans.factory.annotation.Autowired(required=false) private de.ostms.lc.lc.service.AutoTaskService autoTasks;
@@ -98,18 +98,18 @@ public class EbicsMessageService {
  }
 
  private EbicsMessage one(UUID id){return messages.findById(id).orElseThrow(()->new NoSuchElementException("Nachricht nicht gefunden."));}
- static View view(EbicsMessage m){return new View(m.getId(),m.getMessageType(),reference(m.getContent()),m.getStatus(),m.getNote(),m.getReceivedAt(),m.getStatus().equals("NEW"));}
+ static View view(EbicsMessage m){return new View(m.getId(),m.getMessageType(),reference(m.getContent()),m.getStatus(),m.getNote(),m.getReceivedAt(),m.getStatus().equals("NEW"),m.getSource(),m.getOrigin());}
  /** :21: (credit number) for MT710, otherwise :20:. */
- static String reference(String text){
+ public static String reference(String text){
   String r20=null,r21=null;var m=REFERENCE.matcher(text);
   while(m.find()){if(m.group(1).equals("20")&&r20==null)r20=m.group(2).trim();if(m.group(1).equals("21")&&r21==null)r21=m.group(2).trim();}
   String r=r21!=null&&!r21.isEmpty()&&text.toUpperCase(Locale.ROOT).matches("(?s).*\\{2:[IO]7[12]0.*|(?ms).*^:52[AD]:.*|(?ms).*^:40B:.*")?r21:r20;
   r=r==null?"":r;return r.length()>35?r.substring(0,35):r;
  }
- static String decode(byte[] data)throws CharacterCodingException{
+ public static String decode(byte[] data)throws CharacterCodingException{
   String text=StandardCharsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT).onUnmappableCharacter(CodingErrorAction.REPORT).decode(ByteBuffer.wrap(data)).toString();
   if(text.indexOf('\0')>=0)throw new CharacterCodingException();
   return text.replace("\r\n","\n").replace('\r','\n').strip();
  }
- static String sha256(String text)throws Exception{return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(text.getBytes(StandardCharsets.UTF_8)));}
+ public static String sha256(String text)throws Exception{return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(text.getBytes(StandardCharsets.UTF_8)));}
 }
