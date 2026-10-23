@@ -2,6 +2,7 @@
 
 ## 0.6.1 – in Arbeit
 
+* Garantien, Linien (Avallinien): Auf der Seite „Garantien“ gibt es **Linien und Auslastung**: Rahmen je Bank und Währung, optional je Garantieart, mit Warnschwelle. Offene Garantien belegen die Linie ihrer Bank (Linie der Art vor der Linie für alle Arten); Anzeige mit Balken, Zustand (im Rahmen, knapp, überschritten) und den Garantien ohne Linie. Im Garantieformular zeigt ein Hinweis, ob die Garantie in die Linie passt. Verwaltung mit dem Recht „Einstellungen verwalten“, Migration V144, Schnittstelle `/api/credit-lines`, Beschreibung in `docs/garantien.md`.
 * Garantien (Kundenseite, Corporate-Profil), Grundlage: Garantien der Bank für das Unternehmen werden als Akten der Art Garantie geführt, mit Art, Gültigkeit, Ablauf, Frist für die Inanspruchnahme, automatischer Verlängerung mit Entscheidungsfrist, Grundgeschäft und Status (beantragt, aktiv, zurückgegeben, in Anspruch genommen, abgelaufen). Fristen für Ablauf, Inanspruchnahme und Entscheidung erscheinen in den Fristen, im Fristenkalender und in den Aufgaben der Fristenüberwachung; zurückgegebene Garantien schließen die Akte. Neue Seite „Garantien“ (Liste mit Ansichten und Suche, Formular zum Anlegen und Ändern, Statuswechsel) und Block „Garantie“ in der Akte. Schnittstelle `/api/guarantees`, Migration V143, Beschreibung in `docs/garantien.md`.
 ## 0.6.0 – 23.10.2026
 

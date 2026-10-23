@@ -6,7 +6,7 @@ public final class TenantModulePolicy {
  public static boolean allowed(Tenant tenant,String path,String method,String status){
   if(!tenant.isActive())return false;
   if(path.equals("/api/training/advising")||path.startsWith("/api/training/advising/")||path.matches("/api/inbox/[^/]+/advising-preview")||path.startsWith("/api/settings/approval-thresholds"))return tenant.isBankEnabled();
-  if(path.equals("/api/liquidity")||path.startsWith("/api/liquidity/")||path.equals("/api/guarantees")||path.startsWith("/api/guarantees/"))return tenant.isCorporateEnabled();
+  if(path.equals("/api/liquidity")||path.startsWith("/api/liquidity/")||path.equals("/api/guarantees")||path.startsWith("/api/guarantees/")||path.equals("/api/credit-lines")||path.startsWith("/api/credit-lines/"))return tenant.isCorporateEnabled();
   if(path.startsWith("/api/sla/")||path.matches("/api/lcs/[^/]+/sla"))return tenant.isBankEnabled();
   if(path.startsWith("/api/document-templates")||path.startsWith("/api/company-profile")||path.matches("/api/lcs/[^/]+/document-template-selection"))return tenant.isCorporateEnabled();
   if(path.matches("/api/lcs/[^/]+/generated-documents(?:/.*)?"))return tenant.isCorporateEnabled();

@@ -27,5 +27,13 @@ Für offene Garantien erscheinen in den Fristen der Akte und im Fristenkalender 
 - **Seite „Garantien“** (Menü, nur Corporate-Profil): Liste mit Art, Status, Bank, Begünstigtem, Betrag, Ablauf, Restlaufzeit, Entscheidungstermin und Hinweis auf automatische Verlängerung; Ansichten *Offene*, *Laufen in 90 Tagen ab*, *Erledigte*, *Alle* und Suche (Referenz, Bank, Begünstigter, Grundgeschäft). *Garantie anlegen* öffnet das Formular (Recht „LC-Akten bearbeiten“); *Akte öffnen* springt in die Akte.
 - **Block „Garantie“ in der Akte** (nur Akten der Art Garantie): Status, Art, Bank, Begünstigter, Betrag, Ablauf, Frist für die Inanspruchnahme, Entscheidungstermin, Grundgeschäft; Knöpfe *Garantie bearbeiten* und *Status ändern* (Datum und Hinweis). Fehlen bei einer eingelesenen Garantie die Angaben, steht dort ein Hinweis.
 
+## Linien (Avallinien)
+Auf der Seite „Garantien“ steht oben **Linien und Auslastung** (Migration V144, `/api/credit-lines`). Eine Linie ist der Rahmen, den eine Bank dem Unternehmen eingeräumt hat: Name, Bank, optional BIC, Währung, Betrag, optional eine **Garantieart** (sonst alle Arten), optional „Gültig bis“, Warnschwelle (Standard 80 %), aktiv, Hinweis.
+- **Zuordnung:** Jede **offene** Garantie (beantragt oder aktiv) in der Währung der Linie belegt die Linie ihrer Bank: zuerst eine Linie für ihre Art, sonst eine für alle Arten; so wird nie doppelt gezählt. Die Bank wird über die **erste Zeile** des Banknamens (ohne Groß-/Kleinschreibung und Satzzeichen) oder über die **BIC** der Linie im Banktext der Garantie erkannt – die Bank sollte bei Linie und Garantie gleich geschrieben sein. Zurückgegebene, in Anspruch genommene und abgelaufene Garantien geben die Linie frei.
+- **Anzeige:** Balken mit belegt, frei, Prozent, Zahl der Garantien; Zustand *im Rahmen*, *knapp* (ab der Warnschwelle) oder *überschritten*; Kennzeichen *abgelaufen* und *inaktiv*. Offene Garantien, die zu keiner Linie passen, stehen unter „Ohne Linie“.
+- **Prüfung beim Erfassen:** Im Garantieformular zeigt ein Hinweis, ob die Garantie in die Linie passt (frei, Rest danach) oder sie überschreitet; eine Sperre gibt es nicht. Beim Ändern wird die Garantie selbst nicht doppelt gezählt. Schnittstelle: `GET /api/credit-lines/check`.
+- **Rechte:** Anlegen, Ändern und Löschen mit dem Recht „Einstellungen verwalten“, Ansehen für alle. Audit: `CREDIT_LINE_CREATED`, `_UPDATED`, `_DELETED`.
+- Nicht enthalten: Beträge in anderen Währungen werden nicht umgerechnet; eine Garantie in einer Währung ohne Linie steht unter „Ohne Linie“.
+
 ## Geplant (weitere Bausteine)
-Linien (Avallinien) mit Auslastung, Beauftragung per E-Mail mit Statusverfolgung, Einlesen von Mustertexten und Textabgleich (siehe Issue 509).
+Beauftragung per E-Mail mit Statusverfolgung, Einlesen von Mustertexten und Textabgleich (siehe Issue 509).
