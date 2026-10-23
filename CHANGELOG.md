@@ -1,5 +1,7 @@
 # Änderungsprotokoll
 
+## 0.6.1 – in Arbeit
+
 ## 0.6.0 – 23.10.2026
 
 Schwerpunkte seit 0.5.0: Service-Level (SLAs), Zahlungsstatus und Liquiditätsvorschau, externe REST-API mit Webhooks, weitere SWIFT-Nachrichtentypen und ein SWIFT-Ordner-Eingang für Banken, Korrespondenzbanken sowie die vollständig zweisprachige Oberfläche.

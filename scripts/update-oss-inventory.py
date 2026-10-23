@@ -69,7 +69,7 @@ for match in re.finditer(r'^\s+([^:\s]+):([^:\s]+):jar:([^:\s]+):(compile|runtim
 if not components:
     raise SystemExit('No Maven runtime dependencies found.')
 components.sort(key=lambda item: item['coordinate'])
-content = json.dumps({'applicationVersion': '0.6.0',
+content = json.dumps({'applicationVersion': '0.6.1',
                       'source': 'Resolved Maven runtime dependencies; licenses from published artifact POMs (including parent POMs).',
                       'components': components}, ensure_ascii=False, indent=2) + '\n'
 path = ROOT / 'src/main/resources/static/oss-components.json'

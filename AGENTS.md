@@ -16,7 +16,7 @@ Den Browser-Rauchtest (`scripts/browser-smoke.cjs`) gibt es nur in der CI. Für 
 ## Arbeitsweise
 
 - Eine Änderung je Branch und Pull Request, Commit- und PR-Texte deutsch, ohne Umlaute im Commit-Titel (`ue`, `ae`, `oe`).
-- Jede sichtbare Änderung bekommt einen Eintrag in `CHANGELOG.md` (oben unter „0.5.1 – in Arbeit“) und, wenn sie Fachlichkeit betrifft, einen Absatz in `docs/`.
+- Jede sichtbare Änderung bekommt einen Eintrag in `CHANGELOG.md` (oben unter „0.6.1 – in Arbeit“) und, wenn sie Fachlichkeit betrifft, einen Absatz in `docs/`.
 - **Nicht ohne ausdrückliche Freigabe mergen oder deployen.** Nach grüner CI berichten und fragen.
 - Deployment (nur auf Freigabe): auf dem Server `git pull --ff-only` und `./scripts/deploy-prod.sh`. Das tar-basierte Ausrollen löscht entfernte Dateien nicht.
 - Zugangsdaten, Kennwörter und Schlüssel aus `.env` nie verwenden oder ausgeben; Testwerte nur aus Seed-Dateien.
