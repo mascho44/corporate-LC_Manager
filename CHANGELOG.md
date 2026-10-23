@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* SWIFT-Ordner (nur Empfang, Bank-Profil): Das Nachrichtensystem der Bank legt Kopien eingegangener SWIFT-Nachrichten in einem Ordner ab; LCM liest einfache Texte, FIN mit Blöcken und RJE (auch mehrere Nachrichten je Datei), legt jede Nachricht einmal ab und zeigt sie wie eine EBICS-Nachricht zum Ansehen, Importieren oder Verwerfen. Nichts wird automatisch importiert, nichts zurückgeschrieben; gelesene Dateien wandern nach `verarbeitet`, abgelehnte nach `fehler` mit Grund. Schaltbar mit `SWIFT_FOLDER_ENABLED` (Standard aus), Migration V142, Beschreibung in `docs/swift-ordner.md`.
 * Menü „Mandant“: Der Wechsel des Arbeitsbereichs in der Kopfzeile bleibt für alle erhalten, die mehr als einen Mandanten nutzen dürfen; nur der Menüpunkt selbst ist Administratoren vorbehalten (Korrektur der vorherigen Änderung, die auch den Wechsel ausgeblendet hatte).
 * Menü: Der Punkt „Mandant“ erscheint nur noch für Mandanten-Administratoren (Rolle Administrator oder Recht „Einstellungen verwalten“); alle anderen sehen ihn nicht mehr.
 * Liquiditätsvorschau (nur Corporate-Profil): Neue Seite mit den erwarteten Zahlungen der offenen Akkreditive nach Kalenderwochen oder Monaten und Währung, Eingänge aus Export-Akkreditiven, Ausgänge aus Import-Akkreditiven, mit Zeilen „Überfällig“ und „Ohne Termin“ und CSV-Export. Termine aus den Fristen, Beträge aus Rechnungen oder Akkreditivbetrag abzüglich erfasster Zahlungen; alles als Schätzung. Beschreibung in `docs/liquiditaetsvorschau.md`.

@@ -10,7 +10,7 @@ WORKDIR /app
 
 RUN apk add --no-cache poppler-utils tesseract-ocr tesseract-ocr-data-deu tesseract-ocr-data-eng tesseract-ocr-data-osd tesseract-ocr-data-chi_sim \
     && addgroup -S lcmanager && adduser -S lcmanager -G lcmanager \
-    && mkdir -p /data/intake && chown -R lcmanager:lcmanager /data
+    && mkdir -p /data/intake /data/swift && chown -R lcmanager:lcmanager /data
 # The accurate "best" OCR models replace the fast ones of the Alpine packages (better on scans: digits, decimal separators). Pinned commit, checked by SHA-256.
 ARG TESSDATA_BEST=e12c65a915945e4c28e237a9b52bc4a8f39a0cec
 RUN set -eu; cd /usr/share/tessdata; \

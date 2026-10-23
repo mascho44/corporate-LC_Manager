@@ -32,6 +32,7 @@ versionierte Inventar der Java-Laufzeitbibliotheken.
 - [Erwarteter Geldeingang in den Fristen](erwarteter-geldeingang.md)
 - [Zahlungsstatus der Akte](zahlungsstatus.md)
 - [Liquiditätsvorschau (Corporate)](liquiditaetsvorschau.md)
+- [SWIFT-Ordner: Nachrichten empfangen (Bank)](swift-ordner.md)
 ## Posteingang, Erkennung und Training
 - [Gemischte Sammel-PDFs aufteilen](inbox-pdf-splitting.md) · [Automatisches Aufteilen](inbox-auto-split.md)
 - [Training der Dokumentart (inkl. Absender-Layouts)](dokumentart-training.md)

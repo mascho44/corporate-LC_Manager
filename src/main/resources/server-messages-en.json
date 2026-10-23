@@ -452,7 +452,10 @@
   "Der Betrag ist zu groß.": "The amount is too large.",
   "Bitte eine Währung mit drei Buchstaben angeben.": "Please enter a currency of three letters.",
   "Das Eingangsdatum darf nicht in der Zukunft liegen.": "The date received must not be in the future.",
-  "Zahlung nicht gefunden.": "Payment not found."
+  "Zahlung nicht gefunden.": "Payment not found.",
+  "Die Datei ist größer als 512 KB.": "The file is larger than 512 KB.",
+  "Die Datei ist kein gültiger Text (UTF-8).": "The file is not valid text (UTF-8).",
+  "Die Datei enthält keine Nachricht.": "The file contains no message."
  },
  "patterns": [
   {

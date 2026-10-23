@@ -71,6 +71,12 @@ app:
     encryption-key: ${EBICS_ENCRYPTION_KEY:}
     allowed-hosts: ${EBICS_ALLOWED_HOSTS:}
     message-types: ${EBICS_MESSAGE_TYPES:MT700,MT707,MT710,MT760}
+  swift-folder:
+    # Empfangsordner fuer SWIFT-Nachrichten des Nachrichtensystems der Bank (nur lesend, Bank-Profil); aus, bis es eingerichtet ist.
+    enabled: ${SWIFT_FOLDER_ENABLED:false}
+    root: ${SWIFT_FOLDER_ROOT:/data/swift}
+    settle-seconds: ${SWIFT_FOLDER_SETTLE_SECONDS:10}
+    poll-ms: ${SWIFT_FOLDER_POLL_MS:30000}
   webhooks:
     # Schluessel fuer die Webhook-Geheimnisse; faellt auf EBICS_ENCRYPTION_KEY zurueck.
     encryption-key: ${WEBHOOK_ENCRYPTION_KEY:${EBICS_ENCRYPTION_KEY:}}

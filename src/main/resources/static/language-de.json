@@ -3410,5 +3410,10 @@
   "liq.basis.invoice": "Rechnung",
   "liq.basis.credit": "Akkreditivbetrag",
   "liq.in": "Eingang",
-  "liq.out": "Ausgang"
+  "liq.out": "Ausgang",
+  "eb.folderInfo": "SWIFT-Ordner (nur Empfang): {path}",
+  "eb.folderLast": "Letzter Lauf {when}: {result}",
+  "eb.sourceFolder": "Ordner: {file}",
+  "audit.act.SWIFT_FOLDER_RECEIVED": "SWIFT-Nachricht aus dem Ordner abgelegt",
+  "audit.act.SWIFT_FOLDER_REFUSED": "Datei aus dem SWIFT-Ordner abgelehnt"
 }
