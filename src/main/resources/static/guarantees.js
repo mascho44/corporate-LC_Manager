@@ -1,7 +1,9 @@
 /* Guarantees of the company (customer side, corporate profile): list, create and edit, status, and a block in the file of a guarantee. */
 globalThis.LcGuarantees = {
  TYPES: ['ADVANCE_PAYMENT', 'PERFORMANCE', 'WARRANTY', 'BID', 'PAYMENT', 'CUSTOMS', 'RENT', 'OTHER'],
- STATUSES: ['REQUESTED', 'ACTIVE', 'RETURNED', 'CLAIMED', 'EXPIRED'],
+ STATUSES: ['REQUESTED', 'ACTIVE', 'RETURNED', 'CLAIMED', 'EXPIRED', 'CANCELLED'],
+ REQUEST_STATUSES: ['DRAFT', 'SENT', 'QUERY', 'APPROVED', 'ISSUED', 'REJECTED', 'WITHDRAWN'],
+ requestStatusName(s) { return tx('gar.req.status.' + s, s); },
  typeName(t) { return tx('gar.type.' + t, t); },
  statusName(s) { return tx('gar.status.' + s, s); },
  tone(g) { return !g.open ? 'done' : g.expiringSoon ? 'warn' : 'ok'; },
@@ -81,6 +83,48 @@ globalThis.LcGuarantees = {
   };
   return f;
  },
+ /** The form for the text of the application to the bank. */
+ requestForm(lcId, request, done, cancel) {
+  const N = LcGuarantees.node;
+  const f = document.createElement('form'); f.className = 'form-grid gar-form';
+  const field = (label, control) => { const l = N('label', label); l.append(control); f.append(l); return control; };
+  const recipient = field(tx('gar.req.recipient', 'Empfänger (Bank, Abteilung, Adresse)'), document.createElement('textarea')); recipient.rows = 3; recipient.maxLength = 500; recipient.value = request.recipient || '';
+  const ourReference = field(tx('gar.req.ourReference', 'Unser Zeichen'), document.createElement('input')); ourReference.maxLength = 100; ourReference.value = request.ourReference || '';
+  const due = field(tx('gar.req.responseDue', 'Antwort der Bank erwartet bis'), document.createElement('input')); due.type = 'date'; due.value = request.responseDue || '';
+  const wording = field(tx('gar.req.wording', 'Gewünschter Wortlaut'), document.createElement('textarea')); wording.rows = 6; wording.maxLength = 8000; wording.value = request.wording || '';
+  const remarks = field(tx('gar.req.remarks', 'Bemerkungen im Antrag'), document.createElement('textarea')); remarks.rows = 2; remarks.maxLength = 1000; remarks.value = request.remarks || '';
+  const save = N('button', tx('gar.save', 'Speichern')); save.type = 'submit'; const cancelButton = N('button', tx('gar.cancel', 'Abbrechen'), 'secondary'); cancelButton.type = 'button'; cancelButton.onclick = cancel;
+  const message = N('p', ''); message.setAttribute('role', 'status'); const bar = N('div', undefined, 'gar-actions'); bar.append(save, cancelButton); f.append(bar, message);
+  f.onsubmit = async event => {
+   event.preventDefault();
+   try { await json('/api/guarantees/' + lcId + '/request', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ recipient: recipient.value, ourReference: ourReference.value, wording: wording.value, remarks: remarks.value, responseDue: due.value || null }) }); done(); }
+   catch (error) { message.textContent = error.message; }
+  };
+  return f;
+ },
+ /** The form that moves the application to its next status. */
+ requestStatusForm(lcId, request, done, cancel) {
+  const N = LcGuarantees.node;
+  const f = document.createElement('form'); f.className = 'form-grid gar-form';
+  const field = (label, control) => { const l = N('label', label); l.append(control); f.append(l); return control; };
+  const status = field(tx('gar.req.newStatus', 'Neuer Status des Antrags'), document.createElement('select')); request.nextStatuses.forEach(x => { const o = N('option', LcGuarantees.requestStatusName(x)); o.value = x; status.append(o); });
+  const date = field(tx('gar.statusDate', 'Datum'), document.createElement('input')); date.type = 'date'; date.max = new Date().toISOString().slice(0, 10); date.value = date.max;
+  const bankReference = field(tx('gar.req.bankReference', 'Referenz der Bank (optional)'), document.createElement('input')); bankReference.maxLength = 100; bankReference.value = request.bankReference || '';
+  const note = field(tx('gar.statusNote', 'Hinweis (optional)'), document.createElement('input')); note.maxLength = 500;
+  const hint = N('p', tx('gar.req.statusHint', 'Ausgestellt macht die Garantie aktiv; abgelehnt oder zurückgezogen schließt sie als „nicht zustande gekommen“.'), 'gar-check'); f.append(hint);
+  const save = N('button', tx('gar.save', 'Speichern')); save.type = 'submit'; const cancelButton = N('button', tx('gar.cancel', 'Abbrechen'), 'secondary'); cancelButton.type = 'button'; cancelButton.onclick = cancel;
+  const message = N('p', ''); message.setAttribute('role', 'status'); const bar = N('div', undefined, 'gar-actions'); bar.append(save, cancelButton); f.append(bar, message);
+  f.onsubmit = async event => {
+   event.preventDefault();
+   try { await json('/api/guarantees/' + lcId + '/request/status', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: status.value, date: date.value, note: note.value, bankReference: bankReference.value }) }); done(); }
+   catch (error) { message.textContent = error.message; }
+  };
+  return f;
+ },
+ async downloadRequest(lcId, language, reference) {
+  const response = await jsonRaw('/api/guarantees/' + lcId + '/request/document?language=' + language, { method: 'POST' });
+  const blob = await response.blob(); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = 'Garantieantrag-' + (reference || 'Garantie') + '.docx'; document.body.append(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+ },
  /** The block in the file of a guarantee: facts, deadlines hint, change and status buttons. */
  async render(container, lcId) {
   if (typeof activeLc !== 'undefined' && activeLc && activeLc.instrumentType && activeLc.instrumentType !== 'GUARANTEE') return;
@@ -97,13 +141,33 @@ globalThis.LcGuarantees = {
   if (g.statusNote) lines.push(g.statusNote);
   if (!g.detailsKnown) lines.push(tx('gar.detailsMissing', 'Für diese Garantie fehlen noch Angaben (Art, Fristen). Bitte ergänzen.'));
   lines.forEach(l => block.append(N('p', l)));
+  let request = null; try { request = await json('/api/guarantees/' + encodeURIComponent(lcId) + '/request'); } catch { request = null; }
+  const showRequest = request && (request.exists || g.status === 'REQUESTED');
+  const mayEdit = typeof can === 'function' && can('LC_EDIT');
+  if (showRequest) {
+   block.append(N('h4', tx('gar.req.title', 'Antrag bei der Bank')));
+   const rl = [LcGuarantees.requestStatusName(request.status)];
+   if (request.sentOn) rl.push(tx('gar.req.sentOn', 'gesendet am {date}', { date: LcGuarantees.day(request.sentOn) }));
+   if (request.bankReference) rl.push(tx('gar.req.bankRef', 'Referenz der Bank {ref}', { ref: request.bankReference }));
+   if (request.responseDue && request.open && request.status !== 'DRAFT') rl.push(tx('gar.req.answerBy', 'Antwort erwartet bis {date}', { date: LcGuarantees.day(request.responseDue) }));
+   block.append(N('p', rl.join(' · ')));
+   if (request.statusNote) block.append(N('p', request.statusNote));
+  }
   if (typeof can === 'function' && can('LC_EDIT')) {
    const slot = N('div', undefined, 'gar-slot');
    const buttons = N('div', undefined, 'gar-buttons');
    const again = () => LcGuarantees.render(container, lcId);
    const edit = N('button', tx('gar.edit', 'Garantie bearbeiten'), 'secondary'); edit.type = 'button'; edit.onclick = () => { slot.replaceChildren(LcGuarantees.form(g, again, () => slot.replaceChildren())); };
    const status = N('button', tx('gar.changeStatus', 'Status ändern'), 'secondary'); status.type = 'button'; status.onclick = () => { slot.replaceChildren(LcGuarantees.statusForm(g, again, () => slot.replaceChildren())); };
-   buttons.append(edit, status); block.append(buttons, slot);
+   buttons.append(edit, status);
+   if (showRequest && request.open) {
+    const reqEdit = N('button', tx('gar.req.edit', 'Antrag bearbeiten'), 'secondary'); reqEdit.type = 'button'; reqEdit.onclick = () => { slot.replaceChildren(LcGuarantees.requestForm(lcId, request, again, () => slot.replaceChildren())); };
+    const word = N('button', tx('gar.req.word', 'Antrag als Word (Deutsch)'), 'secondary'); word.type = 'button'; word.onclick = async () => { try { await LcGuarantees.downloadRequest(lcId, 'de', g.reference); } catch (error) { alert(error.message); } };
+    const wordEn = N('button', tx('gar.req.wordEn', 'Antrag als Word (Englisch)'), 'secondary'); wordEn.type = 'button'; wordEn.onclick = async () => { try { await LcGuarantees.downloadRequest(lcId, 'en', g.reference); } catch (error) { alert(error.message); } };
+    const reqStatus = N('button', tx('gar.req.changeStatus', 'Antragsstatus ändern'), 'secondary'); reqStatus.type = 'button'; reqStatus.onclick = () => { slot.replaceChildren(LcGuarantees.requestStatusForm(lcId, request, again, () => slot.replaceChildren())); };
+    buttons.append(reqEdit, word, wordEn, reqStatus);
+   }
+   block.append(buttons, slot);
   }
   container.querySelector('.grid')?.before(block) || container.append(block);
  }

@@ -37,7 +37,7 @@ public class LcCalendarService {
             add(out, lc, "expiry", lc.getId()+"-expiry", lc.getExpiryDate(), "Ablauf", party(lc));
             add(out, lc, "shipment", lc.getId()+"-shipment", lc.getLatestShipmentDate(), "spätester Versand", party(lc));
             add(out, lc, "follow-up", lc.getId()+"-follow-up", lc.getFollowUpDate(), "Wiedervorlage", party(lc));
-            deadlines.forLc(lc.getId()).stream().filter(item -> item.type().equals("PRESENTATION") || item.type().equals("MATURITY_ESTIMATE") || item.type().equals("CLAIM_UNTIL") || item.type().equals("EXTENSION_DECISION"))
+            deadlines.forLc(lc.getId()).stream().filter(item -> item.type().equals("PRESENTATION") || item.type().equals("MATURITY_ESTIMATE") || item.type().equals("CLAIM_UNTIL") || item.type().equals("EXTENSION_DECISION") || item.type().equals("REQUEST_RESPONSE"))
                     .forEach(item -> add(out, lc, item.type().equals("PRESENTATION") ? "presentation" : item.type().equals("MATURITY_ESTIMATE") ? "maturity" : "guarantee", lc.getId()+"-"+item.type()+"-"+item.title().hashCode(), item.date(), item.title(), party(lc)+" | "+item.note()));
         });
         Map<UUID, LetterOfCredit> byId = new HashMap<>();

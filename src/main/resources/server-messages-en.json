@@ -471,7 +471,11 @@
   "Bitte die Angaben zur Linie ausfüllen.": "Please fill in the details of the line.",
   "Bitte die Bank angeben.": "Please enter the bank.",
   "Es gibt schon eine Linie mit diesem Namen.": "A line with this name already exists.",
-  "Linie nicht gefunden.": "Line not found."
+  "Linie nicht gefunden.": "Line not found.",
+  "Bitte die Angaben zum Antrag ausfüllen.": "Please fill in the details of the application.",
+  "Der Antrag ist abgeschlossen und lässt sich nicht mehr ändern.": "The application is finished and can no longer be changed.",
+  "Unbekannter Status des Antrags.": "Unknown status of the application.",
+  "Dieser Statuswechsel ist nicht möglich.": "This status change is not possible."
  },
  "patterns": [
   {

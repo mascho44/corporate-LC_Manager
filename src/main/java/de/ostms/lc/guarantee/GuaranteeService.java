@@ -17,7 +17,7 @@ import java.util.*;
 @Service
 public class GuaranteeService {
  public static final List<String> TYPES=List.of("ADVANCE_PAYMENT","PERFORMANCE","WARRANTY","BID","PAYMENT","CUSTOMS","RENT","OTHER");
- public static final List<String> STATUSES=List.of("REQUESTED","ACTIVE","RETURNED","CLAIMED","EXPIRED");
+ public static final List<String> STATUSES=List.of("REQUESTED","ACTIVE","RETURNED","CLAIMED","EXPIRED","CANCELLED");
  /** Guarantees that expire within this many days are flagged. */
  static final int SOON_DAYS=90;
  public record Request(String reference,String guaranteeType,String bank,String beneficiary,String currency,BigDecimal amount,LocalDate issueDate,LocalDate validFrom,LocalDate expiryDate,LocalDate claimUntil,
@@ -77,7 +77,7 @@ public class GuaranteeService {
  }
  /** The file status follows the guarantee: closed or expired guarantees stop the deadline reminders. */
  private static void syncStatus(LetterOfCredit lc,String status){
-  lc.setStatus(switch(status){case "RETURNED","CLAIMED"->LetterOfCreditStatus.CLOSED;case "EXPIRED"->LetterOfCreditStatus.EXPIRED;case "ACTIVE"->LetterOfCreditStatus.ACTIVE;default->LetterOfCreditStatus.RECEIVED;});
+  lc.setStatus(switch(status){case "RETURNED","CLAIMED","CANCELLED"->LetterOfCreditStatus.CLOSED;case "EXPIRED"->LetterOfCreditStatus.EXPIRED;case "ACTIVE"->LetterOfCreditStatus.ACTIVE;default->LetterOfCreditStatus.RECEIVED;});
  }
  private static void apply(LetterOfCredit lc,Request c){
   lc.setReference(c.reference());lc.setBeneficiary(c.beneficiary());lc.setIssuingBank(c.bank());lc.setCurrency(c.currency());lc.setAmount(c.amount());lc.setIssueDate(c.issueDate());lc.setExpiryDate(c.expiryDate());

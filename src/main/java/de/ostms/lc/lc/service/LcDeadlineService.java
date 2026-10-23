@@ -23,6 +23,7 @@ public class LcDeadlineService {
     private final LetterOfCreditRepository lettersOfCredit;
     private final LcDocumentRepository documents;
     @org.springframework.beans.factory.annotation.Autowired(required = false) private de.ostms.lc.guarantee.GuaranteeDetailRepository guarantees;
+    @org.springframework.beans.factory.annotation.Autowired(required = false) private de.ostms.lc.guarantee.GuaranteeRequestRepository guaranteeRequests;
 
     public LcDeadlineService(LetterOfCreditRepository lettersOfCredit, LcDocumentRepository documents) {
         this.lettersOfCredit = lettersOfCredit;
@@ -100,6 +101,8 @@ public class LcDeadlineService {
         boolean open = detail.map(d -> "REQUESTED".equals(d.getStatus()) || "ACTIVE".equals(d.getStatus())).orElse(true);
         if (!open) return;
         add(result, "EXPIRY", "Ablauf der Garantie", lc.getExpiryDate(), "Garantie", "Gültig bis; danach erlischt die Garantie, sofern sie nicht verlängert wird.");
+        if (guaranteeRequests != null) guaranteeRequests.byLc(lc.getId()).filter(r -> "SENT".equals(r.getStatus()) || "QUERY".equals(r.getStatus())).ifPresent(r ->
+            add(result, "REQUEST_RESPONSE", "Antwort der Bank auf den Garantieantrag erwartet", r.getResponseDue(), "Garantieantrag", "Der Antrag ist " + ("QUERY".equals(r.getStatus()) ? "mit einer Rückfrage der Bank offen" : "gesendet und noch nicht beantwortet") + "."));
         detail.ifPresent(d -> {
             add(result, "CLAIM_UNTIL", "Ende der Frist für die Inanspruchnahme", d.getClaimUntil(), "Garantie", "Bis dahin kann der Begünstigte noch Ansprüche stellen; die Garantie ist erst danach sicher erledigt.");
             if (d.decisionDate(lc.getExpiryDate()) != null)
