@@ -181,3 +181,10 @@ html body .gar-form>.gar-actions{grid-column:1/-1;display:flex;gap:10px;margin:0
 html body .gar-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:6px 0 12px}
 html body .gar-buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 @media(max-width:700px){html body .gar-form{grid-template-columns:minmax(0,1fr)}}
+html body .gar-form>.gar-check{grid-column:1/-1;margin:0;font-size:13px;min-height:1em}
+html body .gar-check.ok{color:#166534}html body .gar-check.warn{color:#92400e}html body .gar-check.bad{color:#991b1b;font-weight:600}
+html body .gar-lines{margin:6px 0 14px}
+html body .gar-bar{height:8px;border-radius:999px;background:#e5e9ef;overflow:hidden;margin:6px 0 4px;max-width:420px}
+html body .gar-bar span{display:block;height:100%;background:#16a34a}
+html body .gar-bar.warn span{background:#f59e0b}html body .gar-bar.bad span{background:#dc2626}
+html body .gar-without{color:#92400e;font-size:13px}

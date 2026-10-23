@@ -33,6 +33,25 @@ globalThis.LcGuarantees = {
   const notice = input(tx('gar.notice', 'Entscheidung: Tage vor Ablauf'), 'number', g.extensionNoticeDays != null ? g.extensionNoticeDays : '', { min: '0', max: '730', step: '1' });
   const underlying = input(tx('gar.underlying', 'Grundgeschäft (Vertrag, Projekt)'), 'text', g.underlying || '', { maxLength: 500 });
   const beneficiaryReference = input(tx('gar.beneficiaryReference', 'Aktenzeichen des Begünstigten'), 'text', g.beneficiaryReference || '', { maxLength: 100 });
+  const hint = N('p', '', 'gar-check'); hint.setAttribute('role', 'status'); f.append(hint);
+  let timer = null;
+  const check = () => {
+   clearTimeout(timer);
+   timer = setTimeout(async () => {
+    hint.textContent = ''; hint.className = 'gar-check';
+    if (!bank.value.trim() || currency.value.trim().length !== 3 || !amount.value) return;
+    try {
+     const q = new URLSearchParams({ bank: bank.value, currency: currency.value, type: type.value, amount: amount.value }); if (guarantee) q.set('exclude', guarantee.id);
+     const c = await json('/api/credit-lines/check?' + q);
+     if (!c.found) { hint.textContent = tx('cl.noLine', 'Für diese Bank und Währung ist keine Linie hinterlegt.'); return; }
+     hint.textContent = c.fits ? tx('cl.fits', 'Linie „{name}“: frei {free}, nach dieser Garantie noch {after}.', { name: c.lineName, free: LcGuarantees.money(c.free, c.currency), after: LcGuarantees.money(c.freeAfter, c.currency) })
+      : tx('cl.exceeds', 'Achtung: Die Linie „{name}“ reicht nicht: frei {free}, es fehlen {missing}.', { name: c.lineName, free: LcGuarantees.money(c.free, c.currency), missing: LcGuarantees.money(-c.freeAfter, c.currency) });
+     hint.className = 'gar-check ' + (!c.fits || c.state === 'EXCEEDED' ? 'bad' : c.state === 'WARNING' ? 'warn' : 'ok');
+    } catch { /* the check is a hint only */ }
+   }, 400);
+  };
+  [bank, currency, amount, type].forEach(c => { c.addEventListener('input', check); c.addEventListener('change', check); });
+  if (guarantee) check();
   const auto = document.createElement('input'); auto.type = 'checkbox'; auto.checked = Boolean(g.autoExtension); const autoLabel = N('label', tx('gar.autoExtension', 'Verlängert sich automatisch')); autoLabel.prepend(auto); f.append(autoLabel);
   const save = N('button', tx('gar.save', 'Speichern')); save.type = 'submit'; const cancelButton = N('button', tx('gar.cancel', 'Abbrechen'), 'secondary'); cancelButton.type = 'button'; cancelButton.onclick = cancel;
   const message = N('p', ''); message.setAttribute('role', 'status'); const bar = N('div', undefined, 'gar-actions'); bar.append(save, cancelButton); f.append(bar, message);
@@ -97,14 +116,63 @@ async function setupGuarantees() {
  document.querySelector('#appNav nav').append(nav);
  const section = document.createElement('section'); section.id = 'guaranteeSection'; section.className = 'panel hidden';
  const message = N('p', ''); message.setAttribute('role', 'status');
- const filters = N('div', undefined, 'gar-filters'); const rows = document.createElement('div'); const formBox = document.createElement('div');
- section.append(N('h2', tx('gar.pageTitle', 'Garantien')), N('p', tx('gar.intro', 'Garantien, die Ihre Banken für Sie ausgestellt haben: Bestand, Ablauf, Fristen für Inanspruchnahme und Verlängerung. Rückgabe oder Inanspruchnahme vermerken Sie am Status; zurückgegebene Garantien erscheinen nicht mehr in den Fristen.')), message, filters, rows, formBox);
+ const linesBox = N('div', undefined, 'gar-lines'); const filters = N('div', undefined, 'gar-filters'); const rows = document.createElement('div'); const formBox = document.createElement('div');
+ section.append(N('h2', tx('gar.pageTitle', 'Garantien')), N('p', tx('gar.intro', 'Garantien, die Ihre Banken für Sie ausgestellt haben: Bestand, Ablauf, Fristen für Inanspruchnahme und Verlängerung. Rückgabe oder Inanspruchnahme vermerken Sie am Status; zurückgegebene Garantien erscheinen nicht mehr in den Fristen.')), message, linesBox, filters, rows, formBox);
  document.querySelector('main').append(section);
- let view = 'OPEN', query = '';
+ let view = 'OPEN', query = '', overview = { lines: [], withoutLine: [] };
+ const canLines = () => typeof can === 'function' && can('SETTINGS_MANAGE');
  const matches = g => (view === 'ALL' || (view === 'OPEN' ? g.open : view === 'SOON' ? g.expiringSoon : !g.open)) && (!query || [g.reference, g.bank, g.beneficiary, g.underlying, g.beneficiaryReference].some(v => v && String(v).toLowerCase().includes(query)));
- async function reload() { try { list = await json('/api/guarantees'); } catch (error) { message.textContent = error.message; } draw(); }
+ async function reload() { try { [list, overview] = await Promise.all([json('/api/guarantees'), json('/api/credit-lines')]); } catch (error) { message.textContent = error.message; } draw(); }
+ const lineForm = line => {
+  const f = document.createElement('form'); f.className = 'form-grid gar-form';
+  const field = (label, control) => { const l = N('label', label); l.append(control); f.append(l); return control; };
+  const input = (label, type, value, attrs = {}) => { const c = field(label, document.createElement('input')); c.type = type; if (value != null) c.value = value; Object.assign(c, attrs); return c; };
+  const l = line || {};
+  const name = input(tx('cl.name', 'Name der Linie'), 'text', l.name || '', { required: true, maxLength: 120 });
+  const bank = input(tx('cl.bank', 'Bank (wie bei den Garantien eingetragen)'), 'text', l.bank || '', { required: true, maxLength: 200 });
+  const bic = input(tx('cl.bic', 'BIC (optional, hilft beim Zuordnen)'), 'text', l.bic || '', { maxLength: 11 });
+  const currency = input(tx('cl.currency', 'Währung'), 'text', l.currency || 'EUR', { required: true, maxLength: 3 });
+  const amount = input(tx('cl.amount', 'Betrag der Linie'), 'number', l.amount != null ? l.amount : '', { required: true, min: '0.01', step: '0.01' });
+  const type = field(tx('cl.type', 'Garantieart'), document.createElement('select')); const all = N('option', tx('cl.allTypes', 'alle Arten')); all.value = ''; type.append(all); LcGuarantees.TYPES.forEach(t => { const o = N('option', LcGuarantees.typeName(t)); o.value = t; type.append(o); }); type.value = l.guaranteeType || '';
+  const until = input(tx('cl.validUntil', 'Gültig bis (optional)'), 'date', l.validUntil || '');
+  const warn = input(tx('cl.warn', 'Warnung ab (%)'), 'number', l.warnPercent != null ? l.warnPercent : 80, { min: '10', max: '99', step: '1' });
+  const note = input(tx('cl.note', 'Hinweis (optional)'), 'text', l.note || '', { maxLength: 500 });
+  const active = document.createElement('input'); active.type = 'checkbox'; active.checked = line ? line.active : true; const activeLabel = N('label', tx('cl.active', 'Aktiv')); activeLabel.prepend(active); f.append(activeLabel);
+  const save = N('button', tx('gar.save', 'Speichern')); save.type = 'submit'; const cancel = N('button', tx('gar.cancel', 'Abbrechen'), 'secondary'); cancel.type = 'button'; cancel.onclick = () => formBox.replaceChildren();
+  const msg = N('p', ''); msg.setAttribute('role', 'status'); const bar = N('div', undefined, 'gar-actions'); bar.append(save, cancel); f.append(bar, msg);
+  f.onsubmit = async event => {
+   event.preventDefault();
+   const body = { name: name.value, bank: bank.value, bic: bic.value, currency: currency.value, amount: amount.value, guaranteeType: type.value || null, validUntil: until.value || null, warnPercent: Number(warn.value), active: active.checked, note: note.value };
+   try { await json(line ? '/api/credit-lines/' + line.id : '/api/credit-lines', { method: line ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); formBox.replaceChildren(); message.textContent = tx('cl.saved', 'Linie gespeichert.'); reload(); }
+   catch (error) { msg.textContent = error.message; }
+  };
+  return f;
+ };
+ function drawLines() {
+  linesBox.replaceChildren();
+  linesBox.append(N('h3', tx('cl.title', 'Linien und Auslastung')));
+  if (!overview.lines.length) linesBox.append(N('p', tx('cl.none', 'Noch keine Linien. Mit einer Linie je Bank und Währung sehen Sie, wie viel Rahmen die laufenden Garantien belegen.')));
+  overview.lines.forEach(l => {
+   const row = N('article', undefined, 'membership-row gar-line' + (l.active ? '' : ' inactive'));
+   const text = N('div'); const title = N('b', l.name + ' · ' + l.bank + ' · ' + l.currency + (l.guaranteeType ? ' · ' + LcGuarantees.typeName(l.guaranteeType) : '') + ' ');
+   const badge = l.state === 'EXCEEDED' ? [tx('cl.s.exceeded', 'überschritten'), 'bad'] : l.state === 'WARNING' ? [tx('cl.s.warning', 'knapp'), 'warn'] : [tx('cl.s.ok', 'im Rahmen'), 'ok'];
+   title.append(N('span', badge[0], 'sla-badge ' + badge[1])); if (l.expired) title.append(' ', N('span', tx('cl.expired', 'abgelaufen'), 'sla-badge bad')); if (!l.active) title.append(' ', N('span', tx('gar.inactive', 'inaktiv'), 'sla-badge'));
+   const bar = N('div', undefined, 'gar-bar ' + badge[1]); const fill = N('span'); fill.style.width = Math.min(100, l.percent) + '%'; bar.append(fill);
+   text.append(title, bar, N('small', tx('cl.usage', '{used} von {limit} belegt ({percent} %) · frei {free} · {n} Garantien', { used: LcGuarantees.money(l.used, l.currency), limit: LcGuarantees.money(l.amount, l.currency), percent: l.percent, free: LcGuarantees.money(l.free, l.currency), n: l.guaranteeCount })));
+   row.append(text);
+   if (canLines()) {
+    const edit = N('button', tx('gar.editShort', 'Bearbeiten'), 'secondary'); edit.type = 'button'; edit.onclick = () => { formBox.replaceChildren(lineForm(l)); formBox.scrollIntoView(); };
+    const del = N('button', tx('cl.delete', 'Löschen'), 'secondary'); del.type = 'button';
+    del.onclick = async () => { if (!await confirmAction(tx('cl.confirmDelete', 'Linie „{name}“ löschen?', { name: l.name }))) return; try { await json('/api/credit-lines/' + l.id, { method: 'DELETE' }); message.textContent = tx('cl.deleted', 'Linie gelöscht.'); reload(); } catch (error) { message.textContent = error.message; } };
+    row.append(edit, del);
+   }
+   linesBox.append(row);
+  });
+  if (overview.withoutLine.length) linesBox.append(N('p', tx('cl.without', 'Ohne Linie: {list}', { list: overview.withoutLine.map(g => g.reference + ' (' + String(g.bank || '–').split('\n')[0] + ', ' + g.currency + ')').join('; ') }), 'gar-without'));
+  if (canLines()) { const add = N('button', tx('cl.add', 'Linie anlegen'), 'secondary'); add.type = 'button'; add.onclick = () => { formBox.replaceChildren(lineForm(null)); formBox.scrollIntoView(); }; linesBox.append(add); }
+ }
  function draw() {
-  filters.replaceChildren(); rows.replaceChildren();
+  filters.replaceChildren(); rows.replaceChildren(); drawLines();
   const select = document.createElement('select');
   [['OPEN', tx('gar.f.open', 'Offene')], ['SOON', tx('gar.f.soon', 'Laufen in 90 Tagen ab')], ['CLOSED', tx('gar.f.closed', 'Erledigte')], ['ALL', tx('gar.f.all', 'Alle')]].forEach(([value, text]) => { const o = N('option', text); o.value = value; select.append(o); });
   select.value = view; select.onchange = () => { view = select.value; draw(); };

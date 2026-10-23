@@ -467,7 +467,11 @@
   "Das Ablaufdatum liegt vor dem Beginn der Gültigkeit.": "The expiry date is before the start of validity.",
   "Die Frist für die Inanspruchnahme darf nicht vor dem Ablauf liegen.": "The claim period must not end before the expiry.",
   "Die Frist für die Entscheidung muss zwischen 0 und 730 Tagen liegen.": "The period for the decision must be between 0 and 730 days.",
-  "Unbekannte Garantieart.": "Unknown type of guarantee."
+  "Unbekannte Garantieart.": "Unknown type of guarantee.",
+  "Bitte die Angaben zur Linie ausfüllen.": "Please fill in the details of the line.",
+  "Bitte die Bank angeben.": "Please enter the bank.",
+  "Es gibt schon eine Linie mit diesem Namen.": "A line with this name already exists.",
+  "Linie nicht gefunden.": "Line not found."
  },
  "patterns": [
   {
