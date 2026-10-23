@@ -1,6 +1,26 @@
 # Änderungsprotokoll
 
-## 0.5.1 – in Arbeit
+## 0.6.0 – 23.10.2026
+
+Schwerpunkte seit 0.5.0: Service-Level (SLAs), Zahlungsstatus und Liquiditätsvorschau, externe REST-API mit Webhooks, weitere SWIFT-Nachrichtentypen und ein SWIFT-Ordner-Eingang für Banken, Korrespondenzbanken sowie die vollständig zweisprachige Oberfläche.
+
+### Neu
+* **SLAs (Bank-Profil):** einstellbare Regeln mit Zielzeiten in Bankarbeitstagen, Start-/Stopp- und Pause-Ereignissen aus dem Audit-Protokoll, Warnschwelle, Eskalation als Auftrag in der Gruppeninbox, Anzeige in Akte, Aktenliste und Posteingang, Auswertung der Einhaltung mit CSV ([Doku](docs/sla.md)). Verwaltung nur für Administratoren.
+* **Externe REST-API und Webhooks:** API-Schlüssel mit Umfängen (Lesen, Akte anlegen, Dokumente hochladen, Zahlung melden) für `/api/v1`; benannte Ereignisse (`DocumentUploaded`, `ValidationCompleted`, `ApprovalRequired`, `PaymentReceived` …) gehen signiert an Webhooks ([REST-API](docs/rest-api.md), [Webhooks](docs/webhooks.md)). Verwaltung nur für Administratoren.
+* **Zahlung und Liquidität:** Zahlungsstatus je Akte (von Hand oder per API erfasst), erwarteter Geldeingang auch bei Sicht, nach Rechnung oder Einreichung und in Bankarbeitstagen, Liquiditätsvorschau für Corporate-Mandanten ([Zahlungsstatus](docs/zahlungsstatus.md), [Geldeingang](docs/erwarteter-geldeingang.md), [Liquiditätsvorschau](docs/liquiditaetsvorschau.md)).
+* **SWIFT:** MT734, MT750 und MT701 lassen sich einlesen; SWIFT-Ordner-Eingang für Banken (nur Empfang, standardmäßig aus, [Doku](docs/swift-ordner.md)).
+* **Korrespondenzbanken:** Stammdaten mit BIC, Land, Kommunikationswegen und Weiterleitung ([Doku](docs/korrespondenzbanken.md)).
+* **Befunde:** Datumsprüfungen erklären die Abweichung in Worten („LC verlangt spätestens …, Konnossement nennt …: 3 Tage zu spät“).
+
+### Verbessert
+* **Zweisprachig:** die gesamte Oberfläche, die Anmeldung und die Servermeldungen auf Deutsch und Englisch.
+* **Bedienung:** globale Suche (Strg+K), Checkliste „Erste Schritte“, anklickbare Kacheln, Papierkorb für Dokumente, Dateien auf die Akte ziehen, einheitliche Optik und Abstände.
+* **Mandanten:** Menü „Mandant“ nur für Mandanten-Administratoren (der Wechsel des Arbeitsbereichs bleibt für alle), konfigurierbarer Heimatmandant.
+* **Datenbank:** Row-Level-Security für alle mandantenbezogenen Tabellen.
+* **Plattformadministration:** Server-Log und kompaktes Protokoll.
+* **Qualität und Betrieb:** Browser-Rauchtest in der CI, Leitfäden für Erstinstallation und Mehrsprachigkeit, Dokumentation der Datensicherung, `AGENTS.md` für Coding-Agenten.
+
+### Alle Änderungen im Detail
 
 * Domain Events (Issue 53): Neues Ereignis `ApprovalRequired` (Webhooks): Ein Dokumententwurf braucht den nächsten Schritt einer anderen Person: Prüfung nach dem Einreichen, Freigabe nach der Prüfung, weitere Freigaben, solange weniger als die nach Betrag geforderte Zahl zugestimmt hat. Neue Audit-Aktion `DOCUMENT_DRAFT_APPROVAL_REQUIRED`. Damit sind alle Ereignisse der ursprünglichen Liste umgesetzt, bis auf `StatementReceived` (LCM liest keine Kontoauszüge).
 * SWIFT-Ordner (nur Empfang, Bank-Profil): Das Nachrichtensystem der Bank legt Kopien eingegangener SWIFT-Nachrichten in einem Ordner ab; LCM liest einfache Texte, FIN mit Blöcken und RJE (auch mehrere Nachrichten je Datei), legt jede Nachricht einmal ab und zeigt sie wie eine EBICS-Nachricht zum Ansehen, Importieren oder Verwerfen. Nichts wird automatisch importiert, nichts zurückgeschrieben; gelesene Dateien wandern nach `verarbeitet`, abgelehnte nach `fehler` mit Grund. Schaltbar mit `SWIFT_FOLDER_ENABLED` (Standard aus), Migration V142, Beschreibung in `docs/swift-ordner.md`.
