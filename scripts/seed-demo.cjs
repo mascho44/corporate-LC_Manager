@@ -1,5 +1,6 @@
 // Fills a demo workspace (corporate profile) with realistic, fictitious cases. Dates are relative to today, so every run is fresh.
 // Usage: LCM_URL=https://lc.ostms.de LCM_USER=... LCM_PASSWORD=... LCM_TOTP=123456 node scripts/seed-demo.cjs
+// Optional: LCM_DEMO_USER + LCM_DEMO_PASSWORD (+ LCM_DEMO_ROLE=VIEWER|EDITOR, LCM_DEMO_EMAIL) also create a demo account in the workspace.
 // Needs a platform administrator. Idempotent: existing demo files (by reference) are skipped; the workspace code is "demo".
 // All companies, banks and people are invented. Nothing here is a real transaction.
 const base=(process.env.LCM_URL||'').replace(/\/$/,''),cookies=new Map();let csrf='';
@@ -88,5 +89,16 @@ const LINES=[
  }
  const lines=(await call('/api/credit-lines')).lines||[];
  for(const l of LINES)if(!lines.some(x=>x.name===l.name))await call('/api/credit-lines','POST',{active:true,...l});
+ // optional read-only demo account; the password comes from the environment, never from this file
+ if(process.env.LCM_DEMO_USER&&process.env.LCM_DEMO_PASSWORD){
+  const name=process.env.LCM_DEMO_USER;
+  const members=await call('/api/users/memberships');
+  if(!(members.memberships||[]).some(m=>m.username===name)){
+   const role=(await call('/api/roles')).find(r=>r.baseRole===(process.env.LCM_DEMO_ROLE||'VIEWER'));
+   await call('/api/platform/users','POST',{username:name,displayName:'Demo-Benutzer',email:process.env.LCM_DEMO_EMAIL||'demo@example.org',password:process.env.LCM_DEMO_PASSWORD},'application/json',[200,201]).catch(e=>{if(!/exist|vergeben|bereits|409|400/i.test(e.message))throw e;});
+   await call('/api/platform/memberships','POST',{tenantId:tenant.id,username:name,roleId:role.id});
+   console.log('Demo-Benutzer angelegt:',name);
+  }
+ }
  console.log('Fertig. Mandant "demo" ist befuellt.');
 })().catch(e=>{console.error(e.message);process.exit(1);});

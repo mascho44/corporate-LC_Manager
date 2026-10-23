@@ -8,4 +8,5 @@ LCM_URL=https://lc.ostms.de LCM_USER=<Plattform-Admin> LCM_PASSWORD=<Passwort> L
 
 - Benötigt einen Plattform-Administrator; dieser wird erster Administrator des Mandanten.
 - Idempotent: vorhandene Akten (Referenz), Garantien, Linien und Kunden werden übersprungen. Für frische Fristen den Mandanten in der Plattformverwaltung löschen und neu füllen.
+- Optional legt `LCM_DEMO_USER` + `LCM_DEMO_PASSWORD` (mind. 10 Zeichen; optional `LCM_DEMO_ROLE=VIEWER|EDITOR`, `LCM_DEMO_EMAIL`) einen Demo-Benutzer an und weist ihn dem Mandanten zu. Das Passwort kommt nur aus der Umgebung.
 - Es werden nur öffentliche API-Aufrufe genutzt, keine Direktzugriffe auf die Datenbank.
