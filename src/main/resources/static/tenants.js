@@ -1,5 +1,8 @@
 /* Workspace administration: a page first, never an automatic modal. */
+/** The "Mandant" page is for tenant administrators: the administrator role, or the right to manage settings (the panels on this page need it). Everyone else does not get the menu entry. */
+function mayAdministerTenant(){return (typeof currentUser!=='undefined'&&currentUser?.role==='ADMIN')||(typeof can==='function'&&can('SETTINGS_MANAGE'));}
 async function setupTenants(){
+ if(!mayAdministerTenant())return;
  const text=(key,fallback)=>{const value=globalThis.LcI18n?.t(key);return value&&value!==key?value:fallback;};
  const node=(tag,value,key)=>{const n=document.createElement(tag);n.textContent=value;if(key)n.dataset.i18n=key;return n;};
  const nav=node('button',text('tenant.title','Mandant'),'tenant.title');nav.type='button';nav.id='appNavTenants';

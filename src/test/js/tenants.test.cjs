@@ -1,11 +1,11 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const source=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/tenants.js'),'utf8');
-async function fixture(enabled=true,allowed=false,failReadiness=false){
+async function fixture(enabled=true,allowed=false,failReadiness=false,user={role:'ADMIN'}){
  const nodes=new Map(),calls=[],pages=[],confirmations=[];let reloads=0,failSwitch=false,confirm=async()=>true,requestHook;
  function node(tag){let id='';const n={tag,children:[],dataset:{},textContent:'',append(...children){this.children.push(...children);},prepend(...children){this.children.unshift(...children);},replaceChildren(...children){this.children=children;},setAttribute(k,v){this[k]=v;},reset(){}};Object.defineProperty(n,'id',{get:()=>id,set:value=>{id=value;nodes.set(value,n);}});return n;}
  const nav=node('nav'),main=node('main'),header=node('header');
  const overview={selectedTenantId:'home',creationEnabled:enabled,workspaces:[{id:'home',name:'Home',code:'home'},{id:'other',name:'<script>untrusted</script>',code:'other'}]};
-const context=vm.createContext({confirmAction:async(message,labels)=>{confirmations.push({message,labels});return confirm();},can:()=>allowed,document:{createElement:node,querySelector:s=>s==='#appNav nav'?nav:s==='main'?main:header},appNavigate:(...args)=>pages.push(args),json:async(url,options)=>{calls.push({url,options});if(requestHook){const intercepted=requestHook(url,options);if(intercepted!==undefined)return intercepted;}if(url==='/api/tenants'&&!options)return overview;if(url==='/api/tenants/current/settings'&&!options)return {name:'Synthetic workspace',defaultLanguage:'en',editingEnabled:enabled};if(url==='/api/tenants/current/readiness'){if(failReadiness)throw Error('Setup unavailable');return {companies:0,templates:2,activeMembers:1};}if(url.endsWith('/select')){if(failSwitch)throw Error('No active membership');return {}; }if(url==='/api/tenants'&&options?.method==='POST'){const created={id:'created',name:'Synthetic created',code:'synthetic'};overview.workspaces.push(created);return created;}return {};},location:{reload:()=>reloads++},encodeURIComponent,JSON,Object,FormData:class{constructor(){return new Map([['code','synthetic'],['name','Synthetic'],['defaultLanguage','en']]);}}});
+const context=vm.createContext({confirmAction:async(message,labels)=>{confirmations.push({message,labels});return confirm();},can:()=>allowed,currentUser:user,document:{createElement:node,querySelector:s=>s==='#appNav nav'?nav:s==='main'?main:header},appNavigate:(...args)=>pages.push(args),json:async(url,options)=>{calls.push({url,options});if(requestHook){const intercepted=requestHook(url,options);if(intercepted!==undefined)return intercepted;}if(url==='/api/tenants'&&!options)return overview;if(url==='/api/tenants/current/settings'&&!options)return {name:'Synthetic workspace',defaultLanguage:'en',editingEnabled:enabled};if(url==='/api/tenants/current/readiness'){if(failReadiness)throw Error('Setup unavailable');return {companies:0,templates:2,activeMembers:1};}if(url.endsWith('/select')){if(failSwitch)throw Error('No active membership');return {}; }if(url==='/api/tenants'&&options?.method==='POST'){const created={id:'created',name:'Synthetic created',code:'synthetic'};overview.workspaces.push(created);return created;}return {};},location:{reload:()=>reloads++},encodeURIComponent,JSON,Object,FormData:class{constructor(){return new Map([['code','synthetic'],['name','Synthetic'],['defaultLanguage','en']]);}}});
  vm.runInContext(source,context);await context.setupTenants();
  return {nodes,nav,main,header,calls,pages,context,confirmations,setRequestHook:fn=>requestHook=fn,setConfirm:fn=>confirm=fn,get reloads(){return reloads;},setFailSwitch:()=>failSwitch=true};
 }
@@ -58,4 +58,10 @@ test('OCR tolerance is shown for editors and saved as a fraction, empty means de
 test('OCR tolerance stays hidden when the endpoint is not available',async()=>{
  const f=await fixture();await f.nodes.get('appNavTenants').onclick();
  assert.equal(f.nodes.get('tenantOcrForm').hidden,true);
+});
+
+test('the Mandant menu entry exists only for tenant administrators',async()=>{
+ const admin=await fixture(true,false,false,{role:'ADMIN'});assert.equal(admin.nav.children.length,1);
+ const manager=await fixture(true,true,false,{role:'USER'});assert.equal(manager.nav.children.length,1);
+ const ordinary=await fixture(true,false,false,{role:'USER'});assert.equal(ordinary.nav.children.length,0);assert.equal(ordinary.main.children.length,0);
 });
