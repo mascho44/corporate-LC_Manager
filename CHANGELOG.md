@@ -2,6 +2,7 @@
 
 ## 0.6.1 – in Arbeit
 
+* Demo-Mandant: `scripts/seed-demo.cjs` befüllt einen Mandanten `demo` mit realistischen Akkreditiven, Garantien und Linien, Daten relativ zu heute (docs/demo-mandant.md).
 * Menü: Bearbeitung und Administration sind getrennt. Der Arbeitsbereich enthält Cockpit, Meine Arbeit, Gruppeninbox, LC-Akten, Garantien, Linien, Fristenkalender, Liquiditätsvorschau, Posteingang, SWIFT-Import, Importhistorie und Training; die Administration ist in „Stammdaten & Regeln“, „Zugriff & Schnittstellen“ und „Betrieb & Anbindung“ gegliedert (Gruppenüberschriften nur bei sichtbaren Einträgen). Bisher hingen alle später hinzugefügten Seiten am Ende der Administration.
 * Garantien und Linien getrennt: Die Linien haben eine eigene Seite „Linien“. Im Garantieformular lässt sich eine Linie wählen, und ein Balken zeigt die Auslastung (bisher belegt, diese Garantie, frei) schon beim Erfassen.
 * Garantien, Beauftragung (der einfache Weg): Für eine beantragte Garantie gibt es den Block „Antrag bei der Bank“ mit Empfänger, Wortlaut und Bemerkungen, den Antrag als Word-Brief (Deutsch oder Englisch, Briefkopf aus dem Firmenprofil) und der Statusverfolgung Entwurf, gesendet, Rückfrage, zugesagt, ausgestellt, abgelehnt, zurückgezogen. Ausgestellt macht die Garantie aktiv, abgelehnt oder zurückgezogen schließt sie als „nicht zustande gekommen“ (neuer Garantie-Status). „Antwort erwartet bis“ erscheint in den Fristen und im Fristenkalender. LCM versendet den Antrag nicht. Migration V145, Beschreibung in `docs/garantien.md`.
