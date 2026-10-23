@@ -27,6 +27,7 @@ class WebhookTest {
   assertThat(DomainEvent.forAction("DOCUMENT_CHECK_REPORT_CREATED",true)).contains(DomainEvent.VALIDATION_COMPLETED);
   assertThat(DomainEvent.forAction("EBICS_FETCH_FAILED",false)).contains(DomainEvent.EBICS_ORDER_FAILED);
   assertThat(DomainEvent.forAction("EBICS_KEYS_FAILED",true)).contains(DomainEvent.EBICS_ORDER_FAILED);
+  assertThat(DomainEvent.forAction("DOCUMENT_DRAFT_APPROVAL_REQUIRED",true)).contains(DomainEvent.APPROVAL_REQUIRED);
   assertThat(DomainEvent.forAction("LC_PAYMENT_RECORDED",true)).contains(DomainEvent.PAYMENT_RECEIVED);
   assertThat(DomainEvent.forAction("SLA_RULE_CREATED",true)).isEmpty();
   assertThat(DomainEvent.forAction(null,true)).isEmpty();

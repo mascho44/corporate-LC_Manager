@@ -11,6 +11,7 @@ Ereignisse entstehen aus den Audit-Aktionen; kein Modul muss etwas melden. Pro W
 | `OcrCompleted` | `DOCUMENT_RE_RECOGNIZED`, `DOCUMENT_INBOX_EXTRACTION_RETRIED` (die Erkennung beim Hochladen gehört zu `DocumentUploaded`) |
 | `ValidationCompleted` | `DOCUMENT_CHECK_REPORT_CREATED` |
 | `DiscrepancyDetected` | `DOCUMENT_DISCREPANCY_CONFIRMED` |
+| `ApprovalRequired` | `DOCUMENT_DRAFT_APPROVAL_REQUIRED`: ein Entwurf wurde zur Prüfung eingereicht (Prüfung erforderlich), nach der Prüfung (Freigabe erforderlich, 0 von N) oder nach einer Teilfreigabe (weitere Freigabe erforderlich, x von N); `details` nennt Dokumentnummer und Schritt |
 | `ApprovalRecorded` | `DOCUMENT_DRAFT_APPROVAL_RECORDED` |
 | `LcCreated` | `LC_CREATED`, `LC_IMPORTED`, `SWIFT_IMPORTED` |
 | `AmendmentReceived` | `MT707_IMPORTED` |
@@ -18,7 +19,7 @@ Ereignisse entstehen aus den Audit-Aktionen; kein Modul muss etwas melden. Pro W
 | `PaymentReceived` | `LC_PAYMENT_RECORDED` (Zahlung von Hand oder per API erfasst) |
 | `EbicsOrderFailed` | `EBICS_FETCH_FAILED`, `EBICS_KEYS_FAILED`, `EBICS_BANK_KEYS_FAILED` |
 
-Nicht erzeugt werden `ApprovalRequired` (keine Freigabe-Anforderung als Ereignis) und `StatementReceived` (LCM liest keine Kontoauszüge). Fehlgeschlagene Aktionen lösen nur `EbicsOrderFailed` aus.
+Nicht erzeugt wird `StatementReceived` (LCM liest keine Kontoauszüge). Fehlgeschlagene Aktionen lösen nur `EbicsOrderFailed` aus.
 
 ## Nachricht
 `POST` mit `Content-Type: application/json`:

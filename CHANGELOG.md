@@ -2,6 +2,7 @@
 
 ## 0.5.1 – in Arbeit
 
+* Domain Events (Issue 53): Neues Ereignis `ApprovalRequired` (Webhooks): Ein Dokumententwurf braucht den nächsten Schritt einer anderen Person: Prüfung nach dem Einreichen, Freigabe nach der Prüfung, weitere Freigaben, solange weniger als die nach Betrag geforderte Zahl zugestimmt hat. Neue Audit-Aktion `DOCUMENT_DRAFT_APPROVAL_REQUIRED`. Damit sind alle Ereignisse der ursprünglichen Liste umgesetzt, bis auf `StatementReceived` (LCM liest keine Kontoauszüge).
 * SWIFT-Ordner (nur Empfang, Bank-Profil): Das Nachrichtensystem der Bank legt Kopien eingegangener SWIFT-Nachrichten in einem Ordner ab; LCM liest einfache Texte, FIN mit Blöcken und RJE (auch mehrere Nachrichten je Datei), legt jede Nachricht einmal ab und zeigt sie wie eine EBICS-Nachricht zum Ansehen, Importieren oder Verwerfen. Nichts wird automatisch importiert, nichts zurückgeschrieben; gelesene Dateien wandern nach `verarbeitet`, abgelehnte nach `fehler` mit Grund. Schaltbar mit `SWIFT_FOLDER_ENABLED` (Standard aus), Migration V142, Beschreibung in `docs/swift-ordner.md`.
 * Menü „Mandant“: Der Wechsel des Arbeitsbereichs in der Kopfzeile bleibt für alle erhalten, die mehr als einen Mandanten nutzen dürfen; nur der Menüpunkt selbst ist Administratoren vorbehalten (Korrektur der vorherigen Änderung, die auch den Wechsel ausgeblendet hatte).
 * Menü: Der Punkt „Mandant“ erscheint nur noch für Mandanten-Administratoren (Rolle Administrator oder Recht „Einstellungen verwalten“); alle anderen sehen ihn nicht mehr.
