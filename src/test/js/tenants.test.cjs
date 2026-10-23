@@ -60,8 +60,12 @@ test('OCR tolerance stays hidden when the endpoint is not available',async()=>{
  assert.equal(f.nodes.get('tenantOcrForm').hidden,true);
 });
 
-test('the Mandant menu entry exists only for tenant administrators',async()=>{
- const admin=await fixture(true,false,false,{role:'ADMIN'});assert.equal(admin.nav.children.length,1);
- const manager=await fixture(true,true,false,{role:'USER'});assert.equal(manager.nav.children.length,1);
- const ordinary=await fixture(true,false,false,{role:'USER'});assert.equal(ordinary.nav.children.length,0);assert.equal(ordinary.main.children.length,0);
+test('the Mandant menu entry is for tenant administrators only, the workspace switch stays for everybody with several workspaces',async()=>{
+ const entry=f=>f.nav.children.find(child=>child.id==='appNavTenants');
+ const admin=await fixture(true,false,false,{role:'ADMIN'});assert.notEqual(entry(admin).hidden,true);
+ const manager=await fixture(true,true,false,{role:'USER'});assert.notEqual(entry(manager).hidden,true);
+ const ordinary=await fixture(true,false,false,{role:'USER'});
+ assert.equal(entry(ordinary).hidden,true);assert.match(entry(ordinary).className,/hidden/);
+ const selector=ordinary.header.children.find(child=>child.className==='tenant-workspace-selector');
+ assert.ok(selector,'the workspace selector is built for ordinary users too');assert.notEqual(selector.hidden,true,'it is visible when there is more than one workspace');
 });

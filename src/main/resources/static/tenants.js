@@ -1,11 +1,11 @@
 /* Workspace administration: a page first, never an automatic modal. */
-/** The "Mandant" page is for tenant administrators: the administrator role, or the right to manage settings (the panels on this page need it). Everyone else does not get the menu entry. */
+/** The "Mandant" page is for tenant administrators: the administrator role, or the right to manage settings (the panels on this page need it). Everyone else does not get the menu entry; the workspace switch in the header stays for everybody who may use more than one workspace. */
 function mayAdministerTenant(){return (typeof currentUser!=='undefined'&&currentUser?.role==='ADMIN')||(typeof can==='function'&&can('SETTINGS_MANAGE'));}
 async function setupTenants(){
- if(!mayAdministerTenant())return;
  const text=(key,fallback)=>{const value=globalThis.LcI18n?.t(key);return value&&value!==key?value:fallback;};
  const node=(tag,value,key)=>{const n=document.createElement(tag);n.textContent=value;if(key)n.dataset.i18n=key;return n;};
  const nav=node('button',text('tenant.title','Mandant'),'tenant.title');nav.type='button';nav.id='appNavTenants';
+ if(!mayAdministerTenant()){nav.hidden=true;nav.className+=' hidden';}
  document.querySelector('#appNav nav').append(nav);
  const section=document.createElement('section');section.id='tenantSection';section.className='panel hidden';
  const heading=node('h2',text('tenant.title','Mandant'),'tenant.title');const message=node('p','');message.setAttribute('role','status');const list=document.createElement('div');
