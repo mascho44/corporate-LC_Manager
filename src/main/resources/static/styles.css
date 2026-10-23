@@ -113,3 +113,4 @@ body .dossier-nav>button{flex:0 0 auto;align-self:center;min-height:44px;height:
 
 /* Guarantee files: LC-only tools do not apply (conditions, charges, document set, submission package, draft check, amendment request, copy) */
 body.guarantee-file #documentSetBtn,body.guarantee-file #submissionPackageBtn,body.guarantee-file #draftCheckBtn,body.guarantee-file #amendmentRequestBtn,body.guarantee-file #copyLcBtn,body.guarantee-file [data-lc-tool],body.guarantee-file .party-role > label:first-child,body.guarantee-file .party-role > small{display:none!important}
+body.guarantee-file .dossier-nav button[data-section="checks"],body.guarantee-file .dossier-section[data-section="checks"],body.guarantee-file .procurement-plan,body.guarantee-file .submission-check{display:none!important}
