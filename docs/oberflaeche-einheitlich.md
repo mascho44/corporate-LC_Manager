@@ -18,3 +18,9 @@ Schriftgröße und Rundung. Die Werte stehen einmalig in `ui-system.css` (gelade
 - Farben und Varianten (primär, `.secondary`, `.danger`, `.ghost`) bleiben unverändert (`app-polish.css`).
 
 Vorher waren Schaltflächen 44 px hoch mit Schrift zwischen 11 und 16 px, Eingabefelder 40 oder 44 px, Rundungen zwischen 0 und 10 px.
+
+## Menü: Arbeitsbereich und Administration
+Das Menü trennt **Bearbeitung** von **Administration** (`nav-groups.js`). Die Einträge werden von den Seiten selbst angelegt; die Reihenfolge wird zentral gesetzt und gilt bei jeder Änderung des Menüs neu:
+- **ARBEITSBEREICH:** Cockpit, Meine Arbeit, Gruppeninbox, LC-Akten, Garantien, Linien, Fristenkalender, Liquiditätsvorschau, Dokumentenposteingang, SWIFT importieren, Importhistorie, Training & Erkennung.
+- **ADMINISTRATION**, in drei Gruppen: *Stammdaten & Regeln* (Firmenstammdaten, Dokumentvorlagen, Rule Packs, Korrespondenzbanken, Freigabestufen, SLAs), *Zugriff & Schnittstellen* (Benutzer, API-Schlüssel, Webhooks, Audit-Protokoll), *Betrieb & Anbindung* (EBICS-Bankanbindung, Operationsmonitor, Mandant, Plattformadministration).
+- Eine Gruppenüberschrift erscheint nur, wenn mindestens ein Eintrag der Gruppe für den Benutzer sichtbar ist (die Sichtbarkeit der Einträge bestimmen weiterhin Rechte und Profil). Ein neuer, unbekannter Eintrag bleibt im Arbeitsbereich.

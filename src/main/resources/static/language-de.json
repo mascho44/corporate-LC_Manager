@@ -3539,5 +3539,14 @@
   "gar.status.CANCELLED": "nicht zustande gekommen",
   "audit.act.GUARANTEE_REQUEST_SAVED": "Garantieantrag gespeichert",
   "audit.act.GUARANTEE_REQUEST_STATUS_CHANGED": "Status des Garantieantrags geändert",
-  "audit.act.GUARANTEE_REQUEST_DOCUMENT_CREATED": "Garantieantrag als Word erzeugt"
+  "audit.act.GUARANTEE_REQUEST_DOCUMENT_CREATED": "Garantieantrag als Word erzeugt",
+  "gar.line": "Linie",
+  "gar.lineNone": "(Bank frei eingeben)",
+  "gar.lineUsed": "{percent} % belegt",
+  "cl.checkLine": "Linie „{name}“ ({limit}): belegt {before} % → mit dieser Garantie {after} %; frei {free}.",
+  "cl.nav": "Linien",
+  "cl.intro": "Rahmen, die Ihre Banken Ihnen für Garantien eingeräumt haben, je Bank und Währung, optional je Garantieart. Offene Garantien belegen die Linie ihrer Bank; zurückgegebene, in Anspruch genommene und abgelaufene geben sie frei. Garantien legen Sie unter „Garantien“ an; dort sehen Sie die Auslastung schon beim Erfassen.",
+  "nav.group.master": "Stammdaten & Regeln",
+  "nav.group.access": "Zugriff & Schnittstellen",
+  "nav.group.ops": "Betrieb & Anbindung"
 }

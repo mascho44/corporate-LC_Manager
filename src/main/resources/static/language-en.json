@@ -3539,5 +3539,14 @@
   "gar.status.CANCELLED": "did not come about",
   "audit.act.GUARANTEE_REQUEST_SAVED": "Guarantee application saved",
   "audit.act.GUARANTEE_REQUEST_STATUS_CHANGED": "Guarantee application status changed",
-  "audit.act.GUARANTEE_REQUEST_DOCUMENT_CREATED": "Guarantee application created as Word"
+  "audit.act.GUARANTEE_REQUEST_DOCUMENT_CREATED": "Guarantee application created as Word",
+  "gar.line": "Line",
+  "gar.lineNone": "(enter bank freely)",
+  "gar.lineUsed": "{percent} % used",
+  "cl.checkLine": "Line “{name}” ({limit}): {before} % used → {after} % with this guarantee; {free} free.",
+  "cl.nav": "Credit lines",
+  "cl.intro": "Limits your banks have granted you for guarantees, per bank and currency, optionally per type of guarantee. Open guarantees use the line of their bank; returned, claimed and expired ones free it. You create guarantees under “Guarantees”; there you see the utilization while you enter them.",
+  "nav.group.master": "Master data & rules",
+  "nav.group.access": "Access & interfaces",
+  "nav.group.ops": "Operations & connections"
 }
