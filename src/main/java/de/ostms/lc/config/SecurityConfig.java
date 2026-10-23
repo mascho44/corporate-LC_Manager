@@ -35,6 +35,8 @@ import de.ostms.lc.user.service.AppUserDetailsService; import jakarta.servlet.ht
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/correspondent-banks/**","/api/correspondent-banks").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/correspondent-banks/**").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers(org.springframework.http.HttpMethod.DELETE,"/api/correspondent-banks/**").hasAuthority("PERM_SETTINGS_MANAGE")
+   .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/guarantees","/api/guarantees/*/status").hasAuthority("PERM_LC_EDIT")
+   .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/guarantees/*").hasAuthority("PERM_LC_EDIT")
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/lcs/*/payments").hasAuthority("PERM_LC_EDIT")
    .requestMatchers(org.springframework.http.HttpMethod.DELETE,"/api/lcs/*/payments/*").hasAuthority("PERM_LC_EDIT")
    .requestMatchers("/api/webhooks","/api/webhooks/**").hasRole("ADMIN")

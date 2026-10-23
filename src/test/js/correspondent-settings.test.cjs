@@ -79,3 +79,17 @@ test('the liquidity page has all its texts in both language packs and is wired i
   assert.match(fs.readFileSync(dir + 'app-admin.js', 'utf8'), /liquidity:\['liquiditySection'\]/);
   assert.match(fs.readFileSync(dir + 'app-audit-training.js', 'utf8'), /setupLiquidity\(\)/);
 });
+
+test('the guarantee page has all its texts in both language packs and is wired in', () => {
+  const page = fs.readFileSync(dir + 'guarantees.js', 'utf8');
+  const keys = [...page.matchAll(/tx\('(gar\.[A-Za-z.]+)',\s*'((?:[^'\\]|\\.)*)'/g)];
+  assert.ok(keys.length >= 45);
+  for (const [, key, text] of keys) { assert.ok(de[key], 'missing de ' + key); assert.ok(en[key], 'missing en ' + key); assert.strictEqual(de[key], text.replace(/\\'/g, "'"), 'default text differs for ' + key); }
+  ['ADVANCE_PAYMENT', 'PERFORMANCE', 'WARRANTY', 'BID', 'PAYMENT', 'CUSTOMS', 'RENT', 'OTHER'].forEach(t => { assert.ok(de['gar.type.' + t], t); assert.ok(en['gar.type.' + t], t); });
+  ['REQUESTED', 'ACTIVE', 'RETURNED', 'CLAIMED', 'EXPIRED'].forEach(s => { assert.ok(de['gar.status.' + s], s); assert.ok(en['gar.status.' + s], s); });
+  ['CREATED', 'UPDATED', 'STATUS_CHANGED'].forEach(a => { assert.ok(de['audit.act.GUARANTEE_' + a], a); assert.ok(en['audit.act.GUARANTEE_' + a], a); });
+  assert.match(fs.readFileSync(dir + 'index.html', 'utf8'), /guarantees\.js\?v=/);
+  assert.match(fs.readFileSync(dir + 'app-admin.js', 'utf8'), /guarantees:\['guaranteeSection'\]/);
+  assert.match(fs.readFileSync(dir + 'app-audit-training.js', 'utf8'), /setupGuarantees\(\)/);
+  assert.match(fs.readFileSync(dir + 'app-workspace.js', 'utf8'), /LcGuarantees\?\.render\(block,id\)/);
+});

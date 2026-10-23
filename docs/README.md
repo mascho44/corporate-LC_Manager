@@ -27,6 +27,7 @@ versionierte Inventar der Java-Laufzeitbibliotheken.
 - [Corporate: Beschaffungsplan](corporate-beschaffungsplan.md) · [Packliste: CSV-Import](packliste-csv-import.md)
 - [Teams und Gruppeninbox](gruppeninbox.md)
 - [Korrespondenzbanken](korrespondenzbanken.md)
+- [Garantien (Corporate)](garantien.md)
 - [Domain Events und Webhooks](webhooks.md)
 - [Externe REST-API und API-Schlüssel](rest-api.md)
 - [Erwarteter Geldeingang in den Fristen](erwarteter-geldeingang.md)

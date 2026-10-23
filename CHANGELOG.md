@@ -2,6 +2,7 @@
 
 ## 0.6.1 – in Arbeit
 
+* Garantien (Kundenseite, Corporate-Profil), Grundlage: Garantien der Bank für das Unternehmen werden als Akten der Art Garantie geführt, mit Art, Gültigkeit, Ablauf, Frist für die Inanspruchnahme, automatischer Verlängerung mit Entscheidungsfrist, Grundgeschäft und Status (beantragt, aktiv, zurückgegeben, in Anspruch genommen, abgelaufen). Fristen für Ablauf, Inanspruchnahme und Entscheidung erscheinen in den Fristen, im Fristenkalender und in den Aufgaben der Fristenüberwachung; zurückgegebene Garantien schließen die Akte. Neue Seite „Garantien“ (Liste mit Ansichten und Suche, Formular zum Anlegen und Ändern, Statuswechsel) und Block „Garantie“ in der Akte. Schnittstelle `/api/guarantees`, Migration V143, Beschreibung in `docs/garantien.md`.
 ## 0.6.0 – 23.10.2026
 
 Schwerpunkte seit 0.5.0: Service-Level (SLAs), Zahlungsstatus und Liquiditätsvorschau, externe REST-API mit Webhooks, weitere SWIFT-Nachrichtentypen und ein SWIFT-Ordner-Eingang für Banken, Korrespondenzbanken sowie die vollständig zweisprachige Oberfläche.

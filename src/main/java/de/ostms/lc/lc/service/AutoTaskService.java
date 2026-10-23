@@ -16,6 +16,7 @@ import java.util.*;
 /** Creates team tasks from events (EBICS message, inbox document, approaching deadline) according to the tenant's rules, and closes them when the subject is handled. */
 @Service
 public class AutoTaskService {
+ @org.springframework.beans.factory.annotation.Autowired(required=false) private de.ostms.lc.guarantee.GuaranteeDetailRepository guarantees;
  public static final String EBICS_MESSAGE="EBICS_MESSAGE",INBOX_ITEM="INBOX_ITEM",DEADLINE="DEADLINE",PROCUREMENT="PROCUREMENT";
  public static final List<String> TRIGGERS=List.of(EBICS_MESSAGE,INBOX_ITEM,DEADLINE,PROCUREMENT);
  static final String SYSTEM="system:automation";
@@ -73,13 +74,18 @@ public class AutoTaskService {
   var rule=rules.forTrigger(DEADLINE).filter(AutomationRule::isEnabled).orElse(null);
   if(rule==null||rule.getTeamId()==null)return 0;
   var team=teams.one(rule.getTeamId());if(!team.isActive())return 0;
-  LocalDate horizon=today.plusDays(rule.getLeadDays());int created=0;
+  LocalDate horizon=today.plusDays(rule.getLeadDays());int created=0;int[] guaranteeTasks={0};
   for(LetterOfCredit lc:lcs.findAll()){
    if(lc.getStatus()==LetterOfCreditStatus.CLOSED||lc.getStatus()==LetterOfCreditStatus.EXPIRED)continue;
    created+=deadline(rule,lc,"EXPIRY","Ablauf",lc.getExpiryDate(),today,horizon)?1:0;
    created+=deadline(rule,lc,"FOLLOWUP","Wiedervorlage",lc.getFollowUpDate(),today,horizon)?1:0;
+   if("GUARANTEE".equals(lc.getInstrumentType())&&guarantees!=null)guarantees.byLc(lc.getId()).ifPresent(g->{
+    if(g.getClaimUntil()!=null&&deadline(rule,lc,"CLAIMUNTIL","Ende der Frist für die Inanspruchnahme",g.getClaimUntil(),today,horizon))guaranteeTasks[0]++;
+    var decide=g.decisionDate(lc.getExpiryDate());
+    if(decide!=null&&deadline(rule,lc,"EXTENSION","Entscheiden: Verlängerung oder Rückgabe",decide,today,horizon))guaranteeTasks[0]++;
+   });
   }
-  return created;
+  return created+guaranteeTasks[0];
  }
  private boolean deadline(AutomationRule rule,LetterOfCredit lc,String kind,String label,LocalDate date,LocalDate today,LocalDate horizon){
   if(date==null||date.isBefore(today)||date.isAfter(horizon))return false;
