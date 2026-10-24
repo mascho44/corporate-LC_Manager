@@ -4,6 +4,7 @@
  const tr = (key, de, values) => typeof tx === 'function' ? tx(key, de, values) : de;
  const modules = () => globalThis.LcWorkspaceModules || {};
  const corporateOnly = () => modules().corporate === true && modules().bank !== true;
+ // the list itself no longer contains guarantees (lcListed); this only marks the letters of credit
  const kindOf = lc => !lc ? null : lc.instrumentType === 'GUARANTEE' ? 'GUARANTEE' : lc.partyRole === 'APPLICANT' ? 'IMPORT' : lc.partyRole === 'BENEFICIARY' ? 'EXPORT' : null;
  const label = kind => kind === 'GUARANTEE' ? tr('kind.guarantee', 'Garantie') : kind === 'IMPORT' ? tr('kind.import', 'Import-LC') : tr('kind.export', 'Export-LC');
  let filter = '';

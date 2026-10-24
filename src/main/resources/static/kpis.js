@@ -72,8 +72,9 @@
   if (!list || typeof data === 'undefined' || !Array.isArray(data)) return;
   let strip = document.querySelector('#kpiStrip');
   if (!strip) { strip = document.createElement('section'); strip.id = 'kpiStrip'; strip.className = 'kpi-strip'; strip.setAttribute('aria-label', tr('kpi.label', 'Kennzahlen')); list.before(strip); }
-  strip.hidden = data.length === 0;
-  const today = new Date().toISOString().slice(0, 10), content = html(kpis(data, today), { quick: globalThis.LcQuickFilter.key, owner: document.querySelector('#lcOwnerFilter')?.value || '' });
+  const listed = typeof lcListed === 'function' ? lcListed() : data;
+  strip.hidden = listed.length === 0;
+  const today = new Date().toISOString().slice(0, 10), content = html(kpis(listed, today), { quick: globalThis.LcQuickFilter.key, owner: document.querySelector('#lcOwnerFilter')?.value || '' });
   if (strip.dataset.sig !== content) { strip.dataset.sig = content; strip.innerHTML = content; }
  }
  /** Applies a quick filter and/or the owner filter and redraws the list and the strip. */
