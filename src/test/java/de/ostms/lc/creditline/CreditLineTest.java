@@ -26,7 +26,7 @@ class CreditLineTest {
  }
  private static GuaranteeService.View guarantee(String bank,String currency,String amount,String type,String status){
   boolean open=status.equals("ACTIVE")||status.equals("REQUESTED");
-  return new GuaranteeService.View(UUID.randomUUID(),"G-"+amount,type,bank,"Kunde",currency,new BigDecimal(amount),null,null,null,null,false,null,null,null,null,status,null,null,null,false,open,true);
+  return new GuaranteeService.View(UUID.randomUUID(),"G-"+amount,type,bank,"Kunde",currency,new BigDecimal(amount),null,null,null,null,false,null,null,null,null,status,null,null,null,false,open,true,null);
  }
 
  @Test void theBankIsMatchedByItsFirstLineOrByTheBicAndIgnoresCaseAndPunctuation() {

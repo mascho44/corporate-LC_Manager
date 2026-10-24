@@ -42,6 +42,13 @@ public final class GuaranteeCopyCheck {
   var words=Arrays.stream(head.split(" ")).filter(w->w.length()>2&&!Set.of("gmbh","ag","kg","ltd","llc","oy","sa","inc","the","und","and","bank","co").contains(w)).toList();
   return !words.isEmpty()&&words.stream().allMatch(w->body.contains(" "+w)||body.contains(w));
  }
+ private static final Pattern REFERENCE=Pattern.compile("(?im)(?:garantie\\s*(?:nummer|nr\\.?|-nr\\.?)|guarantee\\s*(?:no\\.?|number|ref(?:erence)?)|(?:our|unsere)\\s*ref(?:erenz|erence)?|ihre\\s*ref(?:erenz)?|referenz|reference|:20:)\\s*[:.#]?\\s*([A-Z0-9][A-Z0-9/_.\\-]{3,39})");
+ /** The bank's reference printed on the copy (guarantee number, "our reference", SWIFT :20:), or null; only a candidate that contains a digit counts. */
+ static String reference(String text){
+  if(text==null)return null;var m=REFERENCE.matcher(text);
+  while(m.find()){var v=m.group(1).replaceAll("[.\\-]+$","");if(v.chars().anyMatch(Character::isDigit))return v;}
+  return null;
+ }
  public static List<Item> compare(Expected e,String text){
   var items=new ArrayList<Item>();boolean empty=text==null||text.isBlank();
   String cur=e.currency()==null?"":e.currency().toUpperCase(Locale.ROOT);
