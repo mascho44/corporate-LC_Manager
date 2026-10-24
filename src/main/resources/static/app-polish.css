@@ -42,3 +42,5 @@ dialog>p.error:empty{display:none}
 #guaranteeCockpitSection .membership-row b{font-weight:700}
 #guaranteeCockpitSection .membership-row meter{height:14px;width:220px}
 #guaranteeCockpitSection h2{margin:0 0 4px}
+/* The examination workplace is a bank tool: not offered in corporate-only workspaces */
+html[data-profile="corporate"] .workspace-control{display:none}
