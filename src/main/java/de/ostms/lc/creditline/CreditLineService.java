@@ -55,6 +55,12 @@ public class CreditLineService {
   }
   return new Overview(all.stream().map(l->view(l,used.getOrDefault(l.getId(),BigDecimal.ZERO),counts.getOrDefault(l.getId(),0),today)).toList(),without);
  }
+ /** The open guarantees that are booked against this line (the same rule as the utilisation). */
+ @Transactional(readOnly=true) public List<GuaranteeService.View> guaranteesOf(UUID id,LocalDate today){
+  var all=lines.findAll();if(all.stream().noneMatch(l->l.getId().equals(id)))throw new NoSuchElementException("Linie nicht gefunden.");
+  return guarantees.list(today).stream().filter(GuaranteeService.View::open)
+    .filter(g->lineFor(all,g.bank(),g.currency(),g.guaranteeType()).map(l->l.getId().equals(id)).orElse(false)).toList();
+ }
  /** Does a guarantee of this bank, currency, type and amount fit into its line? excludeLcId leaves out the guarantee that is being changed. */
  @Transactional(readOnly=true) public Check check(String bank,String currency,String type,BigDecimal amount,UUID excludeLcId,LocalDate today){
   var all=lines.findAll();var line=lineFor(all,bank,currency==null?null:currency.trim().toUpperCase(Locale.ROOT),type==null||type.isBlank()?null:type.trim().toUpperCase(Locale.ROOT));

@@ -310,6 +310,19 @@ async function setupCreditLines() {
    const bar = N('div', undefined, 'gar-bar ' + badge[1]); const fill = N('span'); fill.style.width = Math.min(100, l.percent) + '%'; bar.append(fill);
    text.append(title, bar, N('small', tx('cl.usage', '{used} von {limit} belegt ({percent} %) · frei {free} · {n} Garantien', { used: LcGuarantees.money(l.used, l.currency), limit: LcGuarantees.money(l.amount, l.currency), percent: l.percent, free: LcGuarantees.money(l.free, l.currency), n: l.guaranteeCount })));
    row.append(text);
+   // a click on the line shows the guarantees booked against it
+   const detail = N('div', undefined, 'gar-line-detail'); detail.hidden = true; text.append(detail);
+   const toggle = N('button', tx('cl.showGuarantees', 'Garantien anzeigen'), 'secondary'); toggle.type = 'button';
+   toggle.onclick = async () => {
+    if (!detail.hidden) { detail.hidden = true; toggle.textContent = tx('cl.showGuarantees', 'Garantien anzeigen'); return; }
+    try {
+     const booked = await json('/api/credit-lines/' + encodeURIComponent(l.id) + '/guarantees');
+     detail.replaceChildren(...(booked.length ? booked.map(g => { const item = N('p'); const a = N('a', g.reference); a.href = '#'; a.onclick = async e => { e.preventDefault(); appNavigate('lcs', document.querySelector('#appNavGuarantees')); await show(g.id); };
+      item.append(a, ' · ' + LcGuarantees.typeName(g.guaranteeType) + ' · ' + String(g.beneficiary || '').split('\n')[0] + ' · ' + LcGuarantees.money(g.amount, g.currency) + ' · ' + (g.expiryDate ? tx('gar.until', 'bis {date}', { date: LcGuarantees.day(g.expiryDate) }) : tx('gar.noEnd', 'unbefristet'))); return item; }) : [N('p', tx('cl.noneBooked', 'Zurzeit sind keine Garantien in diese Linie eingebucht.'))]));
+     detail.hidden = false; toggle.textContent = tx('cl.hideGuarantees', 'Garantien ausblenden');
+    } catch (error) { message.textContent = error.message; }
+   };
+   text.append(toggle);
    if (canLines()) {
     const edit = N('button', tx('gar.editShort', 'Bearbeiten'), 'secondary'); edit.type = 'button'; edit.onclick = () => { formBox.replaceChildren(lineForm(l)); formBox.scrollIntoView(); };
     const del = N('button', tx('cl.delete', 'Löschen'), 'secondary'); del.type = 'button';
