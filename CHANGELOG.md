@@ -2,6 +2,7 @@
 
 ## 0.6.1 – in Arbeit
 
+* Garantien und Akkreditive stärker getrennt: Garantien erscheinen nicht mehr in der Akkreditiv-Liste (Einstieg ist die Seite „Garantien“), und eine Garantie-Akte zeigt eine eigene Garantie-Übersicht (Bank, Begünstigter, Betrag, Laufzeit, Status, Dokumente) statt des LC-Cockpits. Aufgaben, Kalender und Suche bleiben gemeinsam.
 * Garantien: Die Referenz der Bank (Garantienummer) wird aus der abgelegten Kopie erkannt und lässt sich mit einem Klick in die Akte übernehmen; sie steht dann im Garantie-Block.
 * Akten-Typ (nur Corporate): Akten tragen die Marke Garantie, Export-LC (wir sind Begünstigter) oder Import-LC (wir sind Antragsteller). In der Liste gibt es dazu einen Filter „Akten-Typ“ (Issue 519).
 * Garantien: Die abgelegte Kopie der Garantie wird per Texterkennung mit den Garantiedaten abgeglichen (Währung, Betrag, Begünstigter, Bank, Laufzeit); Abweichungen werden als Hinweis angezeigt, nichts wird geändert.
