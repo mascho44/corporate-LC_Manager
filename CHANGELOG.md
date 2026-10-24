@@ -2,6 +2,7 @@
 
 ## 0.6.1 – in Arbeit
 
+* Garantien: Im Block „Garantie“ lässt sich die Kopie der Garantieurkunde oder des Avis als PDF ablegen (neuer Dokumenttyp „Garantieurkunde / Avis (Kopie)“); sie erscheint auch in den Dokumenten der Akte.
 * Demo-Mandant: `scripts/seed-demo.cjs` befüllt einen Mandanten `demo` mit realistischen Akkreditiven, Garantien und Linien, Daten relativ zu heute (docs/demo-mandant.md).
 * Menü: Bearbeitung und Administration sind getrennt. Der Arbeitsbereich enthält Cockpit, Meine Arbeit, Gruppeninbox, LC-Akten, Garantien, Linien, Fristenkalender, Liquiditätsvorschau, Posteingang, SWIFT-Import, Importhistorie und Training; die Administration ist in „Stammdaten & Regeln“, „Zugriff & Schnittstellen“ und „Betrieb & Anbindung“ gegliedert (Gruppenüberschriften nur bei sichtbaren Einträgen). Bisher hingen alle später hinzugefügten Seiten am Ende der Administration.
 * Garantien und Linien getrennt: Die Linien haben eine eigene Seite „Linien“. Im Garantieformular lässt sich eine Linie wählen, und ein Balken zeigt die Auslastung (bisher belegt, diese Garantie, frei) schon beim Erfassen.

@@ -66,7 +66,7 @@ public class ProcurementPlanService {
     }
     static List<DocumentType> planned() {
         return Arrays.stream(DocumentType.values()).filter(t -> !isTransport(t) && t != DocumentType.SWIFT_MT700 && t != DocumentType.ADVISING_LETTER
-                && t != DocumentType.DOCUMENT_SUBMISSION && t != DocumentType.ANNEX).toList();
+                && t != DocumentType.DOCUMENT_SUBMISSION && t != DocumentType.GUARANTEE_COPY && t != DocumentType.ANNEX).toList();
     }
     private Map<DocumentType, Integer> customLeadTimes() {
         Map<DocumentType, Integer> map = new EnumMap<>(DocumentType.class);
