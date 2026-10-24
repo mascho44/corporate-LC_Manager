@@ -216,6 +216,7 @@ globalThis.LcGuarantees = {
 };
 
 async function setupGuarantees() {
+ if (typeof can === 'function' && !can('GUARANTEE_VIEW')) return; // no right to read guarantees: no page
  let list; try { list = await json('/api/guarantees'); } catch { return; } // not a corporate tenant: no page
  const N = LcGuarantees.node;
  try { LcGuarantees.lines = (await json('/api/credit-lines')).lines; } catch { LcGuarantees.lines = []; }
@@ -261,6 +262,7 @@ async function setupGuarantees() {
 }
 
 async function setupCreditLines() {
+ if (typeof can === 'function' && !can('GUARANTEE_VIEW')) return;
  let overview; try { overview = await json('/api/credit-lines'); } catch { return; } // not a corporate tenant: no page
  const N = LcGuarantees.node;
  const nav = N('button', tx('cl.nav', 'Linien')); nav.type = 'button'; nav.id = 'appNavCreditLines'; nav.dataset.i18n = 'cl.nav';

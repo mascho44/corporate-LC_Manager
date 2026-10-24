@@ -13,7 +13,7 @@ class AuthorizationStampTest {
  }
  @Test void legacyRoleDefaultsAndDuplicateAuthorityOrderAreStable(){
   var user=new AppUser();user.setRole(UserRole.VIEWER);
-  assertThat(AuthorizationStamp.of(user)).isEqualTo(AuthorizationStamp.of(List.of(new SimpleGrantedAuthority("ROLE_VIEWER"),new SimpleGrantedAuthority("ROLE_VIEWER"))));
+  assertThat(AuthorizationStamp.of(user)).isEqualTo(AuthorizationStamp.of(List.of(new SimpleGrantedAuthority("ROLE_VIEWER"),new SimpleGrantedAuthority("PERM_GUARANTEE_VIEW"),new SimpleGrantedAuthority("PERM_LC_VIEW"),new SimpleGrantedAuthority("ROLE_VIEWER"))));
   user.setRole(UserRole.EDITOR);assertThat(AuthorizationStamp.of(user)).isNotEqualTo(AuthorizationStamp.of(List.of(new SimpleGrantedAuthority("ROLE_VIEWER"))));
  }
 }

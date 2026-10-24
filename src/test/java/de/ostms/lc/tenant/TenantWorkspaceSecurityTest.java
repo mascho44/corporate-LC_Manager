@@ -41,7 +41,7 @@ class TenantWorkspaceSecurityTest {
  MockHttpSession session(){
   var user=new AppUser();org.springframework.test.util.ReflectionTestUtils.setField(user,"id",userId);user.setUsername("synthetic-viewer");user.setPasswordHash("hash");user.setRole(UserRole.VIEWER);
   when(users.findByUsernameIgnoreCase(user.getUsername())).thenReturn(Optional.of(user));
-  when(memberships.requireActiveAccess(userId)).thenAnswer(i->new TenantMembershipService.Access(TenantContext.currentId(),userId,UUID.randomUUID(),UUID.randomUUID(),UserRole.VIEWER,Set.of()));
+  when(memberships.requireActiveAccess(userId)).thenAnswer(i->new TenantMembershipService.Access(TenantContext.currentId(),userId,UUID.randomUUID(),UUID.randomUUID(),UserRole.VIEWER,de.ostms.lc.user.domain.UserPermission.defaults(UserRole.VIEWER)));
   var session=new MockHttpSession();session.setAttribute("SPRING_SECURITY_CONTEXT",new SecurityContextImpl(UsernamePasswordAuthenticationToken.authenticated(user.getUsername(),null,List.of(new SimpleGrantedAuthority("ROLE_VIEWER")))));
   session.setAttribute(CredentialSessionFilter.STAMP,CredentialStamp.of("hash"));session.setAttribute(CredentialSessionFilter.AUTHENTICATED_AT,System.currentTimeMillis());session.setAttribute(CredentialSessionFilter.AUTHORIZATION_STAMP,AuthorizationStamp.of(user));
   when(workspaces.overview(any())).thenReturn(new TenantWorkspaceService.Overview(Tenant.DEFAULT_ID,List.of(),false));return session;

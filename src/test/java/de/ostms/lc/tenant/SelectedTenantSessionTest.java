@@ -37,7 +37,7 @@ class SelectedTenantSessionTest {
   new CredentialSessionFilter(users,memberships).doFilter(req,response,(r,s)->fail("Unauthorized chain executed"));assertThat(response.getStatus()).isEqualTo(401);assertThat(session.isInvalid()).isTrue();
  }
  @Test void changedMembershipPermissionsInvalidateSession()throws Exception{
-  var req=request("/api/lcs");selected=new TenantMembershipService.Access(tenant,userId,UUID.randomUUID(),UUID.randomUUID(),UserRole.VIEWER,Set.of());var response=new MockHttpServletResponse();
+  var req=request("/api/lcs");selected=new TenantMembershipService.Access(tenant,userId,UUID.randomUUID(),UUID.randomUUID(),UserRole.VIEWER,de.ostms.lc.user.domain.UserPermission.defaults(UserRole.VIEWER));var response=new MockHttpServletResponse();
   new CredentialSessionFilter(users,memberships).doFilter(req,response,(r,s)->fail("Stale permissions accepted"));assertThat(response.getStatus()).isEqualTo(401);
  }
  @Test void malformedSelectedTenantDoesNotFallBackToDefault()throws Exception{

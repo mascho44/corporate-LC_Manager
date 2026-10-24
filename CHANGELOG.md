@@ -2,6 +2,7 @@
 
 ## 0.6.1 – in Arbeit
 
+* Berechtigungen, Schritt 2: Neue Rechte „LC-Akten ansehen“ (LC_VIEW) und „Garantien ansehen“ (GUARANTEE_VIEW). Wer eine Art nicht ansehen darf, sieht diese Akten weder in Listen, Kalender, Aufgaben noch per Direktaufruf; die Seiten „Garantien“ und „Linien“ entfallen ohne Garantie-Recht. Alle bestehenden Rollen behalten per Migration das Lesen beider Arten.
 * Berechtigungen: Neues Recht „Garantien bearbeiten“ (GUARANTEE_EDIT) neben „LC-Akten bearbeiten“. Garantie-Akten lassen sich nur mit dem Garantie-Recht ändern, LC-Akten nur mit dem LC-Recht. Bestehende Rollen mit LC-Recht erhalten das neue Recht automatisch, es ändert sich also zunächst für niemanden etwas. Lesen bleibt für alle gleich (Schritt 2 folgt).
 * Garantien und Akkreditive stärker getrennt: Garantien erscheinen nicht mehr in der Akkreditiv-Liste (Einstieg ist die Seite „Garantien“), und eine Garantie-Akte zeigt eine eigene Garantie-Übersicht (Bank, Begünstigter, Betrag, Laufzeit, Status, Dokumente) statt des LC-Cockpits. Aufgaben, Kalender und Suche bleiben gemeinsam.
 * Garantien: Die Referenz der Bank (Garantienummer) wird aus der abgelegten Kopie erkannt und lässt sich mit einem Klick in die Akte übernehmen; sie steht dann im Garantie-Block.
