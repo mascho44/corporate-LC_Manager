@@ -182,6 +182,16 @@ globalThis.LcGuarantees = {
   block.append(N('h4', tx('gar.copy.title', 'Garantieurkunde (Kopie)')));
   if (!copies.length) block.append(N('p', tx('gar.copy.none', 'Noch keine Kopie der Garantie oder des Avis abgelegt.')));
   copies.forEach(d => { const p = N('p'); const a = N('a', d.originalFilename); a.href = d.downloadUrl; a.target = '_blank'; a.rel = 'noopener'; p.append(a, ' · ' + String(d.uploadedAt || '').slice(0, 10)); block.append(p); });
+  if (copies.length) {
+   const check = await json('/api/guarantees/' + encodeURIComponent(lcId) + '/copy-check').catch(() => null);
+   if (check && check.items) {
+    const names = { currency: tx('gar.cc.currency', 'Währung'), amount: tx('gar.cc.amount', 'Betrag'), beneficiary: tx('gar.cc.beneficiary', 'Begünstigter'), bank: tx('gar.cc.bank', 'Bank'), expiry: tx('gar.cc.expiry', 'Laufzeit bis') };
+    const marks = { OK: '✓', DEVIATION: '✗', UNKNOWN: '?' };
+    const list = N('ul', undefined, 'gar-copy-check');
+    check.items.forEach(i => list.append(N('li', marks[i.result] + ' ' + names[i.field] + (i.expected ? ': ' + i.expected : '') + (i.result === 'DEVIATION' && i.found ? ' – ' + tx('gar.cc.found', 'im Text: {value}', { value: i.found }) : '') + (i.result === 'UNKNOWN' ? ' – ' + tx('gar.cc.unknown', 'im Text nicht erkennbar') : ''), 'gar-cc-' + i.result.toLowerCase())));
+    block.append(N('p', check.textRead ? tx('gar.cc.title', 'Abgleich der Kopie mit den Garantiedaten (Texterkennung, nur ein Hinweis):') : tx('gar.cc.noText', 'Aus der Kopie konnte kein Text gelesen werden; kein Abgleich möglich.')), list);
+   }
+  }
   if (mayEdit) {
    const input = document.createElement('input'); input.type = 'file'; input.accept = '.pdf,application/pdf'; input.hidden = true;
    const upload = N('button', tx('gar.copy.upload', 'Kopie der Garantie ablegen (PDF)'), 'secondary'); upload.type = 'button'; upload.onclick = () => input.click();
