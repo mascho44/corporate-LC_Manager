@@ -16,11 +16,11 @@ test('members are filtered by search text, role and status; German status words 
 test('the permission matrix lists every permission once per area with a flag per role, unknown permissions under "Weitere"', () => {
  const roles = [{ id: 'a', name: 'Admin', permissions: ['LC_EDIT', 'USER_MANAGE', 'NEW_RIGHT'] }, { id: 'b', name: 'Leser', permissions: [] }];
  const matrix = api.permissionMatrix(roles);
- assert.deepEqual(Array.from(matrix, g => g.group), ['Akkreditive', 'Dokumente', 'Training und Nachweis', 'Verwaltung', 'Weitere']);
+ assert.deepEqual(Array.from(matrix, g => g.group), ['Akkreditive', 'Garantien', 'Dokumente', 'Training und Nachweis', 'Verwaltung', 'Weitere']);
  const edit = matrix[0].rows.find(r => r.code === 'LC_EDIT');
  assert.deepEqual(Array.from(edit.roles), [true, false]); assert.equal(edit.label, 'LC-Akten bearbeiten');
- assert.deepEqual(Array.from(matrix[4].rows, r => r.code), ['NEW_RIGHT']); assert.equal(matrix[4].rows[0].label, 'NEW_RIGHT');
- assert.equal(matrix.flatMap(g => g.rows).length, 14);
+ assert.deepEqual(Array.from(matrix[5].rows, r => r.code), ['NEW_RIGHT']); assert.equal(matrix[5].rows[0].label, 'NEW_RIGHT');
+ assert.equal(matrix.flatMap(g => g.rows).length, 17);
 });
 test('members are counted per role', () => {
  const counts = api.memberCounts(members); assert.equal(counts.get('r2'), 2); assert.equal(counts.get('r1'), 1); assert.equal(counts.get('x') || 0, 0);

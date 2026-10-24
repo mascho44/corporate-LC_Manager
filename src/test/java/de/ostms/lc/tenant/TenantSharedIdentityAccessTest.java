@@ -52,7 +52,7 @@ class TenantSharedIdentityAccessTest {
  @Test void foreignMembershipIsDenied(){ReflectionTestUtils.setField(membership,"tenantId",UUID.randomUUID());
   assertThatThrownBy(()->service.changeAccess(id,true,authentication)).isInstanceOf(AccessDeniedException.class);verifyNoInteractions(suspensions,audit);
  }
- @Test void missingLivePermissionIsDenied(){when(access.requireActiveAccess(actorId)).thenReturn(new TenantMembershipService.Access(tenant,actorId,UUID.randomUUID(),UUID.randomUUID(),UserRole.VIEWER,Set.of()));
+ @Test void missingLivePermissionIsDenied(){when(access.requireActiveAccess(actorId)).thenReturn(new TenantMembershipService.Access(tenant,actorId,UUID.randomUUID(),UUID.randomUUID(),UserRole.VIEWER,de.ostms.lc.user.domain.UserPermission.defaults(UserRole.VIEWER)));
   assertThatThrownBy(()->service.changeAccess(id,true,authentication)).isInstanceOf(AccessDeniedException.class);verifyNoInteractions(memberships,suspensions,audit);
  }
  @Test void bootstrapTenantRemainsBlocked(){try(var ignored=TenantContext.open(Tenant.DEFAULT_ID)){

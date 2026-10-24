@@ -137,6 +137,8 @@ import de.ostms.lc.user.service.AppUserDetailsService; import jakarta.servlet.ht
   .addFilterAfter(new de.ostms.lc.capture.CaptureTokenFilter(captureTokens::getIfAvailable),org.springframework.security.web.context.SecurityContextHolderFilter.class)
   .addFilterAfter(new de.ostms.lc.apikey.ApiKeyFilter(apiKeys::getIfAvailable),org.springframework.security.web.context.SecurityContextHolderFilter.class)
   .addFilterAfter(new CredentialSessionFilter(accounts,memberships),org.springframework.security.web.context.SecurityContextHolderFilter.class)
+  .addFilterAfter(new InstrumentVisibilityFilter(),CredentialSessionFilter.class)
+  .addFilterAfter(new InstrumentVisibilityFilter(),CredentialSessionFilter.class)
   .exceptionHandling(e->e.defaultAuthenticationEntryPointFor(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),new AntPathRequestMatcher("/api/**")).defaultAuthenticationEntryPointFor(new org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint("/platform-login.html"),new org.springframework.security.web.util.matcher.OrRequestMatcher(new AntPathRequestMatcher("/platform"),new AntPathRequestMatcher("/platform.html"))))
   .formLogin(f->f.loginPage("/login.html").permitAll()).logout(l->l.disable())
   .headers(h->h.frameOptions(f->f.disable()).contentTypeOptions(c->{}).addHeaderWriter(new BrowserSecurityHeaders()))

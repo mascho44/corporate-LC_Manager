@@ -48,7 +48,7 @@ public class PlatformAccountCreationService {
    UserService.validatePassword(password);
    if(users.existsByUsernameIgnoreCase(name))throw new IllegalArgumentException("Username already exists.");
    var role=roles.findByBaseRoleAndSystemRoleTrue(UserRole.VIEWER).orElseThrow(()->new IllegalStateException("Bootstrap viewer role is missing."));
-   if(!Tenant.homeId().equals(role.getTenantId())||!role.getPermissions().isEmpty())throw new IllegalStateException("Bootstrap viewer role must have no write permissions.");
+   if(!Tenant.homeId().equals(role.getTenantId())||role.getPermissions().stream().anyMatch(p->p!=de.ostms.lc.user.domain.UserPermission.LC_VIEW&&p!=de.ostms.lc.user.domain.UserPermission.GUARANTEE_VIEW))throw new IllegalStateException("Bootstrap viewer role must have no write permissions.");
    var user=new AppUser();user.setUsername(name);user.setDisplayName(display);user.setEmail(address);user.setAssignedRole(role);user.setPasswordHash(encoder.encode(password));user.setActive(!pending);user.setInvitationPending(pending);
    users.saveAndFlush(user);
    var suspension=new TenantMembershipSuspension(user.getId());suspension.setSuspended(true);suspensions.saveAndFlush(suspension);

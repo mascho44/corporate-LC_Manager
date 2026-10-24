@@ -37,7 +37,7 @@ class AdministrationAuditTransactionTest {
  @Test void administrationLockRequiresTransactionAndExistingTenant(){
   assertThatThrownBy(()->administrationLock.acquire()).isInstanceOf(org.springframework.transaction.IllegalTransactionStateException.class);
   try(var scope=de.ostms.lc.tenant.domain.TenantContext.open(UUID.randomUUID())){
-   assertThatThrownBy(()->roleController.create(new RoleRequest("Synthetic unavailable tenant",UserRole.VIEWER,Set.of()),UsernamePasswordAuthenticationToken.authenticated("synthetic-operator",null,List.of()))).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+   assertThatThrownBy(()->roleController.create(new RoleRequest("Synthetic unavailable tenant",UserRole.VIEWER,de.ostms.lc.user.domain.UserPermission.defaults(UserRole.VIEWER)),UsernamePasswordAuthenticationToken.authenticated("synthetic-operator",null,List.of()))).isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
   }
  }
  @Test void auditFailureRollsBackRoleMutations(){
@@ -45,7 +45,7 @@ class AdministrationAuditTransactionTest {
   var auth=UsernamePasswordAuthenticationToken.authenticated("synthetic-admin",null,List.of());var roleId=role.getId();
   AuditService target=org.springframework.test.util.AopTestUtils.getUltimateTargetObject(audit);
   doThrow(new IllegalStateException("Synthetic audit failure")).when(target).recordChangeInTransaction(any(),anyString(),anyString(),any(),anyString(),nullable(String.class),nullable(String.class));
-  assertThatThrownBy(()->roleController.update(roleId,new RoleRequest("Changed name",UserRole.VIEWER,Set.of()),auth)).isInstanceOf(IllegalStateException.class);
+  assertThatThrownBy(()->roleController.update(roleId,new RoleRequest("Changed name",UserRole.VIEWER,de.ostms.lc.user.domain.UserPermission.defaults(UserRole.VIEWER)),auth)).isInstanceOf(IllegalStateException.class);
   assertThat(roles.findById(roleId).orElseThrow().getName()).isEqualTo("Synthetic audit role");
   reset(target);
  }

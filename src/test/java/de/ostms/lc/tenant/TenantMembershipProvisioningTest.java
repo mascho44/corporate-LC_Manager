@@ -50,7 +50,7 @@ class TenantMembershipProvisioningTest {
  }}
  @Test void unauthenticatedCallerCannotProvision(){assertThatThrownBy(()->service.assignExistingIdentity("existing",roleId,null)).isInstanceOf(AccessDeniedException.class);verifyNoInteractions(users,store,audit);}
  @Test void liveMembershipPermissionIsRequired(){
-  when(memberships.requireActiveAccess(actorId)).thenReturn(new TenantMembershipService.Access(tenant,actorId,UUID.randomUUID(),roleId,UserRole.VIEWER,Set.of()));
+  when(memberships.requireActiveAccess(actorId)).thenReturn(new TenantMembershipService.Access(tenant,actorId,UUID.randomUUID(),roleId,UserRole.VIEWER,de.ostms.lc.user.domain.UserPermission.defaults(UserRole.VIEWER)));
   assertThatThrownBy(()->service.assignExistingIdentity("existing",roleId,authentication)).isInstanceOf(AccessDeniedException.class);verifyNoInteractions(store,audit);
  }
  @Test void foreignRoleIsRejected(){ReflectionTestUtils.setField(role,"tenantId",Tenant.DEFAULT_ID);

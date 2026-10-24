@@ -71,7 +71,7 @@ class TenantSharedIdentityTransactionTest {
   AuditService target=AopTestUtils.getUltimateTargetObject(audit);reset(target);jdbc=new JdbcTemplate(source);
   jdbc.update("delete from platform_invitation");jdbc.update("delete from tenant_membership_suspension");jdbc.update("delete from tenant_membership");jdbc.update("delete from app_user");jdbc.update("delete from app_role_permission");jdbc.update("delete from app_role");jdbc.update("delete from tenant");
   tenants.saveAndFlush(new Tenant());tenantId=UUID.randomUUID();var tenant=new Tenant();ReflectionTestUtils.setField(tenant,"id",tenantId);ReflectionTestUtils.setField(tenant,"code","synthetic-shared");tenants.saveAndFlush(tenant);
-  var home=role("Synthetic home",UserRole.VIEWER,Set.of());homeRoleId=home.getId();
+  var home=role("Synthetic home",UserRole.VIEWER,de.ostms.lc.user.domain.UserPermission.defaults(UserRole.VIEWER));homeRoleId=home.getId();
   var actor=user("synthetic-shared-admin",role("Synthetic home admin",UserRole.ADMIN,Set.of(UserPermission.USER_MANAGE)));actor.setTotpEnabled(true);actor.setPlatformAdministrator(true);users.saveAndFlush(actor);seed(Tenant.DEFAULT_ID,actor.getId(),actor.getAssignedRole().getId());
   var identity=user("synthetic-shared-target",home);userId=identity.getId();
   seed(Tenant.DEFAULT_ID,userId,homeRoleId);
