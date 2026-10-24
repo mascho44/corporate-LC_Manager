@@ -3469,6 +3469,7 @@
   "gar.bankRefLine": "Bank's reference: {ref}",
   "gar.cc.refFound": "Bank's reference in the copy: {ref}",
   "gar.cc.refTake": "Take over into the file",
+  "gv.back": "← Back to guarantees",
   "gv.title": "Guarantee overview",
   "gv.bank": "Bank",
   "gv.beneficiary": "Beneficiary",

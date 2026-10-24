@@ -3469,6 +3469,7 @@
   "gar.bankRefLine": "Referenz der Bank: {ref}",
   "gar.cc.refFound": "Referenz der Bank in der Kopie: {ref}",
   "gar.cc.refTake": "In die Akte übernehmen",
+  "gv.back": "← Zu den Garantien",
   "gv.title": "Garantie-Übersicht",
   "gv.bank": "Bank",
   "gv.beneficiary": "Begünstigter",
