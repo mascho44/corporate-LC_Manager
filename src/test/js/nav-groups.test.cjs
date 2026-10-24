@@ -9,14 +9,15 @@ const keys = steps => JSON.parse(JSON.stringify(steps)).map(s => s.heading ? '#'
 
 test('working entries come first, administration follows in three groups, whatever the order the pages added them in', () => {
  const added = ['sec:cockpit', 'appNavMyWork', 'sec:lcs', 'appNavInbox', 'appNavTraining', 'appNavImport', 'sec:imports', 'appNavMonitoring', 'appNavCompany', 'appNavTemplates', 'appNavUsers', 'appNavAudit',
-  'appNavRulePacks', 'appNavApprovalPolicy', 'appNavEbics', 'appNavSla', 'appNavCorrespondent', 'appNavWebhooks', 'appNavApiKeys', 'appNavLiquidity', 'appNavGuarantees', 'appNavCreditLines', 'appNavGroupInbox', 'appNavCalendar', 'appNavTenants', 'appNavPlatform'].map(k => entry(k));
+  'appNavRulePacks', 'appNavApprovalPolicy', 'appNavEbics', 'appNavSla', 'appNavCorrespondent', 'appNavWebhooks', 'appNavApiKeys', 'appNavLiquidity', 'appNavGuarantees', 'appNavCreditLines', 'appNavGroupInbox', 'appNavCalendar', 'appNavTenants', 'appNavPlatform', 'appNavGuaranteeCockpit'].map(k => entry(k));
  const order = keys(LcNav.plan(added));
- assert.deepEqual(order, ['#work', 'sec:cockpit', 'appNavMyWork', 'appNavGroupInbox', 'sec:lcs', 'appNavGuarantees', 'appNavCreditLines', 'appNavCalendar', 'appNavLiquidity', 'appNavInbox', 'appNavImport', 'sec:imports', 'appNavTraining',
+ assert.deepEqual(order, ['#work', 'sec:cockpit', 'appNavMyWork', 'appNavGroupInbox', 'sec:lcs', 'appNavCalendar', 'appNavLiquidity', 'appNavInbox', 'appNavImport', 'sec:imports', 'appNavTraining',
+  '#guarantees', 'appNavGuaranteeCockpit', 'appNavGuarantees', 'appNavCreditLines',
   '#admin', '#master', 'appNavCompany', 'appNavTemplates', 'appNavRulePacks', 'appNavCorrespondent', 'appNavApprovalPolicy', 'appNavSla',
   '#access', 'appNavUsers', 'appNavApiKeys', 'appNavWebhooks', 'appNavAudit', '#ops', 'appNavEbics', 'appNavMonitoring', 'appNavTenants', 'appNavPlatform']);
  // guarantees, lines, calendar, liquidity and group inbox are work, not administration
  const adminStart = order.indexOf('#admin');
- ['appNavGuarantees', 'appNavCreditLines', 'appNavCalendar', 'appNavLiquidity', 'appNavGroupInbox'].forEach(k => assert.ok(order.indexOf(k) < adminStart, k));
+ ['appNavGuaranteeCockpit', 'appNavGuarantees', 'appNavCreditLines', 'appNavCalendar', 'appNavLiquidity', 'appNavGroupInbox'].forEach(k => assert.ok(order.indexOf(k) < adminStart, k));
  ['appNavSla', 'appNavApiKeys', 'appNavWebhooks', 'appNavEbics', 'appNavUsers'].forEach(k => assert.ok(order.indexOf(k) > adminStart, k));
 });
 
@@ -38,10 +39,10 @@ test('an entry the menu does not know yet stays with the working entries and not
 
 test('the menu script is loaded after the pages that add entries and the group texts exist in both language packs', () => {
  const html = fs.readFileSync(dir + 'index.html', 'utf8'), sources = [...html.matchAll(/<script src="\/([^"?]+)/g)].map(m => m[1]);
- ['guarantees.js', 'liquidity.js', 'webhook-settings.js', 'api-key-settings.js', 'sla-settings.js', 'correspondent-settings.js', 'ebics.js', 'tenants.js'].forEach(f => assert.ok(sources.indexOf(f) >= 0 && sources.indexOf(f) < sources.indexOf('nav-groups.js'), f));
+ ['guarantees.js', 'guarantee-cockpit.js', 'liquidity.js', 'webhook-settings.js', 'api-key-settings.js', 'sla-settings.js', 'correspondent-settings.js', 'ebics.js', 'tenants.js'].forEach(f => assert.ok(sources.indexOf(f) >= 0 && sources.indexOf(f) < sources.indexOf('nav-groups.js'), f));
  const de = JSON.parse(fs.readFileSync(dir + 'language-de.json', 'utf8')), en = JSON.parse(fs.readFileSync(dir + 'language-en.json', 'utf8'));
- ['master', 'access', 'ops'].forEach(g => { assert.ok(de['nav.group.' + g]); assert.ok(en['nav.group.' + g]); });
+ ['guarantees', 'master', 'access', 'ops'].forEach(g => { assert.ok(de['nav.group.' + g]); assert.ok(en['nav.group.' + g]); });
  // every group entry exists as an id or section somewhere in the sources
  const all = fs.readdirSync(dir).filter(f => /\.(js|html)$/.test(f)).map(f => fs.readFileSync(dir + f, 'utf8')).join('\n');
- [...LcNav.WORK, ...LcNav.ADMIN.flatMap(g => g.items)].filter(k => !k.startsWith('sec:')).forEach(k => assert.ok(all.includes(k), 'no entry with id ' + k));
+ [...LcNav.WORK, ...LcNav.GUARANTEES.items, ...LcNav.ADMIN.flatMap(g => g.items)].filter(k => !k.startsWith('sec:')).forEach(k => assert.ok(all.includes(k), 'no entry with id ' + k));
 });
