@@ -22,7 +22,8 @@ public enum DocumentType {
     MULTIMODAL_TRANSPORT_DOCUMENT("Multimodal Transport Document"),
     WEIGHT_LIST("Weight List"),
     POST_RECEIPT("Post Receipt"),
-    DOCUMENT_SUBMISSION("Dokumenteneinreichung");
+    DOCUMENT_SUBMISSION("Dokumenteneinreichung"),
+    GUARANTEE_COPY("Garantieurkunde / Avis (Kopie)");
 
     private final String displayName;
 

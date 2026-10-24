@@ -177,6 +177,23 @@ globalThis.LcGuarantees = {
    }
    block.append(buttons, slot);
   }
+  // copy of the instrument or of the bank's advice (PDF), as received from the bank
+  const copies = await json('/api/lcs/' + encodeURIComponent(lcId) + '/documents').then(all => all.filter(d => d.documentType === 'GUARANTEE_COPY')).catch(() => []);
+  block.append(N('h4', tx('gar.copy.title', 'Garantieurkunde (Kopie)')));
+  if (!copies.length) block.append(N('p', tx('gar.copy.none', 'Noch keine Kopie der Garantie oder des Avis abgelegt.')));
+  copies.forEach(d => { const p = N('p'); const a = N('a', d.originalFilename); a.href = d.downloadUrl; a.target = '_blank'; a.rel = 'noopener'; p.append(a, ' · ' + String(d.uploadedAt || '').slice(0, 10)); block.append(p); });
+  if (mayEdit) {
+   const input = document.createElement('input'); input.type = 'file'; input.accept = '.pdf,application/pdf'; input.hidden = true;
+   const upload = N('button', tx('gar.copy.upload', 'Kopie der Garantie ablegen (PDF)'), 'secondary'); upload.type = 'button'; upload.onclick = () => input.click();
+   const failed = N('p', ''); failed.setAttribute('role', 'alert');
+   input.onchange = async () => {
+    const file = input.files[0]; if (!file) return;
+    const form = new FormData(); form.append('file', file);
+    try { await json('/api/lcs/' + encodeURIComponent(lcId) + '/documents?type=GUARANTEE_COPY', { method: 'POST', body: form }); LcGuarantees.render(container, lcId); }
+    catch (error) { failed.textContent = tx('gar.copy.failed', 'Kopie konnte nicht abgelegt werden') + ': ' + error.message; }
+   };
+   block.append(upload, input, failed);
+  }
   container.querySelector('.grid')?.before(block) || container.append(block);
  }
 };
