@@ -211,6 +211,7 @@
   "permission.USER_MANAGE": "Manage users",
   "permission.LC_VIEW": "View letters of credit",
   "permission.GUARANTEE_VIEW": "View guarantees",
+  "permission.group.guarantees": "Guarantees",
   "permission.GUARANTEE_EDIT": "Edit guarantees",
   "permission.SANCTIONS_REVIEW": "Approve sanctions hits (four eyes)",
   "permission.AUDIT_VIEW": "View audit log",

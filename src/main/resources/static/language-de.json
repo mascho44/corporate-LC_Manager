@@ -211,6 +211,7 @@
   "permission.USER_MANAGE": "Benutzer verwalten",
   "permission.LC_VIEW": "LC-Akten ansehen",
   "permission.GUARANTEE_VIEW": "Garantien ansehen",
+  "permission.group.guarantees": "Garantien",
   "permission.GUARANTEE_EDIT": "Garantien bearbeiten",
   "permission.SANCTIONS_REVIEW": "Sanktionstreffer freigeben (Vier-Augen)",
   "permission.AUDIT_VIEW": "Audit-Protokoll ansehen",
