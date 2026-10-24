@@ -46,3 +46,7 @@ Audit: `GUARANTEE_REQUEST_SAVED`, `GUARANTEE_REQUEST_STATUS_CHANGED`, `GUARANTEE
 
 ## Geplant (weitere Bausteine)
 Versand aus LCM per E-Mail oder EBICS, Einlesen von Mustertexten und Textabgleich (siehe Issue 509).
+
+## Berechtigungen
+
+Garantien bearbeiten setzt das Recht „Garantien bearbeiten“ (`GUARANTEE_EDIT`) voraus, LC-Akten das Recht „LC-Akten bearbeiten“ (`LC_EDIT`). Wer nur das Recht der jeweils anderen Art hat, wird bei Änderungen an der Akte abgewiesen; wer keines von beiden hat, unterliegt den üblichen Pfadregeln. Bestehende Rollen mit `LC_EDIT` haben das neue Recht per Migration (V147) automatisch erhalten. Das Lesen ist noch nicht getrennt.

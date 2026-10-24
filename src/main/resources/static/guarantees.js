@@ -152,7 +152,7 @@ globalThis.LcGuarantees = {
   lines.forEach(l => block.append(N('p', l)));
   let request = null; try { request = await json('/api/guarantees/' + encodeURIComponent(lcId) + '/request'); } catch { request = null; }
   const showRequest = request && (request.exists || g.status === 'REQUESTED');
-  const mayEdit = typeof can === 'function' && can('LC_EDIT');
+  const mayEdit = typeof can === 'function' && can('GUARANTEE_EDIT');
   if (showRequest) {
    block.append(N('h4', tx('gar.req.title', 'Antrag bei der Bank')));
    const rl = [LcGuarantees.requestStatusName(request.status)];
@@ -162,7 +162,7 @@ globalThis.LcGuarantees = {
    block.append(N('p', rl.join(' · ')));
    if (request.statusNote) block.append(N('p', request.statusNote));
   }
-  if (typeof can === 'function' && can('LC_EDIT')) {
+  if (typeof can === 'function' && can('GUARANTEE_EDIT')) {
    const slot = N('div', undefined, 'gar-slot');
    const buttons = N('div', undefined, 'gar-buttons');
    const again = () => LcGuarantees.render(container, lcId);
@@ -236,7 +236,7 @@ async function setupGuarantees() {
   select.value = view; select.onchange = () => { view = select.value; draw(); };
   const search = document.createElement('input'); search.type = 'search'; search.placeholder = tx('gar.search', 'Suchen (Referenz, Bank, Begünstigter)'); search.value = query; search.oninput = () => { query = search.value.trim().toLowerCase(); drawRows(); };
   filters.append(select, search);
-  if (typeof can === 'function' && can('LC_EDIT')) { const add = N('button', tx('gar.add', 'Garantie anlegen')); add.type = 'button'; add.onclick = () => { formBox.replaceChildren(LcGuarantees.form(null, () => { formBox.replaceChildren(); message.textContent = tx('gar.saved', 'Garantie gespeichert.'); reload(); }, () => formBox.replaceChildren())); formBox.scrollIntoView(); }; filters.append(add); }
+  if (typeof can === 'function' && can('GUARANTEE_EDIT')) { const add = N('button', tx('gar.add', 'Garantie anlegen')); add.type = 'button'; add.onclick = () => { formBox.replaceChildren(LcGuarantees.form(null, () => { formBox.replaceChildren(); message.textContent = tx('gar.saved', 'Garantie gespeichert.'); reload(); }, () => formBox.replaceChildren())); formBox.scrollIntoView(); }; filters.append(add); }
   drawRows();
  }
  function drawRows() {
