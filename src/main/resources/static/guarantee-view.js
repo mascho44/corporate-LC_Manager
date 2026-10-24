@@ -6,11 +6,19 @@
  const first = value => String(value ?? '').split('\n')[0];
  const showBase = show;
  show = async function (id) {
+  // a guarantee opens on its own page (no list of letters of credit), reached from the menu group Garantien
+  const wanted = typeof data !== 'undefined' ? data.find(x => x.id === id) : null;
+  if (wanted?.instrumentType === 'GUARANTEE' && typeof appNavigate === 'function') appNavigate('guaranteeFile', document.querySelector('#appNavGuarantees'));
   await showBase(id);
   document.body.classList.toggle('guarantee-file', typeof activeLc !== 'undefined' && activeLc?.instrumentType === 'GUARANTEE');
   if (typeof activeLc === 'undefined' || activeLc?.id !== id || activeLc.instrumentType !== 'GUARANTEE') return;
   try {
    const [g, docs] = await Promise.all([json('/api/guarantees/' + encodeURIComponent(id)), json('/api/lcs/' + encodeURIComponent(id) + '/documents').catch(() => [])]);
+   const detail = document.querySelector('#detail');
+   if (detail && !detail.querySelector('.guarantee-back')) {
+    const back = document.createElement('button'); back.type = 'button'; back.className = 'secondary guarantee-back'; back.textContent = tr('gv.back', '← Zu den Garantien');
+    back.onclick = () => document.querySelector('#appNavGuarantees')?.click(); detail.prepend(back);
+   }
    const block = document.querySelector('#detail .lc-operational-cockpit');
    if (!block || activeLc?.id !== id) return;
    block.querySelector(':scope > h3')?.replaceChildren(tr('gv.title', 'Garantie-Übersicht'));

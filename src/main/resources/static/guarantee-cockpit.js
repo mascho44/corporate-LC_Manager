@@ -43,7 +43,7 @@
     const row = el('article', undefined, 'membership-row gar-row'); const text = el('div');
     text.append(el('b', g.reference), el('span', ' · ' + (kind === 'decision' ? tr('gc.decisionOn', 'Entscheiden bis {date}', { date: day(date) }) : tr('gc.expiryOn', 'Läuft ab {date}', { date: day(date) })) + ' · ' + (g.bank || '').split('\n')[0]));
     const open = el('button', tr('gar.openFile', 'Akte öffnen'), 'secondary'); open.type = 'button';
-    open.onclick = async () => { appNavigate('lcs', document.querySelector('#appNavGuarantees')); await show(g.id); };
+    open.onclick = async () => { await show(g.id); };
     row.append(text, open); section.append(row);
    });
    const lines = (overview.lines || []).filter(l => l.active);

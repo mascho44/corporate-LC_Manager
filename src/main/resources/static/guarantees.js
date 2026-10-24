@@ -253,7 +253,7 @@ async function setupGuarantees() {
    if (g.open && g.autoExtension) extra.push(tx('gar.autoShort', 'verlängert sich automatisch'));
    if (extra.length) text.append(N('small', extra.join(' · ')));
    const open = N('button', tx('gar.openFile', 'Akte öffnen'), 'secondary'); open.type = 'button';
-   open.onclick = async () => { appNavigate('lcs', document.querySelector('#appNavGuarantees')); await show(g.id); };
+   open.onclick = async () => { await show(g.id); };
    row.append(text, open); rows.append(row);
   });
  }
@@ -317,7 +317,7 @@ async function setupCreditLines() {
     if (!detail.hidden) { detail.hidden = true; toggle.textContent = tx('cl.showGuarantees', 'Garantien anzeigen'); return; }
     try {
      const booked = await json('/api/credit-lines/' + encodeURIComponent(l.id) + '/guarantees');
-     detail.replaceChildren(...(booked.length ? booked.map(g => { const item = N('p'); const a = N('a', g.reference); a.href = '#'; a.onclick = async e => { e.preventDefault(); appNavigate('lcs', document.querySelector('#appNavGuarantees')); await show(g.id); };
+     detail.replaceChildren(...(booked.length ? booked.map(g => { const item = N('p'); const a = N('a', g.reference); a.href = '#'; a.onclick = async e => { e.preventDefault(); await show(g.id); };
       item.append(a, ' · ' + LcGuarantees.typeName(g.guaranteeType) + ' · ' + String(g.beneficiary || '').split('\n')[0] + ' · ' + LcGuarantees.money(g.amount, g.currency) + ' · ' + (g.expiryDate ? tx('gar.until', 'bis {date}', { date: LcGuarantees.day(g.expiryDate) }) : tx('gar.noEnd', 'unbefristet'))); return item; }) : [N('p', tx('cl.noneBooked', 'Zurzeit sind keine Garantien in diese Linie eingebucht.'))]));
      detail.hidden = false; toggle.textContent = tx('cl.hideGuarantees', 'Garantien ausblenden');
     } catch (error) { message.textContent = error.message; }
