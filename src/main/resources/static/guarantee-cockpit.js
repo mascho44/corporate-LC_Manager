@@ -40,7 +40,7 @@
    section.append(el('h3', tr('gc.next', 'Nächste Fristen')));
    if (!f.next.length) section.append(el('p', tr('gc.noDates', 'Keine offenen Fristen.')));
    f.next.forEach(({ g, date, kind }) => {
-    const row = el('div', undefined, 'gar-row'); const text = el('div');
+    const row = el('article', undefined, 'membership-row gar-row'); const text = el('div');
     text.append(el('b', g.reference), el('span', ' · ' + (kind === 'decision' ? tr('gc.decisionOn', 'Entscheiden bis {date}', { date: day(date) }) : tr('gc.expiryOn', 'Läuft ab {date}', { date: day(date) })) + ' · ' + (g.bank || '').split('\n')[0]));
     const open = el('button', tr('gar.openFile', 'Akte öffnen'), 'secondary'); open.type = 'button';
     open.onclick = async () => { appNavigate('lcs', document.querySelector('#appNavGuarantees')); await show(g.id); };
@@ -49,7 +49,7 @@
    const lines = (overview.lines || []).filter(l => l.active);
    if (lines.length) {
     section.append(el('h3', tr('gc.useTitle', 'Auslastung der Linien')));
-    lines.forEach(l => { const row = el('div', undefined, 'gar-row'); const meter = document.createElement('meter'); meter.min = 0; meter.max = 100; meter.value = Math.min(100, l.percent); meter.title = l.percent + ' %';
+    lines.forEach(l => { const row = el('article', undefined, 'membership-row gar-row'); const meter = document.createElement('meter'); meter.min = 0; meter.max = 100; meter.value = Math.min(100, l.percent); meter.title = l.percent + ' %';
      const text = el('div'); text.append(el('b', l.name), el('span', ' · ' + money(l.used, l.currency) + ' / ' + money(l.amount, l.currency) + ' (' + l.percent + ' %)')); row.append(text, meter); section.append(row); });
    }
   }
