@@ -60,7 +60,7 @@ function swift(reference){return `:20:${reference}\n:31C:261001\n:31D:271231SYNT
  assert.equal(back.tenantCode,'default');assert.ok(Array.isArray(await call('/api/platform/tenants')));
  await call('/api/tenants/'+created.id+'/select','POST');csrf=(await call('/api/auth/me')).csrfToken;
  assert.equal((await call('/api/tenants')).selectedTenantId,created.id);assert.deepEqual(await call('/api/lcs'),[]);
- const initialRoles=await call('/api/roles');assert.deepEqual(initialRoles.map(r=>r.baseRole).sort(),['ADMIN','EDITOR','VIEWER']);assert.equal(initialRoles.find(r=>r.baseRole==='VIEWER').permissions.length,0);
+ const initialRoles=await call('/api/roles');assert.deepEqual(initialRoles.map(r=>r.baseRole).sort(),['ADMIN','EDITOR','VIEWER']);assert.equal(initialRoles.find(r=>r.baseRole==='VIEWER').permissions.slice().sort().join(),'GUARANTEE_VIEW,LC_VIEW');
  const readiness=await call('/api/tenants/current/readiness');assert.equal(readiness.tenantId,created.id);assert.equal(readiness.companies,0);assert.equal(readiness.templates,0);assert.equal(readiness.activeMembers,1);
  assert.deepEqual(await call('/api/companies'),[]);assert.deepEqual(await call('/api/companies/choices'),[]);
  // Company lookup currently reports unavailable IDs as 400, unlike LC lookup (404).
