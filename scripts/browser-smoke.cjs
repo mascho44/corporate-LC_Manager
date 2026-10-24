@@ -17,7 +17,7 @@ function chromePath() {
  const found = candidates.find(c => fs.existsSync(c)); assert.ok(found, 'No Chrome found (set CHROME_BIN)'); return found;
 }
 async function devtools(port) {
- for (let i = 0; i < 50; i++) { try { return (await (await fetch(`http://127.0.0.1:${port}/json/version`)).json()).webSocketDebuggerUrl; } catch { await new Promise(r => setTimeout(r, 200)); } }
+ for (let i = 0; i < 100; i++) { try { return (await (await fetch(`http://127.0.0.1:${port}/json/version`)).json()).webSocketDebuggerUrl; } catch { await new Promise(r => setTimeout(r, 200)); } }
  throw new Error('Chrome did not start');
 }
 function client(url) {
@@ -29,11 +29,16 @@ function client(url) {
 (async () => {
  const setup = await call('/api/auth/login', 'POST', { username: 'admin', password: 'SyntheticOnly123!' });
  const secret = setup.secret; await call('/api/auth/login/totp', 'POST', { code: totp(secret) }); csrf = (await call('/api/auth/me')).csrfToken;
- const port = 9300 + Math.floor(Math.random() * 500), profile = fs.mkdtempSync(path.join(os.tmpdir(), 'lc-smoke-'));
- const chrome = spawn(chromePath(), ['--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, '--no-first-run', '--no-sandbox', '--disable-gpu', 'about:blank'], { stdio: 'ignore' });
+ // Chrome sometimes does not come up in time on a loaded CI runner: start it again (up to three tries) before giving up.
+ let chrome, socketUrl;
+ for (let attempt = 1; attempt <= 3 && !socketUrl; attempt++) {
+  const port = 9300 + Math.floor(Math.random() * 500), profile = fs.mkdtempSync(path.join(os.tmpdir(), 'lc-smoke-'));
+  chrome = spawn(chromePath(), ['--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`, '--no-first-run', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage', 'about:blank'], { stdio: 'ignore' });
+  try { socketUrl = await devtools(port); } catch (error) { chrome.kill(); if (attempt === 3) throw error; console.error('Chrome did not start, trying again'); }
+ }
  const failures = [];
  try {
-  const cdp = client(await devtools(port)); await cdp.ready;
+  const cdp = client(socketUrl); await cdp.ready;
   const { targetId } = await cdp.send('Target.createTarget', { url: 'about:blank' });
   const { sessionId } = await cdp.send('Target.attachToTarget', { targetId, flatten: true });
   const send = (m, p) => cdp.send(m, p, sessionId);
