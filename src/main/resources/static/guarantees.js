@@ -145,6 +145,7 @@ globalThis.LcGuarantees = {
   const lines = [LcGuarantees.typeName(g.guaranteeType) + ' · ' + LcGuarantees.summary(g)];
   if (g.claimUntil) lines.push(tx('gar.claimLine', 'Inanspruchnahme möglich bis {date}', { date: LcGuarantees.day(g.claimUntil) }));
   if (g.decisionDate && g.open) lines.push(tx('gar.decisionLine', 'Entscheiden bis {date}: {what}', { date: LcGuarantees.day(g.decisionDate), what: g.autoExtension ? tx('gar.decisionAuto', 'Verlängerung verhindern oder Rückgabe verlangen') : tx('gar.decisionManual', 'Verlängerung beantragen oder Rückgabe verlangen') }));
+  if (g.bankReference) lines.push(tx('gar.bankRefLine', 'Referenz der Bank: {ref}', { ref: g.bankReference }));
   if (g.underlying) lines.push(tx('gar.underlyingLine', 'Grundgeschäft: {text}', { text: g.underlying }));
   if (g.statusNote) lines.push(g.statusNote);
   if (!g.detailsKnown) lines.push(tx('gar.detailsMissing', 'Für diese Garantie fehlen noch Angaben (Art, Fristen). Bitte ergänzen.'));
@@ -189,6 +190,12 @@ globalThis.LcGuarantees = {
     const marks = { OK: '✓', DEVIATION: '✗', UNKNOWN: '?' };
     const list = N('ul', undefined, 'gar-copy-check');
     check.items.forEach(i => list.append(N('li', marks[i.result] + ' ' + names[i.field] + (i.expected ? ': ' + i.expected : '') + (i.result === 'DEVIATION' && i.found ? ' – ' + tx('gar.cc.found', 'im Text: {value}', { value: i.found }) : '') + (i.result === 'UNKNOWN' ? ' – ' + tx('gar.cc.unknown', 'im Text nicht erkennbar') : ''), 'gar-cc-' + i.result.toLowerCase())));
+    if (check.foundReference && check.foundReference !== check.bankReference && mayEdit) {
+     const row = N('p', tx('gar.cc.refFound', 'Referenz der Bank in der Kopie: {ref}', { ref: check.foundReference }) + ' ');
+     const take = N('button', tx('gar.cc.refTake', 'In die Akte übernehmen'), 'secondary'); take.type = 'button';
+     take.onclick = async () => { try { await json('/api/guarantees/' + encodeURIComponent(lcId) + '/bank-reference', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bankReference: check.foundReference }) }); LcGuarantees.render(container, lcId); } catch (error) { row.append(' ' + error.message); } };
+     row.append(take); block.append(row);
+    }
     block.append(N('p', check.textRead ? tx('gar.cc.title', 'Abgleich der Kopie mit den Garantiedaten (Texterkennung, nur ein Hinweis):') : tx('gar.cc.noText', 'Aus der Kopie konnte kein Text gelesen werden; kein Abgleich möglich.')), list);
    }
   }

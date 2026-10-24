@@ -17,6 +17,8 @@ public class GuaranteeController {
  @GetMapping("/options") public Map<String,Object> options(){return Map.of("types",GuaranteeService.TYPES,"statuses",GuaranteeService.STATUSES);}
  @GetMapping("/{lcId}") public GuaranteeService.View one(@PathVariable UUID lcId){return service.one(lcId,LocalDate.now());}
  @GetMapping("/{lcId}/copy-check") public GuaranteeCopyCheckService.Result copyCheck(@PathVariable UUID lcId){return copyCheck.check(lcId);}
+ public record BankReference(String bankReference){}
+ @PutMapping("/{lcId}/bank-reference") public GuaranteeService.View bankReference(@PathVariable UUID lcId,@RequestBody BankReference request,Authentication auth){return service.setBankReference(lcId,request==null?null:request.bankReference(),auth);}
  @PostMapping @ResponseStatus(HttpStatus.CREATED) public GuaranteeService.View create(@RequestBody GuaranteeService.Request request,Authentication auth){return service.create(request,auth);}
  @PutMapping("/{lcId}") public GuaranteeService.View update(@PathVariable UUID lcId,@RequestBody GuaranteeService.Request request,Authentication auth){return service.update(lcId,request,auth);}
  @PostMapping("/{lcId}/status") public GuaranteeService.View status(@PathVariable UUID lcId,@RequestBody GuaranteeService.StatusRequest request,Authentication auth){return service.setStatus(lcId,request,auth);}

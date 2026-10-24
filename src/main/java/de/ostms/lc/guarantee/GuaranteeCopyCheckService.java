@@ -11,7 +11,7 @@ import java.util.UUID;
 /** Reads the text of the newest copy of the guarantee and compares it with the data of the file. */
 @Service
 public class GuaranteeCopyCheckService {
- public record Result(UUID documentId,String filename,boolean textRead,List<GuaranteeCopyCheck.Item> items){}
+ public record Result(UUID documentId,String filename,boolean textRead,List<GuaranteeCopyCheck.Item> items,String foundReference,String bankReference){}
  private final GuaranteeService guarantees;private final LcDocumentRepository documents;
  public GuaranteeCopyCheckService(GuaranteeService guarantees,LcDocumentRepository documents){this.guarantees=guarantees;this.documents=documents;}
 
@@ -21,6 +21,6 @@ public class GuaranteeCopyCheckService {
   if(copy==null)return null;
   var text=copy.getExtractedText();
   var items=GuaranteeCopyCheck.compare(new GuaranteeCopyCheck.Expected(g.currency(),g.amount(),g.beneficiary(),g.bank(),g.expiryDate(),g.reference()),text);
-  return new Result(copy.getId(),copy.getOriginalFilename(),text!=null&&!text.isBlank(),items);
+  return new Result(copy.getId(),copy.getOriginalFilename(),text!=null&&!text.isBlank(),items,GuaranteeCopyCheck.reference(text),g.bankReference());
  }
 }

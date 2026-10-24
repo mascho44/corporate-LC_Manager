@@ -23,6 +23,12 @@ class GuaranteeCopyCheckTest {
   var r=results("Nordkueste Bank AG\nzugunsten Stadtwerke Musterhafen AG\nBetrag: USD 200.000,00\nGueltig bis 01.11.2026");
   assertEquals("DEVIATION",r.get("currency"));assertEquals("DEVIATION",r.get("amount"));assertEquals("DEVIATION",r.get("expiry"));assertEquals("OK",r.get("beneficiary"));
  }
+ @Test void bankReferenceIsFound(){
+  org.junit.jupiter.api.Assertions.assertEquals("GA-2026-0815",GuaranteeCopyCheck.reference("Nordkueste Bank AG\nGarantie-Nr.: GA-2026-0815\nBetrag EUR 1,00"));
+  org.junit.jupiter.api.Assertions.assertEquals("12345/26",GuaranteeCopyCheck.reference(":20:12345/26\n:32B:EUR1,00"));
+  org.junit.jupiter.api.Assertions.assertEquals("BG4711",GuaranteeCopyCheck.reference("Our reference: BG4711."));
+  org.junit.jupiter.api.Assertions.assertNull(GuaranteeCopyCheck.reference("Reference: PENDING"));
+ }
  @Test void emptyTextIsUnknownNotDeviation(){
   assertEquals("UNKNOWN",results("").get("amount"));assertEquals("UNKNOWN",results(null).get("expiry"));
  }

@@ -66,7 +66,7 @@ class GuaranteeRequestTest {
  }
 
  private static GuaranteeService.View view(){
-  return new GuaranteeService.View(UUID.randomUUID(),"G-1","PERFORMANCE","Musterbank AG\nFrankfurt","Kunde GmbH\nBerlin","EUR",new BigDecimal("50000"),null,LocalDate.of(2026,11,1),LocalDate.of(2027,3,31),LocalDate.of(2027,6,30),true,60,LocalDate.of(2027,1,30),"Liefervertrag 4711","K-17","REQUESTED",null,null,null,false,true,true);
+  return new GuaranteeService.View(UUID.randomUUID(),"G-1","PERFORMANCE","Musterbank AG\nFrankfurt","Kunde GmbH\nBerlin","EUR",new BigDecimal("50000"),null,LocalDate.of(2026,11,1),LocalDate.of(2027,3,31),LocalDate.of(2027,6,30),true,60,LocalDate.of(2027,1,30),"Liefervertrag 4711","K-17","REQUESTED",null,null,null,false,true,true,null);
  }
  private static String text(byte[] docx)throws Exception{try(var d=new XWPFDocument(new ByteArrayInputStream(docx))){var sb=new StringBuilder();d.getParagraphs().forEach(p->sb.append(p.getText()).append('\n'));d.getTables().forEach(t->t.getRows().forEach(row->row.getTableCells().forEach(c->sb.append(c.getText()).append('|'))));return sb.toString();}}
 

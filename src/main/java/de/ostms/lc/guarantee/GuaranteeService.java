@@ -24,7 +24,7 @@ public class GuaranteeService {
    Boolean autoExtension,Integer extensionNoticeDays,String underlying,String beneficiaryReference,String status){}
  public record StatusRequest(String status,LocalDate date,String note){}
  public record View(UUID id,String reference,String guaranteeType,String bank,String beneficiary,String currency,BigDecimal amount,LocalDate issueDate,LocalDate validFrom,LocalDate expiryDate,LocalDate claimUntil,
-   boolean autoExtension,Integer extensionNoticeDays,LocalDate decisionDate,String underlying,String beneficiaryReference,String status,LocalDate statusDate,String statusNote,Long daysToExpiry,boolean expiringSoon,boolean open,boolean detailsKnown){}
+   boolean autoExtension,Integer extensionNoticeDays,LocalDate decisionDate,String underlying,String beneficiaryReference,String status,LocalDate statusDate,String statusNote,Long daysToExpiry,boolean expiringSoon,boolean open,boolean detailsKnown,String bankReference){}
  private final LetterOfCreditRepository lcs;private final GuaranteeDetailRepository details;private final AuditService audit;
  public GuaranteeService(LetterOfCreditRepository lcs,GuaranteeDetailRepository details,AuditService audit){this.lcs=lcs;this.details=details;this.audit=audit;}
 
@@ -45,6 +45,14 @@ public class GuaranteeService {
   var detail=new GuaranteeDetail(lc.getId());detail.set(c.guaranteeType(),c.validFrom(),c.claimUntil(),c.autoExtension()!=null&&c.autoExtension(),c.extensionNoticeDays(),c.underlying(),c.beneficiaryReference(),user(auth));
   detail.setStatus(c.status(),null,null,user(auth));details.save(detail);syncStatus(lc,c.status());lcs.save(lc);
   audit.recordInTransaction(auth,"GUARANTEE_CREATED","LETTER_OF_CREDIT",lc.getId(),lc.getReference()+" · "+c.guaranteeType()+" · "+lc.getCurrency()+" "+lc.getAmount().toPlainString());
+  return view(lc,detail,LocalDate.now());
+ }
+ /** The bank's reference of the issued guarantee; empty clears it. */
+ @Transactional public View setBankReference(UUID lcId,String value,Authentication auth){
+  var lc=guarantee(lcId);var ref=value==null||value.isBlank()?null:value.strip();
+  if(ref!=null&&ref.length()>100)throw new IllegalArgumentException("Die Referenz der Bank ist zu lang (höchstens 100 Zeichen).");
+  var detail=details.byLc(lcId).orElseGet(()->new GuaranteeDetail(lcId));detail.setBankReference(ref,user(auth));details.save(detail);
+  audit.recordInTransaction(auth,"GUARANTEE_UPDATED","LETTER_OF_CREDIT",lcId,lc.getReference()+" · Referenz der Bank "+(ref==null?"entfernt":ref));
   return view(lc,detail,LocalDate.now());
  }
  @Transactional public View update(UUID lcId,Request r,Authentication auth){
@@ -88,7 +96,7 @@ public class GuaranteeService {
   boolean open=open(status);
   return new View(lc.getId(),lc.getReference(),d==null?"OTHER":d.getGuaranteeType(),lc.getIssuingBank(),lc.getBeneficiary(),lc.getCurrency(),lc.getAmount(),lc.getIssueDate(),d==null?null:d.getValidFrom(),lc.getExpiryDate(),d==null?null:d.getClaimUntil(),
    d!=null&&d.isAutoExtension(),d==null?null:d.getExtensionNoticeDays(),d==null?null:d.decisionDate(lc.getExpiryDate()),d==null?null:d.getUnderlying(),d==null?null:d.getBeneficiaryReference(),status,d==null?null:d.getStatusDate(),d==null?null:d.getStatusNote(),
-   days,open&&days!=null&&days>=0&&days<=SOON_DAYS,open,d!=null);
+   days,open&&days!=null&&days>=0&&days<=SOON_DAYS,open,d!=null,d==null?null:d.getBankReference());
  }
  static Request validate(Request r,boolean creating){
   if(r==null)throw new IllegalArgumentException("Bitte die Angaben zur Garantie ausfüllen.");

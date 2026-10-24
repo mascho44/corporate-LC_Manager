@@ -39,7 +39,7 @@ import de.ostms.lc.user.service.AppUserDetailsService; import jakarta.servlet.ht
    .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/credit-lines/*").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers(org.springframework.http.HttpMethod.DELETE,"/api/credit-lines/*").hasAuthority("PERM_SETTINGS_MANAGE")
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/guarantees","/api/guarantees/*/status","/api/guarantees/*/request/status","/api/guarantees/*/request/document").hasAuthority("PERM_LC_EDIT")
-   .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/guarantees/*/request").hasAuthority("PERM_LC_EDIT")
+   .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/guarantees/*/request","/api/guarantees/*/bank-reference").hasAuthority("PERM_LC_EDIT")
    .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/guarantees/*").hasAuthority("PERM_LC_EDIT")
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/lcs/*/payments").hasAuthority("PERM_LC_EDIT")
    .requestMatchers(org.springframework.http.HttpMethod.DELETE,"/api/lcs/*/payments/*").hasAuthority("PERM_LC_EDIT")
