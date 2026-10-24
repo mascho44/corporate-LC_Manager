@@ -11,7 +11,7 @@
   if (!corporateOnly() || typeof data === 'undefined') return;
   document.querySelectorAll('#list .dossier-row[data-id]').forEach(row => {
    const kind = kindOf(data.find(x => x.id === row.dataset.id));
-   row.hidden = Boolean(filter && kind !== filter);
+   row.hidden = kind === 'GUARANTEE' || Boolean(filter && kind !== filter);
    const title = row.querySelector('strong');
    if (kind && kind !== 'GUARANTEE' && title && !title.querySelector('.kind-badge')) title.insertAdjacentHTML('beforeend', ' <span class="badge kind-badge">' + label(kind) + '</span>');
   });
@@ -20,7 +20,7 @@
   if (!corporateOnly() || document.querySelector('#lcKindFilter')) return;
   const bar = document.querySelector('#lcSection .lc-filters'); if (!bar) return;
   const select = document.createElement('select'); select.id = 'lcKindFilter'; select.setAttribute('aria-label', tr('kind.filter', 'Akten-Typ'));
-  select.innerHTML = [['', tr('kind.all', 'Alle Typen')], ['EXPORT', tr('kind.export', 'Export-LC')], ['IMPORT', tr('kind.import', 'Import-LC')], ['GUARANTEE', tr('kind.guarantee', 'Garantie')]].map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
+  select.innerHTML = [['', tr('kind.all', 'Alle Typen')], ['EXPORT', tr('kind.export', 'Export-LC')], ['IMPORT', tr('kind.import', 'Import-LC')]].map(([v, t]) => `<option value="${v}">${t}</option>`).join('');
   select.onchange = () => { filter = select.value; badgeRows(); };
   bar.append(select);
  }

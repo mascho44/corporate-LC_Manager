@@ -252,7 +252,7 @@ async function setupGuarantees() {
    if (g.open && g.autoExtension) extra.push(tx('gar.autoShort', 'verlängert sich automatisch'));
    if (extra.length) text.append(N('small', extra.join(' · ')));
    const open = N('button', tx('gar.openFile', 'Akte öffnen'), 'secondary'); open.type = 'button';
-   open.onclick = async () => { appNavigate('lcs', null); await show(g.id); };
+   open.onclick = async () => { appNavigate('lcs', document.querySelector('#appNavGuarantees')); await show(g.id); };
    row.append(text, open); rows.append(row);
   });
  }
