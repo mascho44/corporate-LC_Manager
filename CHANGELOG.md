@@ -2,6 +2,7 @@
 
 ## 0.6.1 – in Arbeit
 
+* Akten-Typ (nur Corporate): Akten tragen die Marke Garantie, Export-LC (wir sind Begünstigter) oder Import-LC (wir sind Antragsteller). In der Liste gibt es dazu einen Filter „Akten-Typ“ (Issue 519).
 * Garantien: Die abgelegte Kopie der Garantie wird per Texterkennung mit den Garantiedaten abgeglichen (Währung, Betrag, Begünstigter, Bank, Laufzeit); Abweichungen werden als Hinweis angezeigt, nichts wird geändert.
 * Garantien: Im Block „Garantie“ lässt sich die Kopie der Garantieurkunde oder des Avis als PDF ablegen (neuer Dokumenttyp „Garantieurkunde / Avis (Kopie)“); sie erscheint auch in den Dokumenten der Akte.
 * Demo-Mandant: `scripts/seed-demo.cjs` befüllt einen Mandanten `demo` mit realistischen Akkreditiven, Garantien und Linien, Daten relativ zu heute (docs/demo-mandant.md).
