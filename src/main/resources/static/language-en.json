@@ -209,6 +209,7 @@
   "permission.EMAIL_SEND": "Send emails from LC files",
   "permission.TRAINING_MANAGE": "Manage training",
   "permission.USER_MANAGE": "Manage users",
+  "permission.GUARANTEE_EDIT": "Edit guarantees",
   "permission.SANCTIONS_REVIEW": "Approve sanctions hits (four eyes)",
   "permission.AUDIT_VIEW": "View audit log",
   "permission.SETTINGS_MANAGE": "Manage companies and document templates",

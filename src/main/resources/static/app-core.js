@@ -66,7 +66,7 @@ async function showTemplateSelection(type){
         box.innerHTML=`<b>${tx('gf.company','Firmendaten: {name}',{name:esc(result.companyName)})}</b><small>${tx('gf.tplWord','Word: {source} · {name}',{source:esc(result.source),name:esc(result.templateName)})}</small><small>${tx('gf.tplPdf','PDF: Standardlayout mit den Firmendaten. Die Word-Vorlage wird nur für Word verwendet.')}</small>`;
     }catch(error){if(request===templateSelectionRequest)box.textContent=tx('gf.tplFailed','Vorlagenzuordnung konnte nicht geladen werden')+': '+error.message;}
 }
-const can=permission=>{const modules=globalThis.LcWorkspaceModules;if(modules&&((permission==='DOCUMENT_GENERATE'&&!modules.corporate)||(permission==='DOCUMENT_APPROVE'&&!modules.bank)))return false;return currentUser?.permissions?.includes(permission)||false;};
+const can=permission=>{if(permission==='LC_EDIT'&&typeof activeLc!=='undefined'&&activeLc?.instrumentType==='GUARANTEE')permission='GUARANTEE_EDIT';const modules=globalThis.LcWorkspaceModules;if(modules&&((permission==='DOCUMENT_GENERATE'&&!modules.corporate)||(permission==='DOCUMENT_APPROVE'&&!modules.bank)))return false;return currentUser?.permissions?.includes(permission)||false;};
 const $=s=>document.querySelector(s);
 const fmtDate=d=>d?new Intl.DateTimeFormat(globalThis.LcI18n?.locale()||'en-GB').format(new Date(d+'T00:00:00')):'–';
 const money=(n,c)=>n==null?'–':new Intl.NumberFormat(globalThis.LcI18n?.locale()||'en-GB',{style:'currency',currency:c||'EUR'}).format(n);

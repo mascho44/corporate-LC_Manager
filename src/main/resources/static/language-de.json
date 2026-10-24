@@ -209,6 +209,7 @@
   "permission.EMAIL_SEND": "E-Mails aus LC-Akten senden",
   "permission.TRAINING_MANAGE": "Training verwalten",
   "permission.USER_MANAGE": "Benutzer verwalten",
+  "permission.GUARANTEE_EDIT": "Garantien bearbeiten",
   "permission.SANCTIONS_REVIEW": "Sanktionstreffer freigeben (Vier-Augen)",
   "permission.AUDIT_VIEW": "Audit-Protokoll ansehen",
   "permission.SETTINGS_MANAGE": "Firmen und Dokumentvorlagen verwalten",
