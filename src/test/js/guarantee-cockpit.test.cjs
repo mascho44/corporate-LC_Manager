@@ -13,3 +13,8 @@ test('figures count open guarantees, volumes per currency, due decisions and the
  assert.equal(f.soon, 1); assert.equal(f.decide, 1); assert.equal(f.requested, 1); assert.equal(f.warned, 1);
  assert.deepEqual(Array.from(f.next, x => x.g.id), [2, 1, 4]); assert.equal(f.next[0].kind, 'decision'); assert.equal(f.next[1].kind, 'expiry');
 });
+test('the page for an opened guarantee names an element that exists, because navigating scrolls to the first section of a page', () => {
+ const admin = fs.readFileSync(path.join(__dirname, '../../main/resources/static/app-admin.js'), 'utf8');
+ assert.match(admin, /guaranteeFile:\['detail'\]/);
+ assert.ok(fs.readFileSync(path.join(__dirname, '../../main/resources/static/index.html'), 'utf8').includes('id="detail"'));
+});

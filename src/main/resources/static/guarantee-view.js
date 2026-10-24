@@ -8,7 +8,7 @@
  show = async function (id) {
   // a guarantee opens on its own page (no list of letters of credit), reached from the menu group Garantien
   const wanted = typeof data !== 'undefined' ? data.find(x => x.id === id) : null;
-  if (wanted?.instrumentType === 'GUARANTEE' && typeof appNavigate === 'function') appNavigate('guaranteeFile', document.querySelector('#appNavGuarantees'));
+  if (wanted?.instrumentType === 'GUARANTEE' && typeof appNavigate === 'function') { try { appNavigate('guaranteeFile', document.querySelector('#appNavGuarantees')); } catch (ignored) { } }
   await showBase(id);
   document.body.classList.toggle('guarantee-file', typeof activeLc !== 'undefined' && activeLc?.instrumentType === 'GUARANTEE');
   if (typeof activeLc === 'undefined' || activeLc?.id !== id || activeLc.instrumentType !== 'GUARANTEE') return;
