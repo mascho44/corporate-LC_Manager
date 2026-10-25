@@ -1,6 +1,6 @@
 # Corporate LC Manager – Technische Dokumentation
 
-Stand: 23.10.2026 · Version 0.6.0
+Stand: 25.10.2026 · Version 0.7.0
 
 ## Architektur und Stack
 

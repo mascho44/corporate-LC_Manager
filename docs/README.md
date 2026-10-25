@@ -1,6 +1,6 @@
 # Projektdokumentation
 
-Stand: 23.10.2026 · Corporate LC Manager 0.6.0
+Stand: 25.10.2026 · Corporate LC Manager 0.7.0
 
 Die Dokumentation beschreibt den Quellstand, mit dem sie ausgeliefert wird.
 Die Info-Seite `/info.html` enthält Copyright, Lizenz, Projektlinks und das

@@ -33,6 +33,6 @@ Posteingangs-Uhren sind nicht enthalten (sie laufen nur, bis das Dokument zugeor
 ## Posteingang
 Die Tätigkeit „Dokument im Posteingang zuordnen“ gehört zu Dokumenten, nicht zu Akten: Die Uhr läuft ab dem Eingang eines offenen Posteingangsdokuments, bis es einer Akte zugeordnet ist. Auf der SLA-Seite stehen die knappen und überfälligen Dokumente; bei einem Eskalationsteam entsteht für ein überfälliges Dokument ein Auftrag in der Gruppeninbox.
 
-## Grenzen (Stand 0.6.0)
+## Grenzen (Stand 0.7.0)
 - Sanktionstreffer sind noch keine SLA-Ereignisse: Treffer entstehen aus der Prüfung und werden nicht als Ereignis protokolliert.
 - Die Auswertung liest die Audit-Ereignisse der letzten 500 Tage.

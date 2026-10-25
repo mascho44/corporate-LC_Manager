@@ -1,6 +1,8 @@
 # Änderungsprotokoll
 
-## 0.6.1 – in Arbeit
+## 0.7.0 – 25.10.2026
+
+Schwerpunkte: eigener Bereich für Garantien (Cockpit, Linien mit eingebuchten Garantien, Kopie der Garantie mit Abgleich), getrennte Rechte für Akkreditive und Garantien, eine einfache Zugriffsmatrix für Benutzer und Plattform, Demo-Mandant und die Neuveröffentlichung des Repositorys mit einem Startcommit.
 
 * Rule Packs: Die Abfrage „Nutzungsrechte und Lizenz bestätigen“ vor der Aktivierung entfällt (Oberfläche und Schnittstelle), ebenso Verweise auf die ICC in Dokumentation, Hinweistexten und Prüfgrundlagen. Eigene Rule Packs bleiben unverändert nutzbar.
 * Benutzer & Rechte: Einladungen und die Zuordnung eines vorhandenen Kontos wählen den Zugriff jetzt wie die Zugriffsmatrix (Akkreditive, Garantien, Dokumente, Administration mit Stufen) statt einer Rolle; die passende Rolle wird im Hintergrund gesucht oder angelegt.

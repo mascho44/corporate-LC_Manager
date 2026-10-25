@@ -1,4 +1,4 @@
-# Corporate LC Manager 0.5
+# Corporate LC Manager 0.7
 
 Spring-Boot-MVP für Corporate-Akkreditivmanagement mit Web-Dashboard, MT700/MT707 und Dokumentenakte.
 
