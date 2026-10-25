@@ -2,6 +2,7 @@
 
 ## 0.7.1 – in Arbeit
 
+* Auswertung: Die Verlaufslinien schwingen nicht mehr über Tiefpunkte und flache Strecken hinaus (monotone Glättung); vorher konnte die Kurve unter die Null-Linie rutschen.
 * Auswertung: Im Cockpit zeigen Diagramme (ohne externe Bibliothek, mit Hinweisbox beim Darüberfahren) den Verlauf der offenen Akten und des Volumens, Eingänge und Abschlüsse, die Fristen der nächsten 12 Wochen und – für Banken – Abweichungen, Prüfberichte und SLA-Einhaltung; Zeitraum 30/90 Tage oder 12 Monate. Akten haben dafür Eingangs- und Abschlusszeitpunkt (Migration V151, Näherung für bestehende Akten). Siehe docs/auswertung.md.
 
 ## 0.7.0 – 25.10.2026
