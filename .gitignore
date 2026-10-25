@@ -1,0 +1,18 @@
+/target/
+/data/
+/backups/
+/.tools/
+.DS_Store
+*.log
+.env
+.env.*
+!.env.example
+.idea/
+.vscode/
+*.iml
+
+# Third-party reference documents must remain outside the public repository.
+/private-references/
+*ISBP*.pdf
+*UCP*.pdf
+*65c1c211b0373*.pdf

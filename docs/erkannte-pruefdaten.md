@@ -1,0 +1,66 @@
+# Erkannte Prüfdaten: Packliste, Versicherungszertifikat, Adressen
+
+LCM schlägt Prüfdaten aus dem erkannten Text (OCR) vor. **Nichts wird ohne Bestätigung gespeichert**, und bereits eingetragene Werte werden nie überschrieben.
+
+## Was erkannt wird
+- **Packliste:** Packstückzahl (mit Einheit, z. B. Kartons, Paletten, Kolli), Brutto- und Nettogewicht, Gewichtseinheit. Erkannt werden beschriftete Angaben
+  („Total number of cartons: 48“, „TOTAL: 12 PALLETS“, „Anzahl Packstücke“, „Gross weight“, „G.W.“, „Bruttogewicht“; Zahlenformate `1,250.50` und `1.250,50`).
+  Widersprüchliche Werte im Dokument ergeben **keinen** Vorschlag.
+- **Versicherungszertifikat:** die **Policen-/Zertifikatsnummer** („Certificate No.“, „Policy No.“, „Policennummer“, „Zertifikatsnummer“, „Versicherungsschein-Nr.“) als Dokumentnummer,
+  und die **Akkreditiv-Referenz** auch in der Form „Credit No./Credit Ref.“ (zusätzlich zu den bisherigen Beschriftungen wie „L/C No.“). Mehrere unterschiedliche Nummern bleiben unerkannt.
+- **Adressen:** das **Land** der Käufer-/Auftraggeber- und der Verkäufer-/Begünstigtenadresse im Dokument (Block nach „Buyer/Applicant/Messrs/Sold to/Käufer“ bzw. „Seller/Beneficiary/Exporter/Verkäufer“;
+  der Block endet an der nächsten Beschriftung oder Leerzeile) und auf **LC-Ebene** aus den SWIFT-Feldern `:50:` und `:59:` (Land aus der letzten Adresszeile; Name, Straße, PLZ/Ort getrennt).
+  Länder werden als **englischer Name** vorgeschlagen (Namen auf Deutsch/Englisch, ISO-Codes in Großbuchstaben und gängige Abkürzungen wie „P.R. China“, „USA“, „UK“ werden erkannt).
+
+## Wo es erscheint
+- **Dokumente prüfen → „Erkannte Prüfdaten übernehmen“** (Recht `DOCUMENT_UPLOAD`): zeigt eine Vorschau (LC-Angaben und je Dokument die neuen Werte) und übernimmt nach Bestätigung **alle** Vorschläge für leere Felder.
+  LC-Angaben nur mit dem Recht `LC_EDIT`. Bisherige Prüfentscheidungen der Akte werden dabei wie bei jeder Änderung der Prüfdaten zurückgesetzt; jede Änderung steht im Audit-Protokoll.
+- **Prüfdaten-Dialog** eines Dokuments und **LC-Prüfkontext**: Vorschläge als Schaltflächen („… übernehmen“), Quelle im Tooltip.
+
+## Grenzen
+Bei zweispaltigen Layouts (Käufer und Verkäufer nebeneinander) kann die OCR die Spalten mischen; dann fehlt der Vorschlag oder er ist falsch. Deshalb nur als Vorschlag mit Quelle.
+Die Länder werden als Text verglichen: Wer Länder von Hand einträgt, sollte denselben (englischen) Namen verwenden.
+
+## Erweiterung: Akkreditivfakten aus MT700 und Dokument-Vermerke
+
+**Akkreditiv (`Mt700Facts`)** – aus den strukturierten Feldern der SWIFT-Nachricht, jeweils mit Fundstelle als Quelle:
+`:40E:` Regelstandard, `:39A:`/`:39B:` Toleranz, `:42A:` Bezogener, `:42C:` Tratten-Laufzeit und -Basis (auch „at sight“),
+`:43P:`/`:43T:` Teilverladung/Umladung, `:44A:`/`:44B:`/`:44E:`/`:44F:` Orte und Häfen (Flughäfen nur, wenn ausschließlich ein Air Waybill gefordert ist),
+`:45A:` Warenbeschreibung und eindeutiger Incoterm, `:46A:`/`:47A:` Versicherungsprozent, Risiken, Frachtbedingung, On-Board-Vermerk, `:48:` Vorlagefrist.
+Mehrdeutige Angaben (z. B. mehrere Incoterms, ungleiche Toleranzen) werden nicht oder nur mit Hinweis vorgeschlagen.
+
+**Dokumente (`DocumentFactSuggester`)** – Schiff, Übernahme-/Zielort, Flughäfen (Air Waybill), Frachtvermerk (prepaid/collect), Incoterm (nicht auf Konnossementen),
+Ursprungsland (nur wenn als Land erkannt) sowie beim Versicherungszertifikat Versicherungssumme, Währung und Risiken.
+
+**Vermerke (`DocumentIndicators`)** – die `*_INDICATED`/`*_PRESENT`-Fakten (Umladung, Charter Party, On Deck, To Order, Container, Agent, Rabatt, Prämie bezahlt, Franchise, Indossament u. a.)
+werden nur bei **gefundenem** Textmuster als „true“ vorgeschlagen; ein fehlender Text beweist nichts und erzeugt keinen Vorschlag. Alle Vorschläge werden erst nach Bestätigung gespeichert.
+
+## Aussteller, Empfänger und Warenbeschreibung aus dem Druckbild
+Für diese drei Freitextfelder schlägt die Regel-Erkennung (ohne KI) vor:
+* **Aussteller:** eine beschriftete Zeile („Seller:", „Issued by", „Aussteller", „Lieferant" …), sonst die erste Zeile mit Firmenform (GmbH, AG, Ltd, Limited, Co., Inc …) in den ersten 12 Zeilen (Briefkopf).
+* **Empfänger:** eine beschriftete Zeile („Buyer", „Sold to", „Bill to", „Consignee", „Rechnungsempfänger" …), sonst die nächste Firma nach dem Aussteller.
+* **Warenbeschreibung:** die Zeile(n) hinter „Description of goods", „Warenbezeichnung" …, sonst die Wörter der ersten Artikelzeile unter einer Tabellenüberschrift mit Artikel-/Beschreibungs- und Mengenspalte (Codes, Zahlen und Einheiten entfallen).
+Widersprüchliche Beschriftungen ergeben keinen Vorschlag. Vorschläge aus Position und Tabelle sind mit „bitte prüfen" gekennzeichnet und wie alle Vorschläge unbestätigt.
+
+## Fundstelle im PDF markieren (statt Kommentar)
+In der Belegansicht eines Befunds gibt es „Fundstelle markieren": ein Rechteck um die Stelle im PDF aufziehen (Maus oder Finger). Wird der Befund danach mit „Als erfüllt bestätigen" abgeschlossen, ist **kein Kommentar** mehr nötig; die Markierung (Dokument, Seite, Rechteck als Anteil der Seite) wird mit der Entscheidung gespeichert (`document_check_decision.evidence_mark`). Ohne Markierung bleibt die Begründung Pflicht. Beim erneuten Öffnen erscheint die gespeicherte Fundstelle grün auf der Seite; in der Entscheidungshistorie steht „Fundstelle im PDF markiert (Seite n)". Der Server prüft, dass das Dokument zur Akte gehört. Im PDF-Prüfbericht steht die Markierung noch nicht.
+
+## Dokumentweise Prüfung
+In der Prüfung der Akte (Recht „Dokumente prüfen") öffnet **„Dokumentweise prüfen"** einen Dialog je Dokument: rechts das PDF, links alle Befunde zu diesem Dokument untereinander (offene Abweichungen vor Hinweisen, Erledigtes grau). Der aktive Befund springt im PDF auf seine Fundstellen-Seite. Pro Befund „Als erfüllt bestätigen" / „Abweichung bestätigen"; mit einer im PDF markierten Fundstelle (siehe oben) entfällt der Kommentar, sonst fragt das System wie sonst nach der Begründung. Nach jeder Entscheidung springt der Dialog zum nächsten offenen Befund, nach dem letzten zum nächsten Dokument mit offenen Befunden; mit ← und → lässt sich auch von Hand zwischen den Dokumenten wechseln. Befunde zum ganzen Dokumentensatz (ohne einzelnes Dokument) stehen am Ende ohne PDF. Die Reihenfolge der Dokumente ist die der Dokumentenliste der Akte.
+
+## Positionstabelle und Betrag
+Steht die Menge nicht als „Quantity: 931" sondern in der Positionszeile einer Tabelle (Kopfzeile mit Mengen- und Preisspalte, darunter z. B. „FW26 Women Clothing 931 pcs 76,08 70.831,40 EUR"), schlägt die Erkennung Menge, Einheit und Einzelpreis aus dieser Zeile vor. Der Rechnungsbetrag ist eine „Total"-Zeile **mit Währung**; „Total 4.815 Pcs" (eine Stückzahl) gilt nicht mehr als Betrag. Fehlt eine solche Zeile, dient die Summe der Positionszeile als Betrag (mit Währung). Im Dialog „Dokumentweise prüfen" übernimmt **„Erkannte Prüfdaten übernehmen"** alle Vorschläge für noch leere Felder der Akte in einem Zug; Eingetragenes wird nie überschrieben, die Befunde werden danach neu berechnet.
+
+## Vorlagedatum
+„Geprüftes Datum der Dokumentenvorlage" (`LC_PRESENTATION_DATE`, im Dialog „LC-Prüfkontext") und „Geprüftes Vorlagedatum" je Dokument (`DOCUMENT_PRESENTATION_DATE`, im Dialog „Dokument-Prüfdaten") sind **keine Erkennungswerte**: Das Datum, an dem die Dokumente bei der Bank vorgelegt werden, steht auf keinem Dokument. Erreicht eine Akte den Status **„Dokumente eingereicht"** (Bearbeiten der Akte oder automatisch, wenn ein Dokument bei einer auf den Kunden wartenden Akte eingeht), setzt das System das Datum der Akte auf **heute**, falls dort noch keins steht. Ein eingetragenes Datum wird nie ersetzt und kann im LC-Prüfkontext geändert werden. Die Vorlagefrist (Datum des Transportdokuments + Tage aus Feld :48:) steht unabhängig davon in den Fristen.
+
+## Automatische Übernahme (Stand 15.10.2026)
+Erkannte Angaben werden jetzt **automatisch** in leere Felder der Prüfdaten übernommen – beim Hochladen eines Dokuments in eine Akte, beim Zuordnen aus dem Posteingang, bei „Neu erkennen“ und (für die Akte selbst) beim SWIFT-Import. Von Personen eingetragene Werte werden nie überschrieben, und bestehende Prüfentscheidungen werden dadurch nicht zurückgesetzt. Automatisch übernommene Felder sind im Prüfdaten-Formular orange markiert („aus OCR, unbestätigt“); wer das Formular speichert, bestätigt sie. Für Akten von vor dieser Änderung füllt „Erkannte Prüfdaten übernehmen“ im Prüfmodus nach (ebenfalls markiert).
+
+## Gelernte Beschriftungen (Stand 17.10.2026)
+Trägt jemand in den Dokument-Prüfdaten einen **Text- oder Zahlenwert von Hand** ein (z. B. die Warenbeschreibung) und steht genau dieser Wert im Dokument auf **genau einer** beschrifteten Zeile („Description of goods: …"), merkt sich das System die Beschriftung für Mandant, Dokumenttyp und Prüffeld (Tabelle `learned_field_label`, V115, höchstens 200 je Dokumenttyp, Audit `FIELD_LABELS_LEARNED`).
+Bei späteren Dokumenten desselben Typs wird der Wert unter dieser Beschriftung als **Vorschlag** erkannt („Gelernte Beschriftung … – bitte prüfen"), aber nur, wenn er dort eindeutig ist und die übrige Erkennung nichts liefert. Steht der Wert auf mehreren Zeilen oder gar nicht im Dokument, wird nichts gelernt.
+Im Prüfdaten-Dialog zeigt **„Gelernte Beschriftungen"** die Liste; **„Vergessen"** entfernt eine falsche (`GET /api/learned-labels`, `DELETE /api/learned-labels/{id}`, Recht „Dokumente hochladen", Audit `FIELD_LABEL_FORGOTTEN`).
+
+## Warenbeschreibung und Beträge (Stand 17.10.2026)
+Die Warenbeschreibung wird unter den üblichen Beschriftungen gefunden („Description of goods", „Goods description", „Description", „Commodity", „Warenbeschreibung", „Warenbezeichnung") – in der Warenprüfung, im Ursprungszeugnis, in Inspektions- und Qualitätszertifikat und im Abgleich Rechnung/Packliste. Zu Beträgen, Nummern und Referenzen in Scans siehe [OCR-Toleranz, Modelle, Formularfelder](ocr-toleranz-und-modelle.md).

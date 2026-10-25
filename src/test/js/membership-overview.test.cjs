@@ -1,0 +1,22 @@
+const test=require('node:test');const assert=require('node:assert/strict');const fs=require('node:fs');const vm=require('node:vm');const path=require('node:path');
+const source=require('./app-source.cjs')();
+function fixture(){
+ const nodes=new Map(),calls=[],requests=[];let confirmation=true,allowed=true,answer=async()=>({tenantName:'Synthetic tenant',memberships:[]});
+ function node(tag){let id='';const n={tag,dataset:{},children:[],textContent:'',append(...items){this.children.push(...items);},replaceChildren(...items){this.children=items;},setAttribute(key,value){this[key]=value;},before(){},remove(){nodes.delete(id);}};Object.defineProperty(n,'id',{get:()=>id,set:value=>{id=value;nodes.set(value,n);}});return n;}
+ const form=node('form');form.id='userForm';
+ const context=vm.createContext({document:{createElement:node},$:selector=>nodes.get(selector.slice(1)),can:()=>allowed,json:async (url,options)=>{calls.push(url);requests.push({url,options});return answer(url,options);},loadUsers:async()=>calls.push('loadUsers'),confirmAction:async()=>confirmation,encodeURIComponent,JSON,Error});
+ vm.runInContext(source.slice(source.indexOf('/* Membership overview */')),context);
+ return {context,nodes,calls,requests,setConfirmation:value=>confirmation=value,setAllowed:value=>allowed=value,setAnswer:value=>answer=value};
+}
+function texts(node){return[node.textContent,...node.children.flatMap(texts)].join('\n');}
+function descendants(node){return[node,...node.children.flatMap(descendants)];}
+test('permission labels use English fallback and active translation without changing identifiers',()=>{const f=fixture();assert.equal(f.context.membershipPermissionLabel('LC_EDIT'),'Edit LC files');f.context.LcI18n={t:key=>key==='permission.LC_EDIT'?'LC-Akten bearbeiten':key};assert.equal(f.context.membershipPermissionLabel('LC_EDIT'),'LC-Akten bearbeiten');assert.equal(f.context.membershipPermissionLabel('DOCUMENT_APPROVE'),'Approve documents (Approver)');assert.equal(f.context.membershipPermissionLabel('<unknown>'),'<unknown>');assert.equal(f.context.membershipPermissionLabel('toString'),'toString');});
+test('every backend permission has English and German labels',()=>{const root=path.resolve(__dirname,'../../main/resources/static'),en=JSON.parse(fs.readFileSync(path.join(root,'language-en.json'))),de=JSON.parse(fs.readFileSync(path.join(root,'language-de.json'))),java=fs.readFileSync(path.resolve(__dirname,'../../main/java/de/ostms/lc/user/domain/UserPermission.java'),'utf8');for(const [,permission]of java.matchAll(/([A-Z][A-Z_]+)\("/g)){assert.ok(en['permission.'+permission]);assert.ok(de['permission.'+permission]);}});
+test('new-user assignment posts only username and the role the access picker resolves',async()=>{const f=fixture();f.context.LcMembersPage={accessPicker:()=>({element:f.context.document.createElement('span'),resolveRoleId:async()=>'reviewer'})};const body=f.context.document.createElement('div');f.context.renderMembershipAssignment(body,[]);const nodes=descendants(body),form=nodes.find(n=>n.tag==='form');assert.equal(f.requests.length,0);nodes.find(n=>n.tag==='input').value=' synthetic-user ';await form.onsubmit({preventDefault(){}});assert.deepEqual(JSON.parse(f.requests[0].options.body),{username:'synthetic-user',roleId:'reviewer'});});
+test('missing role permissions are not misrepresented as read-only',()=>{const f=fixture();assert.match(f.context.membershipRolePermissions([{id:'legacy'}],'legacy'),/Unavailable/);assert.doesNotMatch(f.context.membershipRolePermissions([{id:'legacy'}],'legacy'),/read-only/);});
+test('the old user administration dialog is gone: its markup, handlers and header button no longer exist, the page and the role editor replace them',()=>{
+ const html=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/index.html'),'utf8');
+ for(const dead of ['usersDialog','usersBtn','userForm','closeUsers'])assert.ok(!html.includes(dead)&&!source.includes(dead),dead+' removed');
+ for(const dead of ['loadUsers','renderMembershipOverview','loadMembershipOverview','ensureMembershipOverview','resetUserForm'])assert.ok(!source.includes(dead),dead+' removed');
+ assert.match(source,/globalThis\.openRolesEditor=/,'role editor stays reachable for the new page');
+});

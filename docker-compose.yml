@@ -1,0 +1,50 @@
+services:
+  app:
+    build:
+      context: .
+    image: corporate-lc-manager:0.6.0
+    restart: unless-stopped
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/lcmanager
+      DB_USER: lcmanager
+      DB_PASSWORD: ${DB_PASSWORD:-lcmanager}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      ADMIN_RESET_PASSWORD: ${ADMIN_RESET_PASSWORD:-false}
+      OCR_LANGUAGES: ${OCR_LANGUAGES:-deu+eng}
+      EBICS_ENCRYPTION_KEY: ${EBICS_ENCRYPTION_KEY:-}
+      EBICS_ALLOWED_HOSTS: ${EBICS_ALLOWED_HOSTS:-}
+      INTAKE_ENCRYPTION_KEY: ${INTAKE_ENCRYPTION_KEY:-}
+      SWIFT_FOLDER_ENABLED: ${SWIFT_FOLDER_ENABLED:-false}
+      WEBHOOK_ENCRYPTION_KEY: ${WEBHOOK_ENCRYPTION_KEY:-${EBICS_ENCRYPTION_KEY:-}}
+      INTAKE_ALLOWED_HOSTS: ${INTAKE_ALLOWED_HOSTS:-}
+      EBICS_MESSAGE_TYPES: ${EBICS_MESSAGE_TYPES:-MT700,MT707,MT710,MT760}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/api/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: lcmanager
+      POSTGRES_USER: lcmanager
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-lcmanager}
+    volumes:
+      - lc-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lcmanager -d lcmanager"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  lc-postgres:

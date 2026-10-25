@@ -1,0 +1,2 @@
+create table letter_of_credit (id uuid primary key, reference varchar(255) not null unique, applicant varchar(255), beneficiary varchar(255), issuing_bank varchar(255), advising_bank varchar(255), amount numeric(19,2), currency varchar(255), issue_date date, expiry_date date, expiry_place varchar(255), latest_shipment_date date, status varchar(255), raw_message text);
+create table lc_required_document (lc_id uuid not null references letter_of_credit(id) on delete cascade, description varchar(2000));

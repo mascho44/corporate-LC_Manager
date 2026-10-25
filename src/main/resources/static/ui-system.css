@@ -1,0 +1,299 @@
+/*
+ * One size for every control. Buttons, links styled as buttons, dropdowns and single-line inputs share height, type size and corner radius;
+ * rows, tables and item lists use the small size. Loaded last, so it wins over the page-specific sizes it replaces.
+ * Excluded on purpose: navigation, tabs, icon ("ghost") buttons, thumbnails and the zoom handle.
+ */
+:root{--control-height:32px;--control-height-sm:28px;--control-radius:8px;--control-font:14px;--control-font-sm:13px;--control-pad-x:14px;--control-pad-x-sm:10px}
+
+html body :is(button,a.button-link):not(.ghost):not(.pu-open):not(.pu-tab):not(.snippet-zoom):not(.app-nav button):not(.dossier-nav button){
+ min-height:var(--control-height);height:auto;box-sizing:border-box;padding:6px var(--control-pad-x);font-size:var(--control-font);font-weight:600;line-height:1.25;border-radius:var(--control-radius)}
+html body a.button-link:not(.ghost){display:inline-flex;align-items:center;justify-content:center}
+
+html body select:not([multiple]):not([size]),html body select:not([multiple])[size="1"]{
+ height:var(--control-height);min-height:var(--control-height);box-sizing:border-box;padding:4px 10px;font-size:var(--control-font);border-radius:var(--control-radius)}
+
+html body input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not([type=hidden]){
+ min-height:var(--control-height);box-sizing:border-box;padding:4px 10px;font-size:var(--control-font);border-radius:var(--control-radius)}
+html body textarea{border-radius:var(--control-radius)}
+
+/* small size: controls inside rows, tables and item lists */
+html body :is(.membership-row,.queue-row,.user-row,.pu-row,.pu-table,.pu-bulk,.pu-add,.document-actions,.review-actions,.split-row-actions,.template-row,.document-item-row,.draft-document-actions,.learning-rule,.training-links,.document-quick-actions,.tenant-invitation-row,table) :is(button,a.button-link):not(.ghost):not(.pu-open):not(.pu-tab):not(.snippet-zoom):not(.app-nav button):not(.dossier-nav button){
+ min-height:var(--control-height-sm);padding:3px var(--control-pad-x-sm);font-size:var(--control-font-sm)}
+html body :is(.membership-row,.queue-row,.user-row,.pu-row,.pu-table,.pu-bulk,.pu-add,.document-item-row,table) select:not([multiple]):not([size]){
+ height:var(--control-height-sm);min-height:var(--control-height-sm);padding:2px 8px;font-size:var(--control-font-sm)}
+html body :is(.membership-row,.queue-row,.user-row,.pu-row,.pu-table,.document-item-row,table) input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not([type=hidden]){
+ min-height:var(--control-height-sm);padding:2px 8px;font-size:var(--control-font-sm)}
+
+.split-clarity{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:8px 0}
+.split-clarity p{margin:0}
+.inbox-split-row.split-uncertain{border-left:3px solid #b45309}
+.split-uncertain-note{margin:0;color:#b45309;font-weight:600;flex-basis:100%;grid-column:1/-1}
+
+.finding-filters{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.finding-select{display:flex;align-items:center;gap:6px;min-width:0;flex:1 1 220px;max-width:420px}
+.finding-select select{min-width:0;flex:1;text-overflow:ellipsis}
+
+.finding-group{border:1px solid var(--line,#d5dbe5);border-radius:8px;margin:6px 0;padding:0 12px}
+.finding-group>summary{cursor:pointer;padding:8px 0;font-weight:600}
+.finding-group[open]>summary{border-bottom:1px solid var(--line,#d5dbe5);margin-bottom:6px}
+.finding-group.hidden{display:none}
+
+.finding-pick{flex:none;width:18px;height:18px;min-height:0;margin:2px 10px 0 0;accent-color:#1f4ed8}
+
+/* User menu: plain list entries, not filled buttons (the generic blue button rule has higher specificity than .avatar-menu button). */
+html body #avatarMenu button{display:block;width:100%;min-height:var(--control-height);margin:0;padding:8px 12px;text-align:left;background:transparent;color:#344054;border:0;border-radius:var(--control-radius);font-weight:500;box-shadow:none}
+html body #avatarMenu button:hover:not(:disabled),html body #avatarMenu button:focus-visible{background:#eef2f6;color:#14213d}
+html body #avatarMenu #avatarLogout{color:#b42318;border-top:1px solid #e5e9ef;border-radius:0 0 var(--control-radius) var(--control-radius);margin-top:6px}
+html body #avatarMenu #avatarLogout:hover:not(:disabled){background:#fdecea}
+
+/* Settings boxes (customer master, scan-station access) and the cost dialog: label above field, an even grid, calm spacing. */
+.settings-box{margin:18px 0;padding:16px 18px;border:1px solid var(--line,#d5dbe5);border-radius:10px;background:var(--panel,#fff)}
+.settings-box>h3{margin:0 0 6px}
+.settings-box>p{margin:0 0 12px;color:#5b6573;font-size:13px;max-width:72ch}
+.lc-form,.tool-content .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px 16px;align-items:end;margin:0 0 14px}
+.lc-form label,.tool-content label{display:flex;flex-direction:column;gap:4px;margin:0;font-size:13px;font-weight:600;color:#5b6573}
+.lc-form input,.lc-form select,.tool-content input,.tool-content select{width:100%;margin:0}
+.lc-form button{justify-self:start}
+.settings-list{margin:8px 0 0}
+.settings-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:9px 0;border-top:1px solid var(--line,#e5e9ef);margin:0}
+.settings-row>span:first-child{flex:1 1 280px;min-width:0;overflow-wrap:anywhere}
+.settings-status{margin:8px 0 0;min-height:1.2em;color:#5b6573}
+.settings-inline{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin:0 0 14px}
+.settings-inline input{flex:1 1 260px;max-width:420px}
+.tool-content>p{margin:0 0 14px;color:#5b6573;max-width:72ch}
+.tool-content .form-grid{padding:0}
+.tool-content .estimate-form>label{max-width:520px;margin-bottom:14px}
+.tool-content fieldset{border:1px solid var(--line,#d5dbe5);border-radius:8px;margin:12px 0;padding:10px 14px}
+.tool-content fieldset legend{padding:0 6px;font-weight:600}
+.tool-content h3{margin:20px 0 6px}
+.tool-content .estimates section{padding:10px 0;border-top:1px solid var(--line,#e5e9ef)}
+.tool-content .estimates h4{margin:0 0 2px}
+.tool-content form>button{margin-top:4px}
+
+/* Found with scripts/layout-rules.js on a real installation (about 850 px of content width). */
+/* LC list: columns may shrink; on medium widths the second line carries deadline, document counts and amount, so nothing runs out of the panel. */
+.dossier-row{grid-template-columns:auto minmax(150px,1.5fr) minmax(0,1.2fr) minmax(0,1.2fr) minmax(0,.8fr) minmax(0,1.1fr) minmax(0,1fr) auto}
+.dossier-row>*{min-width:0;overflow-wrap:anywhere}
+.dossier-row .muted{display:block}
+@media(max-width:1320px) and (min-width:901px){
+ .dossier-row{grid-template-columns:auto minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr) auto;row-gap:8px}
+ .dossier-row>:nth-child(5){grid-column:2;grid-row:2}
+ .dossier-row>:nth-child(6){grid-column:3;grid-row:2}
+ .dossier-row>:nth-child(7){grid-column:4;grid-row:2;text-align:left}
+ .dossier-row>:nth-child(8){grid-column:5;grid-row:1/3;align-self:center}
+}
+/* Section heads with several buttons wrap instead of running out of the section; buttons keep one line. */
+.sectionhead{flex-wrap:wrap;gap:10px 12px;align-items:center;justify-content:flex-start}
+.sectionhead>div:first-child{flex:1 1 100%;min-width:0}
+.sectionhead button,#detail .header-actions button,#detail .header-actions a.button-link{white-space:nowrap}
+#detail .header-actions{flex-wrap:wrap;gap:8px}
+/* Tabs of a file: all alike (tabs added later had fallen back to the filled blue button). */
+html body .dossier-nav>button:not(.active){background:transparent;color:#475467;box-shadow:none}
+html body .dossier-nav>button:not(.active):hover,html body .dossier-nav>button.active{background:#e8eef9;color:#1849a9}
+/* Inbox: the selection label sits on its own line above the file name. */
+.inbox-selection{display:flex;align-items:center;gap:6px;margin:0 0 4px;font-weight:500;color:#5b6573}
+.inbox-selection input{margin:0}
+
+/* Type: form controls take the page font (browsers default them to Arial 13.3 px, which looked blurry next to Inter, especially light text in the menu). */
+button,input,textarea,select{font-family:inherit}
+.app-nav,.app-nav button{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility}
+.app-nav button{font-size:14px;font-weight:600;letter-spacing:.005em}
+
+/* Tabs of a file wrap instead of hiding the last one behind a scroll bar. */
+html body .dossier-nav{flex-wrap:wrap;overflow-x:visible}
+/* New-task form: the generic ".panel input" width (330 px) pushed the fields over each other. */
+.task-form{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.task-form input:first-child{grid-column:1/-1}
+html body .task-form>*{min-width:0;width:100%;box-sizing:border-box}
+.task-form button{white-space:nowrap}
+
+/* The generic ".panel input" width (330 px) also hit check boxes (a 330 px "box" floating above the file name) and overran narrow containers. */
+html body input[type=checkbox],html body input[type=radio]{width:16px;height:16px;min-width:0;padding:0;margin:0}
+html body .panel input:not([type=checkbox]):not([type=radio]),html body .panel select,html body .panel textarea{max-width:100%}
+.form-grid>button,.auto-rule>button{justify-self:start;align-self:end;white-space:nowrap}
+
+/* Narrow screens (phone): filters one per line, tables of the procurement plan as cards, action rows wrap. */
+.document-quick-actions{flex-wrap:wrap}
+@media(max-width:700px){
+ .lc-filters{grid-template-columns:minmax(0,1fr)}
+ .lc-filters>*{min-width:0}
+ .plan-table thead{display:none}
+ .plan-table tr{display:block;padding:8px 0;border-top:1px solid #e5e9ef}
+ .plan-table td{display:block;border:0;padding:2px 0}
+ .plan-head{flex-wrap:wrap;gap:8px}
+ .document-row .document-meta{flex-wrap:wrap}
+}
+
+/* Assignment form: fields start at the top of their row, so a hint line below one field no longer lifts its neighbour. */
+.inbox-assignment{align-items:start}
+
+/* Users dialog: invite form and "assign existing user" share one calm grid; the permission line stands on its own above the button. */
+form.membership-role-controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px 14px;align-items:start;margin:8px 0 18px}
+form.membership-role-controls input,form.membership-role-controls select{width:100%;margin:0}
+form.membership-role-controls>small{grid-column:1/-1;color:#5b6573;line-height:1.5}
+form.membership-role-controls>button{justify-self:start}
+.tenant-invitations{margin:0 0 20px}
+.tenant-invitations>h4{margin:0 0 4px}
+.tenant-invitations>small{display:block;margin:0 0 10px;color:#5b6573}
+.tenant-invitation-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:8px 0;border-top:1px solid var(--line,#e5e9ef)}
+/* tenants.css makes the direct forms of the membership panel flex rows (id selector); keep the grid there too. */
+#membershipOverviewBody>form.membership-role-controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px 14px;align-items:start}
+
+/* Phone and small tablet (up to 900 px): the menu is a drawer, the header is compact, content uses the full width. */
+#mobileNavToggle{display:none}
+@media(max-width:900px){
+ #mobileNavToggle{display:inline-flex;align-items:center;flex:none}
+ html body>header{margin-left:0;padding:8px 12px;flex-wrap:wrap;gap:8px 10px;position:sticky;top:0}
+ html body>header>div:first-of-type{min-width:0}
+ html body>header .header-actions{flex-wrap:wrap;gap:8px;margin-left:auto}
+ html body .app-nav{position:fixed;top:0;left:0;bottom:0;width:min(86vw,300px);height:100%;max-height:none;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;padding:18px 14px;
+  transform:translateX(-105%);transition:transform .2s ease;z-index:60;visibility:hidden}
+ html body.nav-open .app-nav{transform:none;visibility:visible;box-shadow:0 0 0 100vmax #0b1424a6}
+ html body>main{margin-left:0;padding-left:12px;padding-right:12px}
+}
+/* Phone header and drawer details (the older 900 px rule turned the menu into a scroll strip; undo that inside the drawer). */
+@media(max-width:900px){
+ html body>header{height:auto;min-height:56px}
+ html body>header .header-actions{flex:1 1 100%;flex-wrap:nowrap;margin-left:0;justify-content:space-between}
+ html body>header .header-actions select{min-width:0;flex:1 1 auto}
+ html body>header .tls-copy,html body>header #avatarUserName{display:none}
+ html body>header .avatar-toggle{padding-left:6px;padding-right:6px}
+ html body .app-nav-title{display:flex}
+ html body .app-nav nav>small{display:block}
+ html body .app-nav-footer{display:block}
+ html body .app-nav nav{flex-direction:column;min-width:0;flex:1}
+ html body .app-nav button{white-space:normal;text-align:left}
+}
+@media(max-width:700px){
+ html body>header>div:first-of-type b{display:none}
+ html body>header .header-actions{flex:1 1 0;min-width:0}
+ #mobileNavToggle{font-size:0;padding:0;width:44px;min-width:44px;justify-content:center}
+ #mobileNavToggle::before{content:'☰';font-size:20px;line-height:1}
+}
+/* Phone: an LC in the list is a stack (reference, parties, deadline, counts, amount) with a full-width button. */
+@media(max-width:700px){
+ html body .dossier-row{grid-template-columns:auto minmax(0,1fr);gap:6px 12px;align-items:start}
+ html body .dossier-row>:nth-child(n+2){grid-column:2}
+ html body .dossier-row>:nth-child(n+3):not(:last-child){display:block;grid-row:auto;text-align:left}
+ html body .dossier-row>:nth-child(2){grid-row:auto}
+ html body .dossier-row>button{grid-column:1/-1;grid-row:auto;min-width:0;width:100%;justify-self:stretch;margin-top:4px}
+}
+@media(max-width:700px){
+ html body .membership-row{display:flex;flex-direction:column;align-items:stretch;gap:8px}
+ html body .membership-row>*{min-width:0}
+ html body .membership-row>button{align-self:flex-start}
+}
+.capture-silent{margin:0 0 12px;padding:10px 14px;border:1px solid #d9a441;border-radius:10px;background:#fff6e0;color:#5a3d00}
+
+/* Split dialog (Sammel-PDF aufteilen): built like the finding review (evidence-workspace: details card left, page viewer with page strip right). */
+.inbox-split-dialog{width:min(1280px,94vw);max-width:94vw;max-height:90vh;padding:0;background:#f6f8fc;overflow:auto;box-sizing:border-box}
+.inbox-split-dialog>.dialoghead{padding:20px 24px;border-bottom:1px solid #dbe2ec;gap:20px;background:#fff;position:sticky;top:0;z-index:3}
+.inbox-split-dialog>.dialoghead h2{margin:0}
+.inbox-split-dialog .evidence-workspace{grid-template-columns:minmax(380px,1fr) minmax(420px,1.2fr)}
+.inbox-split-dialog{max-height:94vh}
+.inbox-split-dialog .evidence-document-viewport,.inbox-split-dialog .evidence-pages{height:78vh}
+.inbox-split-dialog .evidence-details>details{margin:10px 0}
+.inbox-split-dialog .evidence-details form{margin:0}
+.inbox-split-dialog .evidence-document .button-link{margin-left:auto}
+.inbox-split-dialog .evidence-page-thumb small{font-size:10px;color:#475467;white-space:nowrap}
+.inbox-split-dialog .evidence-page-thumb{font-weight:600}
+.inbox-split-row{background:#fff;border:1px solid #dbe2ec;border-radius:12px;padding:14px 16px;margin:0 0 12px}
+.inbox-split-row .split-range-title{grid-column:1/-1;margin:0;font-size:15px}
+.inbox-split-row .split-thumbnails{grid-column:1/4;display:flex;flex-wrap:wrap;gap:10px;overflow:visible;padding:2px 0}
+.inbox-split-row .split-thumbnails .evidence-page-thumb{flex:0 0 auto;font-size:12px;padding:6px}
+.inbox-split-row .split-thumbnails .evidence-page-thumb img{width:150px;height:200px}
+/* The buttons sit beside the thumbnails instead of in a row of their own. */
+.inbox-split-row .split-thumbnails+.split-row-actions{grid-column:4;flex-direction:column;align-items:stretch;align-self:start;gap:8px}
+.inbox-split-row .split-thumbnails+.split-row-actions button{width:100%;min-height:36px;white-space:normal;line-height:1.25;padding:6px 10px}
+@media(max-width:900px){.inbox-split-row .split-thumbnails{grid-column:1/-1}.inbox-split-row .split-thumbnails+.split-row-actions{grid-column:1/-1;flex-direction:row;flex-wrap:wrap}.inbox-split-row .split-thumbnails+.split-row-actions button{width:auto}}
+@media(max-width:900px){.inbox-split-dialog .evidence-workspace{grid-template-columns:1fr}}
+.inbox-split-row .split-date{grid-column:1/4}
+.inbox-split-row .split-signed{grid-column:4/-1;display:flex;flex-direction:row;align-items:center;gap:8px;min-height:36px}
+.inbox-split-row .split-signed input{width:auto;min-width:0}
+.inbox-signature-note{margin:6px 0;color:#0f6b3a;font-weight:600}
+@media(max-width:760px){.inbox-split-row .split-date,.inbox-split-row .split-signed{grid-column:1/-1}}
+.inbox-split-dialog .inbox-split-row{grid-template-columns:72px 72px minmax(90px,1fr) minmax(130px,150px)}
+.inbox-split-dialog .inbox-split-row>*{min-width:0}
+
+/* Corporate-only workspaces: no bank-only entries in the menu (rule packs, operations monitor); import of advices and LCs, EBICS retrieval and training stay available. The server stays authoritative for permissions. */
+html[data-profile="corporate"] :is(#appNavRulePacks,#appNavMonitoring){display:none!important}
+/* Bank-only workspaces receive their messages by SWIFT; the EBICS retrieval is the corporate way. Combined workspaces keep it. */
+html[data-profile="bank"] #appNavEbics{display:none!important}
+/* Progress of the bulk re-recognition: the same card and blue as the other waiting hints (.inbox-processing), a rounded bar instead of the browser default. */
+.re-recognition-progress-box{display:grid;gap:10px;margin:12px 0 16px;padding:14px 16px;background:#f8fafc;border:1px solid #dce5f2;border-radius:12px;color:#14213d}
+.re-recognition-label{margin:0;font-size:14px;font-weight:500;overflow-wrap:anywhere}
+.re-recognition-progress{-webkit-appearance:none;appearance:none;display:block;width:100%;height:10px;border:0;border-radius:99px;background:#e5e9ef;overflow:hidden;accent-color:#175cd3}
+.re-recognition-progress::-webkit-progress-bar{background:#e5e9ef;border-radius:99px}
+.re-recognition-progress::-webkit-progress-value{background:linear-gradient(90deg,#175cd3,#3b82f6);border-radius:99px;transition:width .3s ease}
+.re-recognition-progress::-moz-progress-bar{background:#175cd3;border-radius:99px}
+.re-recognition-progress:indeterminate{background:linear-gradient(90deg,#e5e9ef 0 30%,#175cd3 50%,#e5e9ef 70% 100%);background-size:200% 100%;animation:re-recognition-wait 1.2s linear infinite}
+.re-recognition-progress:indeterminate::-webkit-progress-bar{background:linear-gradient(90deg,#e5e9ef 0 30%,#175cd3 50%,#e5e9ef 70% 100%);background-size:200% 100%;animation:re-recognition-wait 1.2s linear infinite}
+.card>.re-recognition-progress{margin-top:10px;max-width:260px}
+@keyframes re-recognition-wait{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.re-recognition-progress:indeterminate,.re-recognition-progress:indeterminate::-webkit-progress-bar{animation:none}.re-recognition-progress::-webkit-progress-value{transition:none}}
+
+/* Benutzer & Rechte (members-page.js) */
+.members-facts{margin:2px 0 0;color:#667085}
+.members-page .members-tabs{display:flex;gap:4px;border-bottom:1px solid #dbe2ec;margin:6px 0 16px;overflow-x:auto}
+.members-page .members-tab{min-height:40px;padding:8px 16px;background:none;border:0;border-bottom:3px solid transparent;border-radius:0;color:#475467;font-weight:600;white-space:nowrap}
+.members-page .members-tab:hover{color:#14213d}.members-page .members-tab.active{color:#1f4ed8;border-bottom-color:#1f4ed8}
+.members-page .members-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 12px}
+.members-page .members-toolbar input[type=search]{flex:1 1 240px;min-width:0;width:auto}.members-page .members-toolbar select{flex:0 1 180px;width:auto;min-width:0}
+.members-count{color:#667085;flex:1 1 100%}.members-note{margin:0 0 12px;color:#475467;flex:1 1 320px}
+.members-table-wrap{overflow-x:auto;border:1px solid #dbe2ec;border-radius:12px;background:#fff}
+.members-table,.members-matrix{width:100%;border-collapse:collapse}
+.members-table th,.members-table td{padding:10px 14px;text-align:left;border-bottom:1px solid #eef1f4;vertical-align:middle}
+.members-table thead th,.members-matrix thead th{background:#f8fafc;font-size:13px;color:#475467;border-bottom:1px solid #dbe2ec}
+.members-table tbody tr:last-child td{border-bottom:0}
+.members-table td select{width:auto;min-width:170px;max-width:100%}
+.members-saved{display:block;min-height:1em;margin-top:2px;color:#667085}.members-saved.ok{color:#0f6b3a}.members-saved.error{color:#a31313}
+.members-actions{text-align:right}.members-actions button{min-height:36px}
+.members-matrix th,.members-matrix td{padding:8px 12px;border-bottom:1px solid #eef1f4;text-align:center}
+.members-matrix th:first-child,.members-matrix td:first-child{text-align:left;position:sticky;left:0;background:#fff;min-width:230px}
+.members-matrix thead th:first-child{background:#f8fafc}.members-matrix thead th small{display:block;font-weight:400;color:#667085}
+.members-matrix .members-group th{background:#f2f5fa;text-align:left;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:#475467;position:static}
+.members-matrix td.yes{color:#0f6b3a;font-weight:700}.members-matrix td.no{color:#b6bdc9}
+.members-invitations{display:grid;gap:14px;max-width:760px}
+@media(max-width:700px){.members-table th:nth-child(3),.members-table td:nth-child(3){display:none}.members-actions{text-align:left}}
+.members-flash{margin:0 0 8px;color:#475467;min-height:0}.members-flash:empty{display:none}
+.members-page .members-select{width:36px;padding-right:0}.members-page .members-select input{width:auto;margin:0}
+.members-bulk{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 12px;padding:10px 14px;border:1px solid #b9ccf5;border-radius:12px;background:#eef3ff}
+.members-bulk[hidden]{display:none}
+.members-bulk select{width:auto;min-width:150px}.members-bulk button{min-height:36px}
+.link-button{display:inline;min-height:0;padding:0;border:0;background:none;color:#1f4ed8;text-decoration:underline;font:inherit;cursor:pointer}
+.tenant-invitation-bulk{margin:10px 0;padding:10px 14px;border:1px solid #dbe2ec;border-radius:12px;background:#f8fafc}.tenant-invitation-bulk summary{cursor:pointer;font-weight:600}
+.tenant-invitation-bulk textarea{display:block;width:100%;margin:10px 0 6px;box-sizing:border-box}.tenant-invitation-bulk button{margin-top:8px}
+.tenant-invitation-bulk-result p{margin:4px 0}.tenant-invitation-bulk-result .ok{color:#0f6b3a}.tenant-invitation-bulk-result .error{color:#a31313}.tenant-invitation-bulk-summary{font-weight:700}
+
+.tenant-tabs{display:flex;gap:4px;border-bottom:1px solid #dbe2ec;margin:6px 0 16px;overflow-x:auto}
+.tenant-tab{min-height:40px;padding:8px 16px;background:none;border:0;border-bottom:3px solid transparent;border-radius:0;color:#475467;font-weight:600;white-space:nowrap}
+.tenant-tab:hover{color:#14213d}.tenant-tab.active{color:#1f4ed8;border-bottom-color:#1f4ed8}
+.tenant-tab[hidden],.tenant-pane[hidden]{display:none}
+
+.dossier-blocking{color:#b42318;font-weight:700}
+.dossier-numbers .dossier-review-start{margin-top:4px;min-height:30px;padding:4px 12px}
+.review-note-dialog{width:min(560px,calc(100vw - 32px));padding:22px 24px;border:0;border-radius:14px}
+.review-note-dialog h2{margin:0 0 6px;font-size:18px}.review-note-dialog p{margin:0 0 12px;color:#475467}
+.review-note-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+.review-note-dialog .review-note-chip{min-height:30px;padding:4px 10px;border-radius:99px;font-size:13px;font-weight:500;text-align:left;white-space:normal}
+.review-note-dialog textarea{display:block;width:100%;height:110px;min-height:80px;margin:0;box-sizing:border-box;resize:vertical}
+.review-note-keep{display:flex;align-items:center;gap:6px;margin:8px 0;font-size:14px}
+.review-note-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
+.inbox-split-dialog .split-reason{margin:6px 0;font-size:12px;color:#475467}
+.inbox-split-dialog .split-safe .split-range-title::after{content:" ✓ sicher";color:#166534;font-weight:600;font-size:12px}
+.inbox-split-dialog .only-uncertain>.split-safe{display:none}
+.inbox-split-dialog .evidence-page-thumb.split-unsure{outline:2px solid #f5a524;outline-offset:-2px}
+.inbox-split-dialog .split-clarity button{margin-top:6px}
+.accuracy-report table{margin:6px 0}.accuracy-report tr.accuracy-low td{background:#fff7e6}
+.party-correction{display:grid;gap:8px;margin:10px 0;padding:12px;border:1px solid #f5c26b;border-radius:10px;background:#fff9ec}
+.party-correction textarea{width:100%;box-sizing:border-box;margin-top:4px;font:inherit}
+.party-correction pre{white-space:pre-wrap;max-height:180px;overflow:auto;font-size:12px;background:#fff;padding:8px;border-radius:6px}
+.party-correction small{color:#5c4a1a}
+.inbox-ready-dialog>p,.inbox-ready-dialog>table,.inbox-ready-dialog>.actions{margin:12px 24px}.inbox-ready-dialog>table{width:calc(100% - 48px)}.inbox-ready-dialog>.actions{display:flex;justify-content:flex-end;margin-bottom:20px}
+.auto-fact{border-color:#f5a524 !important;background:#fffaf0}.auto-fact-badge{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:99px;background:#fff1d6;color:#7a4b00;font-size:11px;font-weight:600}.auto-fact-note{color:#7a4b00}
+.kpi-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.5rem;margin:.5rem 0}
+.kpi{border:1px solid var(--line,#c9d1de);border-radius:8px;padding:.5rem .7rem;background:var(--panel,transparent)}
+.kpi b{display:block;font-size:1.15rem;overflow-wrap:anywhere}.kpi small{color:var(--muted,#6b7280)}
+.kpi-hot{border-color:#c2410c}.kpi-hot b{color:#c2410c}
+.kpi-views{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:.4rem;align-items:center}.kpi-view[aria-pressed=true]{background:#1f3a5f;color:#fff;border-color:#1f3a5f}.kpi-active{color:var(--muted,#6b7280);font-size:12px}
+.kpi-filter{cursor:pointer}.kpi-filter:hover{border-color:#2f6db5}.kpi-filter:focus-visible{outline:2px solid #2f6db5;outline-offset:1px}.kpi-filter[aria-pressed=true]{outline:2px solid #2f6db5;background:#eef4fc}

@@ -1,0 +1,69 @@
+package de.ostms.lc.lc.domain;
+import jakarta.persistence.*; import java.math.BigDecimal; import java.time.LocalDate; import java.util.*;
+@Entity @Table(name="letter_of_credit",uniqueConstraints=@UniqueConstraint(name="letter_of_credit_tenant_reference_unique",columnNames={"tenant_id","reference"}))
+public class LetterOfCredit {
+ @Column(nullable=false,updatable=false) @com.fasterxml.jackson.annotation.JsonIgnore
+ private UUID tenantId=de.ostms.lc.tenant.domain.TenantContext.currentId();
+ public UUID getTenantId(){return tenantId;}
+ @PrePersist @PreUpdate @PreRemove private void validateTenant(){de.ostms.lc.tenant.domain.TenantContext.require(tenantId);}
+ @Column(columnDefinition="text") @com.fasterxml.jackson.annotation.JsonIgnore private String ruleFactsJson;
+ @Column(columnDefinition="text") @com.fasterxml.jackson.annotation.JsonIgnore private String ruleWaivedJson;
+ @Column(length=16) @com.fasterxml.jackson.annotation.JsonIgnore private String ruleSourceOverride;
+ @Column(length=600) @com.fasterxml.jackson.annotation.JsonIgnore private String rulePackIds;
+ public String getRuleSourceOverride(){return ruleSourceOverride;}
+ public void setRuleSourceOverride(String value){ruleSourceOverride=value;}
+ public String getRulePackIds(){return rulePackIds;}
+ public void setRulePackIds(String value){rulePackIds=value;}
+ public String getRuleFactsJson(){return ruleFactsJson;}
+ public String getRuleWaivedJson(){return ruleWaivedJson;}
+ public void setRuleWaivedJson(String value){ruleWaivedJson=value;}
+ @Column(name="auto_rule_facts",columnDefinition="text") @com.fasterxml.jackson.annotation.JsonIgnore private String autoRuleFacts;
+ public String getAutoRuleFacts(){return autoRuleFacts;} public void setAutoRuleFacts(String v){autoRuleFacts=v;}
+ public void setRuleFactsJson(String value){ruleFactsJson=value;}
+ @Column(columnDefinition="text") @com.fasterxml.jackson.annotation.JsonIgnore private String ruleRequirementsJson;
+ public String getRuleRequirementsJson(){return ruleRequirementsJson;}
+ public void setRuleRequirementsJson(String value){ruleRequirementsJson=value;}
+ @ElementCollection @CollectionTable(name="lc_condition",joinColumns=@JoinColumn(name="lc_id"))
+ @MapKeyEnumerated(EnumType.STRING) @MapKeyColumn(name="condition_name",length=100)
+ @Column(name="condition_value",columnDefinition="text") private Map<LcCondition,String> conditions=new EnumMap<>(LcCondition.class);
+ @com.fasterxml.jackson.annotation.JsonIgnore
+ public Map<LcCondition,String> getConditions(){return conditions;}
+ public void setConditions(Map<LcCondition,String> values){conditions=new EnumMap<>(LcCondition.class);if(values!=null)conditions.putAll(values);}
+ private String ownBankReference;
+ private String foreignBankReference;
+ public String getOwnBankReference(){return ownBankReference;}
+ public void setOwnBankReference(String value){ownBankReference=value;}
+ public String getForeignBankReference(){return foreignBankReference;}
+ public void setForeignBankReference(String value){foreignBankReference=value;}
+ private Integer companyId;
+ public Integer getCompanyId(){return companyId;}
+ public void setCompanyId(Integer value){companyId=value;}
+ private String templateCompany;
+ public String getTemplateCompany(){return templateCompany;}
+ public void setTemplateCompany(String value){templateCompany=value;}
+ @Id @GeneratedValue(strategy=GenerationType.UUID) private UUID id;
+ @Column(nullable=false) private String reference;
+ private String applicant; private String beneficiary; private String issuingBank; private String advisingBank;
+ @Column(precision=19,scale=2) private BigDecimal amount; private String currency; private LocalDate issueDate; private LocalDate expiryDate; private String expiryPlace; private LocalDate latestShipmentDate; private String assignedTo; private LocalDate followUpDate;
+ @Column(name="party_role",nullable=false,length=12) private String partyRole="BENEFICIARY";
+ public String getPartyRole(){return partyRole;}
+ public void setPartyRole(String role){if(!"BENEFICIARY".equals(role)&&!"APPLICANT".equals(role))throw new IllegalArgumentException("Unbekannte Rolle.");partyRole=role;}
+ @Column(name="customer_id") private java.util.UUID customerId;
+ public java.util.UUID getCustomerId(){return customerId;}
+ public void setCustomerId(java.util.UUID id){customerId=id;}
+ @com.fasterxml.jackson.annotation.JsonIgnore public boolean isExporterSide(){return "BENEFICIARY".equals(partyRole);}
+ @Enumerated(EnumType.STRING) private LetterOfCreditStatus status=LetterOfCreditStatus.RECEIVED;
+ @Column(name="waiting_since") private LocalDate waitingSince;
+ /** A received document ends the wait for the customer: the LC moves on to examination. */
+ public boolean releaseWaitingForCustomer(){if(status!=LetterOfCreditStatus.WAITING_FOR_CUSTOMER)return false;status=LetterOfCreditStatus.DOCUMENTS_PRESENTED;waitingSince=null;return true;}
+ public LocalDate getWaitingSince(){return waitingSince;} public void setWaitingSince(LocalDate v){waitingSince=v;}
+ @ElementCollection(fetch=FetchType.EAGER) @org.hibernate.annotations.Fetch(org.hibernate.annotations.FetchMode.SUBSELECT) @CollectionTable(name="lc_required_document",joinColumns=@JoinColumn(name="lc_id")) @Column(name="description",length=2000) private List<String> requiredDocuments=new ArrayList<>();
+ @ElementCollection(fetch=FetchType.EAGER) @org.hibernate.annotations.Fetch(org.hibernate.annotations.FetchMode.SUBSELECT) @CollectionTable(name="lc_additional_field",joinColumns=@JoinColumn(name="lc_id")) @MapKeyColumn(name="field_name",length=255) @Column(name="field_value",length=4000) private Map<String,String> additionalFields=new LinkedHashMap<>();
+ @Column(name="instrument_type",nullable=false,length=12) private String instrumentType="LC";
+ public String getInstrumentType(){return instrumentType;} public void setInstrumentType(String v){instrumentType=v==null?"LC":v;}
+ @Column(columnDefinition="text") private String rawMessage;
+ @Column(length=4000) private String sequenceOfTotal; @Column(length=4000) private String formOfCredit; @Column(length=4000) private String availableWith; @Column(length=4000) private String draweeBank; @Column(length=4000) private String draftsAt; @Column(length=4000) private String mixedPaymentDetails; @Column(length=4000) private String deferredPaymentDetails; @Column(length=4000) private String confirmationInstructions; @Column(length=4000) private String reimbursingBank; @Column(length=4000) private String confirmationParty; @Column(length=4000) private String charges; @Column(length=4000) private String bankInstructions;
+ public String getSequenceOfTotal(){return sequenceOfTotal;} public void setSequenceOfTotal(String v){sequenceOfTotal=v==null||v.isBlank()?null:v.trim();} public String getFormOfCredit(){return formOfCredit;} public void setFormOfCredit(String v){formOfCredit=v==null||v.isBlank()?null:v.trim();} public String getAvailableWith(){return availableWith;} public void setAvailableWith(String v){availableWith=v==null||v.isBlank()?null:v.trim();} public String getDraweeBank(){return draweeBank;} public void setDraweeBank(String v){draweeBank=v==null||v.isBlank()?null:v.trim();} public String getDraftsAt(){return draftsAt;} public void setDraftsAt(String v){draftsAt=v==null||v.isBlank()?null:v.trim();} public String getMixedPaymentDetails(){return mixedPaymentDetails;} public void setMixedPaymentDetails(String v){mixedPaymentDetails=v==null||v.isBlank()?null:v.trim();} public String getDeferredPaymentDetails(){return deferredPaymentDetails;} public void setDeferredPaymentDetails(String v){deferredPaymentDetails=v==null||v.isBlank()?null:v.trim();} public String getConfirmationInstructions(){return confirmationInstructions;} public void setConfirmationInstructions(String v){confirmationInstructions=v==null||v.isBlank()?null:v.trim();} public String getReimbursingBank(){return reimbursingBank;} public void setReimbursingBank(String v){reimbursingBank=v==null||v.isBlank()?null:v.trim();} public String getConfirmationParty(){return confirmationParty;} public void setConfirmationParty(String v){confirmationParty=v==null||v.isBlank()?null:v.trim();} public String getCharges(){return charges;} public void setCharges(String v){charges=v==null||v.isBlank()?null:v.trim();} public String getBankInstructions(){return bankInstructions;} public void setBankInstructions(String v){bankInstructions=v==null||v.isBlank()?null:v.trim();}
+ public UUID getId(){return id;} public String getReference(){return reference;} public void setReference(String v){reference=v;} public String getApplicant(){return applicant;} public void setApplicant(String v){applicant=v;} public String getBeneficiary(){return beneficiary;} public void setBeneficiary(String v){beneficiary=v;} public String getIssuingBank(){return issuingBank;} public void setIssuingBank(String v){issuingBank=v;} public String getAdvisingBank(){return advisingBank;} public void setAdvisingBank(String v){advisingBank=v;} public BigDecimal getAmount(){return amount;} public void setAmount(BigDecimal v){amount=v;} public String getCurrency(){return currency;} public void setCurrency(String v){currency=v;} public LocalDate getIssueDate(){return issueDate;} public void setIssueDate(LocalDate v){issueDate=v;} public LocalDate getExpiryDate(){return expiryDate;} public void setExpiryDate(LocalDate v){expiryDate=v;} public String getExpiryPlace(){return expiryPlace;} public void setExpiryPlace(String v){expiryPlace=v;} public LocalDate getLatestShipmentDate(){return latestShipmentDate;} public void setLatestShipmentDate(LocalDate v){latestShipmentDate=v;} public String getAssignedTo(){return assignedTo;} public void setAssignedTo(String v){assignedTo=v;} public LocalDate getFollowUpDate(){return followUpDate;} public void setFollowUpDate(LocalDate v){followUpDate=v;} public LetterOfCreditStatus getStatus(){return status;} public void setStatus(LetterOfCreditStatus v){status=v;} public List<String> getRequiredDocuments(){return requiredDocuments;} /** Always a mutable copy: parsers hand over immutable lists, and a persisted entity must be able to clear its collections when it is merged again. */
+ public void setRequiredDocuments(List<String> v){requiredDocuments=v==null?new ArrayList<>():new ArrayList<>(v);} public Map<String,String> getAdditionalFields(){return additionalFields;} public void setAdditionalFields(Map<String,String> v){additionalFields=v==null?new LinkedHashMap<>():new LinkedHashMap<>(v);} public String getRawMessage(){return rawMessage;} public void setRawMessage(String v){rawMessage=v;}
+}

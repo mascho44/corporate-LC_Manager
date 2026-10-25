@@ -1,0 +1,47 @@
+# Corporate LC Manager – Roadmap
+
+## Als Nächstes
+
+- Regelquelle und Pack-Auswahl: Mandanteneinstellung „Beides / Nur eingebaut / Nur importiert“ mit Überschreibung und Pack-Auswahl je Akte (Schaltfläche „Regelquelle“), Unterdrückung doppelter eingebauter Vergleiche nur bei automatischer Pack-Regel, nicht angewendete Regeln als eine Zusammenfassung je Pack statt Warnungen; Standard bleibt das bisherige Verhalten. Offen: Abgleich der Zuordnung eingebaut zu Pack durch die Fachseite ([Dokumentation](docs/internal-rule-packs.md)).
+- Erkennungsbenchmark: synthetischer Text-Regressionsbestand mit 11 Fällen / 14 Seiten, Kennzahlen für Typen, Grenzen und Metadaten sowie Corpus-/Engine-Fingerprints lokal ergänzt. Echter privater Scan-Holdout und Vergleich vor/nach mandantenspezifischem Training bleiben offen; siehe [Benchmark-Konzept](docs/recognition-benchmark.md).
+
+- Dokumentenerkennung ausbauen: Seitenwiederaufnahme, persistierte OCR-Zwischenstände, Seitenfehler und Metadaten-Fundstellen deployed; begrenzte Rotation/Schräglagenkorrektur mit Koordinatenrückabbildung lokal ergänzt. Noch offen: repräsentativer gelabelter Holdout-Testbestand mit Kennzahlen je Dokumentart und weitergehende Layout-/Rückseitenerkennung. Synthetische Regressionstests und beobachtete Trainingskorrekturen sind kein Nachweis allgemeiner Erkennungsgenauigkeit.
+
+- RabbitMQ-Adapter bei konkretem externem Integrationsbedarf aktivieren
+- Löschkonzept umsetzen: [Technischer Konzeptentwurf](docs/tenant-retention-and-deletion.md) sowie reversible Archivierung und rein lesende mandantenbezogene Bestands-/Löschvorschau liegen vor. Fristen und Freigabepolitik sind noch zu bestätigen; Backups, temporäre Dateien und Löschsperren bleiben ausdrücklich ungeprüft. Als Nächstes Aufbewahrung und Sperren, Vier-Augen-Freigabe, wiederaufnehmbare Löschjobs sowie Backup-/Restore-Nachweise. Noch keine vollständige Mandantenlöschung implementiert.
+- OFAC- und EU-Sanktionslisten anbinden: täglicher Abruf der OFAC-SDN-/Non-SDN-Listen und der konsolidierten EU-Finanzsanktionsliste, XML-/CSV-Import mit Quelle, Versionsstand, Abrufzeit und Prüfsumme. Antragsteller, Begünstigte, Banken und weitere Beteiligte einschließlich Aliasnamen prüfen; mögliche Treffer fachlich bewerten, Warn-/Sperrlogik und erneutes Screening bei Listenänderungen vorsehen. Veraltete oder nicht verfügbare Listen sichtbar machen und Prüfungen sowie Entscheidungen auditieren.
+- Compliance-Zugang und Compliance-Rolle: eigener Arbeitsbereich für Screening-Treffer, blockierte Vorgänge und Eskalationen; getrennte Rechte für Sachbearbeitung, Compliance und Administration. Freigaben, Ablehnungen und Eskalationen mit Begründung protokollieren; schreibgeschützten Prüfzugang für interne Revision vorsehen. Abhängigkeit: Sanktionslisten-Anbindung und bestehende Rollen-/Rechteverwaltung.
+
+## Erledigt
+
+- Firmenverwaltung mit eigenen Stammdaten und Logos, fester Gesellschaftszuordnung je LC und Word-Vorlage; Firmenangaben in Word und Standard-PDFs
+
+- Firmenbezogene Word-Vorlagen mit expliziter Vorlagenfirma je LC-Akte und allgemeiner Ersatzvorlage; vollständige Gesellschaftsverwaltung weiterhin geplant
+
+- Vorlagenverwaltung für Word-Dokumente
+- Handelsrechnung und Packliste gegen die gültige LC-Fassung einschließlich MT707-Änderungen prüfen
+- Audit-Protokoll mit Vorher-/Nachher-Werten, Exportereignissen und Aktenchronik
+- Dokumentenerstellung für Ursprungszeugnis, Begünstigtenzertifikat und Qualitäts-/Analysezertifikat
+- Zentrale Firmenstammdaten einschließlich Logo, Register-, Steuer- und Bankdaten
+- Strukturierte Positions- und Packtabellen für Handelsrechnung und Packliste
+- Versionierte Dokumententwürfe mit Prüfung, Finalisierung und gesperrter Endfassung
+- Entwurfsprüfung gegen LC-Betrag, Laufzeit, Warenbeschreibung und Packdaten
+- Vier-Augen-Freigabe für Dokumententwürfe mit getrenntem Ersteller und Freigeber
+- Optionale TOTP-Zwei-Faktor-Anmeldung mit Authenticator-App und Notfallcodes
+- Transport-, Ursprungsland- und Incoterm-Prüfungen mit dokumentübergreifender Widerspruchserkennung
+- Batch-Upload für Einzeldateien und ZIP-Archive mit Typkorrektur, Limits und Ergebnisübersicht
+- Vererbbare, administrierbare Rollen mit granularen Rechten
+- SMTP-E-Mail-Versand aus der LC-Akte mit Anhängen, eigenem Recht, Versandhistorie und Audit-Protokoll
+- Provider-unabhängige MQ-Abstraktion mit persistenter Outbox, Wiederholungsstrategie und lokalem Adapter
+- Zentrale Outbox-Anbindung aller relevanten LC-, Dokument-, Training-, SWIFT- und E-Mail-Geschäftsereignisse
+
+## Später
+
+- Aktenliste bei sehr vielen Akten: Der Prüfstatus (Ampel) wird bei jedem Laden je Akte neu berechnet; gemessen lokal 1,5 s bei 50 und rund 4 s bei 300 Akten. Die Liste erscheint bereits vor den Ampeln. Nächster Schritt bei weiterem Wachstum: Prüfstatus je Akte zwischenspeichern und nur bei Änderungen (Dokument, Prüfdaten, Entscheidung, Änderung MT707) neu berechnen.
+- SLAs (Regeln, Bankarbeitstage, Ampel in der Akte, Eskalation über die Gruppeninbox und Listenfilter sind umgesetzt; offen: weitere Ereignisse wie Posteingang und Sanktionen, Feiertage je Bundesland): je Mandant einstellbare Bearbeitungszeiten (zum Beispiel Dokumentenprüfung binnen x Stunden nach Eingang, Unstimmigkeitsmeldung innerhalb der Prüffrist von fünf Bankarbeitstagen nach UCP 600 Art. 14 b, Reaktion auf eine Änderung MT707), Uhr je Akte und Schritt aus den vorhandenen Eingangs-, Prüf- und Fristendaten, Ampel „im Plan / knapp / verletzt“, Eskalation über die Gruppeninbox an die Teamleitung, Feiertagskalender, Auswertung der Einhaltung. Konzept noch offen: Welche Zeiten gelten je Mandant, welche Schritte zählen, wer wird eskaliert.
+- KPI-Cockpit: eigene Seite für Leitung und Compliance mit Kennzahlen aus den vorhandenen Daten: offene und überfällige Akten, Durchlaufzeit je Schritt, Abweichungsquote und Erstprüfungsquote, SLA-Einhaltung, Volumen je Kunde, Bank und Zeitraum, Auslastung je Bearbeiter. Filter nach Zeitraum, Gesellschaft und Team, CSV-Export, Mandantengrenzen wie überall. Baut auf den SLAs und den klickbaren Kennzahlen der Aktenliste auf. Konzept noch offen: Kennzahlenliste, Zielwerte, Aufbewahrung der Verlaufsdaten.
+- Zurückgestellt: Microservice `lc-rule-engine`. Zielarchitektur steht in [lc-rule-engine](docs/lc-rule-engine.md). Interne LC-Vorprüfungen und eigene Rule Packs bleiben bestehen.
+- EBICS-Anbindung für den sicheren Bankaustausch
+- Multiple Entities: Mandantenanlage und Wechsel deployed; Bearbeitung von Name/Standardsprache und expliziter Mandanten-Login lokal ergänzt. Globale Identitäten werden zunächst zentral im Standardmandanten angelegt; ein vollständiger globaler IAM-Lebenszyklus bleibt offen.
+- Weitere SWIFT-Profile, insbesondere MT767
+- Kerberos-Anbindung für Enterprise-SSO mit Rollenabbildung und lokalem Notfall-Adminzugang

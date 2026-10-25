@@ -1,0 +1,107 @@
+/* "Heute zu tun": one row of tiles on the start page that tells what is waiting, with a way to jump there. */
+(() => {
+ /** Pure model: which tiles to show for the given counts. null means "not available to this user" and hides the tile. */
+ function tiles(m) {
+  const list = [];
+  const add = (key, label, count, hint, tone) => { if (count === null || count === undefined) return; list.push({ key, label, count, hint, tone: count > 0 ? tone : 'ok' }); };
+  add('sanctions', tx('wll.5280b9','Sanktionstreffer offen'), m.sanctions, tx('wll.4831a4','Prüfen und freigeben'), 'bad');
+  add('urgent', tx('wll.50dd77','Frist knapp, blockiert'), m.urgent, tx('wll.30f881','Zuerst prüfen'), 'bad');
+  add('overdue', tx('wll.520f91','Überfällige Fristen'), m.overdue, tx('wll.18a3f2','Fristen prüfen'), 'bad');
+  add('ebics', tx('wll.3eefc9','Neue EBICS-Nachrichten'), m.ebics, tx('wll.effeb5','Ansehen und importieren'), 'info');
+  add('inbox', tx('wll.a5ec36','Posteingang offen'), m.inbox, tx('wll.d72ac8','Dokumente zuordnen'), 'info');
+  add('team', tx('wll.8c445e','Gruppeninbox'), m.team, tx('wll.bf8310','Übernehmen'), 'info');
+  add('waiting', tx('wll.5abe41','Warten auf Kunde'), m.waiting, tx('wll.3a479f','Nachfassen'), 'warn');
+  add('upcoming', tx('wll.5e94f2','Fristen in 7 Tagen'), m.upcoming, tx('wll.e3f1f4','Vorbereiten'), 'warn');
+  add('unassigned', tx('wll.2fe012','Ohne Bearbeiter'), m.unassigned, tx('wll.33b940','Zuweisen'), 'warn');
+  return list;
+ }
+ /** Open LC files with blocking findings whose expiry or latest shipment date is at most `days` days away. */
+ function urgentFiles(lcs, days = 5, today = new Date()) {
+  const start = new Date(today); start.setHours(0, 0, 0, 0);
+  const left = date => { if (!date) return Infinity; const d = new Date(date + 'T00:00:00'); return Math.round((d - start) / 864e5); };
+  return (lcs || []).filter(lc => !['CLOSED', 'EXPIRED'].includes(lc.status) && (lc.dossierStatus?.blocking || 0) > 0)
+   .map(lc => ({ lc, days: Math.min(left(lc.expiryDate), left(lc.latestShipmentDate)) }))
+   .filter(x => x.days >= 0 && x.days <= days).sort((a, b) => a.days - b.days).map(x => x.lc);
+ }
+ const symbol = tone => tone === 'ok' ? '✓' : tone === 'bad' ? '!' : tone === 'warn' ? '!' : 'i';
+ globalThis.LcWorklist = { tiles, symbol, urgentFiles };
+ if (typeof document === 'undefined' || !document.body) return;
+
+ const num = selector => { const n = Number(document.querySelector(selector)?.textContent); return Number.isFinite(n) ? n : null; };
+ const safe = async (task) => { try { return await task(); } catch (error) { return null; } };
+ const permitted = permission => typeof can === 'function' && can(permission);
+ let section = null, timer = null, loading = false;
+
+ async function collect() {
+  const lcs = typeof data !== 'undefined' && Array.isArray(data) ? data : [];
+  return {
+   urgent: urgentFiles(lcs).length,
+   sanctions: lcs.filter(lc => (lc.dossierStatus?.sanctions || 0) > 0).length || null,
+   overdue: num('#queueOverdue'),
+   upcoming: num('#queueUpcoming'),
+   unassigned: num('#queueUnassigned'),
+   waiting: lcs.filter(lc => lc.status === 'WAITING_FOR_CUSTOMER').length,
+   inbox: permitted('DOCUMENT_UPLOAD') ? await safe(async () => (await json('/api/inbox')).length) : null,
+   team: document.querySelector('#appNavGroupInbox') ? await safe(async () => (await json('/api/tasks/inbox')).filter(i => !i.assignedTo).length) : null,
+   ebics: permitted('SETTINGS_MANAGE') ? await safe(async () => { const c = await json('/api/ebics/connection'); return c && c.status === 'ACTIVE' ? Number(c.newMessages) || 0 : null; }) : null
+  };
+ }
+ function open(key) {
+  const click = id => document.querySelector(id)?.click();
+  if (key === 'sanctions') {
+   const list = (typeof data !== 'undefined' ? data : []).filter(lc => (lc.dossierStatus?.sanctions || 0) > 0);
+   if (list.length === 1) { const start = document.querySelector(`[data-review-lc="${list[0].id}"]`); if (start) start.click(); else globalThis.show?.(list[0].id); return; }
+   document.querySelector('[data-app-section="lcs"]')?.click(); return;
+  }
+  if (key === 'urgent') {
+   const list = urgentFiles(typeof data !== 'undefined' ? data : []);
+   if (list.length === 1) { const start = document.querySelector(`[data-review-lc="${list[0].id}"]`); if (start) start.click(); else globalThis.show?.(list[0].id); return; }
+   document.querySelector('[data-app-section="lcs"]')?.click();
+   const sort = document.querySelector('#lcSort'); if (sort) { sort.value = 'expiry'; sort.dispatchEvent(new Event('change')); }
+   return;
+  }
+  if (key === 'inbox') click('#appNavInbox');
+  else if (key === 'ebics') click('#appNavEbics');
+  else if (key === 'team') click('#appNavGroupInbox');
+  else {
+   const filter = document.querySelector('#workQueueFilter');
+   if (filter) { filter.value = key === 'unassigned' ? 'unassigned' : 'all'; filter.dispatchEvent(new Event('change')); }
+   document.querySelector('#workQueueSection')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
+  }
+ }
+ async function refresh(force) {
+  if (loading || !section || (document.hidden && force !== true)) return;
+  loading = true;
+  try {
+   const model = tiles(await collect());
+   section.replaceChildren();
+   const head = document.createElement('div'); head.className = 'today-head';
+   const title = document.createElement('h2'); title.textContent = 'Heute zu tun';
+   head.append(title); section.append(head);
+   const row = document.createElement('div'); row.className = 'today-tiles';
+   model.forEach(tile => {
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'today-tile ' + tile.tone;
+    button.setAttribute('aria-label', `${tile.label}: ${tile.count}. ${tile.count > 0 ? tile.hint : tx('wll.efbc3c','Nichts offen')}`);
+    const icon = document.createElement('span'); icon.className = 'today-icon'; icon.setAttribute('aria-hidden', 'true'); icon.textContent = symbol(tile.tone);
+    const count = document.createElement('b'); count.textContent = String(tile.count);
+    const label = document.createElement('span'); label.textContent = tile.label;
+    const hint = document.createElement('small'); hint.textContent = tile.count > 0 ? tile.hint : tx('wll.efbc3c','Nichts offen');
+    button.append(icon, count, label, hint); button.onclick = () => open(tile.key);
+    row.append(button);
+   });
+   section.append(row);
+   section.hidden = model.length === 0;
+  } finally { loading = false; }
+ }
+ function start() {
+  const queue = document.querySelector('#workQueueSection');
+  if (!queue || section) return;
+  section = document.createElement('section'); section.id = 'todaySection'; section.className = 'panel today'; section.setAttribute('aria-live', 'polite');
+  queue.before(section);
+  refresh(true); timer = setInterval(() => refresh(), 60000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+  document.addEventListener('click', event => { if (event.target.closest?.('#workQueueList,[data-app-section="cockpit"]')) setTimeout(refresh, 300); });
+ }
+ // The cockpit data arrives after login; wait until the work queue exists and the first load is complete.
+ const wait = setInterval(() => { if (typeof data !== 'undefined' && typeof currentUser !== 'undefined' && currentUser && document.querySelector('#workQueueSection')) { clearInterval(wait); setTimeout(start, 800); } }, 400);
+})();

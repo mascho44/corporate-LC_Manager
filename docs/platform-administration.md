@@ -1,0 +1,313 @@
+# Platform accounts, invitations and grants
+
+## Aufbau der Plattformadministration (Stand 15.10.2026)
+Die Seite ist deutsch und in Reiter gegliedert:
+* **Übersicht:** Kennzahlen (aktive Mandanten, aktive Konten, offene Einladungen, Plattformadministratoren – jede Kachel führt zum passenden Reiter), Hinweise (Mandanten ohne aktiven Administrator, gesperrte Mandanten, nicht zugestellte oder abgelaufene Einladungen, aktive Konten ohne Zwei-Faktor) und der Stand der **Sanktionslisten** mit „Jetzt aktualisieren".
+* **Mandanten:** anlegen, Profil, sperren, archivieren, löschen.
+* **Konten & Einladungen:** globale Konten, Einladen, offene Einladungen, Plattformrechte und „Benutzer & Mandanten": eine Matrix Personen × Mandanten, in der jede Zelle die Rolle der Person im Mandanten ist (Rolle wählen weist zu oder ändert, „–“ heißt kein Zugang, ⏸/▶ setzt den Zugang aus oder stellt ihn wieder her; mit Suchfeld). Die Bereiche je Mandant stellt der Mandanten-Admin in seiner Zugriffsmatrix ein. Das Papierkorb-Symbol neben dem Namen löscht ein Konto (`DELETE /api/platform/users/{id}`): Das Konto bleibt als leere Hülle (inaktiv, ohne persönliche Angaben, Anmeldedaten und Plattformrecht), der Benutzername bleibt für Historie und Audit erhalten und ist danach nicht mehr vergebbar; Zugänge zu Mandanten verschwinden aus den Listen. Das eigene Konto und der letzte aktive Plattformadministrator lassen sich nicht löschen.
+* **Protokoll:** Plattform-Audit (nur Metadaten, Audit-Ketten prüfen) und abgelehnte Anfragen.
+* **Mein Konto** (Knopf im Kopf): eigenes Passwort ändern.
+
+Die frühere Liste „Memberships across tenants" ist entfallen; ihre Funktionen (Rolle ändern, Zugang sperren) liegen in „Benutzer & Mandanten". Die Schnittstellen unter `/api/platform/memberships` bestehen weiter.
+
+
+Platform administration also manages [tenant creation, suspension and module
+profiles](tenant-lifecycle.md). Local tenant roles cannot create tenants or change
+global lifecycle/profile flags.
+
+Platform administration is distinct from a tenant's ADMIN role and USER_MANAGE
+permission. V67 grants the separate platform_administrator flag only to the
+existing home identity named `admin`, as explicitly selected by the operator.
+Other identities default to false, including newly created tenant administrators.
+For a fresh installation, the initial identity receives this flag only when its
+normalized username is `admin`. Existing installations without that identity do
+not silently promote another user. A protected API now grants and revokes this
+flag independently of tenant roles.
+
+The **Platform administration** menu opens the separate /platform.html area.
+An active flagged identity with a verified TOTP session can list global identities
+and activate/suspend accounts without a tenant workspace. Platform requests verify
+global credentials and rights independently of the selected membership. After sign-in, a platform administrator without any tenant
+membership is sent directly to /platform.html; with memberships the workspace chooser
+additionally offers "Plattformverwaltung (ohne Mandant)".
+
+`GET /api/platform/access` reports only whether the current identity can use the
+page. `GET /api/platform/users` and `PUT /api/platform/users/{id}/access` validate
+the live platform flag, global activation and TOTP enrollment on every call.
+Mutations require CSRF. Local roles never imply platform access. Reads and writes
+open an explicit home scope and restore the caller's selected scope afterward.
+Responses never contain password hashes, TOTP secrets or recovery codes.
+
+Global suspension denies subsequent authenticated requests in every tenant.
+Activation restores only global eligibility: suspended memberships and assigned
+roles remain unchanged. Self-suspension and suspension of the last active,
+TOTP-enrolled platform administrator are forbidden. Administration uses the shared
+home-tenant lock, and allowlisted before/after activation audit commits in the same
+transaction. Audit failure rolls back the account update.
+
+Platform identities cannot be changed or deleted through legacy tenant identity
+administration, and cannot disable their own TOTP. Existing local role/membership
+administration remains separate. Credential self-service remains available.
+
+`POST /api/platform/users` remains a central, platform-only manual creation API.
+Only a live platform administrator with TOTP may create an identity. Email is
+required; username uniqueness is global and case-insensitive. Initial passwords
+use the existing strength policy and are hashed, never returned or audited.
+Requests cannot select roles, activation, tenant IDs or platform grants.
+The identity uses the empty-permission system VIEWER role in the bootstrap tenant;
+its automatically generated home membership is suspended in the same transaction.
+Thus creation grants no business access, not even read access to the default
+tenant. An authorized local administrator subsequently assigns an explicit role
+in the intended tenant through the existing membership workflow. Global account
+activation never lifts the bootstrap suspension. Creation and audit are atomic.
+The normal UI uses invitations instead of administrator-selected passwords.
+
+## Trennung von Plattform- und Mandantenadministration
+
+Eine Identität mit Plattformrecht erhält in keinem Mandanten Administrator- oder
+Verwaltungsrechte (Basisrolle Administrator, `USER_MANAGE` oder `SETTINGS_MANAGE`).
+Die Sperre gilt an allen Stellen, an denen eine Rolle vergeben wird: Plattform-API
+(Zuweisung und Rollenwechsel), mandanteneigene Zuweisung bestehender Identitäten,
+Rollenwechsel geteilter Identitäten und Rollenwechsel im eigenen Mandanten.
+Bestehende Zuordnungen werden nicht automatisch geändert; sie werden bewusst
+umgestellt: Zuerst erhält ein eigenes Mandantenkonto die Administratorrolle, danach
+wird der Zugang des Plattformkontos zum Mandanten ausgesetzt
+(`PUT /api/platform/memberships/{tenantId}/{userId}/access`). Der letzte aktive
+Administrator eines Mandanten bleibt dabei geschützt.
+
+Zum Umstellen gibt es ein Hilfsskript, das nur die Plattform-API benutzt (Anmeldung mit
+Passwort und Code im Terminal, nichts wird gespeichert): `node scripts/platform-separate-admin.cjs
+--new-admin <Benutzer> --tenants "<Mandant>,<Mandant>"` zeigt den Plan, mit `--apply` führt es ihn nach
+Bestätigung aus (erst Administratorrolle für das Mandantenkonto, dann Zugang des Plattformkontos aussetzen).
+Mit `--release-home` verliert das Plattformkonto zusätzlich seine Heimat-Mitgliedschaft im Bootstrap-Mandanten:
+`PUT /api/platform/users/{id}/release-home-access` setzt sie auf die System-Rolle Betrachter ohne
+Berechtigungen und setzt die Mitgliedschaft aus. Das Konto meldet sich danach als reine Plattform-Identität an
+(Zwei-Faktor-Anmeldung nötig; ohne live Plattformzugang wird die Funktion verweigert, damit niemand ausgesperrt
+wird). Nur für Plattformadministratoren; wiederholbar; im Audit als `PLATFORM_HOME_ACCESS_RELEASED` protokolliert.
+
+Jeder Mandant braucht mindestens einen aktiven Mandantenadmin (Plattformadministratoren zählen nicht). Die
+Plattformübersicht markiert Mandanten ohne aktiven Admin (`administrators` in `GET /api/platform/tenants`), und ein
+ausgesetzter Mandant ohne Admin lässt sich nicht wieder aktivieren.
+
+## Plattformadministrator ohne Mandant
+
+Ein Plattformadministrator gehört keinem Mandanten. Mit aktiver Zwei-Faktor-Anmeldung kann er sich
+auch ohne jede Mandanten-Mitgliedschaft anmelden (`AppUserDetailsService.loadPlatformOnly`): Die Sitzung
+trägt nur die Berechtigung `PLATFORM_ONLY`, gehört zum Identitäts-Heimatmandanten und erreicht nur
+Plattform-Ressourcen (`CredentialSessionFilter`); Geschäfts-Endpunkte lehnen sie ab. Der Rückfall gilt nur
+ohne Mandantencode, nur nachdem die Mitgliedschaftsprüfungen gescheitert sind, und nie bei einem
+ausdrücklich gewählten Mandanten.
+
+Ein neuer Mandant wird mit seinem ersten Mandantenadmin angelegt (`POST /api/platform/tenants` mit
+`administrator`: Benutzername, Name, E-Mail). Die Einladung läuft in derselben Transaktion; der anlegende
+Plattformadministrator erhält **keine** Mitgliedschaft. Ohne Angabe eines ersten Administrators wird kein
+Mandant angelegt. (Der alte Modus „Ersteller wird Administrator“ gilt nur noch im synthetischen Abnahmelauf mit
+`LC_SEPARATE_PLATFORM_ADMIN=false`.)
+
+Das eigene Passwort ändert ein Plattformkonto in der Plattformverwaltung (Bereich „Eigenes Passwort ändern“,
+`POST /api/platform/password`): aktuelles Passwort, neues Passwort mit der üblichen Stärkeregel, Audit-Eintrag
+`PASSWORD_CHANGED`. Die Änderung beendet die Sitzung; danach ist eine neue Anmeldung nötig.
+
+## Benutzer & Mandanten (Listen statt Namenseingabe)
+
+Die Plattformverwaltung hat den Bereich „Benutzer & Mandanten“ mit drei Ansichten; die frühere Zuweisung per
+Namenseingabe entfällt:
+
+- **Benutzer:** durchsuchbare Liste (Name, E-Mail, Mandant, Rolle) mit Filter nach Mandant und Kontostatus. Ein Klick zeigt die
+  Mandanten des Benutzers mit Rolle (Auswahlliste) und Zugang (aussetzen/wiederherstellen) und die Liste der Mandanten, in
+  denen er noch nicht ist. Mehrere Benutzer lassen sich ankreuzen und gemeinsam einem Mandanten mit einer Rolle zuweisen
+  oder dort aussetzen; vorher zeigt die Bestätigung, was passiert und was übersprungen wird.
+- **Mandanten:** Mitgliederliste eines Mandanten (Rolle, Zugang) mit Hinweis, wenn kein aktiver Mandantenadmin existiert,
+  und eine Checkliste der noch nicht zugewiesenen Benutzer mit Rollenauswahl für die gemeinsame Zuweisung.
+- **Matrix:** Benutzer × Mandanten mit der Rolle in jeder Zelle (ausgesetzte Zugänge durchgestrichen).
+
+Plattformadministratoren erscheinen in den Listen, erhalten aber keine Administratorrollen (die Auswahl ist gesperrt, der
+Server lehnt es zusätzlich ab). Konten ohne aktive Anmeldung und Heimat-Identitäten werden bei der Sammelzuweisung
+übersprungen. Es werden dieselben geprüften und auditierten Plattform-Endpunkte verwendet wie zuvor (jede Zuweisung ein
+eigener Eintrag); Teilerfolge werden pro Benutzer gemeldet. Mandantenadmins sehen weiterhin nur die Mitglieder ihres eigenen
+Mandanten; ein globales Benutzerverzeichnis gibt es für sie bewusst nicht.
+
+Nach der Anmeldung geht ein Plattformadministrator **immer direkt in die Plattformverwaltung**, nie in eine Mandantenauswahl
+(`GET /api/platform/access` meldet `enabled`/`tenantless`; die Anmeldeseite wertet es aus). Der Link „Zur Mandantenanwendung“ entfällt für
+mandantenlose Sitzungen. Wer in irgendeinem Mandanten Administrator ist, richtet bei der Anmeldung die Zwei-Faktor-Anmeldung
+ein, auch wenn seine Rolle im Anmelde-Mandanten kein Administrator ist (sonst lehnt das Öffnen dieses Mandanten mit 403 ab).
+
+Eine mandantenlose Plattform-Sitzung wird vom Sitzungsfilter nicht mehr beendet, wenn sie etwas außerhalb der
+Plattformverwaltung anfragt (z. B. `/favicon.ico`, die Startseite, eine alte Verknüpfung): Seiten leiten auf
+`/platform.html` um, Schnittstellen antworten mit 403, sonstige Ressourcen mit 404; Geschäftsdaten bleiben unerreichbar.
+Für alle anderen Konten gilt unverändert: ohne Mitgliedschaft endet die Sitzung (401).
+
+## Einladungen durch Mandantenadmins
+
+Mandantenadmins mit der Berechtigung `USER_MANAGE` laden neue Personen für **ihren eigenen Mandanten** selbst ein
+(Benutzerverwaltung im Mandanten, Bereich „Neue Personen einladen“; `GET/POST /api/users/invitations`,
+`POST /api/users/invitations/{id}/resend`, `DELETE /api/users/invitations/{id}`): Name, E-Mail und Rolle des Mandanten.
+Die Einladung nutzt den bestehenden Ablauf (24 Stunden gültiger Einmal-Link per E-Mail, die Person wählt ihr Passwort, die
+Mitgliedschaft entsteht erst bei der Annahme).
+
+- Der Benutzername wird aus der E-Mail-Adresse **erzeugt** (bei Kollision mit Zufallssuffix) und nie vom Einladenden gewählt;
+  so lässt sich über die Einladung nicht prüfen, welche Namen es bereits gibt.
+- Hat die Adresse bereits ein Konto, wird nichts versendet; die Antwort sagt nur, dass es schon ein Konto gibt und der
+  Plattformadministrator es zuweisen soll. Die Adresse selbst wird nicht zurückgegeben. Es gibt kein globales Benutzerverzeichnis.
+- Nur der aktuelle Mandant (nie der Heimat-Mandant), nur Rollen dieses Mandanten, höchstens 100 offene Einladungen je Mandant;
+  Erneut-Senden und Widerrufen gelten nur für Einladungen des eigenen Mandanten. Alles wird im Audit protokolliert.
+
+## Invitations
+
+Choose a tenant and one of that tenant's roles on the platform page; permissions
+are previewed before sending. Email is mandatory. `POST /api/platform/invitations`
+creates an inactive identity with `invitation_pending=true` and a suspended home
+membership. No business membership is provisioned yet. A 256-bit random secret is
+sent only by email; the database stores its SHA-256 hash, expiry, identity/email/
+credential binding, issuer and selected tenant/role. The role-permission snapshot
+is also bound: changed permissions require a fresh invitation.
+
+Links expire after 24 hours. `invitation.html#token=…` immediately removes the
+fragment from browser history, uses no storage and submits only an HTTPS POST
+body to `/api/auth/invitation/accept`. This bearer-secret endpoint is intentionally
+public and CSRF-exempt; it validates input and applies a bounded IP rate limit.
+It exposes no user directory. Acceptance atomically hashes the recipient's chosen
+password, activates the identity, grants the explicitly selected membership,
+consumes the token and writes audit. For an explicit default-tenant invitation,
+only that home membership is enabled; a foreign invitation leaves home access
+suspended. Local ADMIN recipients must complete the existing mandatory TOTP setup
+at login. No invitation ever grants platform rights.
+
+Pending identities cannot sign in, request password resets, or be activated by
+the global activation endpoint. Tokens fail after revocation, replacement,
+expiry, credential/email changes, role-permission changes, or issuer suspension/
+platform-grant revocation. Self-service public completion is serialized with
+platform administration; cached token rows are checked against current storage.
+
+The pending list displays expiry, attempts, next retry, a safe error category and
+`PENDING_MAIL`, `MAIL_RETRY`, `SENT`, `MAIL_CANCELLED`, `MAIL_FAILED` or `EXPIRED`.
+Resend replaces the old secret; revoke deletes it while retaining the
+blocked identity. A matching blocked identity may be reinvited with an explicitly
+selected target; existing active identities cannot be overwritten.
+Invitation issuance and its encrypted mail payload commit atomically. A background
+worker resumes persisted work after restarts and retries SMTP failures up to five
+attempts, after 30 seconds, 2 minutes, 10 minutes and 30 minutes. It rechecks account,
+issuer, tenant and role eligibility before delivery. Expired or cancelled payloads,
+successful payloads and exhausted retries are cleared. Resend creates a fresh token
+and resets attempts. Pre-V70 invitations have no queued payload and require manual
+resend. No real mail is sent by the disposable tests.
+
+The temporary mail payload includes the bearer link encrypted with AES-256-GCM,
+a random nonce and invitation-hash binding. Configure `app.mail.invitation-encryption-key`
+with at least 32 characters or use the existing TOTP key with domain-separated key
+derivation. A missing key prevents issuance; changing the key makes old queued mail
+unreadable and requires resend. Backups may retain encrypted payloads according to
+backup retention. Neither plaintext links nor SMTP exception details appear in the
+administration API. SMTP calls use bounded timeouts and hold the administration lock
+for one delivery. SMTP acceptance followed by a process/database failure can cause
+a repeated email: delivery is not guaranteed exactly once.
+
+Local verification (2026-10-08): cipher/queue unit tests, real Spring/H2
+transactions (issuance rollback without a key, persisted SMTP failure and retry),
+frontend tests and disposable PostgreSQL V70 acceptance with a synthetic SMTP sink
+passed. This does not constitute a production SMTP or visual layout test.
+
+## Platform grants and retired creation
+
+`PUT /api/platform/users/{id}/platform-grant` accepts only `{granted: boolean}`.
+Only a current platform administrator may invoke it. Promotion requires an
+active identity with enrolled TOTP and no pending invitation. Own revocation and
+removal of the last active TOTP-enrolled administrator are denied. Decisions are
+serialized using the home-tenant lock and audited in the same transaction; local
+roles are unchanged. Live service checks deny a revoked grant even to an already
+open, otherwise valid session.
+
+Authenticated sessions now record explicit successful TOTP verification. Merely
+enrolling 2FA in another session cannot upgrade an older password-only session.
+Existing TOTP sessions without the new proof must sign in again after deployment.
+
+Legacy `POST /api/users` is denied in every tenant, including the default tenant.
+The Users page displays local membership/role/access controls, not the old global
+creation/edit form. Role management and identity self-service remain available.
+
+## Verification
+
+The invitation/grant implementation passed the full backend regression: 519
+cases, no failures/errors, two skipped; all 107 JavaScript tests passed.
+Disposable PostgreSQL acceptance applied V68 and exercised real in-memory
+synthetic SMTP, foreign and default invitation acceptance, no login before
+acceptance, role isolation, replaced/revoked/replayed token rejection, required
+TOTP before platform promotion, protected self-revocation and live denial after
+grant revocation. Transaction tests verify rollback of password, activation,
+membership, invitation issuance and platform grants on audit failure.
+The test installations removed their own containers and networks; no production
+data or real mail was used. The synthetic SMTP sink binds port 18087 only for the
+test runner, never relays messages and retains them only in process memory.
+
+Earlier foundation verification on 2026-10-07: 41 targeted backend tests and 99 JavaScript tests passed.
+The disposable PostgreSQL acceptance installation applied V67 and passed platform
+access from a non-default workspace, local-user denial, self-suspension rejection,
+global suspension of a shared identity, revocation of its already-open foreign
+session, and restoration of foreign login without lifting the suspended default
+membership. No production data was used.
+The full backend regression completed 480 cases without failures or errors (two
+skipped). The test installation removed its own containers and network afterward.
+
+Local account-creation verification: 37 targeted backend tests and all 101
+JavaScript tests passed. Disposable PostgreSQL acceptance confirmed denial for
+local-only users, required email, duplicate rejection, no default/foreign login
+before assignment, explicit local assignment, continued default-login denial and
+viewer-only access in the assigned tenant. Audit-failure rollback was verified
+with real Spring transactions. The test installation was removed afterward.
+
+# Global platform area
+
+Platform administration is available at /platform.html, separately from the
+tenant workspace. The workspace menu links to this page rather than rendering
+platform functions inside the LC application.
+
+The page has no tenant selector, LC cockpit or business-data requests. Its
+client accepts only /api/platform/ URLs. Accounts, invitations and tenant
+lifecycle remain explicitly global operations; local roles and memberships
+remain in the tenant workspace.
+
+An active global platform administrator and a verified two-factor session are
+required. Global requests do not depend on the selected tenant membership
+or permission stamp. Credentials, global account activation, session lifetime
+and verified 2FA are still checked. Services verify live platform rights.
+Business requests continue to enforce tenant membership. The prior workspace
+selection is retained only for returning to the business application; opening
+platform administration does not switch it or grant access to it.
+
+Login continues to use the existing authenticated sign-in flow. This change
+separates the administration area and its request authorization, not the
+initial login flow or global identity storage.
+
+## Cross-tenant overview (read-only)
+
+The platform page lists all memberships across tenants (`GET /api/platform/memberships`:
+user, tenant, role name, account/membership/tenant state) and a metadata-only audit view
+(`GET /api/platform/audit?tenant=<code>&limit=<=500`: time, tenant code, user, action,
+entity type, result). Both re-verify live platform access on every call and use fixed
+read-only SQL. Audit details, before/after values, object IDs, IP addresses and all
+business data stay in the tenant audit log. Memberships and roles are still changed
+only by each tenant's administrators.
+
+## Separate platform console
+
+The platform area is a standalone console: `/platform` (forwarding to `/platform.html`) with its
+own sign-in `/platform-login.html`, its own dark header with a PLATFORM badge and no tenant
+navigation. The sign-in uses the existing credential and TOTP endpoints and then requires
+`GET /api/platform/access` to be enabled; otherwise the session is ended and no tenant chooser is
+shown. Unauthenticated requests to `/platform` or `/platform.html` are redirected to
+`/platform-login.html`. All `/platform*` static files are served to platform administrators
+without a tenant membership (previously a fixed file list, which would have blocked newly
+added scripts for administrators without membership).
+
+## Role and access changes for shared identities
+
+The membership list on the platform page now lets a platform administrator change the role
+(`PUT /api/platform/memberships/{tenantId}/{userId}/role`, body `{roleId}`) and suspend or restore
+access (`.../access`, body `{suspended}`) of identities that belong to another tenant. Rules, identical
+to the tenant-local services: live platform access with verified two-factor on every call; the
+bootstrap tenant and archived tenants are refused; home identities (those whose home is the tenant
+itself) stay with the tenant's own user administration; the last active administrator cannot be
+demoted or suspended; access can only be restored while the global account and membership are active.
+Changes run under the tenant's administration lock and are audited inside that tenant
+(`PLATFORM_MEMBERSHIP_ROLE_UPDATED`, `PLATFORM_MEMBERSHIP_ACCESS_UPDATED`) with before/after
+snapshots. Granting a new membership is still done by the tenant administrators or by invitation.

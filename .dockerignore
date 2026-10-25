@@ -1,0 +1,15 @@
+target
+.git
+.idea
+.vscode
+data
+*.iml
+*.log
+*.command
+private-references
+**/*ISBP*.pdf
+**/*UCP*.pdf
+**/*65c1c211b0373.pdf
+.env
+.env.*
+backups

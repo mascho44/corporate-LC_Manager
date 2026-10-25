@@ -1,0 +1,179 @@
+package de.ostms.lc.rulepack;
+import de.ostms.lc.lc.repository.LetterOfCreditRepository;
+import de.ostms.lc.document.repository.LcDocumentRepository;
+import de.ostms.lc.audit.service.AuditService;
+import de.ostms.lc.check.service.DocumentCheckService;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.Authentication;
+import java.util.*;
+import static de.ostms.lc.rulepack.PackDefinition.Field;
+
+@RestController @RequestMapping("/api/lcs/{lcId}")
+public class RuleFactsController {
+ private final LetterOfCreditRepository lcs;private final LcDocumentRepository documents;
+ private final AuditService audit;private final DocumentCheckService checks;
+ @org.springframework.beans.factory.annotation.Autowired private InternalPackService packs;
+ @org.springframework.beans.factory.annotation.Autowired(required=false) private RuleSourceService ruleSource;
+ @GetMapping("/documents/{id}/rule-facts/missing") @Transactional(readOnly=true)
+ public Set<Field> missing(@PathVariable UUID lcId,@PathVariable UUID id){
+  var lc=lcs.findById(lcId).orElseThrow();
+  var source=ruleSource==null?RuleSourceService.Effective.defaults():ruleSource.effective(lc);
+  if(source.mode()==RuleSourceMode.EMBEDDED)return java.util.Set.of();
+  return packs.missingDocumentFields(lc,documentInLc(lcId,id),source.packIds());
+ }
+ public RuleFactsController(LetterOfCreditRepository l,LcDocumentRepository d,AuditService a,DocumentCheckService c){lcs=l;documents=d;audit=a;checks=c;}
+ @org.springframework.beans.factory.annotation.Autowired(required=false) private LearnedLabelService learnedLabels;
+ @GetMapping("/rule-facts") @Transactional(readOnly=true)
+ public Map<Field,String> lc(@PathVariable UUID lcId){return RuleFacts.read(lcs.findById(lcId).orElseThrow().getRuleFactsJson());}
+ @GetMapping("/rule-facts/definitions")
+ public Map<String,List<RuleFacts.Definition>> definitions(@PathVariable UUID lcId){
+  if(!lcs.existsById(lcId))throw new NoSuchElementException();
+  return Map.of("document",RuleFacts.definitions(true),"lc",RuleFacts.definitions(false),"requirements",RuleFacts.requirementDefinitions());
+ }
+ @GetMapping("/rule-requirements/{type}") @Transactional(readOnly=true)
+ public Map<Field,String> requirements(@PathVariable UUID lcId,@PathVariable de.ostms.lc.document.domain.DocumentType type){
+  return RuleRequirements.read(lcs.findById(lcId).orElseThrow().getRuleRequirementsJson()).getOrDefault(type,Map.of());
+ }
+ @PutMapping("/rule-requirements/{type}") @Transactional
+ public Map<Field,String> saveRequirements(@PathVariable UUID lcId,@PathVariable de.ostms.lc.document.domain.DocumentType type,jakarta.servlet.http.HttpServletRequest request,Authentication auth)throws java.io.IOException{
+  return updateRequirements(lcId,type,RuleFacts.decodeRequest(request.getInputStream().readNBytes(RuleFacts.MAX_BYTES+1)),auth);
+ }
+ @Transactional
+ public Map<Field,String> updateRequirements(UUID lcId,de.ostms.lc.document.domain.DocumentType type,Map<Field,String> facts,Authentication auth){
+  var lc=lcs.findById(lcId).orElseThrow();String before=lc.getRuleRequirementsJson();
+  String after=RuleRequirements.update(before,type,facts);lc.setRuleRequirementsJson(after);lcs.save(lc);
+  long reset=0;/* findings that depend on the changed data become stale on their own */
+  audit.recordInTransaction(auth,"LC_RULE_REQUIREMENTS_UPDATED","LETTER_OF_CREDIT",lcId,"Typ "+type+" · SHA-256 vorher="+RuleFacts.fingerprint(before)+" nachher="+RuleFacts.fingerprint(after)+" · "+reset+" Prüfentscheidungen zurückgesetzt");
+  return RuleRequirements.read(after).get(type);
+ }
+ public record RequirementSuggestion(de.ostms.lc.document.domain.DocumentType documentType,String documentTypeLabel,Field field,String value,String source){}
+ /** What the credit's field 46A demands per document type, minus what is already recorded. */
+ @GetMapping("/rule-requirements/suggestions") @Transactional(readOnly=true)
+ public List<RequirementSuggestion> requirementSuggestions(@PathVariable UUID lcId){
+  var lc=lcs.findById(lcId).orElseThrow();var recorded=RuleRequirements.read(lc.getRuleRequirementsJson());
+  return Mt700Requirements.detect(lc).stream().filter(s->!recorded.getOrDefault(s.documentType(),Map.of()).containsKey(s.field()))
+   .map(s->new RequirementSuggestion(s.documentType(),s.documentType().getDisplayName(),s.field(),s.value(),s.source())).toList();
+ }
+ public record ApplyRequirement(de.ostms.lc.document.domain.DocumentType documentType,Field field){}
+ @PostMapping("/rule-requirements/suggestions/apply") @Transactional
+ public Map<Field,String> applyRequirement(@PathVariable UUID lcId,@RequestBody ApplyRequirement request,Authentication auth){
+  var lc=lcs.findById(lcId).orElseThrow();
+  var suggestion=Mt700Requirements.detect(lc).stream().filter(s->s.documentType()==request.documentType()&&s.field()==request.field()).findFirst()
+   .orElseThrow(()->new IllegalArgumentException("Für diese Angabe liegt kein Vorschlag aus dem Akkreditiv vor."));
+  var current=new EnumMap<Field,String>(Field.class);current.putAll(RuleRequirements.read(lc.getRuleRequirementsJson()).getOrDefault(request.documentType(),Map.of()));
+  current.put(suggestion.field(),suggestion.value());
+  return updateRequirements(lcId,request.documentType(),current,auth);
+ }
+ public record WaiverRequest(boolean waived){}
+ @GetMapping("/rule-facts/waived") @Transactional(readOnly=true)
+ public Set<Field> waived(@PathVariable UUID lcId){return RuleWaivers.read(lcs.findById(lcId).orElseThrow().getRuleWaivedJson());}
+ @PutMapping("/rule-facts/waived/{field}") @Transactional
+ public Set<Field> waive(@PathVariable UUID lcId,@PathVariable Field field,@RequestBody WaiverRequest request,Authentication auth){
+  var lc=lcs.findById(lcId).orElseThrow();
+  lc.setRuleWaivedJson(RuleWaivers.update(lc.getRuleWaivedJson(),field,request.waived()));lcs.save(lc);
+  audit.recordInTransaction(auth,"LC_RULE_FACT_WAIVED","LETTER_OF_CREDIT",lcId,field+(request.waived()?" im Akkreditiv nicht verlangt":" wieder erforderlich"));
+  return RuleWaivers.read(lc.getRuleWaivedJson());
+ }
+ @PutMapping("/rule-facts") @Transactional
+ public Map<Field,String> saveLc(@PathVariable UUID lcId,jakarta.servlet.http.HttpServletRequest request,Authentication auth)throws java.io.IOException{
+  var saved=updateLc(lcId,RuleFacts.decodeRequest(request.getInputStream().readNBytes(RuleFacts.MAX_BYTES+1)),auth);
+  // Saving the form confirms what is shown, including automatically filled values.
+  lcs.findById(lcId).ifPresent(lc->{lc.setAutoRuleFacts(null);lcs.save(lc);});
+  return saved;
+ }
+ @Transactional
+ public Map<Field,String> updateLc(UUID lcId,Map<Field,String> facts,Authentication auth){
+  var lc=lcs.findById(lcId).orElseThrow();var before=lc.getRuleFactsJson();String after=RuleFacts.encode(facts,false);
+  lc.setRuleFactsJson(after);lcs.save(lc);long reset=0;/* findings that depend on the changed data become stale on their own */
+  audit.recordInTransaction(auth,"LC_RULE_FACTS_UPDATED","LETTER_OF_CREDIT",lcId,"LC-Prüfdaten SHA-256 vorher="+RuleFacts.fingerprint(before)+" nachher="+RuleFacts.fingerprint(after)+" · Felder "+facts.keySet()+" · "+reset+" Prüfentscheidungen zurückgesetzt");
+  return RuleFacts.read(after);
+ }
+ public record PresentationDateRequest(@jakarta.validation.constraints.NotNull java.time.LocalDate date){}
+ /** Sets only the date the documents were presented; other LC check data and their confirmation state stay as they are. */
+ @PutMapping("/rule-facts/presentation-date") @Transactional
+ public Map<Field,String> presentationDate(@PathVariable UUID lcId,@jakarta.validation.Valid @org.springframework.web.bind.annotation.RequestBody PresentationDateRequest request,Authentication auth){
+  if(request.date().isAfter(java.time.LocalDate.now().plusDays(1)))throw new IllegalArgumentException("Das Vorlagedatum darf nicht in der Zukunft liegen.");
+  var facts=new java.util.EnumMap<Field,String>(Field.class);facts.putAll(RuleFacts.read(lcs.findById(lcId).orElseThrow().getRuleFactsJson()));
+  facts.put(Field.LC_PRESENTATION_DATE,request.date().toString());
+  return updateLc(lcId,facts,auth);
+ }
+ /** Fields filled automatically from the recognised text and not yet confirmed by a person. */
+ @GetMapping("/documents/{id}/rule-facts/auto") @Transactional(readOnly=true)
+ public Set<String> documentAuto(@PathVariable UUID lcId,@PathVariable UUID id){return AutoRuleFacts.read(documentInLc(lcId,id).getAutoRuleFacts());}
+ @GetMapping("/rule-facts/auto") @Transactional(readOnly=true)
+ public Set<String> lcAuto(@PathVariable UUID lcId){return AutoRuleFacts.read(lcs.findById(lcId).orElseThrow().getAutoRuleFacts());}
+ @GetMapping("/documents/{id}/rule-facts") @Transactional(readOnly=true)
+ public Map<Field,String> document(@PathVariable UUID lcId,@PathVariable UUID id){return RuleFacts.read(documentInLc(lcId,id).getRuleFactsJson());}
+ @org.springframework.beans.factory.annotation.Autowired(required=false) private DocumentFactSuggester suggester;
+ @GetMapping("/documents/{id}/rule-facts/suggestions") @Transactional(readOnly=true)
+ public List<DocumentFactSuggester.Suggestion> suggestions(@PathVariable UUID lcId,@PathVariable UUID id){
+  return suggester==null?List.of():suggester.suggest(documentInLc(lcId,id));
+ }
+ @org.springframework.beans.factory.annotation.Autowired(required=false) private LcFactSuggester lcSuggester;
+ public record DocumentSuggestions(UUID documentId,String filename,List<DocumentFactSuggester.Suggestion> suggestions){}
+ public record SuggestionOverview(List<DocumentFactSuggester.Suggestion> lc,List<DocumentSuggestions> documents,int total){}
+ public record Applied(int lcFields,int documentFields,int documents){}
+ /** Everything that could be proposed for this dossier: LC-level facts from the parties and document facts from the recognised text. */
+ @GetMapping("/rule-facts/suggestions") @Transactional(readOnly=true)
+ public SuggestionOverview allSuggestions(@PathVariable UUID lcId){
+  var lc=lcs.findById(lcId).orElseThrow();
+  var lcSuggestions=lcSuggester==null?List.<DocumentFactSuggester.Suggestion>of():lcSuggester.suggest(lc,documents.findByLetterOfCreditIdOrderByUploadedAtDesc(lcId));
+  var perDocument=new ArrayList<DocumentSuggestions>();int total=lcSuggestions.size();
+  if(suggester!=null)for(var doc:documents.findByLetterOfCreditIdOrderByUploadedAtDesc(lcId)){
+   var found=suggester.suggest(doc);if(found.isEmpty())continue;
+   perDocument.add(new DocumentSuggestions(doc.getId(),doc.getOriginalFilename(),found));total+=found.size();
+  }
+  return new SuggestionOverview(lcSuggestions,List.copyOf(perDocument),total);
+ }
+ /** Stores the proposals for fields that are still empty; values that were entered or changed by a person are never touched. */
+ @PostMapping("/rule-facts/suggestions/apply") @Transactional
+ public Applied applySuggestions(@PathVariable UUID lcId,Authentication auth){
+  var overview=allSuggestions(lcId);int lcFields=0,docFields=0,docs=0;
+  boolean mayEditLc=auth!=null&&auth.getAuthorities().stream().anyMatch(a->a.getAuthority().equals("PERM_LC_EDIT"));
+  var lc=lcs.findById(lcId).orElseThrow();
+  if(mayEditLc){
+   var merged=new EnumMap<Field,String>(Field.class);merged.putAll(RuleFacts.read(lc.getRuleFactsJson()));int before=merged.size();
+   for(var s:overview.lc())if(blank(merged.get(s.field())))merged.put(s.field(),s.value());
+   lcFields=merged.size()-before;
+   if(lcFields>0){
+    var filled=new java.util.LinkedHashSet<String>();for(var s:overview.lc())if(merged.containsKey(s.field())&&s.value().equals(merged.get(s.field())))filled.add(s.field().name());
+    updateLc(lcId,merged,auth);
+    var auto=AutoRuleFacts.read(lc.getAutoRuleFacts());auto.addAll(filled);lc.setAutoRuleFacts(AutoRuleFacts.write(auto));lcs.save(lc); // proposals stay marked "unconfirmed" until a person saves
+   }
+  }
+  for(var entry:overview.documents()){
+   var doc=documentInLc(lcId,entry.documentId());
+   var merged=new EnumMap<Field,String>(Field.class);merged.putAll(RuleFacts.read(doc.getRuleFactsJson()));int before=merged.size();
+   var filled=AutoRuleFacts.merge(merged,entry.suggestions());
+   int added=filled.size();
+   if(added>0){updateDocument(lcId,doc.getId(),merged,auth);var auto=AutoRuleFacts.read(doc.getAutoRuleFacts());auto.addAll(filled);doc.setAutoRuleFacts(AutoRuleFacts.write(auto));documents.save(doc);docFields+=added;docs++;}
+  }
+  audit.recordInTransaction(auth,"RULE_FACTS_SUGGESTIONS_APPLIED","LETTER_OF_CREDIT",lcId,lcFields+" LC-Angaben, "+docFields+" Dokumentangaben in "+docs+" Dokumenten übernommen");
+  return new Applied(lcFields,docFields,docs);
+ }
+ private static boolean blank(String v){return v==null||v.isBlank();}
+ @PutMapping("/documents/{id}/rule-facts") @Transactional
+ public Map<Field,String> saveDocument(@PathVariable UUID lcId,@PathVariable UUID id,jakarta.servlet.http.HttpServletRequest request,Authentication auth)throws java.io.IOException{
+  var facts=RuleFacts.decodeRequest(request.getInputStream().readNBytes(RuleFacts.MAX_BYTES+1));
+  var previous=RuleFacts.read(documentInLc(lcId,id).getRuleFactsJson());
+  var saved=updateDocument(lcId,id,facts,auth);
+  var doc=documentInLc(lcId,id);doc.setAutoRuleFacts(null);documents.save(doc);
+  // Values entered by hand teach the printed label they stand under (proposals for later documents of the same type).
+  if(learnedLabels!=null){var learned=learnedLabels.learn(doc.getDocumentType(),doc.getExtractedText(),previous,saved,auth.getName());
+   if(!learned.isEmpty())audit.recordInTransaction(auth,"FIELD_LABELS_LEARNED","DOCUMENT",id,"Typ "+doc.getDocumentType()+" · "+learned.stream().map(l->l.field()+" ← „"+l.label()+"“").toList());}
+  return saved;
+ }
+ @Transactional
+ public Map<Field,String> updateDocument(UUID lcId,UUID id,Map<Field,String> facts,Authentication auth){
+  var doc=documentInLc(lcId,id);var before=doc.getRuleFactsJson();String after=RuleFacts.encode(facts,true);
+  doc.setRuleFactsJson(after);documents.save(doc);long reset=0;/* findings that depend on the changed data become stale on their own */
+  audit.recordInTransaction(auth,"DOCUMENT_RULE_FACTS_UPDATED","DOCUMENT",id,"LC "+lcId+" · Dokument-Prüfdaten SHA-256 vorher="+RuleFacts.fingerprint(before)+" nachher="+RuleFacts.fingerprint(after)+" · Felder "+facts.keySet()+" · "+reset+" Prüfentscheidungen zurückgesetzt");
+  return RuleFacts.read(after);
+ }
+ private de.ostms.lc.document.domain.LcDocument documentInLc(UUID lcId,UUID id){
+  var doc=documents.findById(id).orElseThrow();
+  if(!doc.getLetterOfCredit().getId().equals(lcId))throw new NoSuchElementException("Dokument gehört nicht zu dieser LC-Akte.");
+  return doc;
+ }
+}

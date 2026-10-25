@@ -1,0 +1,31 @@
+{
+ "schemaVersion":2,
+ "packId":"internal-invoice-v2-demo",
+ "version":"1.0.0",
+ "name":"Eigene synthetische Rechnungsprüfungen – Schema 2",
+ "origin":"OWN_INTERNAL",
+ "license":"INTERNAL_TEST_ONLY",
+ "rightsStatement":"Eigener Funktionstest, keine normative Dokumentenprüfung. Fachlich vor Aktivierung prüfen. Anwendungsbedingungen bewusst anhand erfasster LC-Prüfdaten setzen.",
+ "rules":[
+  {"id":"issuer-test","version":"1.0.0","documentType":"COMMERCIAL_INVOICE","left":"DOCUMENT_ISSUER","operator":"EQ","right":"LC_BENEFICIARY","severity":"WARNING","message":"Test: Aussteller mit Begünstigtem vergleichen; abweichende Namen fachlich prüfen.","sourceReference":"Eigener synthetischer Test V2-01","mode":"AUTOMATIC","conditions":[{"field":"LC_TRANSFERRED","operator":"EQ","value":"false"}]},
+  {"id":"recipient-test","version":"1.0.0","documentType":"COMMERCIAL_INVOICE","left":"DOCUMENT_RECIPIENT","operator":"EQ","right":"LC_APPLICANT","severity":"WARNING","message":"Test: Empfänger mit Antragsteller vergleichen.","sourceReference":"Eigener synthetischer Test V2-02","mode":"AUTOMATIC","conditions":[{"field":"LC_TRANSFERRED","operator":"EQ","value":"false"}]},
+  {"id":"goods-review","version":"1.0.0","documentType":"COMMERCIAL_INVOICE","left":"DOCUMENT_GOODS_DESCRIPTION","operator":"EQ","right":"LC_GOODS_DESCRIPTION","severity":"WARNING","message":"Warenbeschreibungen gemeinsam fachlich prüfen; keine automatische Textgleichheitsentscheidung.","sourceReference":"Eigener synthetischer Test V2-03","mode":"MANUAL","conditions":[{"field":"LC_TRANSFERRED","operator":"EQ","value":"false"}]}
+ ],
+ "tests":[
+  {"name":"Aussteller gleich","ruleId":"issuer-test","left":"DEMO EXPORT","right":"Demo Export","facts":{"LC_TRANSFERRED":"false"},"expected":"PASS"},
+  {"name":"Aussteller abweichend","ruleId":"issuer-test","left":"DEMO OTHER","right":"DEMO EXPORT","facts":{"LC_TRANSFERRED":"false"},"expected":"FAIL"},
+  {"name":"Aussteller fehlt","ruleId":"issuer-test","left":null,"right":"DEMO EXPORT","facts":{"LC_TRANSFERRED":"false"},"expected":"NOT_EVALUABLE"},
+  {"name":"Übertragungsstatus unbekannt","ruleId":"issuer-test","left":"DEMO EXPORT","right":"DEMO EXPORT","expected":"NOT_EVALUABLE"},
+  {"name":"Ausstellerregel nicht anwendbar","ruleId":"issuer-test","left":"DEMO EXPORT","right":"DEMO EXPORT","facts":{"LC_TRANSFERRED":"true"},"expected":"NOT_APPLICABLE"},
+  {"name":"Empfänger gleich","ruleId":"recipient-test","left":"DEMO IMPORT","right":"DEMO IMPORT","facts":{"LC_TRANSFERRED":"false"},"expected":"PASS"},
+  {"name":"Empfänger abweichend","ruleId":"recipient-test","left":"DEMO OTHER","right":"DEMO IMPORT","facts":{"LC_TRANSFERRED":"false"},"expected":"FAIL"},
+  {"name":"Empfänger fehlt","ruleId":"recipient-test","left":null,"right":"DEMO IMPORT","facts":{"LC_TRANSFERRED":"false"},"expected":"NOT_EVALUABLE"},
+  {"name":"Empfänger-Anwendungsstatus fehlt","ruleId":"recipient-test","left":"DEMO IMPORT","right":"DEMO IMPORT","expected":"NOT_EVALUABLE"},
+  {"name":"Empfängerregel nicht anwendbar","ruleId":"recipient-test","left":"DEMO IMPORT","right":"DEMO IMPORT","facts":{"LC_TRANSFERRED":"true"},"expected":"NOT_APPLICABLE"},
+  {"name":"Warenbeschreibung manuell","ruleId":"goods-review","left":"10 test items, blue","right":"Blue test items","facts":{"LC_TRANSFERRED":"false"},"expected":"MANUAL_REVIEW"},
+  {"name":"Warenbeschreibung auch bei gleichem Text manuell","ruleId":"goods-review","left":"Test items","right":"Test items","facts":{"LC_TRANSFERRED":"false"},"expected":"MANUAL_REVIEW"},
+  {"name":"Warenbeschreibung fehlt","ruleId":"goods-review","left":null,"right":"Test items","facts":{"LC_TRANSFERRED":"false"},"expected":"NOT_EVALUABLE"},
+  {"name":"Waren-Anwendungsstatus fehlt","ruleId":"goods-review","left":"Test items","right":"Test items","expected":"NOT_EVALUABLE"},
+  {"name":"Warenregel nicht anwendbar","ruleId":"goods-review","left":"Test items","right":"Test items","facts":{"LC_TRANSFERRED":"true"},"expected":"NOT_APPLICABLE"}
+ ]
+}

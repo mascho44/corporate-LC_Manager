@@ -1,0 +1,75 @@
+package de.ostms.lc.rulepack;
+import de.ostms.lc.document.domain.*;
+import de.ostms.lc.document.service.SignatureEvidenceService;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import static org.junit.jupiter.api.Assertions.*;
+
+class DocumentFactSuggesterTest {
+ private final SignatureEvidenceService sig=Mockito.mock(SignatureEvidenceService.class);
+ { Mockito.when(sig.evidence(Mockito.any())).thenReturn(SignatureEvidenceService.Evidence.unavailable()); }
+ private final DocumentFactSuggester suggester=new DocumentFactSuggester(sig);
+
+ @Test void numberWords(){assertEquals("3",DocumentFactSuggester.number("THREE"));assertEquals("2",DocumentFactSuggester.number("2"));}
+
+ @Test void transportDocumentYieldsOnBoardAndOriginals(){
+  var doc=new LcDocument();doc.setDocumentType(DocumentType.BILL_OF_LADING);
+  doc.setExtractedText("BILL OF LADING\nNumber of original Bills of Lading: THREE\nShipped on board date: 12.03.2025\n");
+  var fields=suggester.suggest(doc).stream().collect(java.util.stream.Collectors.toMap(DocumentFactSuggester.Suggestion::field,DocumentFactSuggester.Suggestion::value));
+  assertEquals("3",fields.get(PackDefinition.Field.DOCUMENT_ORIGINAL_COUNT));
+  assertEquals("2025-03-12",fields.get(PackDefinition.Field.DOCUMENT_ON_BOARD_DATE));
+ }
+
+ @Test void invoiceYieldsNothing(){
+  var doc=new LcDocument();doc.setDocumentType(DocumentType.COMMERCIAL_INVOICE);doc.setExtractedText("Invoice on board 12.03.2025");
+  assertTrue(suggester.suggest(doc).isEmpty());
+ }
+ @Test void portsAndWeightsAreExtracted(){
+  var doc=new LcDocument();doc.setDocumentType(DocumentType.BILL_OF_LADING);
+  doc.setExtractedText("BILL OF LADING\nPort of Loading: Shanghai\nPort of Discharge\nHamburg\nGross Weight: 12,345.60 KGS\nNet Weight 11.800,5 kg\n");
+  var f=suggester.suggest(doc).stream().collect(java.util.stream.Collectors.toMap(DocumentFactSuggester.Suggestion::field,DocumentFactSuggester.Suggestion::value));
+  assertEquals("Shanghai",f.get(PackDefinition.Field.DOCUMENT_LOADING_PORT));
+  assertEquals("Hamburg",f.get(PackDefinition.Field.DOCUMENT_DISCHARGE_PORT));
+  assertEquals("12345.60",f.get(PackDefinition.Field.DOCUMENT_GROSS_WEIGHT));
+  assertEquals("11800.5",f.get(PackDefinition.Field.DOCUMENT_NET_WEIGHT));
+  assertEquals("KG",f.get(PackDefinition.Field.DOCUMENT_WEIGHT_UNIT));
+ }
+ @Test void conflictingValuesYieldNoSuggestion(){
+  var doc=new LcDocument();doc.setDocumentType(DocumentType.BILL_OF_LADING);
+  doc.setExtractedText("Port of Loading: Shanghai\nPort of Loading: Ningbo\nGross Weight: 100 kg\nGross Weight: 200 kg");
+  var r=suggester.suggest(doc);assertTrue(r.isEmpty(),r.toString());
+ }
+ @Test void weightsAlsoFromPackingList(){
+  var doc=new LcDocument();doc.setDocumentType(DocumentType.PACKING_LIST);doc.setExtractedText("PACKING LIST\nGross weight: 2.5 t");
+  var f=suggester.suggest(doc);
+  assertEquals("2.5",f.stream().filter(x->x.field()==PackDefinition.Field.DOCUMENT_GROSS_WEIGHT).findFirst().orElseThrow().value());
+ }
+ @Test void packingListGetsPackageCountWeightsAndPartyCountries(){
+  var doc=new LcDocument();doc.setDocumentType(DocumentType.PACKING_LIST);
+  doc.setExtractedText("PACKING LIST\nSeller: SUPPLIER LTD\nRoad 1\nShanghai\nChina\n\nBuyer: BUYER AG\nStr. 2\nZürich\nSwitzerland\n\nTotal packages: 12\nGross weight: 300 kg\nNet weight: 280 kg\n");
+  var fields=suggester.suggest(doc).stream().collect(java.util.stream.Collectors.toMap(DocumentFactSuggester.Suggestion::field,DocumentFactSuggester.Suggestion::value));
+  assertEquals("12",fields.get(PackDefinition.Field.DOCUMENT_PACKAGE_COUNT));assertEquals("300",fields.get(PackDefinition.Field.DOCUMENT_GROSS_WEIGHT));assertEquals("280",fields.get(PackDefinition.Field.DOCUMENT_NET_WEIGHT));
+  assertEquals("KG",fields.get(PackDefinition.Field.DOCUMENT_WEIGHT_UNIT));assertEquals("China",fields.get(PackDefinition.Field.DOCUMENT_BENEFICIARY_ADDRESS_COUNTRY));assertEquals("Switzerland",fields.get(PackDefinition.Field.DOCUMENT_APPLICANT_ADDRESS_COUNTRY));
+ }
+ @Test void packageCountIsOnlyProposedForPackingLists(){
+  var doc=new LcDocument();doc.setDocumentType(DocumentType.COMMERCIAL_INVOICE);doc.setExtractedText("Total packages: 12\nGross weight: 300 kg");
+  var fields=suggester.suggest(doc).stream().map(DocumentFactSuggester.Suggestion::field).toList();
+  assertFalse(fields.contains(PackDefinition.Field.DOCUMENT_PACKAGE_COUNT));assertTrue(fields.contains(PackDefinition.Field.DOCUMENT_GROSS_WEIGHT));
+ }
+ @Test void vesselFreightIncotermAndInsuranceAreExtracted(){
+  var doc=new LcDocument();doc.setDocumentType(DocumentType.BILL_OF_LADING);
+  doc.setExtractedText("BILL OF LADING\nOcean Vessel: MSC Aurora\nPlace of Receipt: Shanghai\nFREIGHT PREPAID\nDelivered CIF Hamburg\nCountry of Origin: China\nTranshipment allowed\n");
+  var f=suggester.suggest(doc).stream().collect(java.util.stream.Collectors.toMap(DocumentFactSuggester.Suggestion::field,DocumentFactSuggester.Suggestion::value));
+  assertEquals("MSC Aurora",f.get(PackDefinition.Field.DOCUMENT_VESSEL));assertEquals("Shanghai",f.get(PackDefinition.Field.DOCUMENT_PLACE_OF_RECEIPT));
+  assertEquals("PREPAID",f.get(PackDefinition.Field.DOCUMENT_FREIGHT_TERMS));assertEquals("true",f.get(PackDefinition.Field.DOCUMENT_FREIGHT_PREPAID));
+  assertNull(f.get(PackDefinition.Field.DOCUMENT_INCOTERM));assertEquals("true",f.get(PackDefinition.Field.DOCUMENT_TRANSSHIPMENT_INDICATED));
+  var inv=new LcDocument();inv.setDocumentType(DocumentType.COMMERCIAL_INVOICE);inv.setExtractedText("INVOICE\nTerms: CIF Hamburg\nCountry of Origin: China\n");
+  var h=suggester.suggest(inv).stream().collect(java.util.stream.Collectors.toMap(DocumentFactSuggester.Suggestion::field,DocumentFactSuggester.Suggestion::value));
+  assertEquals("CIF",h.get(PackDefinition.Field.DOCUMENT_INCOTERM));
+  var ins=new LcDocument();ins.setDocumentType(DocumentType.INSURANCE_CERTIFICATE);
+  ins.setExtractedText("INSURANCE CERTIFICATE\nSum insured: USD 110,000.00\nInstitute Cargo Clauses (A)\nPremium paid\n");
+  var g=suggester.suggest(ins).stream().collect(java.util.stream.Collectors.toMap(DocumentFactSuggester.Suggestion::field,DocumentFactSuggester.Suggestion::value));
+  assertEquals("110000.00",g.get(PackDefinition.Field.DOCUMENT_INSURED_AMOUNT));assertEquals("USD",g.get(PackDefinition.Field.DOCUMENT_INSURANCE_CURRENCY));
+  assertEquals("INSTITUTE CARGO CLAUSES (A)",g.get(PackDefinition.Field.DOCUMENT_INSURANCE_RISKS));assertEquals("true",g.get(PackDefinition.Field.DOCUMENT_PREMIUM_PAID_INDICATED));
+ }
+}

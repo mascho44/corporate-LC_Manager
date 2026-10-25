@@ -1,0 +1,47 @@
+# Disposable synthetic test environment only; no production volumes or credentials.
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: lcmanager
+      POSTGRES_USER: lcmanager
+      POSTGRES_PASSWORD: SyntheticDbOnly
+    volumes:
+      - ./tenant-test-db-init.sql:/docker-entrypoint-initdb.d/10-app-role.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lcmanager -d lcmanager"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  app:
+    build:
+      context: ..
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/lcmanager
+      DB_USER: lcmanager_app
+      DB_PASSWORD: SyntheticAppOnly
+      DB_MIGRATION_USER: lcmanager
+      DB_MIGRATION_PASSWORD: SyntheticDbOnly
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: SyntheticOnly123!
+      # The synthetic run uses one identity as platform and tenant administrator; production keeps the separation (default true).
+      LC_SEPARATE_PLATFORM_ADMIN: "false"
+      TOTP_ENCRYPTION_KEY: SyntheticTestEncryptionKeyOnly20261007
+      WEBHOOK_ENCRYPTION_KEY: SyntheticWebhookEncryptionKeyOnly20261023
+      WEBHOOK_ALLOW_PRIVATE_TARGETS: "true"
+      SESSION_COOKIE_SECURE: "false"
+      LC_TENANTS_TEST_PURGE_ENABLED: "true"
+      SMTP_ENABLED: "true"
+      SMTP_HOST: host.docker.internal
+      SMTP_PORT: "18087"
+      SMTP_AUTH: "false"
+      SMTP_STARTTLS: "false"
+      SMTP_FROM: synthetic@example.invalid
+      PUBLIC_BASE_URL: https://lc.example.invalid
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "127.0.0.1:18086:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy

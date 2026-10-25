@@ -1,0 +1,10 @@
+.pack-page>main{margin:0 auto;max-width:1500px}.pack-page>header{margin-left:0;padding:16px 28px;height:auto;gap:16px}
+.pack-grid{display:grid;grid-template-columns:1fr 1.2fr;gap:18px;align-items:start}
+.pack-body{padding:20px 22px}.pack-body p{margin:12px 0}.pack-notice{border-left:4px solid #d6a83e;background:#fff8e6;padding:15px;line-height:1.6}
+.pack-upload{display:block;border:2px dashed #bac7d8;border-radius:12px;padding:20px}.pack-upload input{display:block;width:100%;margin-top:12px}
+.pack-rights{display:flex;gap:12px;line-height:1.5}.pack-rights input{width:20px;flex-shrink:0}
+.pack-table-wrap{overflow-x:auto}.pack-table{width:100%;border-collapse:collapse;font-size:14px}.pack-table td,.pack-table th{text-align:left;padding:10px;border-bottom:1px solid #e5e9ef;vertical-align:top}
+.pack-table small{display:block;margin-top:6px;color:#667085}.pack-table button{margin:3px;white-space:nowrap}
+.pack-checksum{font-family:monospace;font-size:12px;overflow-wrap:anywhere}.pack-body details{margin:14px 0}
+.pack-page .error{padding:0;color:#b42318}.pack-page button:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:1050px){.pack-grid{grid-template-columns:1fr}.pack-page h1{font-size:32px}}

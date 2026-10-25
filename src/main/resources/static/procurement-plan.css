@@ -1,0 +1,46 @@
+.procurement-plan{margin:0 0 16px;padding:14px 16px;border:1px solid var(--line,#d5dbe5);border-radius:10px;background:var(--panel,#fff)}
+.plan-head{display:flex;align-items:center;gap:12px;justify-content:space-between}
+.plan-head h3{margin:0}
+.plan-light{display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border-radius:999px;font-size:13px;font-weight:600;border:1px solid transparent}
+.plan-done{background:#e6f4ea;color:#14602b;border-color:#b7dfc1}
+.plan-ok{background:#e8f0fe;color:#1a3fa0;border-color:#c3d3fb}
+.plan-soon{background:#fff4d6;color:#7a5200;border-color:#f2d98a}
+.plan-critical{background:#ffe6d5;color:#9a3a00;border-color:#f6bf9b}
+.plan-overdue{background:#fde2e1;color:#a11d1d;border-color:#f3b3b0}
+.plan-unknown{background:#eceff3;color:#4a5568;border-color:#d5dbe5}
+.plan-counts{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.plan-scroll{overflow-x:auto}
+.plan-table{width:100%;border-collapse:collapse}
+.plan-table th,.plan-table td{text-align:left;vertical-align:top;padding:8px 10px;border-top:1px solid var(--line,#d5dbe5)}
+.plan-table th{font-size:12px;text-transform:uppercase;letter-spacing:.03em;color:#5b6573}
+.plan-row-done td{opacity:.75}
+.plan-note{margin:8px 0 0;color:#5b6573}
+.plan-chip{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:4px}
+.plan-chip small{color:#5b6573}
+.plan-table select,.plan-table input[type=text],.plan-table input[type=number]{max-width:200px}
+.plan-head>span{display:flex;align-items:center;gap:8px}
+.packing-import-options{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;margin:10px 0}
+.packing-import-warnings{color:#9a3a00}
+.party-role{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;margin:0 0 12px;padding:10px 14px;border:1px solid var(--line,#d5dbe5);border-radius:10px;background:var(--panel,#fff)}
+.party-role small{color:#5b6573}
+.submission-check{margin:0 0 14px;padding:12px 16px;border:1px solid var(--line,#d5dbe5);border-radius:10px;background:var(--panel,#fff)}
+.submission-check p{margin:6px 0}.submission-check ul{margin:4px 0 8px 18px}
+.submission-ok{color:#14602b}.submission-no{color:#a11d1d}
+.submission-folded{display:none!important}
+.plan-hint{color:#5b6573}
+/* Narrow windows: the plan table would squeeze the document name word by word and push the target date out of view. Give the document column room,
+   and below 680px of table width show each row as a small card (light and target date on top, then document and status). */
+.plan-scroll{container-type:inline-size}
+.plan-scroll .plan-table td:nth-child(2){min-width:11rem}
+@container (max-width:680px){
+ .plan-scroll .plan-table thead{display:none}
+ .plan-scroll .plan-table,.plan-scroll .plan-table tbody{display:block}
+ .plan-scroll .plan-table tr{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;padding:10px 0;border-top:1px solid var(--line,#d5dbe5)}
+ .plan-scroll .plan-table td{border:0;padding:0;min-width:0}
+ .plan-scroll .plan-table td:nth-child(1){grid-column:1;grid-row:1}
+ .plan-scroll .plan-table td:nth-child(4){grid-column:2;grid-row:1;text-align:right}
+ .plan-scroll .plan-table td:nth-child(2){grid-column:1/-1;grid-row:2;min-width:0}
+ .plan-scroll .plan-table td:nth-child(3){grid-column:1/-1;grid-row:3}
+ .plan-scroll .plan-table td:nth-child(4)::before{content:attr(data-label)": ";color:#5b6573;font-size:12px}
+ .plan-scroll .plan-table td:nth-child(3) :is(select,input[type=text]){max-width:100%;width:100%}
+}

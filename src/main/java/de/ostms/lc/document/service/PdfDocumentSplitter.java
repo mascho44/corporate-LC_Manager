@@ -1,0 +1,209 @@
+package de.ostms.lc.document.service;
+
+import de.ostms.lc.document.domain.DocumentType;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
+import java.io.ByteArrayOutputStream;
+import java.util.*;
+
+/** Page-boundary proposals, never an automatic destructive split. */
+public final class PdfDocumentSplitter {
+    public record Part(int fromPage,int toPage,DocumentType documentType,Integer copyNumber) {
+        public Part(int fromPage,int toPage,DocumentType type){this(fromPage,toPage,type,null);}
+        public Part {de.ostms.lc.document.domain.DocumentCopy.validate(copyNumber);}
+    }
+    /** `sample` is the beginning of the text read from the page (for the person to judge what the recognition delivered); null when nothing was read. */
+    public record Page(int number,DocumentClassifier.Classification classification,String textSource,DocumentCopyDetector.Hint copyHint,String sample) {
+        public Page(int number,DocumentClassifier.Classification classification,String textSource,DocumentCopyDetector.Hint copyHint){this(number,classification,textSource,copyHint,null);}
+        public Page(int number,DocumentClassifier.Classification classification,String textSource){this(number,classification,textSource,DocumentCopyDetector.detect(null),null);}
+        static String sampleOf(String text){String flat=text==null?"":text.replaceAll("\\s+"," ").trim();return flat.isEmpty()?null:flat.length()>160?flat.substring(0,160)+"…":flat;}
+    }
+    public record Proposal(int pageCount,List<Page> pages,List<Part> parts) {}
+    public record Output(Part part,byte[] content,String text,OcrEvidence evidence) {}
+    private PdfDocumentSplitter() {}
+
+    /** Exact normalized page sequence, not fuzzy matching. Variable numbers are ignored. */
+    public static String trainingPattern(byte[] content,String evidenceJson)throws Exception {
+        try(var slot=PdfProcessingSafety.acquire();var pdf=Loader.loadPDF(content)) {
+            PdfProcessingSafety.validate(pdf);
+            var texts=pageTexts(pdf,DocumentExtractionService.readEvidence(evidenceJson));
+            var normalized=new ArrayList<String>();
+            for(String text:texts){
+                String page=text.toLowerCase(Locale.ROOT).replaceAll("\\p{N}+","#").replaceAll("\\s+"," ").trim();
+                if(page.replaceAll("[^\\p{L}]","").length()<40)return null;
+                normalized.add(page);
+            }
+            String pattern="SPLIT_V1:"+texts.size()+":"+String.join("\u000c",normalized);
+            return HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(pattern.getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+        }
+    }
+
+    /** The text of every page (text layer or recognised text), in page order. */
+    public static List<String> texts(byte[] content,String evidenceJson) throws Exception {
+        try(var slot=PdfProcessingSafety.acquire();var pdf=Loader.loadPDF(content)) {
+            PdfProcessingSafety.validate(pdf);
+            return pageTexts(pdf,DocumentExtractionService.readEvidence(evidenceJson));
+        }
+    }
+
+    public static Proposal propose(byte[] content,String evidenceJson) throws Exception {
+        try(var slot=PdfProcessingSafety.acquire();var pdf=Loader.loadPDF(content)) {
+            PdfProcessingSafety.validate(pdf);
+            return proposeFromTexts(pageTexts(pdf,DocumentExtractionService.readEvidence(evidenceJson)));
+        }
+    }
+
+    /** The boundary logic on already extracted page texts (also used for tests on OCR output). */
+    static Proposal proposeFromTexts(List<String> texts) {
+        {
+            List<Page> pages=new ArrayList<>();List<Part> parts=new ArrayList<>();
+            DocumentType current=null;boolean headedPart=false,attachedInPart=false;int start=1;int[] previousNumber=null;String reference=null;
+            DocumentCopyDetector.Hint previousCopy=DocumentCopyDetector.detect(null);
+            for(int i=0;i<texts.size();i++) {
+                var classification=DocumentClassifier.classify(null,texts.get(i));
+                var detected=classification.score()>=.8?classification.suggestedType():null;
+                int[] number=pageNumber(texts.get(i));String nextReference=documentReference(texts.get(i));
+                var copy=DocumentCopyDetector.detect(texts.get(i));
+                boolean differentCopy=!copy.kind().equals("UNKNOWN")&&!previousCopy.kind().equals("UNKNOWN")&&(!copy.kind().equals(previousCopy.kind())||copy.copyNumber()!=null&&previousCopy.copyNumber()!=null&&!copy.copyNumber().equals(previousCopy.copyNumber()));
+                boolean restart=i>0&&number!=null&&number[0]==1;
+                boolean differentReference=reference!=null&&nextReference!=null&&!reference.equals(nextReference);
+                boolean numberedContinuation=number!=null&&previousNumber!=null&&number[0]==previousNumber[0]+1&&(number[1]==previousNumber[1]||number[1]==0||previousNumber[1]==0);
+                boolean referenceContinuation=number==null&&reference!=null&&reference.equals(nextReference);
+                // A blank page (scanner back side) or an unnumbered page after "Page 1 of 3" belongs to the running document.
+                boolean blankPage=texts.get(i).replaceAll("[^\\p{L}\\p{N}]","").length()<5;
+                boolean impliedByTotal=!blankPage&&number==null&&previousNumber!=null&&previousNumber[1]>previousNumber[0];
+                // Back sides, enclosures and stamp pages of the running document: same letterhead, same identifiers or boilerplate terms, and no heading of their own.
+                String previousText=i>0?texts.get(i-1):"";
+                boolean unheaded=detected==null&&("UNKNOWN".equals(classification.status())||"AMBIGUOUS".equals(classification.status()));
+                String attachmentCue=unheaded&&i>0&&current!=null&&!blankPage?attachmentCue(texts.get(i),previousText):null;
+                boolean continuation=i>0&&current!=null&&(numberedContinuation||referenceContinuation||blankPage||impliedByTotal||attachmentCue!=null)&&!differentReference&&(!differentCopy||attachmentCue!=null)&&!restart;
+                if(unheaded&&continuation){
+                    detected=current;
+                    classification=new DocumentClassifier.Classification(current,.8,"REVIEW",numberedContinuation?"PAGE_SEQUENCE_V1":referenceContinuation?"DOCUMENT_REFERENCE_V1":blankPage?"BLANK_PAGE_V1":attachmentCue!=null?attachmentCue:"PAGE_TOTAL_V1",List.of(numberedContinuation?"Fortsetzungsseite "+number[0]+" / "+number[1]+"; bitte prüfen":referenceContinuation?"Gleiche Dokumentnummer wie vorherige Seite; bitte prüfen":blankPage?"Leere Seite, der vorherigen zugeordnet; bitte prüfen":"Vorherige Seite kündigt weitere Seiten an; bitte prüfen"));
+                }
+                // A page without heading that only shows the typical fields of the running document's type (e.g. the printed back of a bill of lading, badly read) continues that document.
+                boolean weakSame=detected==null&&!unheaded&&i>0&&current!=null&&classification.suggestedType()==current&&"KEYWORD_PROFILE_V1".equals(classification.method())&&!differentReference&&!differentCopy&&!restart;
+                if(weakSame){
+                    detected=current;
+                    classification=new DocumentClassifier.Classification(current,.8,"REVIEW","KEYWORD_CONTINUATION_V1",List.of("Typische Felder wie die vorherige Seite, keine eigene Überschrift; bitte prüfen"));
+                }
+                pages.add(new Page(i+1,classification,texts.get(i).isBlank()?"UNAVAILABLE":"PAGE_TEXT",DocumentCopyDetector.detect(texts.get(i)),Page.sampleOf(texts.get(i))));
+                // Unknown pages are isolated instead of silently treated as continuations.
+                // A page with its own heading after a headed front page that already has back sides or enclosures attached is a new document (e.g. the next original of a bill of lading); two bare headed pages stay together as before.
+                boolean headed=detected!=null&&classification.score()>=.9;
+                boolean secondFront=i>0&&headed&&headedPart&&attachedInPart&&!numberedContinuation&&!referenceContinuation;
+                if(i>0&&(detected==null||current==null||detected!=current||restart||differentReference||(differentCopy&&attachmentCue==null)||secondFront)) {
+                    parts.add(new Part(start,i,current==null?DocumentType.OTHER:current));start=i+1;
+                    reference=null;
+                    headedPart=false;attachedInPart=false;
+                }
+                current=detected;
+                if(headed)headedPart=true;
+                if((continuation&&attachmentCue!=null)||weakSame)attachedInPart=true;
+                if(!copy.kind().equals("UNKNOWN"))previousCopy=copy;
+                else if(start==i+1)previousCopy=copy;
+                if(!blankPage)previousNumber=number!=null||!(impliedByTotal&&continuation)?number:new int[]{previousNumber[0]+1,previousNumber[1]};if(nextReference!=null)reference=nextReference;
+            }
+            parts.add(new Part(start,texts.size(),current==null?DocumentType.OTHER:current));
+            var suggestedParts=parts.stream().map(part->new Part(part.fromPage(),part.toPage(),part.documentType(),DocumentCopyDetector.detect(String.join("\n",texts.subList(part.fromPage()-1,part.toPage()))).copyNumber())).toList();
+            return new Proposal(texts.size(),List.copyOf(pages),suggestedParts);
+        }
+    }
+
+    private static final java.util.regex.Pattern BOILERPLATE=java.util.regex.Pattern.compile("(?i)procedure\\s+in\\s+the\\s+event\\s+of\\s+(?:loss|damage)|in\\s+witness\\s+whereof|general\\s+conditions\\s+of|terms\\s+and\\s+conditions|allgemeine\\s+geschäftsbedingungen|limitation\\s+of\\s+liability|paramount\\s+clause|himalaya\\s+clause");
+    private static final java.util.regex.Pattern IDENTIFIER=java.util.regex.Pattern.compile("\\b(?=[A-Z0-9-]*\\d)[A-Z0-9][A-Z0-9-]{6,}\\b");
+    private static String letters(String s){return java.text.Normalizer.normalize(s==null?"":s,java.text.Normalizer.Form.NFD).replaceAll("\\p{M}","").toLowerCase(Locale.ROOT).replaceAll("[^a-z]","");}
+    /** The first words of the first real line (about 14 letters), enough to recognise the same letterhead despite OCR noise further right. */
+    private static String letterhead(String text){
+        for(String line:text.split("\\R")){
+            if(letters(line).length()<6)continue;
+            var head=new StringBuilder();
+            for(String word:line.trim().split("\\s+")){head.append(letters(word));if(head.length()>=14)break;}
+            return head.length()>=6?head.toString():"";
+        }
+        return "";
+    }
+    /** Why an unheaded page belongs to the previous one, or null. Evidence only; the page stays visible for review. */
+    static String attachmentCue(String text,String previous){
+        var header=java.util.regex.Pattern.compile("(?m)^[\\t ]*(\\S{6,})[\\t ]*[-–][\\t ]*(?:Seite|Page)[\\t ]+\\d+\\b").matcher(text);
+        if(header.find()&&previous.contains(header.group(1)))return "PAGE_HEADER_REFERENCE_V1";
+        if(BOILERPLATE.matcher(text).find())return "BOILERPLATE_PAGE_V1";
+        String head=letterhead(text);
+        if(!head.isEmpty()&&letters(previous).contains(head))return "LETTERHEAD_CONTINUITY_V1";
+        var own=new HashSet<String>();var matcher=IDENTIFIER.matcher(text.toUpperCase(Locale.ROOT));while(matcher.find())own.add(matcher.group());
+        var shared=0;var prev=previous.toUpperCase(Locale.ROOT);for(String id:own)if(prev.contains(id))shared++;
+        return shared>=2?"SHARED_IDENTIFIERS_V1":null;
+    }
+
+    /** {page,total}; total is 0 when the page states only "Page 2". */
+    static int[] pageNumber(String text){
+        var matcher=java.util.regex.Pattern.compile("(?i)\\b(?:page(?:\\s{0,2}no\\.?)?|seite|blatt)\\s{0,3}(\\d{1,3})(?:\\s{0,3}(?:of|von|/)\\s{0,3}(\\d{1,3}))?\\b").matcher(text);
+        int[] result=null;
+        while(matcher.find()){
+            int page=Integer.parseInt(matcher.group(1)),total=matcher.group(2)==null?0:Integer.parseInt(matcher.group(2));
+            if(page<1||total!=0&&page>total)return null;
+            if(result!=null&&(result[0]!=page||result[1]!=total))return null;
+            result=new int[]{page,total};
+        }
+        return result;
+    }
+    private static String documentReference(String text){
+        var matcher=java.util.regex.Pattern.compile("(?im)^\\s*(?:commercial\\s+invoice|invoice|packing\\s+list|handelsrechnung|packliste|bill\\s+of\\s+lading|b/?l|air\\s+waybill|awb|certificate\\s+of\\s+origin)[\\t ]+(?:no\\b\\.?|number\\b|nr\\b\\.?)[\\t ]*[:#]?[\\t ]*([a-z0-9][a-z0-9/-]{1,79})\\b").matcher(text);
+        return matcher.find()?matcher.group(1).toUpperCase(Locale.ROOT):null;
+    }
+
+    public static List<Output> split(byte[] content,String evidenceJson,List<Part> parts) throws Exception {
+        try(var slot=PdfProcessingSafety.acquire();var pdf=Loader.loadPDF(content)) {
+            PdfProcessingSafety.validate(pdf);validate(parts,pdf.getNumberOfPages());
+            var evidence=DocumentExtractionService.readEvidence(evidenceJson);var texts=pageTexts(pdf,evidence);
+            List<Output> results=new ArrayList<>();long total=0;
+            for(var part:parts)try(var target=new PDDocument();var bytes=new ByteArrayOutputStream()) {
+                for(int page=part.fromPage();page<=part.toPage();page++)target.importPage(pdf.getPage(page-1));
+                target.save(bytes);total+=bytes.size();
+                if(bytes.size()>10*1024*1024||total>50*1024*1024)throw new IllegalArgumentException("Aufgeteilte PDFs überschreiten das Größenlimit.");
+                OcrEvidence mapped=null;
+                if(evidence!=null) {
+                    var words=evidence.words().stream().filter(w->w.page()>=part.fromPage()&&w.page()<=part.toPage())
+                        .map(w->new OcrEvidence.Word(w.text(),w.confidence(),w.page()-part.fromPage()+1,w.left(),w.top(),w.width(),w.height())).toList();
+                    var pageResults=evidence.pages().stream().filter(p->p.page()>=part.fromPage()&&p.page()<=part.toPage())
+                        .map(p->new OcrEvidence.PageResult(p.page()-part.fromPage()+1,p.status(),p.attempts(),p.correctionDegrees(),p.recognizedText())).toList();
+                    mapped=new OcrEvidence(evidence.engineVersion(),evidence.method(),evidence.dpi(),evidence.threshold(),words,pageResults);
+                }
+                results.add(new Output(part,bytes.toByteArray(),String.join("\n",texts.subList(part.fromPage()-1,part.toPage())),mapped));
+            }
+            return List.copyOf(results);
+        }
+    }
+
+    public static void validate(List<Part> parts,int pageCount) {
+        if(parts==null||parts.isEmpty()||parts.size()>100)throw new IllegalArgumentException("Bitte 1 bis 100 Dokumentbereiche angeben.");
+        int next=1;
+        for(var part:parts) {
+            if(part==null||part.documentType()==null||part.fromPage()!=next||part.toPage()<next||part.toPage()>pageCount)
+                throw new IllegalArgumentException("Seitenbereiche müssen alle Seiten genau einmal und in Reihenfolge abdecken.");
+            next=part.toPage()+1;
+        }
+        if(next!=pageCount+1)throw new IllegalArgumentException("Es fehlen Seiten in der Aufteilung.");
+    }
+
+    private static List<String> pageTexts(PDDocument pdf,OcrEvidence evidence) throws Exception {
+        List<String> result=new ArrayList<>();var stripper=new PDFTextStripper();
+        for(int page=1;page<=pdf.getNumberOfPages();page++) {
+            stripper.setStartPage(page);stripper.setEndPage(page);String text=stripper.getText(pdf);
+            // A page with only a stamp in its text layer is a scan: its recognised text replaces the stray layer text.
+            boolean sparse=!text.isBlank()&&DocumentExtractionService.scannedPage(pdf,page-1,text);
+            if((text.isBlank()||sparse)&&evidence!=null) {
+                String completed=evidence.completedPageText(page);
+                if(completed!=null&&(!sparse||!completed.isBlank())){result.add(completed.length()>100_000?completed.substring(0,100_000):completed);continue;}
+                if(sparse){result.add(text.length()>100_000?text.substring(0,100_000):text);continue;}
+                int number=page;var words=evidence.words().stream().filter(w->w.page()==number).toList();
+                StringBuilder rebuilt=new StringBuilder();int top=-1;
+                for(var word:words) {if(top>=0&&Math.abs(word.top()-top)>8)rebuilt.append('\n');else rebuilt.append(' ');rebuilt.append(word.text());top=word.top();}
+                text=rebuilt.toString();
+            }
+            result.add(text.length()>100_000?text.substring(0,100_000):text);
+        }
+        return result;
+    }
+}

@@ -1,0 +1,21 @@
+const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
+const source=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/platform-shell.js'),'utf8');
+test('platform client rejects tenant APIs and sends the CSRF token for global writes',async()=>{
+ const calls=[],context=vm.createContext({document:{addEventListener(){}},fetch:async(url,options)=>{calls.push({url,options});return {ok:true,status:204};},location:{replace:assert.fail}});
+ vm.runInContext(source,context);vm.runInContext("csrfToken='synthetic-token'",context);
+ await assert.rejects(context.json('/api/lcs'),/Only global platform APIs/);assert.equal(calls.length,0);
+ await context.json('/api/platform/users/id/access',{method:'PUT',headers:{'Content-Type':'application/json'},body:'{}'});
+ assert.equal(calls[0].options.headers['X-CSRF-TOKEN'],'synthetic-token');assert.equal(calls[0].options.headers['Content-Type'],'application/json');
+});
+test('platform page has no workspace selector or business application scripts',()=>{
+ const html=fs.readFileSync(path.resolve(__dirname,'../../main/resources/static/platform.html'),'utf8');
+ assert.match(html,/GLOBALER BEREICH/);assert.match(html,/platform-shell.js/);assert.doesNotMatch(html,/src="\/app.js|src="\/tenants.js|id="tenantChooser"|lcSection|cockpitSection/);
+});
+test('the link to the tenant application is removed for tenantless platform sessions',()=>{
+  const code=require('node:fs').readFileSync(require('node:path').resolve(__dirname,'../../main/resources/static/platform-shell.js'),'utf8');
+  assert.ok(code.includes('access.tenantless')&&code.includes("a.button-link"));
+});
+test('the platform page shows the latest refused requests without building HTML from data',()=>{
+  const code=require('node:fs').readFileSync(require('node:path').resolve(__dirname,'../../main/resources/static/platform-shell.js'),'utf8');
+  assert.ok(code.includes("/api/platform/denials")&&code.includes('buildDenialsSection'));assert.equal(code.includes('innerHTML'),false);
+});

@@ -1,0 +1,5 @@
+.platform-shell main { max-width: 1600px; }
+.platform-shell .platform-create-form { margin-top: 2rem; }
+.platform-shell .membership-row { gap: 1rem; flex-wrap: wrap; }
+.platform-shell .header-actions { flex-wrap: wrap; }
+.platform-shell h1 { font-size: clamp(1.6rem, 3vw, 2.5rem); }

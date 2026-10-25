@@ -1,0 +1,200 @@
+/* Denser spacing so that more information fits on the screen: smaller card, section and row spacing, flatter tabs and fields.
+   Control heights are set in ui-system.css (--control-height). Loaded before ui-system.css. */
+html body .card{padding:11px 12px}
+html body .grid{gap:8px}
+html body .sectionhead{margin:18px 0 8px}
+html body .dossier-content{padding:16px}
+html body .dossier-nav{padding:6px 14px}
+body .dossier-nav>button{min-height:34px;padding:6px 12px}
+html body .timeline-list>*{padding-bottom:12px}
+html body .document-row{padding:9px 12px}
+html body p{margin-block:.6em}
+html body input:not([type=checkbox]):not([type=radio]),html body select{min-height:30px}
+
+/* Schlanke Startseite: ein linker Einzug (22px) fuer alle Bereiche, weniger Kopf- und Kachelhoehe */
+html body #cockpitSection{padding:14px 22px 0;margin:0 0 14px}
+html body #cockpitSection .eyebrow{display:none}
+html body #cockpitSection h1{font-size:24px;line-height:1.2;margin:0}
+html body #cockpitSection>div:first-child p{margin:2px 0 0}
+html body #cockpitSection .stats{display:none}
+html body #workspaceProfileShortcuts{margin:10px 0 0;gap:8px}
+html body #workspaceProfileShortcuts h2,html body #workspaceProfileShortcuts>p{display:none}
+html body .today{margin:0 0 14px;padding:12px 22px}
+html body .today-head h2{font-size:15px;margin:0 0 8px}
+html body .today-tiles{display:flex;flex-wrap:wrap;gap:6px}
+html body .today-tile{display:inline-flex;align-items:center;gap:8px;padding:5px 12px 5px 8px;border-radius:999px}
+html body .today-icon{width:18px;height:18px;font-size:11px}
+html body .today-tile b{font-size:15px}
+html body .today-tile>span:not(.today-icon){font-size:13px;font-weight:600}
+html body .today-tile small{display:none}
+html body .today-tile:not(.ok) small{display:inline;font-size:12px}
+html body .today-tile.ok{border-color:#e5e9ef;background:transparent;color:#667085}
+html body .today-tile.ok b{color:#667085;font-weight:600}
+html body #workQueueSection{margin-top:0}
+html body #workQueueSection .panelhead,html body #lcSection .panelhead{padding:12px 22px}
+html body #workQueueSection .panelhead p,html body #lcSection .panelhead p{display:none}
+html body #lcSection .lc-filters{display:flex;flex-wrap:wrap;gap:8px}
+html body #kpiStrip{display:flex;flex-wrap:wrap;gap:6px;margin:4px 22px 10px}
+html body #kpiStrip .kpi-views{flex:1 0 100%}
+html body #kpiStrip .kpi{display:flex;align-items:baseline;gap:8px;padding:5px 12px}
+html body #kpiStrip .kpi b{font-size:15px;display:inline}
+html body #kpiStrip .kpi small{display:inline}
+html body #list .row.dossier-row{padding:10px 22px;gap:4px 14px}
+
+/* LC-Cockpit der Akte: kompakte, anklickbare Kacheln statt Karten mit Oeffnen-Knopf */
+html body .lc-operational-cockpit>.grid{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+html body .cockpit-card{padding:8px 12px;cursor:pointer}
+html body .cockpit-card:hover,html body .cockpit-card:focus-visible{border-color:#2f6fed;outline:none}
+html body .cockpit-card b{font-size:16px;display:block}
+html body .cockpit-card p{margin:2px 0 0;font-size:12px;color:#667085}
+
+/* Naechster Schritt oben im LC-Cockpit */
+html body .next-step{display:flex;align-items:baseline;gap:10px;padding:8px 12px;margin:0 0 8px;border:1px solid #b9d0fb;background:#f0f6ff;border-radius:8px;cursor:pointer}
+html body .next-step small{color:#2f6fed;font-weight:700;text-transform:uppercase;font-size:11px}
+html body .next-step.done{cursor:default;background:#f6faf7;border-color:#cfe5d6}
+html body .next-step.done small{color:#1a7f45}
+
+/* Globale Suche (Strg+K) */
+html body .global-search{border:0;border-radius:10px;padding:12px;width:min(560px,92vw);margin:12vh auto auto;box-shadow:0 12px 40px rgba(16,24,40,.28)}
+html body .global-search::backdrop{background:rgba(16,24,40,.35)}
+html body .global-search input{width:100%;box-sizing:border-box;margin:0}
+html body .global-search ul{list-style:none;margin:6px 0 0;padding:0}
+html body .global-search li{display:flex;gap:10px;align-items:baseline;padding:7px 10px;border-radius:6px;cursor:pointer}
+html body .global-search li span{color:#667085;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html body .global-search li[aria-selected="true"],html body .global-search li:hover{background:#eaf1ff}
+html body .global-search small{display:block;color:#667085;margin-top:6px}
+
+/* Erste Schritte */
+html body .first-steps{flex:1 0 100%;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0 0;padding:8px 12px;border:1px dashed #b9d0fb;border-radius:8px;background:#f8fbff}
+html body .first-steps button.done{opacity:.6}
+
+/* Dateien auf die Akte ziehen */
+html body #detail.file-drop-over{position:relative;outline:2px dashed #2f6fed;outline-offset:-4px}
+html body #detail.file-drop-over::after{content:attr(data-drop-label);position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(234,241,255,.85);color:#1d4fb8;font-weight:700;pointer-events:none}
+
+/* Papierkorb der Dokumente */
+html body .trash-list{list-style:none;margin:8px 0;padding:0}
+html body .trash-list li{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:6px 0;border-bottom:1px solid #e5e9ef}
+html body .trash-list small{display:block;color:#667085}
+
+/* Fehlende LC-Angaben: eingeklappte Liste mit einem gemeinsamen Erfassen-Knopf */
+html body .doc-review-missing-list summary{cursor:pointer;color:#2f6fed;margin:4px 0}
+html body .doc-review-missing-list .doc-review-missing-row{margin-top:2px}
+html body .doc-review-missing-row>span{min-width:0;font-weight:500}
+
+/* SLA */
+html body .sla-block{margin:0 0 10px}
+html body .sla-list{list-style:none;margin:4px 0 0;padding:0;font-size:13px}
+html body .sla-list li{padding:3px 8px;margin-bottom:3px;border-left:4px solid #98a2b3;border-radius:4px;background:#f8fafc}
+html body .sla-list li.ok{border-left-color:#16a34a}html body .sla-list li.warn{border-left-color:#f59e0b;background:#fffbeb}html body .sla-list li.bad{border-left-color:#dc2626;background:#fef2f2}html body .sla-list li.late{border-left-color:#dc2626}html body .sla-list li.done{border-left-color:#16a34a}
+html body .sla-badge{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12px;font-weight:600;background:#e5e9ef;color:#344054}
+html body .sla-badge.ok{background:#dcfce7;color:#166534}html body .sla-badge.warn{background:#fef3c7;color:#92400e}html body .sla-badge.bad{background:#fee2e2;color:#991b1b}
+html body .sla-rule.inactive{opacity:.6}
+html body .sla-form select[multiple]{min-height:110px}
+
+/* Seiten, die ihren Inhalt ohne eigenen Kopfbereich aufbauen: gleicher Innenabstand (22px) wie alle anderen Karten */
+html body #ebicsSection,html body #slaSection,html body #correspondentSection,html body #webhookSection,html body #apiKeySection,html body #liquiditySection,html body #guaranteeSection,html body #creditLineSection,html body #apiKeySection,html body #groupInboxSection,html body #tenantSection,html body #deadlineCalendarSection{padding:16px 22px 22px}
+html body #trainingSection .module-hero,html body #importSection .module-hero{padding-left:22px;padding-right:22px}
+html body #slaSection form.sla-form,html body #ebicsSection form{margin-top:10px}
+html body .sla-form{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px;align-items:start}
+html body .sla-form>label:has(input[type=checkbox]),html body .sla-form>button{grid-column:auto}
+html body .sla-rule{margin:0 0 6px}
+
+/* Ausgeblendete Karten bleiben auch in schmalen Fenstern ausgeblendet (die Regel .hero{display:block} unter 800px hob .hidden auf) */
+html body .hero.hidden,html body section.hidden,html body .hidden{display:none}
+html body #slaSection form,html body #ebicsSection form,html body #groupInboxSection form{padding-left:0;padding-right:0;margin-left:0;margin-right:0}
+@media(max-width:700px){html body .sla-form{grid-template-columns:minmax(0,1fr)}}
+html body #slaSection form.sla-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 20px;align-items:start;padding:0;margin:12px 0 0}
+html body #slaSection form.sla-form>label{display:flex;flex-direction:column;align-items:stretch;gap:6px;margin:0;padding:0;border:0;background:none;box-shadow:none;min-width:0}
+html body #slaSection form.sla-form>label>:is(input:not([type=checkbox]),select){width:100%;margin:0;box-sizing:border-box}
+html body #slaSection form.sla-form>label:has(>input[type=checkbox]){flex-direction:row;align-items:center;gap:8px;grid-column:1/-1}
+html body #slaSection form.sla-form>label>input[type=checkbox]{width:auto;margin:0}
+html body #slaSection form.sla-form>button{grid-column:auto;justify-self:start}
+@media(max-width:700px){html body #slaSection form.sla-form{grid-template-columns:minmax(0,1fr)}}
+html body #slaSection form.sla-form>.sla-actions{grid-column:1/-1;display:flex;gap:10px;margin:0}
+html body #slaSection .sla-add{margin-top:14px}
+html body #correspondentSection form,html body #correspondentSection .cb-form{padding-left:0;padding-right:0;margin:12px 0 0}
+html body #correspondentSection form.cb-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 20px;align-items:start;padding:0}
+html body #correspondentSection form.cb-form>label{display:flex;flex-direction:column;align-items:stretch;gap:6px;margin:0;padding:0;border:0;background:none;box-shadow:none;min-width:0}
+html body #correspondentSection form.cb-form>label>:is(input:not([type=checkbox]),select,textarea){width:100%;margin:0;box-sizing:border-box}
+html body #correspondentSection form.cb-form>label:has(>input[type=checkbox]){flex-direction:row;align-items:center;gap:8px;grid-column:1/-1}
+html body #correspondentSection form.cb-form>label>input[type=checkbox]{width:auto;margin:0}
+html body #correspondentSection form.cb-form>label:has(>textarea){grid-column:1/-1}
+html body #correspondentSection .cb-channels{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px 18px;margin:0;padding:0;border:0}
+html body #correspondentSection .cb-channels legend{padding:0;margin:0 0 6px;font-weight:600}
+html body #correspondentSection .cb-channels label{display:flex;align-items:center;gap:6px;margin:0}
+html body #correspondentSection form.cb-form>.cb-actions{grid-column:1/-1;display:flex;gap:10px;margin:0}
+html body #correspondentSection .cb-add{margin-top:14px}
+@media(max-width:700px){html body #correspondentSection form.cb-form{grid-template-columns:minmax(0,1fr)}}
+html body #correspondentSection form.cb-form textarea{min-height:72px;height:84px;resize:vertical}
+html body .sla-list li.paused{border-left-color:#6366f1;background:#eef2ff}html body .sla-badge.paused{background:#e0e7ff;color:#3730a3}
+html body #slaSection .sla-report-bar{display:flex;gap:10px;align-items:center;margin:6px 0 10px}
+html body #slaSection .sla-report-wrap{overflow-x:auto}
+html body #slaSection table.sla-report{border-collapse:collapse;width:100%;font-size:13px}
+html body #slaSection table.sla-report th,html body #slaSection table.sla-report td{padding:6px 10px;border-bottom:1px solid #e5e9ef;text-align:right;white-space:nowrap}
+html body #slaSection table.sla-report th:first-child,html body #slaSection table.sla-report td:first-child{text-align:left;white-space:normal}
+html body #webhookSection form.wh-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 20px;align-items:start;padding:0;margin:12px 0 0}
+html body #webhookSection form.wh-form>label{display:flex;flex-direction:column;align-items:stretch;gap:6px;margin:0;padding:0;border:0;background:none;box-shadow:none;min-width:0}
+html body #webhookSection form.wh-form>label>input:not([type=checkbox]){width:100%;margin:0;box-sizing:border-box}
+html body #webhookSection form.wh-form>label:has(>input[type=checkbox]){flex-direction:row;align-items:center;gap:8px;grid-column:1/-1}
+html body #webhookSection .wh-events{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px 18px;margin:0;padding:0;border:0}
+html body #webhookSection .wh-events legend{padding:0;margin:0 0 6px;font-weight:600;width:100%}
+html body #webhookSection .wh-events label{display:flex;align-items:center;gap:6px;margin:0}
+html body #webhookSection form.wh-form>.wh-actions{grid-column:1/-1;display:flex;gap:10px;margin:0}
+html body #webhookSection .wh-buttons{display:flex;flex-wrap:wrap;gap:6px}
+html body #webhookSection .wh-add{margin-top:14px}
+html body #webhookSection .wh-secret{margin:10px 0;padding:12px 14px;border:1px solid #f59e0b;background:#fffbeb;border-radius:8px}
+html body #webhookSection .wh-secret code{display:block;margin:8px 0;word-break:break-all;font-size:13px}
+html body #webhookSection .wh-secret button{margin-right:8px}
+@media(max-width:700px){html body #webhookSection form.wh-form{grid-template-columns:minmax(0,1fr)}}
+html body #apiKeySection,html body #apiKeySection,html body #apiKeySection,html body #groupInboxSection,html body #tenantSection,html body #deadlineCalendarSection{padding:16px 22px 22px}
+html body #apiKeySection form.wh-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 20px;align-items:start;padding:0;margin:12px 0 0}
+html body #apiKeySection form.wh-form>label{display:flex;flex-direction:column;align-items:stretch;gap:6px;margin:0;padding:0;border:0;background:none;box-shadow:none;min-width:0}
+html body #apiKeySection form.wh-form>label>input:not([type=checkbox]){width:100%;margin:0;box-sizing:border-box}
+html body #apiKeySection form.wh-form>label:has(>input[type=checkbox]){flex-direction:row;align-items:center;gap:8px;grid-column:1/-1}
+html body #apiKeySection .wh-events{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px 18px;margin:0;padding:0;border:0}
+html body #apiKeySection .wh-events legend{padding:0;margin:0 0 6px;font-weight:600;width:100%}
+html body #apiKeySection .wh-events label{display:flex;align-items:center;gap:6px;margin:0}
+html body #apiKeySection form.wh-form>.wh-actions{grid-column:1/-1;display:flex;gap:10px;margin:0}
+html body #apiKeySection .wh-buttons{display:flex;flex-wrap:wrap;gap:6px}
+html body #apiKeySection .wh-add{margin-top:14px}
+html body #apiKeySection .wh-secret{margin:10px 0;padding:12px 14px;border:1px solid #f59e0b;background:#fffbeb;border-radius:8px}
+html body #apiKeySection .wh-secret code{display:block;margin:8px 0;word-break:break-all;font-size:13px}
+html body #apiKeySection .wh-secret button{margin-right:8px}
+html body #apiKeySection form.wh-form{grid-template-columns:minmax(0,1fr)}
+html body .payment-block .payment-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 14px;align-items:end;margin:10px 0 0}
+html body .payment-block .payment-form>label{display:flex;flex-direction:column;gap:4px;margin:0}
+html body .payment-block .payment-form>label>input{width:100%;box-sizing:border-box}
+html body .payment-block .payment-actions{grid-column:1/-1;display:flex;gap:10px}
+html body .payment-block>button{margin-top:8px}
+html body #liquiditySection .liq-bar{display:flex;gap:10px;align-items:center;margin:6px 0 10px}
+html body #liquiditySection table.liq-table{border-collapse:collapse;width:100%;font-size:13px}
+html body #liquiditySection table.liq-table th,html body #liquiditySection table.liq-table td{padding:6px 10px;border-bottom:1px solid #e5e9ef;text-align:right;white-space:nowrap}
+html body #liquiditySection table.liq-table th:first-child{text-align:left}
+html body #liquiditySection tr.liq-overdue th,html body #liquiditySection tr.liq-overdue td{color:#991b1b}
+html body #liquiditySection .liq-negative{color:#991b1b}
+html body .gar-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 20px;align-items:start;padding:0;margin:12px 0 0}
+html body .gar-form>label{display:flex;flex-direction:column;align-items:stretch;gap:6px;margin:0;padding:0;border:0;background:none;box-shadow:none;min-width:0}
+html body .gar-form>label>input:not([type=checkbox]),html body .gar-form>label>select{width:100%;margin:0;box-sizing:border-box}
+html body .gar-form>label:has(>input[type=checkbox]){flex-direction:row;align-items:center;gap:8px;grid-column:1/-1}
+html body .gar-form>.gar-actions{grid-column:1/-1;display:flex;gap:10px;margin:0}
+html body .gar-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:6px 0 12px}
+html body .gar-buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+@media(max-width:700px){html body .gar-form{grid-template-columns:minmax(0,1fr)}}
+html body .gar-form>.gar-check{grid-column:1/-1;margin:0;font-size:13px;min-height:1em}
+html body .gar-check.ok{color:#166534}html body .gar-check.warn{color:#92400e}html body .gar-check.bad{color:#991b1b;font-weight:600}
+html body .gar-lines{margin:6px 0 14px}
+html body .gar-bar{height:8px;border-radius:999px;background:#e5e9ef;overflow:hidden;margin:6px 0 4px;max-width:420px}
+html body .gar-bar span{display:block;height:100%;background:#16a34a}
+html body .gar-bar.warn span{background:#f59e0b}html body .gar-bar.bad span{background:#dc2626}
+html body .gar-without{color:#92400e;font-size:13px}
+html body .guarantee-block h4{margin:10px 0 4px;font-size:14px}
+html body .gar-form textarea{width:100%;box-sizing:border-box}
+html body .gar-bar-pair{position:relative;display:flex}
+html body .gar-bar-pair span{display:block;height:100%}
+html body .gar-bar-pair .gar-bar-before{background:#94a3b8}
+html body .gar-bar-pair .gar-bar-added{background:#16a34a}
+html body .gar-bar-pair.warn .gar-bar-added{background:#f59e0b}html body .gar-bar-pair.bad .gar-bar-added{background:#dc2626}
+html body #creditLineSection{padding:16px 22px 22px}
+html body .app-nav nav small.admin-nav-sub{display:block;margin:10px 0 2px;padding:0 12px;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;opacity:.65}
+html body .app-nav nav small.admin-nav-sub.hidden{display:none}

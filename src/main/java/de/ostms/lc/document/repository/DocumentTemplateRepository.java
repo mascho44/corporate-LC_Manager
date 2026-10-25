@@ -1,0 +1,8 @@
+package de.ostms.lc.document.repository;
+import de.ostms.lc.document.domain.*;import org.springframework.data.jpa.repository.JpaRepository;import java.util.*;
+public interface DocumentTemplateRepository extends de.ostms.lc.tenant.repository.TenantScopedRepository<DocumentTemplate,UUID>{
+ @Override @org.springframework.data.jpa.repository.Query("select t from DocumentTemplate t where t.tenantId=:#{T(de.ostms.lc.tenant.domain.TenantContext).currentId()}") List<DocumentTemplate> findAll();
+ @Override @org.springframework.data.jpa.repository.Query("select t from DocumentTemplate t where t.id=:id and t.tenantId=:#{T(de.ostms.lc.tenant.domain.TenantContext).currentId()}") Optional<DocumentTemplate> findById(@org.springframework.data.repository.query.Param("id") UUID id);
+ @org.springframework.data.jpa.repository.Query("select t from DocumentTemplate t where t.documentType=:type and t.companyId=:companyId and t.tenantId=:#{T(de.ostms.lc.tenant.domain.TenantContext).currentId()}") Optional<DocumentTemplate> findByDocumentTypeAndCompanyId(@org.springframework.data.repository.query.Param("type") DocumentType type,@org.springframework.data.repository.query.Param("companyId") Integer companyId);
+ @org.springframework.data.jpa.repository.Query("select t from DocumentTemplate t where t.documentType=:type and t.companyId is null and lower(t.companyName)=lower(:companyName) and t.tenantId=:#{T(de.ostms.lc.tenant.domain.TenantContext).currentId()}") Optional<DocumentTemplate> findByDocumentTypeAndCompanyIdIsNullAndCompanyNameIgnoreCase(@org.springframework.data.repository.query.Param("type") DocumentType type,@org.springframework.data.repository.query.Param("companyName") String companyName);
+}

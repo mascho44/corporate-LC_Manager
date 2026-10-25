@@ -1,0 +1,25 @@
+Anlage zum Avis: Akkreditivtext
+
+Akkreditivnummer   TEST-LC-2026-008
+Ausstellungsdatum
+05.09.2026
+Art des Akkreditivs: unwiderruflich
+Verfallsdatum und Ort: 31.12.2026, Stuttgart
+Auftraggeber:
+Muster Import Trading LLC
+Dubai, Vereinigte Arabische Emirate
+Begünstigter:
+Beispiel Maschinenbau GmbH
+Industriestrasse 10
+70565 Stuttgart
+Betrag: EUR 125.000,00
+Teilverladungen: nicht zulässig
+Umladung: zulässig
+Verladehafen: Hamburg
+Entladehafen: Jebel Ali
+Spätester Verladetag: 15.12.2026
+Warenbeschreibung: 2 CNC-Fräsmaschinen BM-500, CIF Jebel Ali
+Geforderte Dokumente:
+Handelsrechnung in 3 Originalen
+Packliste in 2 Kopien
+Vorlagefrist: 21 Tage

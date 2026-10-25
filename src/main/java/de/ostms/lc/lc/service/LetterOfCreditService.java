@@ -1,0 +1,213 @@
+package de.ostms.lc.lc.service;
+
+import de.ostms.lc.lc.api.LetterOfCreditUpdateRequest;
+import de.ostms.lc.lc.domain.LetterOfCredit;
+import de.ostms.lc.lc.repository.LetterOfCreditRepository;
+import de.ostms.lc.swift.Mt700Parser;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Locale;
+import java.util.NoSuchElementException;
+import java.util.UUID;
+
+@Service
+public class LetterOfCreditService {
+    private final LetterOfCreditRepository repo;
+    private final Mt700Parser parser;
+    private final de.ostms.lc.company.service.CompanyProfileService companies;
+
+    public LetterOfCreditService(LetterOfCreditRepository repo, Mt700Parser parser,de.ostms.lc.company.service.CompanyProfileService companies) {
+        this.companies=companies;
+        this.repo = repo;
+        this.parser = parser;
+    }
+
+    public LetterOfCredit importMt700(String raw) {
+        LetterOfCredit lc = parser.parse(raw);
+        if (repo.existsByReference(lc.getReference())) {
+            throw new IllegalArgumentException("LC reference already exists: " + lc.getReference());
+        }
+        return repo.save(lc);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private de.ostms.lc.swift.Mt760Parser mt760Parser = new de.ostms.lc.swift.Mt760Parser();
+
+    /** MT760 becomes a dossier of kind GUARANTEE (no documentary requirements). */
+    @Transactional
+    public LetterOfCredit importMt760(String raw) {
+        LetterOfCredit guarantee = mt760Parser.parse(raw);
+        if (repo.existsByReference(guarantee.getReference())) {
+            throw new IllegalArgumentException("Eine Akte mit dieser Referenz existiert bereits: " + guarantee.getReference());
+        }
+        return repo.save(guarantee);
+    }
+
+    /**
+     * A new file with the terms of an existing one (same parties, banks, goods, required documents and conditions) under a new reference.
+     * Dates, status, assignment, documents, review decisions and rule facts are not copied: they belong to the individual credit.
+     */
+    @Transactional
+    public LetterOfCredit copyOf(UUID sourceId, String newReference) {
+        String reference = newReference == null ? "" : newReference.trim();
+        if (reference.isEmpty() || reference.length() > 100) throw new IllegalArgumentException("Bitte eine Referenz für die neue Akte angeben (höchstens 100 Zeichen).");
+        if (repo.existsByReference(reference)) throw new IllegalArgumentException("Eine Akte mit dieser Referenz existiert bereits: " + reference);
+        LetterOfCredit source = one(sourceId);
+        LetterOfCredit copy = new LetterOfCredit();
+        copy.setReference(reference);
+        copy.setInstrumentType(source.getInstrumentType()); copy.setPartyRole(source.getPartyRole()); copy.setCompanyId(source.getCompanyId()); copy.setTemplateCompany(source.getTemplateCompany());
+        copy.setCustomerId(source.getCustomerId());
+        copy.setApplicant(source.getApplicant()); copy.setBeneficiary(source.getBeneficiary()); copy.setIssuingBank(source.getIssuingBank()); copy.setAdvisingBank(source.getAdvisingBank());
+        copy.setAmount(source.getAmount()); copy.setCurrency(source.getCurrency()); copy.setExpiryPlace(source.getExpiryPlace());
+        copy.setSequenceOfTotal(source.getSequenceOfTotal()); copy.setFormOfCredit(source.getFormOfCredit()); copy.setAvailableWith(source.getAvailableWith()); copy.setDraweeBank(source.getDraweeBank());
+        copy.setDraftsAt(source.getDraftsAt()); copy.setMixedPaymentDetails(source.getMixedPaymentDetails()); copy.setDeferredPaymentDetails(source.getDeferredPaymentDetails());
+        copy.setConfirmationInstructions(source.getConfirmationInstructions()); copy.setReimbursingBank(source.getReimbursingBank()); copy.setConfirmationParty(source.getConfirmationParty());
+        copy.setCharges(source.getCharges()); copy.setBankInstructions(source.getBankInstructions());
+        copy.setRequiredDocuments(new java.util.ArrayList<>(source.getRequiredDocuments() == null ? List.of() : source.getRequiredDocuments()));
+        copy.setAdditionalFields(new java.util.LinkedHashMap<>(source.getAdditionalFields() == null ? java.util.Map.of() : source.getAdditionalFields()));
+        if (source.getConditions() != null) copy.setConditions(new java.util.EnumMap<>(source.getConditions().isEmpty() ? new java.util.EnumMap<>(de.ostms.lc.lc.domain.LcCondition.class) : source.getConditions()));
+        copy.setRawMessage(withoutDates(source.getRawMessage(), source.getReference(), reference));
+        return repo.save(copy);
+    }
+
+    /** The SWIFT text of the source for the copy: new :20: and without the date and shipment period lines, which differ per credit. */
+    static String withoutDates(String raw, String oldReference, String newReference) {
+        if (raw == null || raw.isBlank()) return raw;
+        var text = new StringBuilder();
+        boolean skip = false;
+        for (String line : raw.split("\\R", -1)) {
+            boolean field = line.matches("^:[0-9]{2}[A-Z]?:.*");
+            if (field) skip = line.startsWith(":31C:") || line.startsWith(":31D:") || line.startsWith(":44C:") || line.startsWith(":44D:");
+            if (skip) continue;
+            if (line.startsWith(":20:")) line = ":20:" + newReference;
+            text.append(line).append('\n');
+        }
+        return text.toString().stripTrailing();
+    }
+
+    public List<LetterOfCredit> all() {
+        return repo.findAll();
+    }
+
+    public LetterOfCredit one(UUID id) {
+        return repo.findById(id).orElseThrow(() -> new NoSuchElementException("Akkreditiv nicht gefunden"));
+    }
+
+    public record RequirementReparse(boolean changed,String reason,List<String> current,List<String> proposed){}
+
+    /** Rebuilds the document conditions from the stored MT700 only while they still equal the old line-by-line split, so manual or amended changes are never overwritten. */
+    @Transactional(readOnly=true)
+    public RequirementReparse reparsePreview(UUID id){
+        LetterOfCredit lc=one(id);
+        var field=de.ostms.lc.swift.Mt700Parser.requiredDocumentsField(lc.getRawMessage());
+        List<String> current=List.copyOf(lc.getRequiredDocuments());
+        if(field.isEmpty())return new RequirementReparse(false,"Keine SWIFT-Nachricht mit Feld 46A gespeichert.",current,current);
+        List<String> proposed=de.ostms.lc.swift.Mt700Parser.splitConditions(field.get());
+        if(proposed.equals(current))return new RequirementReparse(false,"Die Bedingungen entsprechen bereits der aktuellen Aufteilung.",current,proposed);
+        if(!current.equals(de.ostms.lc.swift.Mt700Parser.legacyConditions(field.get())))
+            return new RequirementReparse(false,"Die Bedingungen wurden nach dem Import geändert und werden nicht automatisch ersetzt.",current,proposed);
+        return new RequirementReparse(true,"Umgebrochene Zeilen werden zur jeweiligen Bedingung zusammengeführt.",current,proposed);
+    }
+
+    @Transactional
+    public RequirementReparse reparse(UUID id){
+        var preview=reparsePreview(id);
+        LetterOfCredit lc=one(id);
+        if(preview.changed()){lc.getRequiredDocuments().clear();lc.getRequiredDocuments().addAll(preview.proposed());}
+        boolean filled=autoFacts!=null&&autoFacts.applyWithDocuments(lc)>0;
+        if(preview.changed()||filled)repo.save(lc);
+        return preview;
+    }
+    @org.springframework.beans.factory.annotation.Autowired(required=false) private de.ostms.lc.rulepack.AutoRuleFacts autoFacts;
+
+    @Transactional
+    public LetterOfCredit update(UUID id, LetterOfCreditUpdateRequest request) {
+        LetterOfCredit lc = one(id);
+        String reference = request.reference().trim();
+        if (repo.existsByReferenceAndIdNot(reference, id)) {
+            throw new IllegalArgumentException("LC reference already exists: " + reference);
+        }
+        lc.setReference(reference);
+        lc.setOwnBankReference(clean(request.ownBankReference()));
+        lc.setForeignBankReference(clean(request.foreignBankReference()));
+        if(request.companyId()!=null)companies.profile(request.companyId());
+        lc.setCompanyId(request.companyId());
+        lc.setTemplateCompany(clean(request.templateCompany()));
+        lc.setApplicant(clean(request.applicant()));
+        lc.setBeneficiary(clean(request.beneficiary()));
+        lc.setIssuingBank(clean(request.issuingBank()));
+        lc.setAdvisingBank(clean(request.advisingBank()));
+        lc.setAmount(request.amount());
+        lc.setCurrency(upper(request.currency()));
+        lc.setIssueDate(request.issueDate());
+        lc.setExpiryDate(request.expiryDate());
+        lc.setExpiryPlace(clean(request.expiryPlace()));
+        lc.setLatestShipmentDate(request.latestShipmentDate());
+        lc.setAssignedTo(clean(request.assignedTo()));
+        lc.setFollowUpDate(request.followUpDate());
+        var previousStatus = lc.getStatus();
+        lc.setStatus(request.status());
+        if (previousStatus != request.status() && request.status() == de.ostms.lc.lc.domain.LetterOfCreditStatus.DOCUMENTS_PRESENTED) de.ostms.lc.rulepack.PresentationDate.stamp(lc, java.time.LocalDate.now());
+        if (request.status() == de.ostms.lc.lc.domain.LetterOfCreditStatus.WAITING_FOR_CUSTOMER) {
+            // Entering the waiting state stamps the date; without an explicit follow-up the LC returns after a week.
+            if (previousStatus != request.status() || lc.getWaitingSince() == null) lc.setWaitingSince(java.time.LocalDate.now());
+            if (previousStatus != request.status() && lc.getFollowUpDate() == null) lc.setFollowUpDate(java.time.LocalDate.now().plusDays(7));
+        } else lc.setWaitingSince(null);
+        if (request.requiredDocuments() != null)
+            lc.setRequiredDocuments(request.requiredDocuments().stream().map(this::clean).filter(java.util.Objects::nonNull).toList());
+        // Absent (null) keeps the stored value; an empty string clears it.
+        if (request.sequenceOfTotal() != null) lc.setSequenceOfTotal(request.sequenceOfTotal());
+        if (request.formOfCredit() != null) lc.setFormOfCredit(request.formOfCredit());
+        if (request.availableWith() != null) lc.setAvailableWith(request.availableWith());
+        if (request.draweeBank() != null) lc.setDraweeBank(request.draweeBank());
+        if (request.draftsAt() != null) lc.setDraftsAt(request.draftsAt());
+        if (request.mixedPaymentDetails() != null) lc.setMixedPaymentDetails(request.mixedPaymentDetails());
+        if (request.deferredPaymentDetails() != null) lc.setDeferredPaymentDetails(request.deferredPaymentDetails());
+        if (request.confirmationInstructions() != null) lc.setConfirmationInstructions(request.confirmationInstructions());
+        if (request.reimbursingBank() != null) lc.setReimbursingBank(request.reimbursingBank());
+        if (request.confirmationParty() != null) lc.setConfirmationParty(request.confirmationParty());
+        if (request.charges() != null) lc.setCharges(request.charges());
+        if (request.bankInstructions() != null) lc.setBankInstructions(request.bankInstructions());
+        if (request.additionalFields() != null) {
+            LinkedHashMap<String,String> additional = new LinkedHashMap<>();
+            request.additionalFields().forEach((key,value) -> {
+                String name = clean(key), content = clean(value);
+                if (name != null && content != null) additional.put(name, content);
+            });
+            lc.setAdditionalFields(additional);
+        }
+        return lc;
+    }
+
+    @Transactional
+    public void delete(UUID id) {
+        LetterOfCredit lc = one(id);
+        repo.delete(lc);
+    }
+
+    @Transactional
+    public LetterOfCredit completeFollowUp(UUID id) {
+        LetterOfCredit lc = one(id);
+        lc.setFollowUpDate(null);
+        return lc;
+    }
+
+    @Transactional
+    public LetterOfCredit assignTo(UUID id, String username) {
+        LetterOfCredit lc = one(id);
+        lc.setAssignedTo(clean(username));
+        return lc;
+    }
+
+    private String clean(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private String upper(String value) {
+        String cleaned = clean(value);
+        return cleaned == null ? null : cleaned.toUpperCase(Locale.ROOT);
+    }
+}
