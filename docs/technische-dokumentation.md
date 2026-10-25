@@ -10,7 +10,7 @@ festgelegt. Die Oberfläche benötigt keinen Node-Build.
 
 | Baustein | Aufgabe |
 |---|---|
-| Spring Boot 3.5.6 / Spring Web | Webanwendung und REST |
+| Spring Boot 4.1 / Spring Web MVC | Webanwendung und REST |
 | Spring Security | Session, Passwort und Rechte |
 | Spring Data JPA / Hibernate | Relationale Persistenz |
 | PostgreSQL 17 / Flyway | Produktionsdatenbank und Schema-Migrationen |

@@ -17,7 +17,7 @@ Copyright © 2026 Markus Schorpp. GPL v3 oder später ([Lizenztext](LICENSE), [a
 
 ## Stack
 
-- Java 17 / Spring Boot 3.5.6 / Maven
+- Java 17 / Spring Boot 4.1 / Maven
 - Spring Web, Data JPA, Validation
 - PostgreSQL + Flyway
 - Responsive Web UI ohne separaten Node-Build
