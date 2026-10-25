@@ -16,6 +16,13 @@ test('weeks are numbered by ISO and months labelled by name', () => {
  assert.equal(A.labelOf({ start: '2026-10-19' }, true), 'KW 43');
  assert.equal(A.labelOf({ start: '2026-10-01' }, false), 'Okt 26');
 });
+test('the line never swings past a low point or a flat stretch', () => {
+ const d = A.smooth([[0, 100], [10, 100], [20, 100], [30, 0], [40, 100]]);
+ const ys = [...d.matchAll(/C([\d.-]+),([\d.-]+) ([\d.-]+),([\d.-]+)/g)].flatMap(m => [Number(m[2]), Number(m[4])]);
+ assert.ok(ys.every(y => y >= 0 && y <= 100), 'control points stay between the extremes: ' + ys.join(','));
+ const flat = A.smooth([[0, 50], [10, 50], [20, 50]]);
+ assert.ok([...flat.matchAll(/C[\d.-]+,([\d.-]+) [\d.-]+,([\d.-]+)/g)].every(m => Number(m[1]) === 50 && Number(m[2]) === 50));
+});
 test('the smooth line goes through every point', () => {
  const d = A.smooth([[0, 10], [10, 0], [20, 10]]);
  assert.ok(d.startsWith('M0,10')); assert.equal((d.match(/C/g) || []).length, 2); assert.ok(d.trim().endsWith('20,10'));

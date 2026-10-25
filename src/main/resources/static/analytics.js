@@ -18,14 +18,22 @@
   const ticks = Math.max(2, Math.ceil(v / step - 1e-9));
   return { max: step * ticks, ticks, step };
  }
- /** Smooth curve through the points (Catmull-Rom turned into cubic Beziers). */
+ /** Smooth curve through the points that never swings past them (monotone cubic interpolation turned into Beziers): a flat stretch stays flat and the line never dips below a low point. */
  function smooth(pts) {
-  if (pts.length < 2) return pts.length ? `M${pts[0][0]},${pts[0][1]}` : '';
-  let d = `M${pts[0][0]},${pts[0][1]}`;
-  for (let i = 0; i < pts.length - 1; i++) {
-   const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
-   d += ` C${p1[0] + (p2[0] - p0[0]) / 6},${p1[1] + (p2[1] - p0[1]) / 6} ${p2[0] - (p3[0] - p1[0]) / 6},${p2[1] - (p3[1] - p1[1]) / 6} ${p2[0]},${p2[1]}`;
+  const n = pts.length;
+  if (n < 2) return n ? `M${pts[0][0]},${pts[0][1]}` : '';
+  const dx = [], slope = [];
+  for (let i = 0; i < n - 1; i++) { dx.push(pts[i + 1][0] - pts[i][0]); slope.push((pts[i + 1][1] - pts[i][1]) / dx[i]); }
+  const m = [slope[0]];
+  for (let i = 1; i < n - 1; i++) m.push(slope[i - 1] * slope[i] <= 0 ? 0 : (slope[i - 1] + slope[i]) / 2);
+  m.push(slope[n - 2]);
+  for (let i = 0; i < n - 1; i++) {
+   if (slope[i] === 0) { m[i] = 0; m[i + 1] = 0; continue; }
+   const a = m[i] / slope[i], b = m[i + 1] / slope[i], h = Math.hypot(a, b);
+   if (h > 3) { m[i] = 3 * a / h * slope[i]; m[i + 1] = 3 * b / h * slope[i]; }
   }
+  let d = `M${pts[0][0]},${pts[0][1]}`;
+  for (let i = 0; i < n - 1; i++) d += ` C${pts[i][0] + dx[i] / 3},${pts[i][1] + m[i] * dx[i] / 3} ${pts[i + 1][0] - dx[i] / 3},${pts[i + 1][1] - m[i + 1] * dx[i] / 3} ${pts[i + 1][0]},${pts[i + 1][1]}`;
   return d;
  }
  const fmtInt = n => Number(n).toLocaleString(tr('gv.locale', 'de-DE'));
