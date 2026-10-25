@@ -1,5 +1,7 @@
 # Änderungsprotokoll
 
+## 0.7.1 – in Arbeit
+
 ## 0.7.0 – 25.10.2026
 
 Schwerpunkte: eigener Bereich für Garantien (Cockpit, Linien mit eingebuchten Garantien, Kopie der Garantie mit Abgleich), getrennte Rechte für Akkreditive und Garantien, eine einfache Zugriffsmatrix für Benutzer und Plattform, Demo-Mandant und die Neuveröffentlichung des Repositorys mit einem Startcommit.
