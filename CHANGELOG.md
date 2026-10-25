@@ -2,6 +2,8 @@
 
 ## 0.7.1 – in Arbeit
 
+* Auswertung: Im Cockpit zeigen Diagramme (ohne externe Bibliothek, mit Hinweisbox beim Darüberfahren) den Verlauf der offenen Akten und des Volumens, Eingänge und Abschlüsse, die Fristen der nächsten 12 Wochen und – für Banken – Abweichungen, Prüfberichte und SLA-Einhaltung; Zeitraum 30/90 Tage oder 12 Monate. Akten haben dafür Eingangs- und Abschlusszeitpunkt (Migration V151, Näherung für bestehende Akten). Siehe docs/auswertung.md.
+
 ## 0.7.0 – 25.10.2026
 
 Schwerpunkte: eigener Bereich für Garantien (Cockpit, Linien mit eingebuchten Garantien, Kopie der Garantie mit Abgleich), getrennte Rechte für Akkreditive und Garantien, eine einfache Zugriffsmatrix für Benutzer und Plattform, Demo-Mandant und die Neuveröffentlichung des Repositorys mit einem Startcommit.
