@@ -1,5 +1,5 @@
 {
-  "applicationVersion": "0.6.1",
+  "applicationVersion": "0.7.1",
   "source": "Resolved Maven runtime dependencies; licenses from published artifact POMs (including parent POMs).",
   "components": [
     {
