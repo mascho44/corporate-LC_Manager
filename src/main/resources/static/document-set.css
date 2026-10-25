@@ -26,3 +26,4 @@
 .action-menu-list[hidden]{display:none}
 html body .action-menu-list>button.action-menu-item{width:100%;justify-content:flex-start;text-align:left;border-color:transparent;background:transparent;box-shadow:none}
 html body .action-menu-list>button.action-menu-item:hover,html body .action-menu-list>button.action-menu-item:focus-visible{background:#eef4fc}
+.dossier-section:has(.action-menu-list:not([hidden])){overflow:visible}

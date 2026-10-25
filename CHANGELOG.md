@@ -2,6 +2,7 @@
 
 ## 0.7.1 – in Arbeit
 
+* Optik: Das Menü „Erzeugen“ (und die anderen Aktionsmenüs) im Abschnitt Dokumente wird nicht mehr am unteren Rand der Karte abgeschnitten.
 * Optik: Die Positionstabelle im Dialog „Dokument erstellen“ läuft bei schmalem Dialog nicht mehr rechts heraus (zweispaltige Zeilen); das Schließen-Kreuz in Dialogköpfen bleibt klein statt über die ganze Kopfzeile zu wachsen; im SLA-Formular haben alle Ereignisse deutsche und englische Bezeichnungen (vorher teils nur der Code).
 * Technik: Umstellung auf Spring Boot 4.1 (Spring Framework 7, Spring Security 7, Hibernate 7). Der eigene Code nutzt Jackson 3 (`tools.jackson`), das Kompatibilitätsmodul `spring-boot-jackson2` ist entfernt. Die Reihenfolge der JSON-Felder bleibt wie bisher (Deklarationsreihenfolge, `spring.jackson.mapper.SORT_PROPERTIES_ALPHABETICALLY=false`); der Fingerabdruck der Prüfentscheidungen bleibt stabil (Golden-Test). Flyway läuft über `spring-boot-starter-flyway`, Tests nutzen die neuen Test-Module.
 * Auswertung: Die Verlaufslinien schwingen nicht mehr über Tiefpunkte und flache Strecken hinaus (monotone Glättung); vorher konnte die Kurve unter die Null-Linie rutschen.
