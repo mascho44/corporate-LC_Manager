@@ -3,7 +3,7 @@ import de.ostms.lc.tenant.domain.*;
 import de.ostms.lc.tenant.repository.TenantRepository;
 import de.ostms.lc.user.repository.*;
 import de.ostms.lc.user.domain.PlatformInvitation;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.*;
 import org.springframework.data.domain.PageRequest;
@@ -14,7 +14,7 @@ import java.util.Objects;
  public InvitationMailQueue(PlatformInvitationRepository invitations,AppUserRepository users,AppRoleRepository roles,TenantRepository tenants,TenantAdministrationLock lock,InvitationMailCipher cipher,PlatformInvitationMailService delivery){this.invitations=invitations;this.users=users;this.roles=roles;this.tenants=tenants;this.lock=lock;this.cipher=cipher;this.delivery=delivery;}
  @Transactional(propagation=Propagation.MANDATORY) public void enqueue(PlatformInvitationService.MailRequested event){
   var saved=invitations.findById(CredentialStamp.of(event.token())).orElseThrow(()->new IllegalStateException("Invitation missing during queue insertion."));
-  try{saved.setEncryptedMailPayload(cipher.encrypt(saved.getTokenHash(),mapper.writeValueAsString(event)));saved.setNextDeliveryAttempt(Instant.now());invitations.saveAndFlush(saved);}catch(com.fasterxml.jackson.core.JsonProcessingException e){throw new IllegalStateException("Invitation queue serialization failed.");}
+  try{saved.setEncryptedMailPayload(cipher.encrypt(saved.getTokenHash(),mapper.writeValueAsString(event)));saved.setNextDeliveryAttempt(Instant.now());invitations.saveAndFlush(saved);}catch(tools.jackson.core.JacksonException e){throw new IllegalStateException("Invitation queue serialization failed.");}
  }
  @Transactional(propagation=Propagation.REQUIRES_NEW) public void deliverNext(){
   try(var home=TenantContext.open(Tenant.homeId())){

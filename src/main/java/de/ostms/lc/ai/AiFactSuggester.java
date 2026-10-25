@@ -1,6 +1,6 @@
 package de.ostms.lc.ai;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import de.ostms.lc.document.domain.DocumentType;
 import de.ostms.lc.document.domain.LcDocument;
 import de.ostms.lc.rulepack.DocumentFactSuggester;
@@ -78,7 +78,7 @@ public class AiFactSuggester {
  }
  static List<DocumentFactSuggester.Suggestion> verify(String answer,List<Spec> wanted,String text,String source,Map<Field,String> current){
   var out=new ArrayList<DocumentFactSuggester.Suggestion>();
-  JsonNode root;try{root=JSON.readTree(answer);}catch(IOException invalid){return out;}
+  JsonNode root;try{root=JSON.readTree(answer);}catch(tools.jackson.core.JacksonException invalid){return out;}
   String haystack=norm(text);
   for(var spec:wanted){
    JsonNode node=root.path(spec.key());if(!node.isObject())continue;

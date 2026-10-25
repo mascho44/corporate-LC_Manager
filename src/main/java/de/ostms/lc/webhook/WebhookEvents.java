@@ -1,7 +1,7 @@
 package de.ostms.lc.webhook;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import de.ostms.lc.audit.domain.AuditEvent;
 import de.ostms.lc.tenant.domain.TenantContext;
 import org.springframework.stereotype.Component;
@@ -34,6 +34,6 @@ public class WebhookEvents {
   var body=new LinkedHashMap<String,Object>();
   body.put("id",eventId.toString());body.put("type",type);body.put("occurredAt",Instant.now().toString());body.put("tenantId",String.valueOf(TenantContext.currentId()));
   body.put("action",action);body.put("entity",entity);body.put("actor",actor);body.put("details",details==null?null:(details.length()>500?details.substring(0,500):details));
-  try{return json.writeValueAsString(body);}catch(JsonProcessingException e){throw new IllegalStateException("Ereignis konnte nicht serialisiert werden.",e);}
+  try{return json.writeValueAsString(body);}catch(JacksonException e){throw new IllegalStateException("Ereignis konnte nicht serialisiert werden.",e);}
  }
 }

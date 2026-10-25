@@ -1,7 +1,7 @@
 package de.ostms.lc.audit.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import de.ostms.lc.document.api.DocumentView;
 import de.ostms.lc.document.domain.DocumentInboxItem;
 import de.ostms.lc.document.domain.LcDocument;
@@ -16,7 +16,7 @@ import java.util.*;
  * Output always fits the 4000-character column as valid JSON.
  */
 public final class AuditSnapshots {
- private static final ObjectMapper JSON=new ObjectMapper().findAndRegisterModules().disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+ private static final ObjectMapper JSON=new ObjectMapper();
  private static final int LIMIT=3900;
  private AuditSnapshots(){}
 
@@ -70,6 +70,6 @@ public final class AuditSnapshots {
    var shortened=new LinkedHashMap<String,Object>();
    values.forEach((k,v)->shortened.put(k,v instanceof String s&&s.length()>120?s.substring(0,117)+"...":v));
    return JSON.writeValueAsString(shortened);
-  }catch(JsonProcessingException e){throw new IllegalStateException(e);}
+  }catch(JacksonException e){throw new IllegalStateException(e);}
  }
 }

@@ -55,7 +55,7 @@ class ScannedPageTest {
  @Test void splitUsesTheRecognisedTextOfAScanInsteadOfTheStrayLayerText()throws Exception{
   var content=pdf(new String[]{"1+2K"},new boolean[]{true});
   var evidence=new OcrEvidence("t","PDF_TEXT_POSITIONS+OCR",200,0.8,List.of(),List.of(new OcrEvidence.PageResult(1,"OCR_EXTRACTED",1,0,"COMMERCIAL INVOICE No. 13502600 Total 70.831,40 EUR")));
-  var json=new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(evidence);
+  var json=new tools.jackson.databind.ObjectMapper().writeValueAsString(evidence);
   assertThat(PdfDocumentSplitter.texts(content,json).get(0)).contains("COMMERCIAL INVOICE").contains("70.831,40");
   assertThat(PdfDocumentSplitter.texts(content,null).get(0)).contains("1+2K");
  }

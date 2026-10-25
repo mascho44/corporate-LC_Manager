@@ -5,7 +5,7 @@ import de.ostms.lc.lc.domain.LetterOfCredit;
 import de.ostms.lc.document.domain.*;
 import de.ostms.lc.check.service.DocumentCheckReportService;
 import org.junit.jupiter.api.Test;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import java.util.*;import java.io.*;import java.util.zip.*;
 import static org.mockito.Mockito.*;import static org.assertj.core.api.Assertions.*;
 class LcCasePackageTest {

@@ -1,6 +1,6 @@
 package de.ostms.lc.webhook;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpServer;
 import de.ostms.lc.audit.domain.AuditEvent;
 import de.ostms.lc.tenant.domain.TenantContext;

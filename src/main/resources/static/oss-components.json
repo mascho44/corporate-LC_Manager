@@ -68,7 +68,7 @@
     },
     {
       "name": "Jackson-annotations",
-      "coordinate": "com.fasterxml.jackson.core:jackson-annotations",
+      "coordinate": "tools.jackson.core:jackson-annotations",
       "version": "2.19.2",
       "scope": "compile",
       "projectUrl": "https://github.com/FasterXML/jackson",
@@ -82,7 +82,7 @@
     },
     {
       "name": "Jackson-core",
-      "coordinate": "com.fasterxml.jackson.core:jackson-core",
+      "coordinate": "tools.jackson.core:jackson-core",
       "version": "2.19.2",
       "scope": "compile",
       "projectUrl": "https://github.com/FasterXML/jackson-core",
@@ -96,7 +96,7 @@
     },
     {
       "name": "jackson-databind",
-      "coordinate": "com.fasterxml.jackson.core:jackson-databind",
+      "coordinate": "tools.jackson.core:jackson-databind",
       "version": "2.19.2",
       "scope": "compile",
       "projectUrl": "https://github.com/FasterXML/jackson",

@@ -1,5 +1,5 @@
 package de.ostms.lc.rulepack;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import java.util.*;
 import static org.assertj.core.api.Assertions.*;
@@ -7,7 +7,7 @@ import static de.ostms.lc.rulepack.PackDefinition.*;
 import de.ostms.lc.document.domain.DocumentType;
 
 class PackV5Test {
- final PackCodec codec=new PackCodec(new ObjectMapper().findAndRegisterModules());
+ final PackCodec codec=new PackCodec(new ObjectMapper());
  Rule literal(Field left,Operator op,String value,Parameters params){
   return new Rule("synthetic-check","1.0.0",DocumentType.SEA_WAYBILL,left,op,Field.LITERAL,Level.WARNING,"Synthetic check","Internal synthetic test",Mode.AUTOMATIC,null,params,value);
  }

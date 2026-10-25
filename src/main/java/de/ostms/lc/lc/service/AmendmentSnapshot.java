@@ -1,7 +1,7 @@
 package de.ostms.lc.lc.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import de.ostms.lc.lc.domain.LetterOfCredit;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -41,7 +41,7 @@ final class AmendmentSnapshot {
         state.put("conditions", lc.getConditions());
         state.put("rawMessage", lc.getRawMessage());
         try { return JSON.writeValueAsString(state); }
-        catch (JsonProcessingException e) { throw new IllegalStateException("LC-Fassung konnte nicht gesichert werden", e); }
+        catch (JacksonException e) { throw new IllegalStateException("LC-Fassung konnte nicht gesichert werden", e); }
     }
     private static String text(Object value) { return value == null ? null : value.toString(); }
 }

@@ -1,6 +1,6 @@
 package de.ostms.lc.document.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.ostms.lc.document.domain.DocumentType;
 import de.ostms.lc.tenant.domain.TenantContext;
 import org.junit.jupiter.api.Test;

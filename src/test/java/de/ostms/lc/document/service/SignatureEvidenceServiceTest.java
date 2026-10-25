@@ -31,7 +31,7 @@ class SignatureEvidenceServiceTest {
   var word=new OcrEvidence.Word("Signature",.96,1,left,top,150,34);
   doc.setOcrEvidenceJson(toJson(new OcrEvidence("test","TEST",200,.8,List.of(word))));return doc;
  }
- private static String toJson(OcrEvidence evidence){try{return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(evidence);}catch(Exception e){throw new IllegalStateException(e);}}
+ private static String toJson(OcrEvidence evidence){try{return new tools.jackson.databind.ObjectMapper().writeValueAsString(evidence);}catch(Exception e){throw new IllegalStateException(e);}}
 
  @Test void signedPdfShowsInkNextToTheCaptionAndBlankPdfDoesNot()throws Exception{
   var service=new SignatureEvidenceService();

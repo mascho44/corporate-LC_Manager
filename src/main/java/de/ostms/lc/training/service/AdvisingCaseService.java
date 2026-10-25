@@ -1,6 +1,6 @@
 package de.ostms.lc.training.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.ostms.lc.audit.service.AuditService;
 import de.ostms.lc.document.domain.*;
 import de.ostms.lc.document.repository.LcDocumentRepository;
@@ -48,7 +48,7 @@ public class AdvisingCaseService {
     text.append(AdvisingTrainingService.LABELS.get(field.code())).append(": ").append(field.value().replaceAll("[\\r\\n]+"," ")).append('\n');
    }
    return AdvisingLetterExtractor.extract(text.toString());
-  }catch(com.fasterxml.jackson.core.JsonProcessingException e){throw new IllegalArgumentException("Trainingsdaten können nicht gelesen werden.",e);}
+  }catch(tools.jackson.core.JacksonException e){throw new IllegalArgumentException("Trainingsdaten können nicht gelesen werden.",e);}
  }
 
  public record Result(UUID lcId,UUID documentId){}

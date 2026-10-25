@@ -4,7 +4,7 @@ import de.ostms.lc.training.domain.TrainingSession;
 import de.ostms.lc.training.repository.TrainingSessionRepository;
 import de.ostms.lc.document.service.DocumentExtractionService;
 import de.ostms.lc.audit.service.AuditService;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.core.Authentication;
@@ -21,5 +21,5 @@ public class AdvisingTrainingController {
   var session=new TrainingSession();session.setFilename(file.getOriginalFilename());session.setContentType("application/pdf");session.setOriginalPdf(file.getBytes());session.setExtractedText(extracted.text());session.setReviewsJson(mapper.writeValueAsString(fields));session.setStatus("DRAFT");session.setUsername(auth.getName());session.setExtractionStatus(extracted.status());session.setMessageType("ADVISING_LETTER");sessions.save(session);
   audit.record(auth,"TRAINING_STARTED","TRAINING_SESSION",session.getId(),"Avisierungsschreiben · Bankprofil "+bank);return new View(session.getId(),fields);
  }
- @PutMapping("/{id}") @Transactional public View save(@PathVariable UUID id,@RequestBody List<AdvisingTrainingService.Field> fields,@RequestParam(defaultValue="false") boolean finish,Authentication auth){var session=training.save(id,fields,auth.getName(),finish);if(finish)audit.record(auth,"TRAINING_CONFIRMED","TRAINING_SESSION",id,"Avisierungsschreiben · keine Akte angelegt");try{return new View(id,Arrays.asList(mapper.readValue(session.getReviewsJson(),AdvisingTrainingService.Field[].class)));}catch(java.io.IOException e){throw new IllegalStateException(e);}}
+ @PutMapping("/{id}") @Transactional public View save(@PathVariable UUID id,@RequestBody List<AdvisingTrainingService.Field> fields,@RequestParam(defaultValue="false") boolean finish,Authentication auth){var session=training.save(id,fields,auth.getName(),finish);if(finish)audit.record(auth,"TRAINING_CONFIRMED","TRAINING_SESSION",id,"Avisierungsschreiben · keine Akte angelegt");try{return new View(id,Arrays.asList(mapper.readValue(session.getReviewsJson(),AdvisingTrainingService.Field[].class)));}catch(tools.jackson.core.JacksonException e){throw new IllegalStateException(e);}}
 }

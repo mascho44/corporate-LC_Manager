@@ -1,10 +1,10 @@
 package de.ostms.lc.training.service;
 import de.ostms.lc.training.domain.TrainingSession;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.*;
 class TrainingOcrConfidenceTest {
- private final ObjectMapper mapper=new ObjectMapper().findAndRegisterModules();
+ private final ObjectMapper mapper=new ObjectMapper();
  private final TrainingDataService service=new TrainingDataService(mapper);
  @Test void digitalTextHasNoInventedOcrScore(){
   var preview=new de.ostms.lc.imports.api.SwiftImportPreview("MT700","LC123",null,null,null,null,null,null,null,null,java.util.List.of(),false,true,java.util.List.of(),java.util.List.of(),java.util.List.of(new de.ostms.lc.imports.api.SwiftFieldView("20","Reference","LC123",null,null,"HIGH",null,false,null)));

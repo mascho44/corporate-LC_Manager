@@ -1,6 +1,6 @@
 package de.ostms.lc.training.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.ostms.lc.audit.service.AuditService;
 import de.ostms.lc.document.repository.LcDocumentRepository;
 import de.ostms.lc.lc.repository.LetterOfCreditRepository;

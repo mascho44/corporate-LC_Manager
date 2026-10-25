@@ -12,7 +12,7 @@ class FindingPagesTest {
    new OcrEvidence.Word("Packing",.9,1,10,10,60,20),new OcrEvidence.Word("slip",.9,1,80,10,40,20),
    new OcrEvidence.Word("Net",.9,2,10,10,30,20),new OcrEvidence.Word("weight",.9,2,50,10,50,20),new OcrEvidence.Word("12",.9,2,110,10,20,20),
    new OcrEvidence.Word("Net",.9,3,10,10,30,20),new OcrEvidence.Word("weight",.9,3,50,10,50,20),new OcrEvidence.Word("12",.9,3,110,10,20,20)),List.of());
-  d.setOcrEvidenceJson(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(ocr));
+  d.setOcrEvidenceJson(new tools.jackson.databind.ObjectMapper().writeValueAsString(ocr));
   return d;
  }
  private static CheckResult result(CheckResult.Severity severity,String document,String evidence){

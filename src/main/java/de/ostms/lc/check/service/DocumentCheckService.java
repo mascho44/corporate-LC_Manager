@@ -251,7 +251,7 @@ public class DocumentCheckService {
         decision.setSecondReviewedBy(null);decision.setSecondReviewedAt(null);
         decision.setLcId(lcId);decision.setFindingCode(request.findingCode());decision.setDocumentName(name);
         decision.setFindingFingerprint(baseline.reviewFingerprint());decision.setRuleCatalogVersion(baseline.ruleCatalogVersion());decision.setRuleId(baseline.rule().id());decision.setRuleVersion(baseline.rule().version());
-        try{decision.setFindingSnapshot(new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules().writeValueAsString(baseline));}catch(com.fasterxml.jackson.core.JsonProcessingException e){throw new IllegalStateException("Prüfgrundlage konnte nicht gespeichert werden.",e);}
+        try{decision.setFindingSnapshot(new tools.jackson.databind.ObjectMapper().writeValueAsString(baseline));}catch(tools.jackson.core.JacksonException e){throw new IllegalStateException("Prüfgrundlage konnte nicht gespeichert werden.",e);}
         decision.setEvidenceMark(markJson);decision.setInvalidatedAt(null);decision.setDecision(request.decision());decision.setComment(request.comment()==null?null:request.comment().strip());decision.setReviewedBy(username);decision.setReviewedAt(java.time.LocalDateTime.now());
         return decisions.save(decision);
     }
@@ -259,8 +259,8 @@ public class DocumentCheckService {
     private String evidenceMarkJson(UUID lcId,CheckDecisionRequest.EvidenceMark mark){
         if(mark==null)return null;
         var document=documents.findById(mark.documentId()).filter(d->d.getLetterOfCredit()!=null&&lcId.equals(d.getLetterOfCredit().getId())).orElseThrow(()->new IllegalArgumentException("Das markierte Dokument gehört nicht zu dieser LC-Akte."));
-        try{return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(java.util.Map.of("documentId",document.getId().toString(),"page",mark.page(),"x",mark.x(),"y",mark.y(),"w",mark.w(),"h",mark.h()));}
-        catch(com.fasterxml.jackson.core.JsonProcessingException e){throw new IllegalStateException("Markierung konnte nicht gespeichert werden.",e);}
+        try{return new tools.jackson.databind.ObjectMapper().writeValueAsString(java.util.Map.of("documentId",document.getId().toString(),"page",mark.page(),"x",mark.x(),"y",mark.y(),"w",mark.w(),"h",mark.h()));}
+        catch(tools.jackson.core.JacksonException e){throw new IllegalStateException("Markierung konnte nicht gespeichert werden.",e);}
     }
     /** The stored mark (JSON) of the decision on exactly this finding, if one was made with a mark. */
     @Transactional(readOnly=true) public Optional<String> decisionMark(UUID lcId,CheckResult finding){

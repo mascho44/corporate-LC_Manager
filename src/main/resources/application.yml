@@ -1,4 +1,8 @@
 spring:
+  jackson:
+    # Jackson 3 sorts properties alphabetically by default; keep the declaration order of Jackson 2 for the API, webhooks and stored JSON.
+    mapper:
+      SORT_PROPERTIES_ALPHABETICALLY: false
   mail:
     host: ${SMTP_HOST:localhost}
     port: ${SMTP_PORT:587}

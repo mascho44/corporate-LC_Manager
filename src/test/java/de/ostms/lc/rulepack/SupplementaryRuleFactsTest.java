@@ -1,6 +1,6 @@
 package de.ostms.lc.rulepack;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import java.util.*;
 import static org.assertj.core.api.Assertions.*;
@@ -27,7 +27,7 @@ class SupplementaryRuleFactsTest {
   assertThat(RuleFacts.read(RuleFacts.encodeRequirements(Map.of(Field.LC_REQUIRED_ISSUER,"Demo")))).containsEntry(Field.LC_REQUIRED_ISSUER,"Demo");
  }
  @Test void shipmentToDocumentPresentationSupportsBoundedDays(){
-  var codec=new PackCodec(new ObjectMapper().findAndRegisterModules());
+  var codec=new PackCodec(new ObjectMapper());
   for(var field:List.of(Field.DOCUMENT_SHIPMENT_DATE,Field.DOCUMENT_ON_BOARD_DATE)){
    var rule=new Rule("period-check","1.0.0",de.ostms.lc.document.domain.DocumentType.BILL_OF_LADING,field,Operator.WITHIN_DAYS,Field.DOCUMENT_PRESENTATION_DATE,Level.WARNING,"Period check","Internal synthetic test",Mode.AUTOMATIC,null,new Parameters(null,21,null,null,null,null));
    var tests=List.of(new TestCase("pass","period-check","2026-10-01","2026-10-22",Outcome.PASS),
@@ -38,7 +38,7 @@ class SupplementaryRuleFactsTest {
   }
  }
  @Test void documentAndLcPresentationDatesCanCompareToExpiry(){
-  var codec=new PackCodec(new ObjectMapper().findAndRegisterModules());
+  var codec=new PackCodec(new ObjectMapper());
   for(var field:List.of(Field.DOCUMENT_PRESENTATION_DATE,Field.LC_PRESENTATION_DATE)){
    var rule=new Rule("date-check","1.0.0",de.ostms.lc.document.domain.DocumentType.BILL_OF_LADING,field,Operator.LTE,Field.LC_EXPIRY_DATE,Level.WARNING,"Date check","Internal synthetic test");
    var tests=List.of(new TestCase("pass","date-check","2026-10-08","2026-10-08",Outcome.PASS),

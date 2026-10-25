@@ -37,7 +37,7 @@ public class PdfFieldSnippetService {
     private List<byte[]> create(TrainingSession session){
         List<String> codes=codes(session.getExtractedText());
         boolean advice="ADVISING_LETTER".equals(session.getMessageType());
-        if(advice){try{codes=new ArrayList<>();for(var field:new com.fasterxml.jackson.databind.ObjectMapper().readTree(session.getReviewsJson())){String label=field.path("sourceLabel").asText();codes.add(label.startsWith("Empfänger (Briefkopf")?field.path("originalValue").asText().split("\\R")[0]:label);}}catch(Exception e){return List.of(placeholder("Trainingsfelder nicht lesbar"));}}
+        if(advice){try{codes=new ArrayList<>();for(var field:new tools.jackson.databind.ObjectMapper().readTree(session.getReviewsJson())){String label=field.path("sourceLabel").asText();codes.add(label.startsWith("Empfänger (Briefkopf")?field.path("originalValue").asText().split("\\R")[0]:label);}}catch(Exception e){return List.of(placeholder("Trainingsfelder nicht lesbar"));}}
         if(codes.isEmpty())return List.of(placeholder("Keine SWIFT-Felder erkannt"));
         Path directory=null;
         try(var slot=de.ostms.lc.document.service.PdfProcessingSafety.acquire()){

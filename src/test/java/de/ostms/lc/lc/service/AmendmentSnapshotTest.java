@@ -1,7 +1,7 @@
 package de.ostms.lc.lc.service;
 
 import de.ostms.lc.lc.domain.LetterOfCredit;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;

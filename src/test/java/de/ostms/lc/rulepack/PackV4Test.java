@@ -1,5 +1,5 @@
 package de.ostms.lc.rulepack;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import java.util.*;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.*;

@@ -32,7 +32,7 @@ class FindingCropServiceTest {
  @Test void dateIsLocatedInOcrWords()throws Exception{
   var doc=new LcDocument();doc.setDocumentDate(LocalDate.of(2025,3,12));
   var ocr=new OcrEvidence("t","m",200,0.0,List.of(new OcrEvidence.Word("Date:",.9,1,10,10,50,20),new OcrEvidence.Word("12.03.2025",.9,3,300,400,160,24)),List.of());
-  doc.setOcrEvidenceJson(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(ocr));
+  doc.setOcrEvidenceJson(new tools.jackson.databind.ObjectMapper().writeValueAsString(ocr));
   var field=service.region(doc,"date").orElseThrow();
   assertEquals(3,field.page());assertEquals(300,field.left());assertEquals(400,field.top());
  }
@@ -43,14 +43,14 @@ class FindingCropServiceTest {
    new OcrEvidence.Word("ORIGINAL",.95,2,300,120,200,40),
    new OcrEvidence.Word("2",.9,2,520,122,20,38),
    new OcrEvidence.Word("Invoice",.9,2,100,400,90,24)),List.of());
-  doc.setOcrEvidenceJson(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(ocr));
+  doc.setOcrEvidenceJson(new tools.jackson.databind.ObjectMapper().writeValueAsString(ocr));
   var field=service.region(doc,"stamp").orElseThrow();
   assertEquals(2,field.page());assertEquals(300,field.left());assertEquals(120,field.top());assertEquals(240,field.width());
  }
  @Test void stampWithoutKindWordHasNoRegion()throws Exception{
   var doc=new LcDocument();
   var ocr=new OcrEvidence("t","m",200,0.0,List.of(new OcrEvidence.Word("Invoice",.9,1,10,10,50,20)),List.of());
-  doc.setOcrEvidenceJson(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(ocr));
+  doc.setOcrEvidenceJson(new tools.jackson.databind.ObjectMapper().writeValueAsString(ocr));
   assertTrue(service.region(doc,"stamp").isEmpty());
  }
 }

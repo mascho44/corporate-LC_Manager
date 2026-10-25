@@ -1,5 +1,5 @@
 package de.ostms.lc.document.service;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.ostms.lc.document.repository.*;
 import de.ostms.lc.document.api.DocumentView;
 import de.ostms.lc.lc.repository.*;
@@ -18,7 +18,7 @@ public class CasePackageContents {
   put(files,"Struktur/LC.json",lcs.findById(id).orElseThrow());
   var changes=amendments.findByLetterOfCreditIdOrderByImportedAtDesc(id);put(files,"Struktur/Amendments.json",changes);changes.forEach(change->{if(change.getId()!=null)entities.add(change.getId().toString());});
   var documents=docs.findByLetterOfCreditIdOrderByUploadedAtDesc(id);var extracted=json.createArrayNode();
-  for(var document:documents){if(document.getId()!=null)entities.add(document.getId().toString());var node=(com.fasterxml.jackson.databind.node.ObjectNode)json.valueToTree(DocumentView.from(document));node.put("extractedText",document.getExtractedText());node.set("ocrEvidence",document.getOcrEvidenceJson()==null?com.fasterxml.jackson.databind.node.NullNode.getInstance():json.readTree(document.getOcrEvidenceJson()));node.set("classificationHistory",ClassificationHistory.read(document.getClassificationHistoryJson()));extracted.add(node);}
+  for(var document:documents){if(document.getId()!=null)entities.add(document.getId().toString());var node=(tools.jackson.databind.node.ObjectNode)json.valueToTree(DocumentView.from(document));node.put("extractedText",document.getExtractedText());node.set("ocrEvidence",document.getOcrEvidenceJson()==null?tools.jackson.databind.node.NullNode.getInstance():json.readTree(document.getOcrEvidenceJson()));node.set("classificationHistory",ClassificationHistory.read(document.getClassificationHistoryJson()));extracted.add(node);}
   put(files,"Struktur/Dokumentwerte-und-Evidenz.json",extracted);
   put(files,"Pruefung/Befunde.json",checks.check(id));put(files,"Pruefung/Entscheidungen.json",decisions.findByLcId(id));
   var approvals=drafts.findByLcIdOrderByUpdatedAtDesc(id);put(files,"Freigaben/Entwuerfe-und-Freigaben.json",approvals);approvals.forEach(draft->{if(draft.getId()!=null)entities.add(draft.getId().toString());});

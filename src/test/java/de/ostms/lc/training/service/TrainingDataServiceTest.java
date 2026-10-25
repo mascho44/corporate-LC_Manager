@@ -1,6 +1,6 @@
 package de.ostms.lc.training.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.ostms.lc.training.domain.TrainingSession;
 import org.junit.jupiter.api.Test;
 
@@ -11,7 +11,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class TrainingDataServiceTest {
-    private final TrainingDataService service=new TrainingDataService(new ObjectMapper().findAndRegisterModules());
+    private final TrainingDataService service=new TrainingDataService(new ObjectMapper());
 
     @Test void trainingCompletionRequiresReviewsButNotAValidBusinessRecord(){
         service.requireReviewedFields("[{\"code\":\"44C\",\"value\":\"unreadable\",\"review\":\"invalid\"}]");
