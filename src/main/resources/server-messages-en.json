@@ -50,6 +50,7 @@
   "Dokument im Testpaket doppelt angegeben.": "Document specified twice in the test package.",
   "Testdokument gehört nicht zur LC-Akte.": "The test document does not belong to the LC file.",
   "Firma nicht gefunden.": "Company not found.",
+  "Noch keine Firmenstammdaten angelegt. Bitte unter Firmenstammdaten eine Firma anlegen.": "No company master data yet. Please create a company under Company master data.",
   "Logo fehlt oder ist größer als 2 MB.": "The logo is missing or larger than 2 MB.",
   "Logo muss eine PNG- oder JPEG-Datei sein.": "The logo must be a PNG or JPEG file.",
   "Ungültige Upload-Größe.": "Invalid upload size.",
