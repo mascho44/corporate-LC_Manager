@@ -44,3 +44,12 @@ dialog>p.error:empty{display:none}
 #guaranteeCockpitSection h2{margin:0 0 4px}
 /* The examination workplace is a bank tool: not offered in corporate-only workspaces */
 html[data-profile="corporate"] .workspace-control{display:none}
+/* Positions table in the document dialog: below 720px of dialog width the rows use two columns instead of running out of the dialog */
+.document-items{container-type:inline-size}
+@container (max-width: 720px){
+ .document-item-head{display:none!important}
+ .document-items .document-item-row,.document-items.packing-mode .document-item-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+ .document-items .document-item-row textarea{grid-column:1/-1}
+}
+/* The close button in a dialog header stays a small cross at the top right instead of stretching over the whole header */
+.dialoghead>button.ghost{align-self:flex-start;flex:0 0 auto;min-height:0;height:auto;padding:4px 12px;font-size:22px;line-height:1.2}
