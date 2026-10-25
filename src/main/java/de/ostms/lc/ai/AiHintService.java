@@ -1,6 +1,6 @@
 package de.ostms.lc.ai;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import de.ostms.lc.document.domain.LcDocument;
 import java.io.IOException;
 import java.util.*;
@@ -34,7 +34,7 @@ public final class AiHintService {
  }
  static List<Hint> verify(String answer,String normalizedCorpus){
   var out=new ArrayList<Hint>();
-  JsonNode root;try{root=JSON.readTree(answer);}catch(IOException invalid){return out;}
+  JsonNode root;try{root=JSON.readTree(answer);}catch(tools.jackson.core.JacksonException invalid){return out;}
   for(JsonNode n:root.path("discrepancies")){
    if(out.size()>=MAX_HINTS)break;
    String evidence=n.path("evidence").asText(""),check=n.path("check").asText(""),why=n.path("explanation").asText("");

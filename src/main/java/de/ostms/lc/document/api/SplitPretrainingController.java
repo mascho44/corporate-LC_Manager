@@ -1,6 +1,6 @@
 package de.ostms.lc.document.api;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.ostms.lc.document.service.*;
 import de.ostms.lc.audit.service.AuditService;
 import org.springframework.web.bind.annotation.*;

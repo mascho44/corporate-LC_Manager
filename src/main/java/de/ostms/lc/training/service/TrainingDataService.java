@@ -1,7 +1,7 @@
 package de.ostms.lc.training.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.*;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.*;
 import de.ostms.lc.training.domain.TrainingSession;
 import org.springframework.stereotype.Service;
 
@@ -23,9 +23,9 @@ public class TrainingDataService {
         try{
             session.setOcrConfidenceJson(mapper.writeValueAsString(scores));
             var fields=mapper.valueToTree(preview.rawFields());
-            for(int i=0;i<fields.size();i++)((com.fasterxml.jackson.databind.node.ObjectNode)fields.get(i)).set("ocr",mapper.valueToTree(scores.get(i)));
+            for(int i=0;i<fields.size();i++)((tools.jackson.databind.node.ObjectNode)fields.get(i)).set("ocr",mapper.valueToTree(scores.get(i)));
             session.setReviewsJson(mapper.writeValueAsString(fields));
-        }catch(JsonProcessingException e){throw new IllegalStateException("OCR-Bewertungen konnten nicht gespeichert werden",e);}
+        }catch(JacksonException e){throw new IllegalStateException("OCR-Bewertungen konnten nicht gespeichert werden",e);}
         return scores;
     }
     /** Client edits cannot change the OCR measurement of the original field value. */
@@ -36,10 +36,10 @@ public class TrainingDataService {
             if(!fields.isArray()||fields.size()!=scores.size())throw new IllegalArgumentException("Anzahl der Trainingsfelder wurde verändert.");
             for(int i=0;i<fields.size();i++){
                 if(!fields.get(i).isObject())throw new IllegalArgumentException("Ungültiges Trainingsfeld");
-                ((com.fasterxml.jackson.databind.node.ObjectNode)fields.get(i)).set("ocr",scores.get(i));
+                ((tools.jackson.databind.node.ObjectNode)fields.get(i)).set("ocr",scores.get(i));
             }
             return mapper.writeValueAsString(fields);
-        }catch(JsonProcessingException e){throw new IllegalArgumentException("Ungültige Trainingsfelder",e);}
+        }catch(JacksonException e){throw new IllegalArgumentException("Ungültige Trainingsfelder",e);}
     }
 
     public void requireReviewedFields(String json) {
@@ -50,7 +50,7 @@ public class TrainingDataService {
                 if(!Set.of("correct","corrected","reassigned","invalid").contains(field.path("review").asText()))
                     throw new IllegalArgumentException("Bitte alle Trainingsfelder bestätigen oder als nicht verwendbar markieren.");
             }
-        } catch(JsonProcessingException ex) { throw new IllegalArgumentException("Ungültige Trainingsfelder.",ex); }
+        } catch(JacksonException ex) { throw new IllegalArgumentException("Ungültige Trainingsfelder.",ex); }
     }
 
     public record Detail(UUID id,String filename,String messageType,String status,String username,
@@ -68,7 +68,7 @@ public class TrainingDataService {
 
     public byte[] json(TrainingSession session){
         try{return mapper.writerWithDefaultPrettyPrinter().writeValueAsBytes(detail(session));}
-        catch(JsonProcessingException e){throw new IllegalArgumentException("JSON-Export konnte nicht erstellt werden.",e);}
+        catch(JacksonException e){throw new IllegalArgumentException("JSON-Export konnte nicht erstellt werden.",e);}
     }
 
     public byte[] xml(TrainingSession session){
@@ -118,7 +118,7 @@ public class TrainingDataService {
         return result;
     }
 
-    private JsonNode fields(TrainingSession session){try{String json=session.getReviewsJson();return json==null||json.isBlank()?mapper.createArrayNode():mapper.readTree(json);}catch(JsonProcessingException e){return mapper.createArrayNode();}}
+    private JsonNode fields(TrainingSession session){try{String json=session.getReviewsJson();return json==null||json.isBlank()?mapper.createArrayNode():mapper.readTree(json);}catch(JacksonException e){return mapper.createArrayNode();}}
     private String raw(TrainingSession session){return session.getCorrectedText()==null?session.getExtractedText():session.getCorrectedText();}
     private String text(JsonNode node,String name){JsonNode value=node.get(name);return value==null||value.isNull()?"":value.asText();}
     private String value(String text,String fallback){return text==null||text.isBlank()?fallback:text;}

@@ -1,6 +1,6 @@
 package de.ostms.lc.messaging.service;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import de.ostms.lc.messaging.domain.OutboxMessage;
 import de.ostms.lc.messaging.repository.OutboxMessageRepository;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,7 +37,7 @@ public class OutboxService {
         message.setMessageKey(key == null ? null : String.valueOf(key));
         try {
             message.setPayload(json.writeValueAsString(payload));
-        } catch (JsonProcessingException ex) {
+        } catch (JacksonException ex) {
             throw new IllegalArgumentException("Integrationsereignis konnte nicht serialisiert werden.", ex);
         }
         repo.save(message);

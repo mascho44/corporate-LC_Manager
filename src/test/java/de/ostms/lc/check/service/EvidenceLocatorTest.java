@@ -42,7 +42,7 @@ class EvidenceLocatorTest {
  @Test void usesStoredOcrPageWithoutReadingScan()throws Exception{
   var doc=new LcDocument();var word=new de.ostms.lc.document.service.OcrEvidence.Word("Invoice123",.7,2,10,20,50,10);
   var evidence=new de.ostms.lc.document.service.OcrEvidence("test","OCR",200,.8,java.util.List.of(word));
-  doc.setOcrEvidenceJson(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(evidence));
+  doc.setOcrEvidenceJson(new tools.jackson.databind.ObjectMapper().writeValueAsString(evidence));
   var result=EvidenceLocator.locate(doc,"Invoice123");assertThat(result.method()).isEqualTo("OCR_TEXT");assertThat(result.pages()).containsExactly(2);assertThat(result.status()).isEqualTo("MATCH");
  }
 }

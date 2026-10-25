@@ -1,5 +1,5 @@
 package de.ostms.lc.charges;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.ostms.lc.audit.service.AuditService;
 import de.ostms.lc.lc.domain.LetterOfCredit;
 import de.ostms.lc.lc.repository.LetterOfCreditRepository;
@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.*;
 class ChargeControllerTest {
  @Test void storesPinnedProfileAndRoundedResultAndAudits() throws Exception {
   var profiles=mock(ChargeProfileRepository.class);var estimates=mock(ChargeEstimateRepository.class);
-  var lcs=mock(LetterOfCreditRepository.class);var audit=mock(AuditService.class);var json=new ObjectMapper().findAndRegisterModules();
+  var lcs=mock(LetterOfCreditRepository.class);var audit=mock(AuditService.class);var json=new ObjectMapper();
   var controller=new ChargeController(profiles,estimates,lcs,json,audit);
   var id=UUID.randomUUID();var lc=new LetterOfCredit();lc.setCurrency("EUR");lc.setAmount(new BigDecimal("1000"));
   var p=new ChargeProfile();p.currency="EUR";p.name="Synthetic tariff";

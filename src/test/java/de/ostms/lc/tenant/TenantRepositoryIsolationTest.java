@@ -222,13 +222,13 @@ class TenantRepositoryIsolationTest {
   try(var scope=TenantContext.open(foreignTenant)){foreignLc=createLc("FOREIGN-HISTORY");foreignComparison=createComparison(foreignLc);foreignEmail=createDelivery(foreignLc);}
   assertThat(comparisons.findById(foreignComparison.id)).isEmpty();assertThat(comparisons.findByLcIdOrderByCreatedAtDesc(foreignLc.getId())).isEmpty();assertThat(comparisons.findAll()).extracting(c->c.id).containsExactly(ownComparison.id);
   assertThat(deliveries.findById(foreignEmail.getId())).isEmpty();assertThat(deliveries.findByLetterOfCreditIdOrderBySentAtDesc(foreignLc.getId())).isEmpty();assertThat(deliveries.findAll()).extracting(de.ostms.lc.email.domain.EmailDelivery::getId).containsExactly(ownEmail.getId());
-  var comparisonService=new de.ostms.lc.document.service.DocumentComparisonService(documents,comparisons,new com.fasterxml.jackson.databind.ObjectMapper());assertThat(comparisonService.history(foreignLc.getId())).isEmpty();assertThat(comparisonService.history(ownLc.getId())).hasSize(1);
+  var comparisonService=new de.ostms.lc.document.service.DocumentComparisonService(documents,comparisons,new tools.jackson.databind.ObjectMapper());assertThat(comparisonService.history(foreignLc.getId())).isEmpty();assertThat(comparisonService.history(ownLc.getId())).hasSize(1);
   var emailService=new de.ostms.lc.email.service.EmailService(null,lcs,documents,deliveries,false,"");assertThatThrownBy(()->emailService.history(foreignLc.getId())).isInstanceOf(java.util.NoSuchElementException.class);assertThat(emailService.history(ownLc.getId())).hasSize(1);
  }
  @Test void foreignAttachmentsCannotBeComparedOrSentAndDoNotContactMail(){
   var ownLc=createLc("OWN-ATTACHMENT");var own=createDocument(ownLc);LetterOfCredit foreignLc;de.ostms.lc.document.domain.LcDocument foreign;
   try(var scope=TenantContext.open(foreignTenant)){foreignLc=createLc("FOREIGN-ATTACHMENT");foreign=createDocument(foreignLc);}
-  var comparisonService=new de.ostms.lc.document.service.DocumentComparisonService(documents,comparisons,new com.fasterxml.jackson.databind.ObjectMapper());
+  var comparisonService=new de.ostms.lc.document.service.DocumentComparisonService(documents,comparisons,new tools.jackson.databind.ObjectMapper());
   assertThatThrownBy(()->comparisonService.compare(ownLc.getId(),own.getId(),foreign.getId(),"synthetic-user")).isInstanceOf(java.util.NoSuchElementException.class);assertThat(comparisons.findAll()).isEmpty();
   var mail=org.mockito.Mockito.mock(org.springframework.mail.javamail.JavaMailSender.class);var emailService=new de.ostms.lc.email.service.EmailService(mail,lcs,documents,deliveries,true,"sender@example.invalid");
   var request=new de.ostms.lc.email.api.EmailSendRequest(java.util.List.of("recipient@example.invalid"),"Synthetic subject","Synthetic body",java.util.List.of(own.getId(),foreign.getId()));
@@ -267,7 +267,7 @@ class TenantRepositoryIsolationTest {
   var own=createDraft(createLc("OWN-DRAFT"));LetterOfCredit foreignLc;de.ostms.lc.document.domain.DocumentDraft foreign;
   try(var scope=TenantContext.open(foreignTenant)){foreignLc=createLc("FOREIGN-DRAFT");foreign=createDraft(foreignLc);}
   assertThat(drafts.findById(foreign.getId())).isEmpty();assertThat(drafts.findByLcIdOrderByUpdatedAtDesc(foreignLc.getId())).isEmpty();assertThat(drafts.findAll()).extracting(de.ostms.lc.document.domain.DocumentDraft::getId).containsExactly(own.getId());
-  var service=new de.ostms.lc.document.service.DocumentDraftService(drafts,lcs,new com.fasterxml.jackson.databind.ObjectMapper(),null,new de.ostms.lc.document.service.DocumentApprovalPolicyService(approvalThresholds));
+  var service=new de.ostms.lc.document.service.DocumentDraftService(drafts,lcs,new tools.jackson.databind.ObjectMapper(),null,new de.ostms.lc.document.service.DocumentApprovalPolicyService(approvalThresholds));
   assertThatThrownBy(()->service.list(foreignLc.getId())).isInstanceOf(java.util.NoSuchElementException.class);
   assertThatThrownBy(()->service.update(foreignLc.getId(),foreign.getId(),null,"synthetic-user")).isInstanceOf(java.util.NoSuchElementException.class);
   assertThatThrownBy(()->service.status(foreignLc.getId(),foreign.getId(),de.ostms.lc.document.domain.DocumentDraftStatus.SUBMITTED,"synthetic-user")).isInstanceOf(java.util.NoSuchElementException.class);
@@ -316,7 +316,7 @@ class TenantRepositoryIsolationTest {
   assertThat(packVersions.existsByPackIdAndVersion("foreign-only","1.0")).isFalse();assertThat(packVersions.existsByPackIdAndVersion("same-pack","1.0")).isTrue();
   assertThat(packSelections.locked("foreign-only")).isEmpty();assertThat(packSelections.existsById("foreign-only")).isFalse();assertThat(packSelections.findAll()).hasSize(1);
   assertThat(packSelections.findById(new de.ostms.lc.rulepack.PackSelection.Key(foreignTenant,"same-pack"))).isEmpty();
-  var service=new de.ostms.lc.rulepack.InternalPackService(new de.ostms.lc.rulepack.PackCodec(new com.fasterxml.jackson.databind.ObjectMapper()),packVersions,packSelections,org.mockito.Mockito.mock(de.ostms.lc.audit.service.AuditService.class));
+  var service=new de.ostms.lc.rulepack.InternalPackService(new de.ostms.lc.rulepack.PackCodec(new tools.jackson.databind.ObjectMapper()),packVersions,packSelections,org.mockito.Mockito.mock(de.ostms.lc.audit.service.AuditService.class));
   assertThatThrownBy(()->service.test(foreign.id)).isInstanceOf(java.util.NoSuchElementException.class);assertThatThrownBy(()->service.activate(foreign.id,null)).isInstanceOf(java.util.NoSuchElementException.class);
   service.deactivate("same-pack",null);packSelections.flush();assertThat(packSelections.findById("same-pack").orElseThrow().activeVersionId).isNull();
   try(var scope=TenantContext.open(foreignTenant)){assertThat(packSelections.findById("same-pack").orElseThrow().activeVersionId).isEqualTo(foreign.id);}
@@ -341,7 +341,7 @@ class TenantRepositoryIsolationTest {
   try(var scope=TenantContext.open(foreignTenant)){foreignLc=createLc("FOREIGN-CHARGES");foreignProfile=createChargeProfile();foreign=createEstimate(foreignLc,foreignProfile);}
   assertThat(chargeProfiles.findAll()).extracting(p->p.id).containsExactly(ownProfile.id);assertThat(chargeProfiles.findById(foreignProfile.id)).isEmpty();assertThat(chargeEstimates.findById(foreign.id)).isEmpty();
   assertThat(chargeEstimates.findByLcIdOrderByCreatedAtDesc(foreignLc.getId())).isEmpty();assertThat(chargeEstimates.findAll()).extracting(e->e.id).containsExactly(own.id);
-  var controller=new de.ostms.lc.charges.ChargeController(chargeProfiles,chargeEstimates,lcs,new com.fasterxml.jackson.databind.ObjectMapper(),org.mockito.Mockito.mock(de.ostms.lc.audit.service.AuditService.class));
+  var controller=new de.ostms.lc.charges.ChargeController(chargeProfiles,chargeEstimates,lcs,new tools.jackson.databind.ObjectMapper(),org.mockito.Mockito.mock(de.ostms.lc.audit.service.AuditService.class));
   assertThatThrownBy(()->controller.history(foreignLc.getId())).isInstanceOf(java.util.NoSuchElementException.class);
   assertThatThrownBy(()->controller.estimate(ownLc.getId(),new de.ostms.lc.charges.ChargeController.EstimateRequest(foreignProfile.id,java.util.Map.of()),null)).isInstanceOf(java.util.NoSuchElementException.class);
  }
@@ -387,7 +387,7 @@ class TenantRepositoryIsolationTest {
  }
  @Test void auditAndOutboxCarryTenantAndForeignMessagesCannotBePublishedOrRetried(){
   var publisher=org.mockito.Mockito.mock(de.ostms.lc.messaging.service.MessagePublisher.class);
-  var delivery=new de.ostms.lc.messaging.service.OutboxService(outbox,new com.fasterxml.jackson.databind.ObjectMapper(),publisher,8);
+  var delivery=new de.ostms.lc.messaging.service.OutboxService(outbox,new tools.jackson.databind.ObjectMapper(),publisher,8);
   var audit=new de.ostms.lc.audit.service.AuditService(auditEvents,delivery);
   audit.record("synthetic-user","LC_UPDATED","LETTER_OF_CREDIT","own-id","Own event",true,null);outbox.flush();
   de.ostms.lc.messaging.domain.OutboxMessage foreign;
@@ -414,7 +414,7 @@ class TenantRepositoryIsolationTest {
  }
  @Test void learningAndActivationAreSharedWithinTenantButNeverAcrossTenants(){
   var own=createTraining("OWN");try(var scope=TenantContext.open(foreignTenant)){createTraining("FOREIGN");}
-  var service=new de.ostms.lc.training.service.TrainingLearningService(training,learningControls,new com.fasterxml.jackson.databind.ObjectMapper());
+  var service=new de.ostms.lc.training.service.TrainingLearningService(training,learningControls,new tools.jackson.databind.ObjectMapper());
   assertThat(service.apply("MT700",":50:ORIGINAL")).isEqualTo(":50:OWN");
   own.setStatus("DELETED");training.flush();assertThat(service.apply("MT700",":50:ORIGINAL")).isEqualTo(":50:OWN");
   String ruleId=service.rules().get(0).id();service.setActive(ruleId,false,"another-user-in-same-tenant");learningControls.flush();

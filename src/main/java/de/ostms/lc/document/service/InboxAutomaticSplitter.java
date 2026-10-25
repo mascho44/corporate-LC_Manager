@@ -43,7 +43,7 @@ public class InboxAutomaticSplitter {
  public List<DocumentInboxItem> persist(DocumentInboxItem original,Plan plan,String requestedBy)throws Exception{
   TenantContext.require(original.getTenantId());
   if(!"OPEN".equals(original.getStatus())||original.getSourceInboxId()!=null||ClassificationHistory.selectedType(original.getClassificationHistoryJson())!=null||plan.outputs().isEmpty())return List.of();
-  var result=new ArrayList<DocumentInboxItem>();var json=new com.fasterxml.jackson.databind.ObjectMapper();
+  var result=new ArrayList<DocumentInboxItem>();var json=new tools.jackson.databind.ObjectMapper();
   for(var output:plan.outputs()){
    var item=new DocumentInboxItem();var part=output.part();String base=original.getOriginalFilename().replaceFirst("(?i)\\.pdf$","");if(base.length()>180)base=base.substring(0,180);
    item.setOriginalFilename(base+"-pages-"+part.fromPage()+"-"+part.toPage()+".pdf");item.setContentType("application/pdf");item.setContent(output.content());item.setFileSize(output.content().length);item.setReceivedBy(original.getReceivedBy());

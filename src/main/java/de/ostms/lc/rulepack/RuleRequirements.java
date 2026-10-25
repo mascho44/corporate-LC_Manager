@@ -1,6 +1,6 @@
 package de.ostms.lc.rulepack;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
 import de.ostms.lc.document.domain.DocumentType;
 import java.util.*;
 import static de.ostms.lc.rulepack.PackDefinition.Field;

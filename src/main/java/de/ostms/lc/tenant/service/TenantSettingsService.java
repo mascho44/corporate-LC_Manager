@@ -44,5 +44,5 @@ import java.util.*;
   audit.recordChangeInTransaction(auth,"TENANT_OCR_TOLERANCE_UPDATED","TENANT",t.getId(),"OCR-Toleranz (Mindest-Konfidenz) geändert","{\"ocrConfidenceThreshold\":"+before+"}","{\"ocrConfidenceThreshold\":"+t.getOcrConfidenceThreshold()+"}");
   return new OcrSettings(t.getOcrConfidenceThreshold(),ocrDefault(),Tenant.OCR_MIN,Tenant.OCR_MAX,true);
  }
- private String snapshot(Tenant t){try{return new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(Map.of("name",t.getName(),"defaultLanguage",t.getDefaultLanguage()));}catch(com.fasterxml.jackson.core.JsonProcessingException e){throw new IllegalStateException("Tenant audit snapshot failed",e);}}
+ private String snapshot(Tenant t){try{return new tools.jackson.databind.ObjectMapper().writeValueAsString(Map.of("name",t.getName(),"defaultLanguage",t.getDefaultLanguage()));}catch(tools.jackson.core.JacksonException e){throw new IllegalStateException("Tenant audit snapshot failed",e);}}
 }

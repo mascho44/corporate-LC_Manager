@@ -1,6 +1,6 @@
 package de.ostms.lc.user.api;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import java.util.LinkedHashMap;
 
 /** Allowlisted administration metadata only; never serialize entities or requests. */
@@ -16,5 +16,5 @@ public final class AdministrationAuditSnapshot {
  public static String membership(de.ostms.lc.tenant.service.TenantMembershipService.Membership membership){
   var values=new LinkedHashMap<String,Object>();values.put("username",membership.username());values.put("roleId",membership.roleId());values.put("permissions",membership.permissions().stream().map(Enum::name).sorted().toList());values.put("active",membership.active());values.put("suspended",membership.suspended());return encode(values);
  }
- private static String encode(Object values){try{return JSON.writeValueAsString(values);}catch(JsonProcessingException e){throw new IllegalStateException("Administration audit snapshot could not be created.",e);}}
+ private static String encode(Object values){try{return JSON.writeValueAsString(values);}catch(JacksonException e){throw new IllegalStateException("Administration audit snapshot could not be created.",e);}}
 }

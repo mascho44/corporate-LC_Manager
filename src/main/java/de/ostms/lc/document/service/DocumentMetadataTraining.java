@@ -1,6 +1,6 @@
 package de.ostms.lc.document.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.ostms.lc.document.api.DocumentInboxAttachRequest.Metadata;
 import de.ostms.lc.tenant.domain.TenantContext;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -22,7 +22,7 @@ public class DocumentMetadataTraining {
  }
  @Transactional
  public void confirm(String text,Confirmation value,String actor){
-  try{jdbc.update("insert into document_metadata_training(id,tenant_id,text_hash,confirmed_json,confirmed_by,anchors_json) values (?,?,?,?,?,?)",UUID.randomUUID(),TenantContext.currentId(),hash(text),json.writeValueAsString(value),actor,json.writeValueAsString(MetadataFieldAnchors.learn(text,value)));}catch(com.fasterxml.jackson.core.JsonProcessingException e){throw new IllegalStateException(e);}
+  try{jdbc.update("insert into document_metadata_training(id,tenant_id,text_hash,confirmed_json,confirmed_by,anchors_json) values (?,?,?,?,?,?)",UUID.randomUUID(),TenantContext.currentId(),hash(text),json.writeValueAsString(value),actor,json.writeValueAsString(MetadataFieldAnchors.learn(text,value)));}catch(tools.jackson.core.JacksonException e){throw new IllegalStateException(e);}
  }
  @Transactional(readOnly=true)
  public Proposal suggest(String text){
@@ -30,13 +30,13 @@ public class DocumentMetadataTraining {
   var rows=jdbc.queryForList("select distinct confirmed_json from document_metadata_training where tenant_id=? and text_hash=? limit 2",String.class,TenantContext.currentId(),hash(text));
   if(rows.size()>1)return new Proposal("CONFLICT",null);
   if(rows.isEmpty())return suggestAnchors(text);
-  try{return new Proposal("LEARNED_REVIEW",json.readValue(rows.get(0),Confirmation.class));}catch(com.fasterxml.jackson.core.JsonProcessingException e){throw new IllegalStateException(e);}
+  try{return new Proposal("LEARNED_REVIEW",json.readValue(rows.get(0),Confirmation.class));}catch(tools.jackson.core.JacksonException e){throw new IllegalStateException(e);}
  }
  private Proposal suggestAnchors(String text){
   var patterns=jdbc.queryForList("select distinct anchors_json from document_metadata_training where tenant_id=? and anchors_json is not null limit 1001",String.class,TenantContext.currentId());
   if(patterns.size()>1000)return new Proposal("REVIEW_LIMIT",null);
   var matches=new LinkedHashMap<Confirmation,Map<String,String>>();
-  try{for(String source:patterns){var match=MetadataFieldAnchors.apply(text,json.readValue(source,MetadataFieldAnchors.Pattern.class));if(match!=null)matches.put(match.values(),match.evidence());}}catch(com.fasterxml.jackson.core.JsonProcessingException e){throw new IllegalStateException(e);}
+  try{for(String source:patterns){var match=MetadataFieldAnchors.apply(text,json.readValue(source,MetadataFieldAnchors.Pattern.class));if(match!=null)matches.put(match.values(),match.evidence());}}catch(tools.jackson.core.JacksonException e){throw new IllegalStateException(e);}
   if(matches.size()!=1)return new Proposal(matches.isEmpty()?"NO_PATTERN":"CONFLICT",null);
   var match=matches.entrySet().iterator().next();return new Proposal("ANCHOR_REVIEW",match.getKey(),match.getValue());
  }

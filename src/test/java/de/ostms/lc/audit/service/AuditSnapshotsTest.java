@@ -1,6 +1,6 @@
 package de.ostms.lc.audit.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.ostms.lc.document.domain.*;
 import de.ostms.lc.lc.domain.LetterOfCredit;
 import org.junit.jupiter.api.Test;

@@ -1,13 +1,13 @@
 package de.ostms.lc.rulepack;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
 import java.util.*;
 import static de.ostms.lc.rulepack.PackDefinition.Field;
 
 /** Explicitly reviewed supplementary data, never guessed from OCR or a filename. */
 public final class RuleFacts {
  private RuleFacts(){}
- private static final ObjectMapper JSON=new ObjectMapper().enable(com.fasterxml.jackson.core.JsonParser.Feature.STRICT_DUPLICATE_DETECTION);
+ private static final ObjectMapper JSON=tools.jackson.databind.json.JsonMapper.builder().enable(tools.jackson.core.StreamReadFeature.STRICT_DUPLICATE_DETECTION).build();
  public static final int MAX_BYTES=64*1024;
  public static final int MAX_FIELDS=192;
  public static final Set<Field> DOCUMENT=Set.of(Field.DOCUMENT_ACCEPTED_FOR_CARRIAGE_INDICATED,Field.DOCUMENT_ADDITIONAL_COSTS_INDICATED,Field.DOCUMENT_AGENT_PRINCIPAL_INDICATED,Field.DOCUMENT_AMOUNT_WORDS_MATCH_INDICATED,Field.DOCUMENT_APPLICANT_ADDRESS,Field.DOCUMENT_CARRIER_INDICATED,Field.DOCUMENT_CERTIFIED_STATEMENT,Field.DOCUMENT_CHARTER_PARTY_INDICATED,Field.DOCUMENT_CLAIM_EXPIRY_INDICATED,Field.DOCUMENT_CLAUSE_INDICATED,Field.DOCUMENT_CONTAINERISED_SHIPMENT_INDICATED,Field.DOCUMENT_CORRECTIONS_PRESENT,Field.DOCUMENT_CORRECTION_AUTHENTICATED_INDICATED,Field.DOCUMENT_COUNTERSIGNATURE_PRESENT,Field.DOCUMENT_COUNTERSIGNATURE_REQUIRED,Field.DOCUMENT_COVER_DATE_INDICATED,Field.DOCUMENT_DISCOUNT_INDICATED,Field.DOCUMENT_ENTIRE_CARRIAGE_SINGLE_DOC_INDICATED,Field.DOCUMENT_FORM_TYPE,Field.DOCUMENT_FULL_QUANTITY_INDICATED,Field.DOCUMENT_INTENDED_PORT_INDICATED,Field.DOCUMENT_ON_DECK_INDICATED,Field.DOCUMENT_ORIGINAL_FOR_CONSIGNOR_INDICATED,Field.DOCUMENT_PACKING_DESCRIPTION,Field.DOCUMENT_PLACE_OF_DESTINATION,Field.DOCUMENT_PLACE_OF_FINAL_DESTINATION,Field.DOCUMENT_PLACE_OF_RECEIPT,Field.DOCUMENT_PLACE_OF_SHIPMENT,Field.DOCUMENT_PREMIUM_PAID_INDICATED,Field.DOCUMENT_PRESHIPMENT_INDICATED,Field.DOCUMENT_PROVISIONAL_INDICATED,Field.DOCUMENT_REFERS_TO_INVOICED_GOODS_INDICATED,Field.DOCUMENT_RELEASE_CONDITION_INDICATED,Field.DOCUMENT_SHIPPED_ON_BOARD_INDICATED,Field.DOCUMENT_SIGNED_BY_AGENT_INDICATED,Field.DOCUMENT_SIGNED_OR_STAMPED_PRESENT,Field.DOCUMENT_TO_ORDER_INDICATED,Field.DOCUMENT_VALUE_INDICATED,Field.DOCUMENT_CONSIGNEE_ADDRESS_COUNTRY,Field.DOCUMENT_NOTIFY_ADDRESS_COUNTRY,Field.DOCUMENT_PARTIAL_SHIPMENT_INDICATED,Field.DOCUMENT_ISSUER,Field.DOCUMENT_RECIPIENT,Field.DOCUMENT_GOODS_DESCRIPTION,
@@ -84,7 +84,7 @@ public final class RuleFacts {
    var root=JSON.readTree(source);
    if(root==null||!root.isObject()||root.size()>MAX_FIELDS)throw new IllegalArgumentException("Prüfdaten müssen ein JSON-Objekt mit höchstens "+MAX_FIELDS+" Feldern sein.");
    var facts=new EnumMap<Field,String>(Field.class);
-   var fields=root.fields();
+   var fields=root.properties().iterator();
    while(fields.hasNext()){
     var entry=fields.next();var value=entry.getValue();
     if(!value.isNull()&&!value.isTextual())throw new IllegalArgumentException("Prüfwerte müssen Zeichenketten oder null sein.");

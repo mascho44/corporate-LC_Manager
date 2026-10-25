@@ -1,5 +1,5 @@
 package de.ostms.lc.ai;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.ostms.lc.audit.service.AuditService;
 import de.ostms.lc.document.repository.LcDocumentRepository;
 import de.ostms.lc.rulepack.DocumentFactSuggester;
@@ -44,7 +44,7 @@ public class AiController {
   try{
    var resolved=factory.resolveOrThrow().orElseThrow(()->new IllegalStateException("Es ist kein KI-Dienst konfiguriert."));
    String answer=resolved.client().generateJson("Reply with JSON only: {\"vessel\": value, \"quote\": exact quote} for this text. Text: \"Vessel: MSC EXAMPLE, voyage 1\"");
-   boolean json;try{JSON.readTree(answer);json=!answer.isBlank();}catch(IOException e){json=false;}
+   boolean json;try{JSON.readTree(answer);json=!answer.isBlank();}catch(tools.jackson.core.JacksonException e){json=false;}
    long ms=System.currentTimeMillis()-start;
    audit.record(auth,"AI_TEST","TENANT",null,resolved.client().provider()+"/"+resolved.client().model()+" · "+(json?"ok":"Antwort nicht verwertbar")+" · "+ms+" ms");
    return Map.of("ok",json,"millis",ms,"provider",resolved.client().provider(),"model",resolved.client().model(),"message",json?"Verbindung funktioniert.":"Der Dienst antwortet, aber nicht mit auswertbarem JSON.");

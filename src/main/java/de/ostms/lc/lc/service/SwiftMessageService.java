@@ -27,7 +27,7 @@ public class SwiftMessageService {
   if(messages.existsSame(type,parsed.reference(),raw))throw new IllegalArgumentException("Diese Mitteilung wurde bereits importiert.");
   UUID lc=findTarget(parsed).map(LetterOfCredit::getId).orElse(null);
   String fields=null;
-  if(!parsed.fields().isEmpty()){try{fields=new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(new java.util.TreeMap<>(parsed.fields()));}catch(com.fasterxml.jackson.core.JsonProcessingException e){throw new IllegalStateException(e);}}
+  if(!parsed.fields().isEmpty()){try{fields=new tools.jackson.databind.ObjectMapper().writeValueAsString(new java.util.TreeMap<>(parsed.fields()));}catch(tools.jackson.core.JacksonException e){throw new IllegalStateException(e);}}
   return messages.save(new SwiftMessage(lc,type,parsed.reference(),parsed.relatedReference(),parsed.narrative(),raw,source,user,fields));
  }
  @Transactional(readOnly=true) public List<SwiftMessage> forLc(UUID lcId){return messages.forLc(lcId);}

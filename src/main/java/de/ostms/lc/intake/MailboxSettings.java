@@ -1,6 +1,6 @@
 package de.ostms.lc.intake;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -46,6 +46,6 @@ public record MailboxSettings(String host,int port,String security,String userna
   String domain=a.substring(at);
   return allowedSenders.contains(a)||allowedSenders.contains(domain);
  }
- public String toJson(){try{return JSON.writeValueAsString(this);}catch(IOException impossible){throw new IllegalStateException(impossible);}}
- public static MailboxSettings fromJson(String json){try{return JSON.readValue(json,MailboxSettings.class);}catch(IOException e){throw new IllegalStateException("Die Postfach-Einstellungen sind nicht lesbar.");}}
+ public String toJson(){try{return JSON.writeValueAsString(this);}catch(tools.jackson.core.JacksonException impossible){throw new IllegalStateException(impossible);}}
+ public static MailboxSettings fromJson(String json){try{return JSON.readValue(json,MailboxSettings.class);}catch(tools.jackson.core.JacksonException e){throw new IllegalStateException("Die Postfach-Einstellungen sind nicht lesbar.");}}
 }

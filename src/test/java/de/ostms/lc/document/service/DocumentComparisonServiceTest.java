@@ -2,7 +2,7 @@ package de.ostms.lc.document.service;
 import de.ostms.lc.document.domain.*;
 import de.ostms.lc.document.repository.*;
 import de.ostms.lc.lc.domain.LetterOfCredit;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;import java.math.BigDecimal;import java.util.*;
 import org.springframework.test.util.ReflectionTestUtils;
 import static org.assertj.core.api.Assertions.*;import static org.mockito.Mockito.*;

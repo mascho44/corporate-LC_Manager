@@ -1,7 +1,7 @@
 package de.ostms.lc.document.service;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.ostms.lc.tenant.domain.TenantContext;
 import de.ostms.lc.document.api.DocumentInboxAttachRequest.Metadata;
 import java.util.*;
@@ -9,7 +9,7 @@ import static org.mockito.Mockito.*;
 import static org.assertj.core.api.Assertions.*;
 class DocumentMetadataTrainingTest {
  @Test void replayIsTenantBoundAndConflictsNeverChooseAWinner()throws Exception{
-  var jdbc=mock(JdbcTemplate.class);var mapper=new ObjectMapper().findAndRegisterModules();var service=new DocumentMetadataTraining(jdbc,mapper);
+  var jdbc=mock(JdbcTemplate.class);var mapper=new ObjectMapper();var service=new DocumentMetadataTraining(jdbc,mapper);
   var value=new DocumentMetadataTraining.Confirmation(new Metadata("LC123",null,null,null),null);String encoded=mapper.writeValueAsString(value),hash=DocumentMetadataTraining.hash("text");
   String sql="select distinct confirmed_json from document_metadata_training where tenant_id=? and text_hash=? limit 2";
   when(jdbc.queryForList(sql,String.class,TenantContext.currentId(),hash)).thenReturn(List.of(encoded));
@@ -19,7 +19,7 @@ class DocumentMetadataTrainingTest {
   assertThat(service.suggest("text").status()).isEqualTo("CONFLICT");assertThat(service.suggest("text").values()).isNull();
  }
  @Test void anchorLookupUsesCurrentTenantAndNewDocumentValues()throws Exception{
-  var jdbc=mock(JdbcTemplate.class);var mapper=new ObjectMapper().findAndRegisterModules();var service=new DocumentMetadataTraining(jdbc,mapper);
+  var jdbc=mock(JdbcTemplate.class);var mapper=new ObjectMapper();var service=new DocumentMetadataTraining(jdbc,mapper);
   var confirmed=new DocumentMetadataTraining.Confirmation(new Metadata("LC123","INV123",null,null),null);
   String pattern=mapper.writeValueAsString(MetadataFieldAnchors.learn("Exporter Invoice\nCredit ref: LC123\nBill number: INV123",confirmed));
   String sql="select distinct anchors_json from document_metadata_training where tenant_id=? and anchors_json is not null limit 1001";

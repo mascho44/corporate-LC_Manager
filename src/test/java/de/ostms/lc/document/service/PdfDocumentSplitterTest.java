@@ -60,7 +60,7 @@ class PdfDocumentSplitterTest {
     }
     @Test void scansReuseOcrEvidenceAndRemapCoordinates() throws Exception {
         var evidence=new OcrEvidence("test","test",200,.8,List.of(new OcrEvidence.Word("PACKING LIST",.9,2,20,30,100,10)));
-        String json=new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(evidence);
+        String json=new tools.jackson.databind.ObjectMapper().writeValueAsString(evidence);
         var content=pdf("","");var proposal=PdfDocumentSplitter.propose(content,json);
         assertThat(proposal.pages().get(1).classification().suggestedType()).isEqualTo(DocumentType.PACKING_LIST);
         var result=PdfDocumentSplitter.split(content,json,List.of(new PdfDocumentSplitter.Part(1,1,DocumentType.OTHER),new PdfDocumentSplitter.Part(2,2,DocumentType.PACKING_LIST)));

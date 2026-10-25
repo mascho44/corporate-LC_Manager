@@ -1,7 +1,7 @@
 package de.ostms.lc.rulepack;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 import de.ostms.lc.document.domain.LcDocument;
 import de.ostms.lc.lc.domain.LetterOfCredit;
 import org.springframework.beans.factory.annotation.Autowired;

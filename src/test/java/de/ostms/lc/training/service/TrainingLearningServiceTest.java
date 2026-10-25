@@ -1,6 +1,6 @@
 package de.ostms.lc.training.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.ostms.lc.training.domain.TrainingSession;
 import de.ostms.lc.training.repository.TrainingSessionRepository;
 import de.ostms.lc.training.repository.TrainingLearningControlRepository;

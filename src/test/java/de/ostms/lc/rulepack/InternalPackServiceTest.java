@@ -1,5 +1,5 @@
 package de.ostms.lc.rulepack;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.ostms.lc.audit.service.AuditService;
 import de.ostms.lc.document.domain.*;
 import de.ostms.lc.lc.domain.LetterOfCredit;
@@ -11,7 +11,7 @@ import java.util.*;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 class InternalPackServiceTest {
- final PackCodec codec=new PackCodec(new ObjectMapper().findAndRegisterModules());
+ final PackCodec codec=new PackCodec(new ObjectMapper());
  final PackVersionRepository versions=mock(PackVersionRepository.class);
  final PackSelectionRepository selections=mock(PackSelectionRepository.class);
  final AuditService audit=mock(AuditService.class);

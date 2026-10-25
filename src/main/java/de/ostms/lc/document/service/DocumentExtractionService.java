@@ -79,7 +79,7 @@ public class DocumentExtractionService {
             }
             boolean ocrUsed = false;
             text = normalize(text);
-            if(pdfPages!=null){var positions=new java.util.ArrayList<>(PdfWordPositions.read(document.getContent()));if(priorEvidence!=null)positions.addAll(priorEvidence.words().stream().filter(w->w.confidence()!=null).toList());document.setOcrEvidenceJson(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(new OcrEvidence("PDFBOX","PDF_TEXT_POSITIONS",200,thresholdFor(document),positions,priorEvidence==null?List.of():priorEvidence.pages())));}
+            if(pdfPages!=null){var positions=new java.util.ArrayList<>(PdfWordPositions.read(document.getContent()));if(priorEvidence!=null)positions.addAll(priorEvidence.words().stream().filter(w->w.confidence()!=null).toList());document.setOcrEvidenceJson(new tools.jackson.databind.ObjectMapper().writeValueAsString(new OcrEvidence("PDFBOX","PDF_TEXT_POSITIONS",200,thresholdFor(document),positions,priorEvidence==null?List.of():priorEvidence.pages())));}
             if (pdfPages!=null&&pdfPages.stream().anyMatch(String::isBlank)) {
                 text = normalize(readPdfWithOcr(document,documentBudget,pdfPages,checkpoint));
                 ocrUsed = !text.isBlank();
@@ -312,19 +312,19 @@ public class DocumentExtractionService {
                     pages.set(index,new OcrEvidence.PageResult(index+1,"FAILED",1));
                 }
                 document.setExtractedText(limit(result.toString()));
-                document.setOcrEvidenceJson(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(new OcrEvidence(engineVersion,engine().method()+profile.methodSuffix(),ScanProfile.EVIDENCE_DPI,thresholdFor(document),words,pages)));
+                document.setOcrEvidenceJson(new tools.jackson.databind.ObjectMapper().writeValueAsString(new OcrEvidence(engineVersion,engine().method()+profile.methodSuffix(),ScanProfile.EVIDENCE_DPI,thresholdFor(document),words,pages)));
                 checkpoint.accept(document);
             }
             log.info("OCR completed: pages={}, ocrPages={}, textPages={}, elapsedMillis={}",pageTexts.size(),requiredPages,pageTexts.size()-requiredPages,java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-started));
             if(!Double.isFinite(thresholdFor(document))||thresholdFor(document)<0||thresholdFor(document)>1)throw new IllegalArgumentException("Ungültige OCR-Konfidenzschwelle");
-            document.setOcrEvidenceJson(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(new OcrEvidence(engineVersion,engine().method()+profile.methodSuffix(),ScanProfile.EVIDENCE_DPI,thresholdFor(document),List.copyOf(words),pages)));
+            document.setOcrEvidenceJson(new tools.jackson.databind.ObjectMapper().writeValueAsString(new OcrEvidence(engineVersion,engine().method()+profile.methodSuffix(),ScanProfile.EVIDENCE_DPI,thresholdFor(document),List.copyOf(words),pages)));
             return limit(result.toString());
         } finally {
             deleteDirectory(directory);
         }
     }
 
-    public static OcrEvidence readEvidence(String json){if(json==null)return null;try{return new com.fasterxml.jackson.databind.ObjectMapper().readValue(json,OcrEvidence.class);}catch(Exception e){return null;}}
+    public static OcrEvidence readEvidence(String json){if(json==null)return null;try{return new tools.jackson.databind.ObjectMapper().readValue(json,OcrEvidence.class);}catch(Exception e){return null;}}
 
     private ScanGeometry.Prepared prepareScan(Path image,Path directory,int index,long seconds)throws IOException,InterruptedException{
         var source=ScanGeometry.read(image);

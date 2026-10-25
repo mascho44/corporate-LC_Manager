@@ -1,6 +1,6 @@
 package de.ostms.lc.check.service;
 
-import com.fasterxml.jackson.databind.*;
+import tools.jackson.databind.*;
 import de.ostms.lc.lc.domain.LetterOfCredit;
 import de.ostms.lc.document.domain.LcDocument;
 import java.nio.ByteBuffer;
@@ -9,8 +9,10 @@ import java.util.*;
 
 /** Conservative binding to the entire LC and document set, not just a displayed excerpt. */
 final class ReviewInputFingerprint {
-    private static final ObjectMapper JSON=new ObjectMapper().findAndRegisterModules()
-        .configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS,true);
+    private static final ObjectMapper JSON=tools.jackson.databind.json.JsonMapper.builder()
+        // The hashes of past decisions were made from the Jackson 2 output: properties in declaration order, dates as number arrays.
+        .disable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY).enable(tools.jackson.databind.cfg.DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS)
+        .enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS).build();
     private ReviewInputFingerprint(){}
     static String of(LetterOfCredit lc,List<LcDocument> documents){
         try{

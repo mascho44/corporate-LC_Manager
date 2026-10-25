@@ -123,7 +123,7 @@ public class DocumentInboxService {
             item.setExtractedText(document.getExtractedText());item.setExtractionStatus(document.getExtractionStatus());
             item.setExtractedReference(document.getExtractedReference());item.setExtractedDocumentNumber(document.getExtractedDocumentNumber());
             item.setExtractedAmount(document.getExtractedAmount());item.setExtractedCurrency(document.getExtractedCurrency());
-            if(output.evidence()!=null)item.setOcrEvidenceJson(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(output.evidence()));
+            if(output.evidence()!=null)item.setOcrEvidenceJson(new tools.jackson.databind.ObjectMapper().writeValueAsString(output.evidence()));
             item.setClassificationHistoryJson(ClassificationHistory.manual(document.getClassificationHistoryJson(),part.documentType(),username));
             result.add(view(inbox.save(item),targets));
         }

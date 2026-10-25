@@ -1,6 +1,6 @@
 package de.ostms.lc.rulepack;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.*;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.*;
 import org.springframework.stereotype.Component;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -12,8 +12,8 @@ public class PackCodec {
  public static final int MAX_RULES=500;
  public static final int MAX_TESTS=3000;
  private final ObjectMapper json;
- public PackCodec(ObjectMapper mapper){json=mapper.copy().enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-  .enable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION);}
+ public PackCodec(ObjectMapper mapper){json=mapper.rebuild().enable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+  .enable(tools.jackson.core.StreamReadFeature.STRICT_DUPLICATE_DETECTION).build();}
  public PackDefinition parse(byte[] bytes){
   if(bytes.length>MAX_BYTES)throw new IllegalArgumentException("Rule Pack überschreitet 5 MB.");
   try{var pack=json.readValue(bytes,PackDefinition.class);validate(pack);return pack;}

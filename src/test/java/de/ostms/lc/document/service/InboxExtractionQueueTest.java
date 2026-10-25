@@ -21,7 +21,7 @@ import static org.mockito.Mockito.*;
 class InboxExtractionQueueTest {
  @Test void checkpointsProgressAndReusesEvidenceWithoutSplittingPartialRecognition()throws Exception{
   var item=enqueue("QUEUED");
-  String evidence=new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(new OcrEvidence("synthetic","test",200,.8,List.of(),List.of(new OcrEvidence.PageResult(1,"OCR_EXTRACTED",1),new OcrEvidence.PageResult(2,"OCR_TIMEOUT",1))));
+  String evidence=new tools.jackson.databind.ObjectMapper().writeValueAsString(new OcrEvidence("synthetic","test",200,.8,List.of(),List.of(new OcrEvidence.PageResult(1,"OCR_EXTRACTED",1),new OcrEvidence.PageResult(2,"OCR_TIMEOUT",1))));
   item.setOcrEvidenceJson(evidence);inbox.saveAndFlush(item);
   doAnswer(call->{
    LcDocument document=call.getArgument(0);assertThat(document.getOcrEvidenceJson()).isEqualTo(evidence);

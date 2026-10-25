@@ -48,7 +48,7 @@ public class LcDossierExportService {
             for(Amendment amendment:changes)add(zip,names,manifest,"Amendments/MT707-"+safe(value(amendment.getAmendmentNumber(),"ohne-Nummer"))+".txt",value(amendment.getRawMessage()).getBytes(StandardCharsets.UTF_8));
             for(LcDocument document:docs)add(zip,names,manifest,"Dokumente/"+safe(value(document.getOriginalFilename(),"Dokument")),document.getContent());
             for(var entry:contents.create(lcId).entrySet())add(zip,names,manifest,entry.getKey(),entry.getValue());
-            byte[] metadata=new com.fasterxml.jackson.databind.ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsBytes(java.util.Map.of("formatVersion","1.0","lcId",lcId.toString(),"generatedAt",java.time.Instant.now().toString(),"algorithm","SHA-256","files",manifest));
+            byte[] metadata=new tools.jackson.databind.ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsBytes(java.util.Map.of("formatVersion","1.0","lcId",lcId.toString(),"generatedAt",java.time.Instant.now().toString(),"algorithm","SHA-256","files",manifest));
             add(zip,names,null,"manifest.json",metadata);
             zip.finish();
             return new Dossier("LC-Akte-"+safe(lc.getReference())+".zip",output.toByteArray());

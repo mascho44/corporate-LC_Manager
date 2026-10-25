@@ -21,7 +21,7 @@ public class DocumentInboxController {
     private final AuditService audit;
     @org.springframework.beans.factory.annotation.Autowired private de.ostms.lc.document.service.DocumentMetadataTraining metadataTraining;
     @org.springframework.beans.factory.annotation.Autowired private de.ostms.lc.document.service.SpatialLayoutTraining spatialTraining;
-    @org.springframework.beans.factory.annotation.Autowired private com.fasterxml.jackson.databind.ObjectMapper reviewJson;
+    @org.springframework.beans.factory.annotation.Autowired private tools.jackson.databind.ObjectMapper reviewJson;
     @PostMapping("/{id}/metadata-review") @ResponseStatus(HttpStatus.NO_CONTENT)
     @org.springframework.transaction.annotation.Transactional
     public void saveReview(@PathVariable UUID id,@Valid @RequestBody InboxMetadataReview request,Authentication auth)throws Exception{
@@ -55,7 +55,7 @@ public class DocumentInboxController {
     public void confirmMetadata(@PathVariable UUID id,@Valid @RequestBody de.ostms.lc.document.service.DocumentMetadataTraining.Confirmation request,Authentication auth){
         var item=service.openItem(id);
         metadataTraining.confirm(item.getExtractedText(),request,auth.getName());
-        try{var previous=item.getMetadataReviewJson()==null?null:reviewJson.readValue(item.getMetadataReviewJson(),InboxMetadataReview.class);service.saveMetadataReview(id,reviewJson.writeValueAsString(new InboxMetadataReview(previous==null?null:previous.lcId(),previous==null?null:previous.documentType(),previous==null?null:previous.copyNumber(),request.documentDate(),request.metadata(),previous==null?null:previous.profile(),true)));}catch(com.fasterxml.jackson.core.JsonProcessingException e){throw new IllegalStateException(e);}
+        try{var previous=item.getMetadataReviewJson()==null?null:reviewJson.readValue(item.getMetadataReviewJson(),InboxMetadataReview.class);service.saveMetadataReview(id,reviewJson.writeValueAsString(new InboxMetadataReview(previous==null?null:previous.lcId(),previous==null?null:previous.documentType(),previous==null?null:previous.copyNumber(),request.documentDate(),request.metadata(),previous==null?null:previous.profile(),true)));}catch(tools.jackson.core.JacksonException e){throw new IllegalStateException(e);}
         audit.recordInTransaction(auth,"DOCUMENT_METADATA_TRAINED","DOCUMENT_INBOX",id,"Dokumentmetadaten ausdrücklich bestätigt · mandantenspezifisches Textmuster");
     }
     @org.springframework.beans.factory.annotation.Autowired private de.ostms.lc.document.service.PdfPagePreviewService pagePreview;

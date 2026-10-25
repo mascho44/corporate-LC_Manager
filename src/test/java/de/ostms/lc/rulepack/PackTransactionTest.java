@@ -1,5 +1,5 @@
 package de.ostms.lc.rulepack;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.ostms.lc.audit.service.AuditService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.*;
 @Transactional(propagation=Propagation.NOT_SUPPORTED)
 class PackTransactionTest {
  @TestConfiguration static class Beans {
-  @Bean ObjectMapper objectMapper(){return new ObjectMapper().findAndRegisterModules();}
+  @Bean ObjectMapper objectMapper(){return new ObjectMapper();}
   @Bean AuditService audit(){return mock(AuditService.class);}
  }
  @Autowired InternalPackService service;@Autowired PackVersionRepository versions;

@@ -1,5 +1,5 @@
 package de.ostms.lc.training.service;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import de.ostms.lc.training.domain.TrainingSession;
 import de.ostms.lc.training.repository.TrainingSessionRepository;
 import org.springframework.stereotype.Service;
@@ -35,7 +35,7 @@ public class AdvisingTrainingService {
    session.setReviewsJson(mapper.writeValueAsString(merged));
    if(finish){session.setStatus("CONFIRMED");session.setConfirmedAt(java.time.LocalDateTime.now());}
    return sessions.save(session);
-  }catch(com.fasterxml.jackson.core.JsonProcessingException e){throw new IllegalArgumentException("Ungültige Trainingsdaten.",e);}
+  }catch(tools.jackson.core.JacksonException e){throw new IllegalArgumentException("Ungültige Trainingsdaten.",e);}
  }
  public de.ostms.lc.document.service.AdvisingLetterExtractor.Proposal preview(String bank,String text){
   String enriched=text==null?"":text;

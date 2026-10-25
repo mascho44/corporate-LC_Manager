@@ -1,12 +1,12 @@
 package de.ostms.lc.rulepack;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import static org.assertj.core.api.Assertions.*;
 import static de.ostms.lc.rulepack.PackDefinition.*;
 class PackCodecTest {
- final PackCodec codec=new PackCodec(new ObjectMapper().findAndRegisterModules());
+ final PackCodec codec=new PackCodec(new ObjectMapper());
  static byte[] example()throws Exception{
   try(var r=PackCodecTest.class.getResourceAsStream("/static/rule-pack-example.json")){return r.readAllBytes();}
  }

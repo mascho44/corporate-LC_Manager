@@ -8,5 +8,5 @@ import java.util.UUID;
 public class DocumentClassificationController {
  private final LcDocumentRepository documents;
  public DocumentClassificationController(LcDocumentRepository documents){this.documents=documents;}
- @GetMapping @Transactional(readOnly=true) public com.fasterxml.jackson.databind.JsonNode history(@PathVariable UUID id){return ClassificationHistory.read(documents.findById(id).orElseThrow().getClassificationHistoryJson());}
+ @GetMapping @Transactional(readOnly=true) public tools.jackson.databind.JsonNode history(@PathVariable UUID id){return ClassificationHistory.read(documents.findById(id).orElseThrow().getClassificationHistoryJson());}
 }

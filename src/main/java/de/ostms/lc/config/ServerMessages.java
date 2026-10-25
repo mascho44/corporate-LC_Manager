@@ -1,7 +1,7 @@
 package de.ostms.lc.config;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,7 +23,7 @@ public final class ServerMessages {
         try (InputStream in = ServerMessages.class.getResourceAsStream("/server-messages-en.json")) {
             if (in != null) {
                 JsonNode root = new ObjectMapper().readTree(in);
-                root.get("exact").fields().forEachRemaining(e -> EXACT.put(e.getKey(), e.getValue().asText()));
+                root.get("exact").properties().forEach(e -> EXACT.put(e.getKey(), e.getValue().asText()));
                 for (JsonNode node : root.get("patterns")) TEMPLATES.add(new Template(compile(node.get("de").asText()), node.get("en").asText()));
             }
         } catch (Exception unreadable) { /* without the catalog the German texts are shown */ }

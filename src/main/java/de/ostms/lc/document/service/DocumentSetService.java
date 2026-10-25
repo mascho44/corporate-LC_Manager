@@ -46,7 +46,7 @@ public class DocumentSetService {
     }
     /** An earlier set of this file: its input (to start a corrected set from) and the documents it produced. */
     public record PreviousSet(UUID setId, java.time.LocalDateTime createdAt, DocumentSetRequest request, List<String> documents) {}
-    private static final com.fasterxml.jackson.databind.ObjectMapper JSON = new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules();
+    private static final tools.jackson.databind.ObjectMapper JSON = new tools.jackson.databind.ObjectMapper();
 
     private final LetterOfCreditRepository lcs;
     private final LcDocumentRepository documents;
@@ -157,7 +157,7 @@ public class DocumentSetService {
     private static String inputJson(DocumentSetRequest request) {
         var kept = new DocumentSetRequest(request.documentDate(), request.invoiceNumber(), request.items(), request.quantity(), request.packages(), request.netWeight(),
             request.grossWeight(), request.notes(), request.types(), request.format(), null);
-        try { return JSON.writeValueAsString(kept); } catch (com.fasterxml.jackson.core.JsonProcessingException impossible) { throw new IllegalStateException(impossible); }
+        try { return JSON.writeValueAsString(kept); } catch (tools.jackson.core.JacksonException impossible) { throw new IllegalStateException(impossible); }
     }
 
     /** The latest sets of the file, newest first, each with the input it was made from (sets whose documents were all deleted disappear). */
@@ -172,7 +172,7 @@ public class DocumentSetService {
             var first = entry.getValue().get(0);
             try {
                 out.add(new PreviousSet(entry.getKey(), first.getUploadedAt(), JSON.readValue(first.getGenerationInput(), DocumentSetRequest.class), entry.getValue().stream().map(LcDocument::getOriginalFilename).toList()));
-            } catch (com.fasterxml.jackson.core.JsonProcessingException unreadable) { /* an unreadable input only hides this set */ }
+            } catch (tools.jackson.core.JacksonException unreadable) { /* an unreadable input only hides this set */ }
         }
         return out;
     }

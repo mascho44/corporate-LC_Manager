@@ -1,7 +1,7 @@
 package de.ostms.lc.rulepack;
 
-import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.*;
+import tools.jackson.databind.node.ObjectNode;
 import java.util.*;
 
 /** Read-only capability inspection. A specification is never stored or activated as a pack. */

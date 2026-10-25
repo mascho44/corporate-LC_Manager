@@ -33,7 +33,7 @@ class ScanGeometryTest {
   assertThat(result.ocrEvidence().pages().get(0).correctionDegrees()).isEqualTo(90);
   // Positions are mapped back to the original scan raster (300 DPI) and then stored in the 200-DPI evidence raster (x 2/3).
   assertThat(result.ocrEvidence().words()).allMatch(w->w.left()==13&&w.top()==20&&w.width()==27&&w.height()==20);
-  var split=PdfDocumentSplitter.split(PdfDocumentSplitterTest.pdf(""),new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(result.ocrEvidence()),List.of(new PdfDocumentSplitter.Part(1,1,de.ostms.lc.document.domain.DocumentType.COMMERCIAL_INVOICE)));
+  var split=PdfDocumentSplitter.split(PdfDocumentSplitterTest.pdf(""),new tools.jackson.databind.ObjectMapper().writeValueAsString(result.ocrEvidence()),List.of(new PdfDocumentSplitter.Part(1,1,de.ostms.lc.document.domain.DocumentType.COMMERCIAL_INVOICE)));
   assertThat(split.get(0).text()).contains("COMMERCIAL INVOICE\nInvoice No: SYN-42");
  }
  private BufferedImage blank(int width,int height){
@@ -75,11 +75,11 @@ class ScanGeometryTest {
  }
  @Test void transformedPageTextKeepsReadingOrderOnResume()throws Exception{
   var evidence=new OcrEvidence("synthetic","test",200,.8,List.of(),List.of(new OcrEvidence.PageResult(1,"OCR_EXTRACTED",2,90,"Invoice date: 31.08.2026\nInvoice No: SYN-42")));
-  var json=new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(evidence);
+  var json=new tools.jackson.databind.ObjectMapper().writeValueAsString(evidence);
   assertThat(DocumentExtractionService.readEvidence(json).completedPageText(1)).isEqualTo("Invoice date: 31.08.2026\nInvoice No: SYN-42");
  }
  @Test void progressViewDoesNotExposeInternalRecognizedText()throws Exception{
-  var item=new de.ostms.lc.document.domain.DocumentInboxItem();item.setOcrEvidenceJson(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(new OcrEvidence("synthetic","test",200,.8,List.of(),List.of(new OcrEvidence.PageResult(1,"OCR_EXTRACTED",2,90,"SYNTHETIC PRIVATE PAGE TEXT")))));
+  var item=new de.ostms.lc.document.domain.DocumentInboxItem();item.setOcrEvidenceJson(new tools.jackson.databind.ObjectMapper().writeValueAsString(new OcrEvidence("synthetic","test",200,.8,List.of(),List.of(new OcrEvidence.PageResult(1,"OCR_EXTRACTED",2,90,"SYNTHETIC PRIVATE PAGE TEXT")))));
   var view=de.ostms.lc.document.api.DocumentInboxItemView.from(item,List.of());
   assertThat(view.recognitionPages()).hasSize(1);assertThat(view.recognitionPages().get(0).recognizedText()).isNull();assertThat(view.recognitionPages().get(0).correctionDegrees()).isEqualTo(90);
  }

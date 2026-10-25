@@ -29,7 +29,7 @@ import java.util.regex.*;
   a.setChangedGoods(f.get("45B"));a.setChangedDocuments(f.get("46B"));a.setChangedConditions(f.get("47B"));
   var other=new LinkedHashMap<String,String>();
   f.forEach((tag,value)->{if(!HANDLED.contains(tag)&&!IGNORED.contains(tag)&&value!=null&&!value.isBlank())other.put(tag,value.length()>4000?value.substring(0,4000):value);});
-  if(!other.isEmpty()){try{a.setOtherChanges(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(other));}catch(com.fasterxml.jackson.core.JsonProcessingException impossible){throw new IllegalStateException(impossible);}}
+  if(!other.isEmpty()){try{a.setOtherChanges(new tools.jackson.databind.ObjectMapper().writeValueAsString(other));}catch(tools.jackson.core.JacksonException impossible){throw new IllegalStateException(impossible);}}
   return new Parsed(references.get(0),a,List.copyOf(references));
  }
  private BigDecimal amount(String x){x=x.replace("\n","").trim();return new BigDecimal(x.substring(3).replace(".","").replace(',','.'));}

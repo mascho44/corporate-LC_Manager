@@ -2,9 +2,9 @@ Third-party license and copyright notices
 Extracted verbatim from the resolved runtime JARs. Each block lists its source artifacts.
 
 ========================================================================
-com.fasterxml.jackson.core:jackson-annotations:2.19.2 — META-INF/LICENSE
-com.fasterxml.jackson.core:jackson-core:2.19.2 — META-INF/LICENSE
-com.fasterxml.jackson.core:jackson-databind:2.19.2 — META-INF/LICENSE
+tools.jackson.core:jackson-annotations:2.19.2 — META-INF/LICENSE
+tools.jackson.core:jackson-core:2.19.2 — META-INF/LICENSE
+tools.jackson.core:jackson-databind:2.19.2 — META-INF/LICENSE
 commons-codec:commons-codec:1.18.0 — META-INF/LICENSE.txt
 commons-io:commons-io:2.11.0 — META-INF/LICENSE.txt
 jakarta.inject:jakarta.inject-api:2.0.1 — META-INF/LICENSE.txt
@@ -239,8 +239,8 @@ Apache License
    limitations under the License.
 
 ========================================================================
-com.fasterxml.jackson.core:jackson-annotations:2.19.2 — META-INF/NOTICE
-com.fasterxml.jackson.core:jackson-databind:2.19.2 — META-INF/NOTICE
+tools.jackson.core:jackson-annotations:2.19.2 — META-INF/NOTICE
+tools.jackson.core:jackson-databind:2.19.2 — META-INF/NOTICE
 
 # Jackson JSON processor
 
@@ -265,7 +265,7 @@ in some artifacts (usually source distributions); but is always available
 from the source code management (SCM) system project uses.
 
 ========================================================================
-com.fasterxml.jackson.core:jackson-core:2.19.2 — META-INF/NOTICE
+tools.jackson.core:jackson-core:2.19.2 — META-INF/NOTICE
 
 # Jackson JSON processor
 
