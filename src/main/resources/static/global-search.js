@@ -1,5 +1,5 @@
-/* Global search (Ctrl+K / Cmd+K): finds LC files by reference, parties, banks and handler and opens the chosen one.
-   Searches the list that is already loaded, so it needs no server call. */
+/* Global search and command palette (Ctrl+K / Cmd+K): finds pages of the menu and LC files (by reference, parties, banks and handler) and opens the chosen one.
+   Searches the menu as it is on screen and the list that is already loaded, so it needs no server call. */
 (() => {
  const tr = (key, de, values = {}) => { const i = globalThis.LcI18n, s = i?.t ? i.t(key, values) : null; return s && s !== key ? s : String(de).replace(/\{(\w+)\}/g, (m, k) => values[k] ?? m); };
 
@@ -16,7 +16,18 @@
   }
   return scored.sort((a, b) => a.score - b.score || String(a.lc.reference).localeCompare(String(b.lc.reference))).slice(0, limit).map(x => x.lc);
  }
- globalThis.LcSearch = { search };
+ /** Menu entries (`{label, run}`) whose label contains every word of `query`; labels that start with the query first. */
+ function searchPages(items, query, limit = 4) {
+  const words = String(query || '').toLowerCase().split(/\s+/).filter(Boolean);
+  if (!words.length) return [];
+  const scored = [];
+  for (const item of items || []) {
+   const label = String(item.label || '').toLowerCase();
+   if (words.every(w => label.includes(w))) scored.push({ item, score: label.startsWith(words[0]) ? 0 : 1 });
+  }
+  return scored.sort((a, b) => a.score - b.score || a.item.label.localeCompare(b.item.label)).slice(0, limit).map(x => x.item);
+ }
+ globalThis.LcSearch = { search, searchPages };
  if (typeof document === 'undefined' || !document.body) return;
 
  let dialog = null, active = 0, results = [];
@@ -35,22 +46,32 @@
   dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); });
   dialog.querySelector('ul').addEventListener('click', event => { const item = event.target.closest('[data-i]'); if (item) choose(results[Number(item.dataset.i)]); });
  }
+ /** The menu entries the person can use right now (hidden ones, e.g. without permission, are left out). */
+ function menuPages() {
+  return [...document.querySelectorAll('#appNav nav button')]
+   .filter(button => !button.classList.contains('hidden') && !button.hidden && !button.disabled)
+   .map(button => { const copy = button.cloneNode(true); copy.querySelectorAll('.nav-badge').forEach(badge => badge.remove()); return { label: copy.textContent.replace(/\s+/g, ' ').trim(), run: () => button.click() }; })
+   .filter(item => item.label);
+ }
  function draw() {
   const input = dialog.querySelector('input');
-  results = search(typeof data === 'undefined' ? [] : data, input.value);
-  dialog.querySelector('ul').innerHTML = results.map((lc, i) => `<li role="option" data-i="${i}" aria-selected="${i === active}"><b>${esc(lc.reference)}</b><span>${esc([lc.beneficiary, lc.applicant].filter(Boolean).join(' · '))}</span></li>`).join('');
-  dialog.querySelector('small').textContent = !input.value.trim() ? tr('gs.hint', 'Referenz, Begünstigten, Antragsteller, Bank oder Bearbeiter eingeben') : results.length ? '' : tr('gs.none', 'Keine passende Akte gefunden.');
+  results = [...searchPages(menuPages(), input.value).map(page => ({ page })), ...search(typeof data === 'undefined' ? [] : data, input.value).map(lc => ({ lc }))];
+  dialog.querySelector('ul').innerHTML = results.map((entry, i) => entry.page
+   ? `<li role="option" data-i="${i}" aria-selected="${i === active}"><b>${esc(entry.page.label)}</b><span>${esc(tr('gs.page', 'Seite öffnen'))}</span></li>`
+   : `<li role="option" data-i="${i}" aria-selected="${i === active}"><b>${esc(entry.lc.reference)}</b><span>${esc([entry.lc.beneficiary, entry.lc.applicant].filter(Boolean).join(' · '))}</span></li>`).join('');
+  dialog.querySelector('small').textContent = !input.value.trim() ? tr('gs.hint', 'Seite, Referenz, Begünstigten, Antragsteller, Bank oder Bearbeiter eingeben') : results.length ? '' : tr('gs.none', 'Nichts Passendes gefunden.');
  }
- function choose(lc) {
+ function choose(entry) {
   dialog.close();
+  if (entry.page) { entry.page.run(); return; }
   document.querySelector('[data-app-section="lcs"]')?.click();
-  if (typeof show === 'function') show(lc.id);
+  if (typeof show === 'function') show(entry.lc.id);
  }
  function open() {
   if (typeof data === 'undefined') return;
   if (!dialog) build();
   const input = dialog.querySelector('input');
-  input.setAttribute('aria-label', tr('gs.label', 'Akte suchen')); input.placeholder = tr('gs.label', 'Akte suchen');
+  input.setAttribute('aria-label', tr('gs.label', 'Seite oder Akte suchen')); input.placeholder = tr('gs.label', 'Seite oder Akte suchen');
   input.value = ''; active = 0; draw();
   if (!dialog.open) dialog.showModal();
   input.focus();
