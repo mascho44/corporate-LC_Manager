@@ -53,3 +53,5 @@ html[data-profile="corporate"] .workspace-control{display:none}
 }
 /* The close button in a dialog header stays a small cross at the top right instead of stretching over the whole header */
 .dialoghead>button.ghost{align-self:flex-start;flex:0 0 auto;min-height:0;height:auto;padding:4px 12px;font-size:22px;line-height:1.2}
+
+.saved-view-form label:not(.check-label){display:grid;gap:6px;font-weight:700}.saved-view-form input[name=name]{width:100%}.saved-view-form .check-label{display:flex;align-items:center;gap:8px;margin:12px 0}
