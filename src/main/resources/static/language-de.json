@@ -640,6 +640,8 @@
   "fs.templates": "Dokumentvorlagen hinterlegen",
   "fs.users": "Weitere Benutzer einladen",
   "fs.file": "Erste LC-Akte anlegen",
+  "fs.sla": "SLA-Regel anlegen",
+  "fs.correspondent": "Korrespondenzbank erfassen",
   "dd.label": "Dateien hier ablegen, um sie zur Akte hochzuladen",
   "ds.restored": "Ungesendete Eingaben vom {when} wiederhergestellt.",
   "ds.discardDraft": "Verwerfen",
