@@ -187,7 +187,7 @@
   "language.save": "Sprache speichern",
   "language.saved": "Spracheinstellung gespeichert.",
   "np.deadlineDigest": "Tägliche Fristen-Zusammenfassung per E-Mail",
-  "np.deadlineDigestHint": "Ihre zugewiesenen Akten: überfällige Fristen und die der nächsten 3 Tage, höchstens einmal täglich und nur, wenn etwas ansteht. Braucht eine E-Mail-Adresse im Profil.",
+  "np.deadlineDigestHint": "Ihre zugewiesenen Akten: überfällige Fristen und die der nächsten 3 Tage sowie Dokumente, die auf Ihre Prüfung oder Freigabe warten, höchstens einmal täglich und nur, wenn etwas ansteht. Braucht eine E-Mail-Adresse im Profil.",
   "np.save": "Speichern",
   "np.saved": "Einstellung gespeichert.",
   "cal.title": "Kalender-Abo",
