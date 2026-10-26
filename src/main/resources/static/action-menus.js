@@ -41,6 +41,9 @@
    const list = menu.querySelector('.action-menu-list');
    found.forEach((button, index) => { button.classList.add('action-menu-item'); if (list.children[index] !== button) list.insertBefore(button, list.children[index] || null); });
   }
+  // Fixed order, whenever the other buttons appeared: [other buttons] Create, Check & submit, Upload.
+  const menus = GROUPS().map(group => document.querySelector(`#actionMenu-${group.id}`)).filter(Boolean);
+  if (!menus.every((menu, index) => menu.nextElementSibling === (menus[index + 1] || upload))) menus.forEach(menu => upload.before(menu));
   // "Copy as template" is an action on the whole file, so it sits with Edit and Close.
   const copy = document.querySelector('#copyLcBtn'), edit = document.querySelector('#editLc');
   if (copy && edit && copy.nextElementSibling !== edit) edit.before(copy);
