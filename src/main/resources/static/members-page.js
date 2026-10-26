@@ -121,6 +121,7 @@
   const byId = new Map(roles.map(r => [r.id, r]));
   const showGuarantees = !overview.settings || overview.settings.corporateEnabled !== false;
   body.append(node('p', tx('mz.note','Wer darf was: Wählen Sie je Person und Bereich, wie weit der Zugriff geht. Die passenden Rechte werden im Hintergrund vergeben. „Administration“ umfasst Benutzer, Einstellungen, Schnittstellen und alle Rechte.'), 'members-note'));
+  if (!showGuarantees) body.append(node('p', tx('mz.noteBank','In Bank-Mandanten gilt „Dokumente erstellen (Maker)“ nicht: Dokumente werden dort hochgeladen und geprüft, Handelsrechnungen und Packlisten erzeugen nur Corporate-Mandanten.'), 'members-note'));
   const bar = node('div', undefined, 'members-toolbar');
   const search = node('input'); search.type = 'search'; search.placeholder = tx('mz.search','Person suchen'); search.setAttribute('aria-label', tx('mp.35','Mitglieder suchen')); search.maxLength = 100;
   const count = node('small', '', 'members-count'); count.setAttribute('role', 'status'); bar.append(search, count);
