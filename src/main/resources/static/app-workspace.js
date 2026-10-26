@@ -157,8 +157,29 @@ async function loadMonitoring(){
         const summary=await json('/api/admin/monitoring/summary');
         const metrics=[[tx('al.149','Offene Prüfungen'),summary.openExaminations],['Warten auf Kunde',summary.waitingForCustomer],['Abweichungen',summary.discrepancies],['Fristen ≤ 30 Tage',summary.upcomingDeadlines],['Freigabevorrat',summary.approvalQueue],['EBICS-Fehler',summary.ebicsErrors],['SWIFT-Fehler',summary.swiftErrors],['Fehlgeschlagene Hintergrundjobs',summary.failedBackgroundJobs]];
         container.innerHTML=metrics.map(([label,metric])=>`<article class="card ${metric.available?'':'monitoring-unavailable'}"><small>${esc(label)}</small><b>${metric.available?esc(metric.value):tx('al.150','Nicht verfügbar')}</b><p>${esc(metric.description)}</p></article>`).join('');
+        loadMailStatus(container);
         $('#monitoringGeneratedAt').textContent='Stand: '+new Intl.DateTimeFormat(globalThis.LcI18n?.locale()||'en-GB',{dateStyle:'medium',timeStyle:'short'}).format(new Date(summary.generatedAt));
     }catch(error){container.innerHTML=`<div class="error">${tx('ah.f80aa2','Operationsmonitor konnte nicht geladen werden:')} ${esc(error.message)}</div>`;$('#monitoringGeneratedAt').textContent=''}
+}
+/** Mail block of the operations monitor: is sending on, the last summaries, and a test mail to oneself. */
+async function loadMailStatus(after){
+    let block=$('#monitoringMail');
+    if(!block){block=document.createElement('section');block.id='monitoringMail';block.className='monitoring-mail';after.insertAdjacentElement('afterend',block);}
+    const when=value=>value?new Intl.DateTimeFormat(globalThis.LcI18n?.locale()||'en-GB',{dateStyle:'medium'}).format(new Date(value)):tx('mm.never','noch nie');
+    const digest=item=>item?when(item.sentOn)+' · '+tx('mm.recipients','{n} Empfänger',{n:item.recipients}):tx('mm.never','noch nie');
+    try{
+        const status=await json('/api/admin/monitoring/mail');
+        const state=status.enabled&&status.senderConfigured?'✓ '+tx('mm.on','Mailversand ist eingeschaltet'):'× '+tx('mm.off','Mailversand ist aus oder der Absender fehlt');
+        block.innerHTML='<h3></h3><p class="mail-state"></p><ul><li class="mail-deadline"></li><li class="mail-procurement"></li><li class="mail-subscribers"></li></ul><button type="button" class="secondary mail-test"></button> <small class="mail-result" role="status"></small>';
+        block.querySelector('h3').textContent=tx('mm.title','Mailversand');
+        block.querySelector('.mail-state').textContent=state;
+        block.querySelector('.mail-deadline').textContent=tx('mm.lastDeadline','Letzte Fristen-Zusammenfassung')+': '+digest(status.lastDeadlineDigest);
+        block.querySelector('.mail-procurement').textContent=tx('mm.lastProcurement','Letzte Beschaffungs-Zusammenfassung')+': '+digest(status.lastProcurementDigest);
+        block.querySelector('.mail-subscribers').textContent=tx('mm.subscribers','Personen mit eingeschalteter Fristen-Mail: {n}',{n:status.deadlineDigestSubscribers});
+        const button=block.querySelector('.mail-test'),result=block.querySelector('.mail-result');
+        button.textContent=tx('mm.test','Test-Mail an mich senden');button.disabled=!(status.enabled&&status.senderConfigured);
+        button.onclick=async()=>{button.disabled=true;result.textContent='';try{const sent=await json('/api/admin/monitoring/mail/test',{method:'POST'});result.textContent=tx('mm.sent','Gesendet an {address}.',{address:sent.sentTo});}catch(error){result.textContent=error.message;}finally{button.disabled=false;}};
+    }catch(error){block.textContent=error.message;}
 }
 document.addEventListener('click', event => {
   if (event.target.closest('[data-close-upload-dialog]')) {

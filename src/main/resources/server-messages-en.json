@@ -331,6 +331,8 @@
   "Das Bild ist zu groß. Maximal 16 Megapixel und 8192 Pixel je Seite.": "The image is too large. At most 16 megapixels and 8192 pixels per side.",
   "Benutzer nicht gefunden.": "User not found.",
   "Bitte zuerst im Profil eine E-Mail-Adresse hinterlegen.": "Please add an email address to your profile first.",
+  "Der Mailversand ist nicht eingeschaltet oder es fehlt der Absender.": "Sending email is not switched on or the sender is missing.",
+  "Die Test-Mail konnte nicht gesendet werden. Bitte SMTP-Einstellungen prüfen.": "The test mail could not be sent. Please check the SMTP settings.",
   "Der Basistyp einer Systemrolle kann nicht geändert werden.": "The base type of a system role cannot be changed.",
   "Die Administratorrolle muss Benutzer verwalten dürfen.": "The administrator role must be allowed to manage users.",
   "Der letzte aktive Administrator kann nicht über seine Rolle herabgestuft werden.": "The last active administrator cannot be downgraded via their role.",
