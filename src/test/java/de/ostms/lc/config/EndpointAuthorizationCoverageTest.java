@@ -58,6 +58,8 @@ class EndpointAuthorizationCoverageTest {
         Map.entry("DELETE /api/profile/avatar", "Selbstbedienung: ändert nur das eigene Konto"),
         Map.entry("PUT /api/profile/language", "Selbstbedienung: ändert nur das eigene Konto"),
         Map.entry("PUT /api/profile/notifications", "Selbstbedienung: ändert nur das eigene Konto"),
+        Map.entry("POST /api/profile/calendar", "Selbstbedienung: Kalender-Abo des eigenen Kontos"),
+        Map.entry("DELETE /api/profile/calendar", "Selbstbedienung: Kalender-Abo des eigenen Kontos"),
         Map.entry("POST /api/auth/totp/setup", "Selbstbedienung: Zwei-Faktor des eigenen Kontos"),
         Map.entry("POST /api/auth/totp/enable", "Selbstbedienung: Zwei-Faktor des eigenen Kontos"),
         Map.entry("POST /api/auth/totp/disable", "Selbstbedienung: Zwei-Faktor des eigenen Kontos"),
