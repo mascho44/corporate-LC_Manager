@@ -3,6 +3,10 @@ import jakarta.persistence.*; import java.time.LocalDateTime; import java.util.U
 @Entity @Table(name="app_user") public class AppUser {
  @Column(nullable=false,updatable=false) private UUID tenantId=de.ostms.lc.tenant.domain.TenantContext.currentId();
  @Column(length=20) private String preferredLanguage;
+ /** Opt-in to the daily mail with the deadlines of the files assigned to this person. */
+ @Column(name="deadline_digest",nullable=false) private boolean deadlineDigest=false;
+ public boolean isDeadlineDigest(){return deadlineDigest;}
+ public void setDeadlineDigest(boolean value){deadlineDigest=value;}
  public UUID getTenantId(){return tenantId;}
  public String getPreferredLanguage(){return preferredLanguage;}
  public void setPreferredLanguage(String value){preferredLanguage=value;}
