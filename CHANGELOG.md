@@ -2,6 +2,7 @@
 
 ## 0.7.1 – in Arbeit
 
+* Benutzer & Rechte: In Bank-Mandanten erklärt ein Hinweis, dass „Dokumente erstellen (Maker)“ dort nicht gilt (nur in Corporate-Mandanten).
 * Optik: Ist noch keine Firma angelegt, zeigt „Dokument erstellen“ den Hinweis, unter Firmenstammdaten eine Firma anzulegen, statt „Firma nicht gefunden.“
 * Optik: Das Menü „Erzeugen“ (und die anderen Aktionsmenüs) im Abschnitt Dokumente wird nicht mehr am unteren Rand der Karte abgeschnitten.
 * Optik: Die Positionstabelle im Dialog „Dokument erstellen“ läuft bei schmalem Dialog nicht mehr rechts heraus (zweispaltige Zeilen); das Schließen-Kreuz in Dialogköpfen bleibt klein statt über die ganze Kopfzeile zu wachsen; im SLA-Formular haben alle Ereignisse deutsche und englische Bezeichnungen (vorher teils nur der Code).

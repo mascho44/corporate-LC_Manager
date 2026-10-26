@@ -3487,6 +3487,7 @@
   "mz.view": "Ansehen",
   "mz.edit": "Bearbeiten",
   "mz.note": "Wer darf was: Wählen Sie je Person und Bereich, wie weit der Zugriff geht. Die passenden Rechte werden im Hintergrund vergeben. „Administration“ umfasst Benutzer, Einstellungen, Schnittstellen und alle Rechte.",
+  "mz.noteBank": "In Bank-Mandanten gilt „Dokumente erstellen (Maker)“ nicht: Dokumente werden dort hochgeladen und geprüft, Handelsrechnungen und Packlisten erzeugen nur Corporate-Mandanten.",
   "mz.search": "Person suchen",
   "mz.lc": "Akkreditive",
   "mz.guarantees": "Garantien",

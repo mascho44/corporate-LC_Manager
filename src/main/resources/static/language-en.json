@@ -3487,6 +3487,7 @@
   "mz.view": "View",
   "mz.edit": "Edit",
   "mz.note": "Who may do what: choose per person and area how far access goes. The matching rights are assigned in the background. \"Administration\" includes users, settings, interfaces and all rights.",
+  "mz.noteBank": "In bank tenants “Create documents (Maker)” does not apply: documents are uploaded and checked there, only corporate tenants generate commercial invoices and packing lists.",
   "mz.search": "Find person",
   "mz.lc": "Letters of credit",
   "mz.guarantees": "Guarantees",
