@@ -29,6 +29,7 @@ function setupAvatarUi(){
     $('#monitoringSection').before(section);
     setupLanguagePreferences(section);
     setupNotificationPreferences(section);
+    setupCalendarFeed(section);
     for(const id of ['appNavPassword','appNavTotp','appNavLogout','logoutBtn'])$('#'+id)?.classList.add('account-action-relocated');
     const toggle=$('#avatarToggle'),menu=$('#avatarMenu');
     const openMenu=()=>{menu.classList.remove('hidden');toggle.setAttribute('aria-expanded','true');};
@@ -75,4 +76,26 @@ function setupNotificationPreferences(section){
         try{const preference=await json('/api/profile/notifications',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({deadlineDigest:form.elements.deadlineDigest.checked})});form.elements.deadlineDigest.checked=preference.deadlineDigest;note.textContent=tx('np.saved','Einstellung gespeichert.');}
         catch(error){form.elements.deadlineDigest.checked=false;note.textContent=error.message;}finally{button.disabled=false;}
     };
+}
+
+function setupCalendarFeed(section){
+    const box=document.createElement('div');box.className='profile-language profile-calendar';
+    box.innerHTML='<h3></h3><small class="cal-hint"></small><p class="members-note cal-state"></p><input class="cal-url" readonly hidden aria-label="URL"><small class="cal-warning" hidden></small><div class="cal-actions"><button type="button" class="cal-create"></button><button type="button" class="cal-copy secondary" hidden></button><button type="button" class="cal-revoke secondary" hidden></button></div><p class="members-note cal-note" role="status"></p>';
+    box.querySelector('h3').textContent=tx('cal.title','Kalender-Abo');
+    box.querySelector('.cal-hint').textContent=tx('cal.hint','Ihre Fristen und Aufgaben als Abonnement in Outlook, Apple Kalender oder Google Kalender. Der Kalender ruft den Link selbst ab, Änderungen erscheinen dort nach einiger Zeit.');
+    box.querySelector('.cal-copy').textContent=tx('cal.copy','Link kopieren');
+    box.querySelector('.cal-revoke').textContent=tx('cal.revoke','Abo beenden');
+    const anchor=section.querySelector('.profile-notifications')||section.querySelector('#profileForm');anchor.after(box);
+    const state=box.querySelector('.cal-state'),note=box.querySelector('.cal-note'),url=box.querySelector('.cal-url'),warning=box.querySelector('.cal-warning'),create=box.querySelector('.cal-create'),copy=box.querySelector('.cal-copy'),revoke=box.querySelector('.cal-revoke');
+    const render=sub=>{
+        state.textContent=sub.active?tx('cal.active','Abo aktiv (Link beginnt mit {p}…).').replace('{p}',sub.prefix||''):tx('cal.inactive','Kein Abo eingerichtet.');
+        create.textContent=sub.active?tx('cal.renew','Neuen Link erzeugen'):tx('cal.create','Abo einrichten');
+        revoke.hidden=!sub.active;
+        if(sub.url){url.value=sub.url;url.hidden=false;copy.hidden=false;warning.hidden=false;warning.textContent=tx('cal.warning','Der Link wird nur jetzt angezeigt. Wer ihn kennt, sieht Ihre Fristen: nicht weitergeben. Ein neuer Link ersetzt den alten sofort.');}
+        else{url.value='';url.hidden=true;copy.hidden=true;warning.hidden=true;}
+    };
+    json('/api/profile/calendar').then(render).catch(error=>{note.textContent=error.message;});
+    create.onclick=async()=>{create.disabled=true;note.textContent='';try{render(await json('/api/profile/calendar',{method:'POST'}));}catch(error){note.textContent=error.message;}finally{create.disabled=false;}};
+    revoke.onclick=async()=>{if(!confirm(tx('cal.revokeConfirm','Das Abo beenden? Der bisherige Link funktioniert dann nicht mehr.')))return;try{render(await json('/api/profile/calendar',{method:'DELETE'}));note.textContent=tx('cal.revoked','Abo beendet.');}catch(error){note.textContent=error.message;}};
+    copy.onclick=async()=>{try{await navigator.clipboard.writeText(url.value);note.textContent=tx('cal.copied','Link kopiert.');}catch(error){url.select();note.textContent=tx('cal.copyManual','Bitte den markierten Link selbst kopieren.');}};
 }
