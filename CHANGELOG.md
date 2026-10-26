@@ -2,6 +2,7 @@
 
 ## 0.7.1 – in Arbeit
 
+* Aktenliste: „CSV exportieren“ speichert genau die Akten, die gerade in der Liste stehen (Filter und Sortierung beachtet). Deutsch mit Semikolon und Dezimalkomma, Englisch mit Komma und Punkt; UTF-8 mit Kennung für Excel; Zellen, die wie Formeln beginnen, werden entschärft.
 * Fristen-Mail: Die tägliche Zusammenfassung nennt jetzt auch Dokumententwürfe, die auf die Prüfung oder Freigabe der Person warten (nach Berechtigung; nie die eigenen, nicht als Freigeber der Prüfer, nicht bereits von der Person Freigegebenes; nur offene Akten). Sie kommt auch dann, wenn keine Frist ansteht, aber ein Dokument wartet.
 * Kalender-Abo: Im Profil lässt sich ein persönlicher Kalenderlink einrichten (iCal-Abonnement für Outlook, Apple Kalender, Google Kalender). Der Kalender ruft ihn ohne Anmeldung selbst ab und zeigt die Fristen und Aufgaben der eigenen zugewiesenen Akten mit Erinnerungen. Der Link ist geheim (nur der Hash wird gespeichert), wird nur einmal angezeigt, ein neuer Link ersetzt den alten sofort, „Abo beenden“ schaltet ihn ab; er endet auch, wenn die Person oder der Mandant nicht mehr aktiv ist. Migration V153 (Mandantenlöschung räumt mit ab).
 * Operationsmonitor: Neuer Block „Mailversand“ zeigt, ob der Mailversand eingeschaltet ist, wann die letzten Fristen- und Beschaffungs-Zusammenfassungen verschickt wurden und wie viele Personen die Fristen-Mail eingeschaltet haben. „Test-Mail an mich senden“ schickt eine Mail an die eigene hinterlegte Adresse (nie an eine andere); Fehlerdetails des Mailservers werden nicht angezeigt.
