@@ -2807,6 +2807,7 @@
   "lcx.chProfileSave": "Save tariff profile",
   "lcx.chNone": "No estimates saved yet.",
   "dr.draft": "Draft",
+  "dr.duplicate": "Duplicate",
   "dr.submitted": "For review",
   "dr.reviewed": "Reviewed",
   "dr.final": "Approved",

@@ -2,6 +2,7 @@
 
 ## 0.7.1 – in Arbeit
 
+* Dokumententwürfe: Mit „Duplizieren“ entsteht aus einem vorhandenen Entwurf (auch einem finalisierten) ein neuer mit denselben Angaben, Positionen und Hinweisen; Nummer und Datum sind die Vorschläge eines neuen Dokuments.
 * Suche (Strg/Cmd+K): Die globale Suche findet jetzt auch Seiten des Menüs („sla“, „vorlagen“) und öffnet sie; nur Seiten, die die Person sehen darf. Akten werden wie bisher gefunden.
 * Erste Schritte: In Bank-Mandanten kommen zur Checkliste im Cockpit die Schritte „SLA-Regel anlegen“ und „Korrespondenzbank erfassen“ hinzu; die Bereitschaftsabfrage (`/api/tenants/current/readiness`) liefert dafür `slaRules` und `correspondentBanks`.
 * Benutzer & Rechte: In Bank-Mandanten erklärt ein Hinweis, dass „Dokumente erstellen (Maker)“ dort nicht gilt (nur in Corporate-Mandanten).
