@@ -2,4 +2,4 @@
 .submission-dialog textarea{width:100%;box-sizing:border-box;min-height:0}.submission-dialog .sp-table{width:100%;border-collapse:collapse;margin:.5rem 0}
 .submission-dialog .sp-table th,.submission-dialog .sp-table td{padding:.35rem .5rem;border-bottom:1px solid rgba(128,128,128,.25);text-align:left;vertical-align:top}
 .submission-dialog .sp-table input[data-key=originals],.submission-dialog .sp-table input[data-key=copies]{width:3rem}
-.submission-dialog .sp-warning{color:#92400e}.submission-dialog ul.sp-notes{padding-left:1.2rem;color:#92400e}.submission-dialog .sp-done{color:#166534;font-weight:600}.submission-dialog .sp-check{display:flex;gap:.5rem;align-items:center;margin:.5rem 0}
+.submission-dialog .sp-warning{color:var(--lc-fg-92400e,#92400e)}.submission-dialog ul.sp-notes{padding-left:1.2rem;color:var(--lc-fg-92400e,#92400e)}.submission-dialog .sp-done{color:var(--lc-fg-166534,#166534);font-weight:600}.submission-dialog .sp-check{display:flex;gap:.5rem;align-items:center;margin:.5rem 0}

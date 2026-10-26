@@ -9,8 +9,8 @@
   background-repeat: no-repeat;
 }
 .login-hero-page .login-card {
-  background: rgba(255, 255, 255, .97);
-  border-color: rgba(255, 255, 255, .65);
+  background: var(--lc-bg-rgba-ffffff-p97,rgba(255, 255, 255, .97));
+  border-color: var(--lc-bd-rgba-ffffff-p65,rgba(255, 255, 255, .65));
   box-shadow: 0 24px 80px rgba(0, 12, 28, .4);
 }
 @media (max-width: 600px) {

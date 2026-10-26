@@ -11,7 +11,7 @@ import de.ostms.lc.user.service.AppUserDetailsService; import jakarta.servlet.ht
    .requestMatchers("/poststelle.html","/poststelle.js","/poststelle.css").permitAll()
    .requestMatchers("/invitation.html","/invitation.js","/api/auth/invitation/accept").permitAll()
    .requestMatchers(org.springframework.http.HttpMethod.GET,"/calendar/feed/*").permitAll() // calendar apps poll the secret link without a login; the secret in the path is the credential
-   .requestMatchers("/password-reset.html","/password-reset.js","/api/auth/password-reset/request","/api/auth/password-reset/complete","/login.html","/login.js","/login-background.css","/login-background-v1.png","/styles.css","/info.html","/info.css","/info.js","/license.txt","/oss-components.json","/oss-notices.txt","/api/auth/login","/api/auth/login/totp","/api/health","/actuator/health","/actuator/health/liveness","/actuator/health/readiness").permitAll()
+   .requestMatchers("/password-reset.html","/password-reset.js","/api/auth/password-reset/request","/api/auth/password-reset/complete","/login.html","/login.js","/login-background.css","/login-background-v1.png","/styles.css","/theme.css","/theme-init.js","/info.html","/info.css","/info.js","/license.txt","/oss-components.json","/oss-notices.txt","/api/auth/login","/api/auth/login/totp","/api/health","/actuator/health","/actuator/health/liveness","/actuator/health/readiness").permitAll()
    .requestMatchers("/actuator/**").hasRole("ADMIN")
    .requestMatchers("/api/admin/outbox/**").hasRole("ADMIN")
    .requestMatchers("/api/admin/monitoring/**").hasRole("ADMIN")

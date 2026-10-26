@@ -1,4 +1,4 @@
-.pu-tabs{display:flex;gap:.4rem;margin:.6rem 0}.pu-tab{border:1px solid rgba(128,128,128,.4);background:transparent;padding:.3rem .8rem;border-radius:6px;cursor:pointer;color:inherit}.pu-tab.active{background:rgba(37,99,235,.15);border-color:#2563eb;font-weight:600}
+.pu-tabs{display:flex;gap:.4rem;margin:.6rem 0}.pu-tab{border:1px solid rgba(128,128,128,.4);background:transparent;padding:.3rem .8rem;border-radius:6px;cursor:pointer;color:inherit}.pu-tab.active{background:rgba(37,99,235,.15);border-color:var(--lc-bd-2563eb,#2563eb);font-weight:600}
 .pu-layout{display:grid;grid-template-columns:minmax(16rem,22rem) 1fr;gap:1rem;align-items:start}@media(max-width:800px){.pu-layout{grid-template-columns:1fr}}
 .pu-filter{display:flex;flex-direction:column;gap:.35rem;margin-bottom:.5rem}.pu-list{max-height:28rem;overflow:auto;border:1px solid rgba(128,128,128,.3);border-radius:6px}
 .pu-row{display:flex;align-items:center;gap:.5rem;padding:.3rem .5rem;border-bottom:1px solid rgba(128,128,128,.15)}.pu-row.current{background:rgba(37,99,235,.12)}
