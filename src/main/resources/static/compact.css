@@ -28,8 +28,8 @@ html body .today-tile b{font-size:15px}
 html body .today-tile>span:not(.today-icon){font-size:13px;font-weight:600}
 html body .today-tile small{display:none}
 html body .today-tile:not(.ok) small{display:inline;font-size:12px}
-html body .today-tile.ok{border-color:#e5e9ef;background:transparent;color:#667085}
-html body .today-tile.ok b{color:#667085;font-weight:600}
+html body .today-tile.ok{border-color:var(--lc-bd-e5e9ef,#e5e9ef);background:transparent;color:var(--lc-fg-667085,#667085)}
+html body .today-tile.ok b{color:var(--lc-fg-667085,#667085);font-weight:600}
 html body #workQueueSection{margin-top:0}
 html body #workQueueSection .panelhead,html body #lcSection .panelhead{padding:12px 22px}
 html body #workQueueSection .panelhead p,html body #lcSection .panelhead p{display:none}
@@ -44,15 +44,15 @@ html body #list .row.dossier-row{padding:10px 22px;gap:4px 14px}
 /* LC-Cockpit der Akte: kompakte, anklickbare Kacheln statt Karten mit Oeffnen-Knopf */
 html body .lc-operational-cockpit>.grid{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
 html body .cockpit-card{padding:8px 12px;cursor:pointer}
-html body .cockpit-card:hover,html body .cockpit-card:focus-visible{border-color:#2f6fed;outline:none}
+html body .cockpit-card:hover,html body .cockpit-card:focus-visible{border-color:var(--lc-bd-2f6fed,#2f6fed);outline:none}
 html body .cockpit-card b{font-size:16px;display:block}
-html body .cockpit-card p{margin:2px 0 0;font-size:12px;color:#667085}
+html body .cockpit-card p{margin:2px 0 0;font-size:12px;color:var(--lc-fg-667085,#667085)}
 
 /* Naechster Schritt oben im LC-Cockpit */
-html body .next-step{display:flex;align-items:baseline;gap:10px;padding:8px 12px;margin:0 0 8px;border:1px solid #b9d0fb;background:#f0f6ff;border-radius:8px;cursor:pointer}
-html body .next-step small{color:#2f6fed;font-weight:700;text-transform:uppercase;font-size:11px}
-html body .next-step.done{cursor:default;background:#f6faf7;border-color:#cfe5d6}
-html body .next-step.done small{color:#1a7f45}
+html body .next-step{display:flex;align-items:baseline;gap:10px;padding:8px 12px;margin:0 0 8px;border:1px solid var(--lc-bd-b9d0fb,#b9d0fb);background:var(--lc-bg-f0f6ff,#f0f6ff);border-radius:8px;cursor:pointer}
+html body .next-step small{color:var(--lc-fg-2f6fed,#2f6fed);font-weight:700;text-transform:uppercase;font-size:11px}
+html body .next-step.done{cursor:default;background:var(--lc-bg-f6faf7,#f6faf7);border-color:var(--lc-bd-cfe5d6,#cfe5d6)}
+html body .next-step.done small{color:var(--lc-fg-1a7f45,#1a7f45)}
 
 /* Globale Suche (Strg+K) */
 html body .global-search{border:0;border-radius:10px;padding:12px;width:min(560px,92vw);margin:12vh auto auto;box-shadow:0 12px 40px rgba(16,24,40,.28)}
@@ -60,35 +60,35 @@ html body .global-search::backdrop{background:rgba(16,24,40,.35)}
 html body .global-search input{width:100%;box-sizing:border-box;margin:0}
 html body .global-search ul{list-style:none;margin:6px 0 0;padding:0}
 html body .global-search li{display:flex;gap:10px;align-items:baseline;padding:7px 10px;border-radius:6px;cursor:pointer}
-html body .global-search li span{color:#667085;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-html body .global-search li[aria-selected="true"],html body .global-search li:hover{background:#eaf1ff}
-html body .global-search small{display:block;color:#667085;margin-top:6px}
+html body .global-search li span{color:var(--lc-fg-667085,#667085);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html body .global-search li[aria-selected="true"],html body .global-search li:hover{background:var(--lc-bg-eaf1ff,#eaf1ff)}
+html body .global-search small{display:block;color:var(--lc-fg-667085,#667085);margin-top:6px}
 
 /* Erste Schritte */
-html body .first-steps{flex:1 0 100%;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0 0;padding:8px 12px;border:1px dashed #b9d0fb;border-radius:8px;background:#f8fbff}
+html body .first-steps{flex:1 0 100%;display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:10px 0 0;padding:8px 12px;border:1px dashed var(--lc-bd-b9d0fb,#b9d0fb);border-radius:8px;background:var(--lc-bg-f8fbff,#f8fbff)}
 html body .first-steps button.done{opacity:.6}
 
 /* Dateien auf die Akte ziehen */
-html body #detail.file-drop-over{position:relative;outline:2px dashed #2f6fed;outline-offset:-4px}
-html body #detail.file-drop-over::after{content:attr(data-drop-label);position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(234,241,255,.85);color:#1d4fb8;font-weight:700;pointer-events:none}
+html body #detail.file-drop-over{position:relative;outline:2px dashed var(--lc-bd-2f6fed,#2f6fed);outline-offset:-4px}
+html body #detail.file-drop-over::after{content:attr(data-drop-label);position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--lc-bg-rgba-eaf1ff-p85,rgba(234,241,255,.85));color:var(--lc-fg-1d4fb8,#1d4fb8);font-weight:700;pointer-events:none}
 
 /* Papierkorb der Dokumente */
 html body .trash-list{list-style:none;margin:8px 0;padding:0}
-html body .trash-list li{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:6px 0;border-bottom:1px solid #e5e9ef}
-html body .trash-list small{display:block;color:#667085}
+html body .trash-list li{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:6px 0;border-bottom:1px solid var(--lc-bd-e5e9ef,#e5e9ef)}
+html body .trash-list small{display:block;color:var(--lc-fg-667085,#667085)}
 
 /* Fehlende LC-Angaben: eingeklappte Liste mit einem gemeinsamen Erfassen-Knopf */
-html body .doc-review-missing-list summary{cursor:pointer;color:#2f6fed;margin:4px 0}
+html body .doc-review-missing-list summary{cursor:pointer;color:var(--lc-fg-2f6fed,#2f6fed);margin:4px 0}
 html body .doc-review-missing-list .doc-review-missing-row{margin-top:2px}
 html body .doc-review-missing-row>span{min-width:0;font-weight:500}
 
 /* SLA */
 html body .sla-block{margin:0 0 10px}
 html body .sla-list{list-style:none;margin:4px 0 0;padding:0;font-size:13px}
-html body .sla-list li{padding:3px 8px;margin-bottom:3px;border-left:4px solid #98a2b3;border-radius:4px;background:#f8fafc}
-html body .sla-list li.ok{border-left-color:#16a34a}html body .sla-list li.warn{border-left-color:#f59e0b;background:#fffbeb}html body .sla-list li.bad{border-left-color:#dc2626;background:#fef2f2}html body .sla-list li.late{border-left-color:#dc2626}html body .sla-list li.done{border-left-color:#16a34a}
-html body .sla-badge{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12px;font-weight:600;background:#e5e9ef;color:#344054}
-html body .sla-badge.ok{background:#dcfce7;color:#166534}html body .sla-badge.warn{background:#fef3c7;color:#92400e}html body .sla-badge.bad{background:#fee2e2;color:#991b1b}
+html body .sla-list li{padding:3px 8px;margin-bottom:3px;border-left:4px solid var(--lc-bd-98a2b3,#98a2b3);border-radius:4px;background:var(--lc-bg-f8fafc,#f8fafc)}
+html body .sla-list li.ok{border-left-color:#16a34a}html body .sla-list li.warn{border-left-color:#f59e0b;background:var(--lc-bg-fffbeb,#fffbeb)}html body .sla-list li.bad{border-left-color:#dc2626;background:var(--lc-bg-fef2f2,#fef2f2)}html body .sla-list li.late{border-left-color:#dc2626}html body .sla-list li.done{border-left-color:#16a34a}
+html body .sla-badge{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12px;font-weight:600;background:var(--lc-bg-e5e9ef,#e5e9ef);color:var(--lc-fg-344054,#344054)}
+html body .sla-badge.ok{background:var(--lc-bg-dcfce7,#dcfce7);color:var(--lc-fg-166534,#166534)}html body .sla-badge.warn{background:var(--lc-bg-fef3c7,#fef3c7);color:var(--lc-fg-92400e,#92400e)}html body .sla-badge.bad{background:var(--lc-bg-fee2e2,#fee2e2);color:var(--lc-fg-991b1b,#991b1b)}
 html body .sla-rule.inactive{opacity:.6}
 html body .sla-form select[multiple]{min-height:110px}
 
@@ -127,11 +127,11 @@ html body #correspondentSection form.cb-form>.cb-actions{grid-column:1/-1;displa
 html body #correspondentSection .cb-add{margin-top:14px}
 @media(max-width:700px){html body #correspondentSection form.cb-form{grid-template-columns:minmax(0,1fr)}}
 html body #correspondentSection form.cb-form textarea{min-height:72px;height:84px;resize:vertical}
-html body .sla-list li.paused{border-left-color:#6366f1;background:#eef2ff}html body .sla-badge.paused{background:#e0e7ff;color:#3730a3}
+html body .sla-list li.paused{border-left-color:var(--lc-bd-6366f1,#6366f1);background:var(--lc-bg-eef2ff,#eef2ff)}html body .sla-badge.paused{background:var(--lc-bg-e0e7ff,#e0e7ff);color:var(--lc-fg-3730a3,#3730a3)}
 html body #slaSection .sla-report-bar{display:flex;gap:10px;align-items:center;margin:6px 0 10px}
 html body #slaSection .sla-report-wrap{overflow-x:auto}
 html body #slaSection table.sla-report{border-collapse:collapse;width:100%;font-size:13px}
-html body #slaSection table.sla-report th,html body #slaSection table.sla-report td{padding:6px 10px;border-bottom:1px solid #e5e9ef;text-align:right;white-space:nowrap}
+html body #slaSection table.sla-report th,html body #slaSection table.sla-report td{padding:6px 10px;border-bottom:1px solid var(--lc-bd-e5e9ef,#e5e9ef);text-align:right;white-space:nowrap}
 html body #slaSection table.sla-report th:first-child,html body #slaSection table.sla-report td:first-child{text-align:left;white-space:normal}
 html body #webhookSection form.wh-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 20px;align-items:start;padding:0;margin:12px 0 0}
 html body #webhookSection form.wh-form>label{display:flex;flex-direction:column;align-items:stretch;gap:6px;margin:0;padding:0;border:0;background:none;box-shadow:none;min-width:0}
@@ -143,7 +143,7 @@ html body #webhookSection .wh-events label{display:flex;align-items:center;gap:6
 html body #webhookSection form.wh-form>.wh-actions{grid-column:1/-1;display:flex;gap:10px;margin:0}
 html body #webhookSection .wh-buttons{display:flex;flex-wrap:wrap;gap:6px}
 html body #webhookSection .wh-add{margin-top:14px}
-html body #webhookSection .wh-secret{margin:10px 0;padding:12px 14px;border:1px solid #f59e0b;background:#fffbeb;border-radius:8px}
+html body #webhookSection .wh-secret{margin:10px 0;padding:12px 14px;border:1px solid #f59e0b;background:var(--lc-bg-fffbeb,#fffbeb);border-radius:8px}
 html body #webhookSection .wh-secret code{display:block;margin:8px 0;word-break:break-all;font-size:13px}
 html body #webhookSection .wh-secret button{margin-right:8px}
 @media(max-width:700px){html body #webhookSection form.wh-form{grid-template-columns:minmax(0,1fr)}}
@@ -158,7 +158,7 @@ html body #apiKeySection .wh-events label{display:flex;align-items:center;gap:6p
 html body #apiKeySection form.wh-form>.wh-actions{grid-column:1/-1;display:flex;gap:10px;margin:0}
 html body #apiKeySection .wh-buttons{display:flex;flex-wrap:wrap;gap:6px}
 html body #apiKeySection .wh-add{margin-top:14px}
-html body #apiKeySection .wh-secret{margin:10px 0;padding:12px 14px;border:1px solid #f59e0b;background:#fffbeb;border-radius:8px}
+html body #apiKeySection .wh-secret{margin:10px 0;padding:12px 14px;border:1px solid #f59e0b;background:var(--lc-bg-fffbeb,#fffbeb);border-radius:8px}
 html body #apiKeySection .wh-secret code{display:block;margin:8px 0;word-break:break-all;font-size:13px}
 html body #apiKeySection .wh-secret button{margin-right:8px}
 html body #apiKeySection form.wh-form{grid-template-columns:minmax(0,1fr)}
@@ -169,10 +169,10 @@ html body .payment-block .payment-actions{grid-column:1/-1;display:flex;gap:10px
 html body .payment-block>button{margin-top:8px}
 html body #liquiditySection .liq-bar{display:flex;gap:10px;align-items:center;margin:6px 0 10px}
 html body #liquiditySection table.liq-table{border-collapse:collapse;width:100%;font-size:13px}
-html body #liquiditySection table.liq-table th,html body #liquiditySection table.liq-table td{padding:6px 10px;border-bottom:1px solid #e5e9ef;text-align:right;white-space:nowrap}
+html body #liquiditySection table.liq-table th,html body #liquiditySection table.liq-table td{padding:6px 10px;border-bottom:1px solid var(--lc-bd-e5e9ef,#e5e9ef);text-align:right;white-space:nowrap}
 html body #liquiditySection table.liq-table th:first-child{text-align:left}
-html body #liquiditySection tr.liq-overdue th,html body #liquiditySection tr.liq-overdue td{color:#991b1b}
-html body #liquiditySection .liq-negative{color:#991b1b}
+html body #liquiditySection tr.liq-overdue th,html body #liquiditySection tr.liq-overdue td{color:var(--lc-fg-991b1b,#991b1b)}
+html body #liquiditySection .liq-negative{color:var(--lc-fg-991b1b,#991b1b)}
 html body .gar-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 20px;align-items:start;padding:0;margin:12px 0 0}
 html body .gar-form>label{display:flex;flex-direction:column;align-items:stretch;gap:6px;margin:0;padding:0;border:0;background:none;box-shadow:none;min-width:0}
 html body .gar-form>label>input:not([type=checkbox]),html body .gar-form>label>select{width:100%;margin:0;box-sizing:border-box}
@@ -182,12 +182,12 @@ html body .gar-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;m
 html body .gar-buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 @media(max-width:700px){html body .gar-form{grid-template-columns:minmax(0,1fr)}}
 html body .gar-form>.gar-check{grid-column:1/-1;margin:0;font-size:13px;min-height:1em}
-html body .gar-check.ok{color:#166534}html body .gar-check.warn{color:#92400e}html body .gar-check.bad{color:#991b1b;font-weight:600}
+html body .gar-check.ok{color:var(--lc-fg-166534,#166534)}html body .gar-check.warn{color:var(--lc-fg-92400e,#92400e)}html body .gar-check.bad{color:var(--lc-fg-991b1b,#991b1b);font-weight:600}
 html body .gar-lines{margin:6px 0 14px}
-html body .gar-bar{height:8px;border-radius:999px;background:#e5e9ef;overflow:hidden;margin:6px 0 4px;max-width:420px}
+html body .gar-bar{height:8px;border-radius:999px;background:var(--lc-bg-e5e9ef,#e5e9ef);overflow:hidden;margin:6px 0 4px;max-width:420px}
 html body .gar-bar span{display:block;height:100%;background:#16a34a}
 html body .gar-bar.warn span{background:#f59e0b}html body .gar-bar.bad span{background:#dc2626}
-html body .gar-without{color:#92400e;font-size:13px}
+html body .gar-without{color:var(--lc-fg-92400e,#92400e);font-size:13px}
 html body .guarantee-block h4{margin:10px 0 4px;font-size:14px}
 html body .gar-form textarea{width:100%;box-sizing:border-box}
 html body .gar-bar-pair{position:relative;display:flex}

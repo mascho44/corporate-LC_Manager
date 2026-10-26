@@ -29,6 +29,7 @@ function setupAvatarUi(){
     $('#monitoringSection').before(section);
     setupLanguagePreferences(section);
     setupNotificationPreferences(section);
+    setupThemeChoice(section);
     setupCalendarFeed(section);
     for(const id of ['appNavPassword','appNavTotp','appNavLogout','logoutBtn'])$('#'+id)?.classList.add('account-action-relocated');
     const toggle=$('#avatarToggle'),menu=$('#avatarMenu');
@@ -98,4 +99,22 @@ function setupCalendarFeed(section){
     create.onclick=async()=>{create.disabled=true;note.textContent='';try{render(await json('/api/profile/calendar',{method:'POST'}));}catch(error){note.textContent=error.message;}finally{create.disabled=false;}};
     revoke.onclick=async()=>{if(!confirm(tx('cal.revokeConfirm','Das Abo beenden? Der bisherige Link funktioniert dann nicht mehr.')))return;try{render(await json('/api/profile/calendar',{method:'DELETE'}));note.textContent=tx('cal.revoked','Abo beendet.');}catch(error){note.textContent=error.message;}};
     copy.onclick=async()=>{try{await navigator.clipboard.writeText(url.value);note.textContent=tx('cal.copied','Link kopiert.');}catch(error){url.select();note.textContent=tx('cal.copyManual','Bitte den markierten Link selbst kopieren.');}};
+}
+
+function setupThemeChoice(section){
+    const form=document.createElement('div');form.className='profile-language profile-theme';
+    form.innerHTML='<label><span></span><select name="theme"><option value=""></option><option value="dark"></option><option value="system"></option></select></label><small></small>';
+    form.querySelector('span').textContent=tx('th.title','Darstellung');
+    const options=form.querySelectorAll('option');
+    options[0].textContent=tx('th.light','Hell');options[1].textContent=tx('th.dark','Dunkel');options[2].textContent=tx('th.system','Wie das Gerät (automatisch)');
+    form.querySelector('small').textContent=tx('th.hint','Gilt nur in diesem Browser.');
+    let current='';try{current=localStorage.getItem('lc-theme')||'';}catch(ignored){}
+    const select=form.querySelector('select');
+    select.value=current==='dark'||current==='system'?current:'';
+    select.onchange=()=>{
+        const value=select.value;
+        try{if(value)localStorage.setItem('lc-theme',value);else localStorage.removeItem('lc-theme');}catch(ignored){}
+        if(value)document.documentElement.setAttribute('data-theme',value);else document.documentElement.removeAttribute('data-theme');
+    };
+    (section.querySelector('.profile-language')||section.querySelector('#profileForm')).after(form);
 }
