@@ -187,7 +187,7 @@
   "language.save": "Save language",
   "language.saved": "Language preference saved.",
   "np.deadlineDigest": "Daily deadline summary by email",
-  "np.deadlineDigestHint": "Your assigned files: overdue deadlines and those of the next 3 days, at most once a day and only when something is due. Needs an email address in your profile.",
+  "np.deadlineDigestHint": "Your assigned files: overdue deadlines and those of the next 3 days, plus documents waiting for your check or approval, at most once a day and only when something is due. Needs an email address in your profile.",
   "np.save": "Save",
   "np.saved": "Setting saved.",
   "cal.title": "Calendar subscription",

@@ -67,7 +67,7 @@ function setupNotificationPreferences(section){
     const form=document.createElement('form');form.className='profile-language profile-notifications';
     form.innerHTML='<label><input type="checkbox" name="deadlineDigest"> <span></span></label><small></small><button type="submit"></button><p class="members-note" role="status"></p>';
     form.querySelector('span').textContent=tx('np.deadlineDigest','Tägliche Fristen-Zusammenfassung per E-Mail');
-    form.querySelector('small').textContent=tx('np.deadlineDigestHint','Ihre zugewiesenen Akten: überfällige Fristen und die der nächsten 3 Tage, höchstens einmal täglich und nur, wenn etwas ansteht. Braucht eine E-Mail-Adresse im Profil.');
+    form.querySelector('small').textContent=tx('np.deadlineDigestHint','Ihre zugewiesenen Akten: überfällige Fristen und die der nächsten 3 Tage sowie Dokumente, die auf Ihre Prüfung oder Freigabe warten, höchstens einmal täglich und nur, wenn etwas ansteht. Braucht eine E-Mail-Adresse im Profil.');
     form.querySelector('button').textContent=tx('np.save','Speichern');
     (section.querySelector('.profile-language')||section.querySelector('#profileForm')).after(form);
     const note=form.querySelector('p');
