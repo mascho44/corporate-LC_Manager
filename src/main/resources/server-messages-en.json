@@ -480,7 +480,14 @@
   "Unbekannter Status des Antrags.": "Unknown status of the application.",
   "Der Zeitraum muss zwischen 7 und 730 Tagen liegen.": "The period must be between 7 and 730 days.",
   "Dieser Statuswechsel ist nicht möglich.": "This status change is not possible.",
-  "Die Referenz der Bank ist zu lang (höchstens 100 Zeichen).": "The bank reference is too long (at most 100 characters)."
+  "Die Referenz der Bank ist zu lang (höchstens 100 Zeichen).": "The bank reference is too long (at most 100 characters).",
+  "Bitte einen Namen (höchstens 60 Zeichen) angeben, zum Beispiel „Meine Garantien“.": "Please enter a name (at most 60 characters), for example “My guarantees”.",
+  "Ein Filterwert ist zu lang.": "A filter value is too long.",
+  "Es ist kein Filter und keine Sortierung gesetzt, die gespeichert werden könnten.": "No filter or sort order is set that could be saved.",
+  "Eine Ansicht mit diesem Namen gibt es bereits.": "A view with this name already exists.",
+  "Ansicht nicht gefunden.": "View not found.",
+  "Nur die Person, die die Ansicht angelegt hat, kann sie ändern.": "Only the person who created the view can change it.",
+  "Diese Ansicht kann nur die Person löschen, die sie angelegt hat.": "Only the person who created this view can delete it."
  },
  "patterns": [
   {
@@ -642,6 +649,10 @@
   {
    "de": "Es sind höchstens {} Zahlungen je Akte möglich.",
    "en": "At most {1} payments per file are possible."
+  },
+  {
+   "de": "Es sind bereits {} Ansichten gespeichert. Bitte nicht mehr benötigte löschen.",
+   "en": "There are already {1} views saved. Please delete those no longer needed."
   }
  ]
 }
