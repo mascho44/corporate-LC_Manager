@@ -2,6 +2,7 @@
 
 ## 0.7.1 – in Arbeit
 
+* Erste Schritte: In Bank-Mandanten kommen zur Checkliste im Cockpit die Schritte „SLA-Regel anlegen“ und „Korrespondenzbank erfassen“ hinzu; die Bereitschaftsabfrage (`/api/tenants/current/readiness`) liefert dafür `slaRules` und `correspondentBanks`.
 * Benutzer & Rechte: In Bank-Mandanten erklärt ein Hinweis, dass „Dokumente erstellen (Maker)“ dort nicht gilt (nur in Corporate-Mandanten).
 * Optik: In der Dokumentenakte stehen die Menüs „Erzeugen“ und „Prüfen & einreichen“ immer in fester Reihenfolge direkt vor „Dokument hochladen“ (vorher wechselte „Erzeugen“ die Stelle zum Papierkorb).
 * Optik: Ist noch keine Firma angelegt, zeigt „Dokument erstellen“ den Hinweis, unter Firmenstammdaten eine Firma anzulegen, statt „Firma nicht gefunden.“
