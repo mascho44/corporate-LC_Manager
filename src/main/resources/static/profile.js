@@ -28,6 +28,7 @@ function setupAvatarUi(){
     section.innerHTML='<div class="panelhead"><div><h2>'+tx('prh.903821','Mein Profil')+'</h2><p>'+tx('prh.f05fcc','Persönliche Angaben und Profilbild verwalten.')+'</p></div></div><div class="profile-layout"><div class="profile-picture-card"><div id="profileAvatar" class="user-avatar profile-avatar"></div><form id="profileAvatarForm"><label>'+tx('prh.cb2aee','Profilbild auswählen')+'<input name="file" type="file" accept="image/png,image/jpeg,.png,.jpg,.jpeg" required></label><small>'+tx('prh.b6f696','PNG oder JPEG bis 5 MB. Das Bild wird mittig quadratisch zugeschnitten.')+'</small><button type="submit">'+tx('prh.0c1a66','Profilbild hochladen')+'</button></form><button type="button" id="removeProfileAvatar" class="secondary">'+tx('prh.c94da7','Profilbild entfernen')+'</button></div><div><p id="profileEmailNotice" role="status">'+tx('prh.319173','Bitte hinterlegen Sie Ihre E-Mail-Adresse. Sie ist beim Speichern des Profils erforderlich.')+'</p><form id="profileForm"><label>'+tx('prh.2eb6eb','Anzeigename')+'<input name="displayName" required maxlength="255" autocomplete="name"></label><label>'+tx('prh.082e55','E-Mail')+'<input name="email" type="email" required maxlength="255" autocomplete="email"></label><dl class="profile-facts"><dt>'+tx('prh.cca849','Benutzername')+'</dt><dd id="profileUsername"></dd><dt>'+tx('prh.e897f3','Rolle')+'</dt><dd id="profileRole"></dd></dl><button type="submit">'+tx('prh.305502','Profil speichern')+'</button></form><div class="profile-security"><h3>'+tx('prh.612585','Anmeldung und Sicherheit')+'</h3><button type="button" id="profilePassword" class="secondary">'+tx('prh.a30c54','Passwort verwalten')+'</button><button type="button" id="profileTotp" class="secondary">'+tx('prh.a441f7','Zwei-Faktor-Anmeldung')+'</button></div></div></div><div id="profileMessage" class="profile-message" role="status" aria-live="polite"></div>';
     $('#monitoringSection').before(section);
     setupLanguagePreferences(section);
+    setupNotificationPreferences(section);
     for(const id of ['appNavPassword','appNavTotp','appNavLogout','logoutBtn'])$('#'+id)?.classList.add('account-action-relocated');
     const toggle=$('#avatarToggle'),menu=$('#avatarMenu');
     const openMenu=()=>{menu.classList.remove('hidden');toggle.setAttribute('aria-expanded','true');};
@@ -58,5 +59,20 @@ function setupLanguagePreferences(section){
     form.onsubmit=async event=>{event.preventDefault();const button=form.querySelector('button');button.disabled=true;
         try{const before=LcI18n.language();await apply(await json('/api/profile/language',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({language:form.elements.language.value||null})}));form.querySelector('p').textContent=LcI18n.t('language.saved');if(LcI18n.language()!==before)setTimeout(()=>location.reload(),600);/* menus and pages built once must be rebuilt in the new language */}
         catch(error){form.querySelector('p').textContent=error.message;}finally{button.disabled=false;}
+    };
+}
+
+function setupNotificationPreferences(section){
+    const form=document.createElement('form');form.className='profile-language profile-notifications';
+    form.innerHTML='<label><input type="checkbox" name="deadlineDigest"> <span></span></label><small></small><button type="submit"></button><p class="members-note" role="status"></p>';
+    form.querySelector('span').textContent=tx('np.deadlineDigest','Tägliche Fristen-Zusammenfassung per E-Mail');
+    form.querySelector('small').textContent=tx('np.deadlineDigestHint','Ihre zugewiesenen Akten: überfällige Fristen und die der nächsten 3 Tage, höchstens einmal täglich und nur, wenn etwas ansteht. Braucht eine E-Mail-Adresse im Profil.');
+    form.querySelector('button').textContent=tx('np.save','Speichern');
+    (section.querySelector('.profile-language')||section.querySelector('#profileForm')).after(form);
+    const note=form.querySelector('p');
+    json('/api/profile/notifications').then(preference=>{form.elements.deadlineDigest.checked=preference.deadlineDigest;}).catch(error=>{note.textContent=error.message;});
+    form.onsubmit=async event=>{event.preventDefault();const button=form.querySelector('button');button.disabled=true;
+        try{const preference=await json('/api/profile/notifications',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({deadlineDigest:form.elements.deadlineDigest.checked})});form.elements.deadlineDigest.checked=preference.deadlineDigest;note.textContent=tx('np.saved','Einstellung gespeichert.');}
+        catch(error){form.elements.deadlineDigest.checked=false;note.textContent=error.message;}finally{button.disabled=false;}
     };
 }
