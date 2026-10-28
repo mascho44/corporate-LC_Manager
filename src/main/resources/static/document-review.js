@@ -254,7 +254,7 @@
     if (finding.lcCondition) { const c = document.createElement('small'); c.textContent = 'LC-Bedingung: ' + finding.lcCondition; card.append(c); }
     if (finding.advice) { const a = document.createElement('p'); a.className = 'doc-review-advice'; a.textContent = english() ? 'How to fix: ' + (finding.adviceEn || finding.advice) : 'So beheben: ' + finding.advice; card.append(a); }
     if (finding.explanation) { const e = document.createElement('p'); e.className = 'doc-review-explanation'; e.textContent = 'Rechnung: ' + finding.explanation; card.append(e); }
-    if (finding.documentEvidence) { const q = document.createElement('blockquote'); q.textContent = globalThis.readableEvidence ? readableEvidence(finding.documentEvidence) : finding.documentEvidence; card.append(q); }
+    if (finding.documentEvidence) { const details = document.createElement('details'); details.className = 'doc-review-details'; const summary = document.createElement('summary'); summary.textContent = tr('dr.details', 'Regeldetails anzeigen'); const q = document.createElement('blockquote'); q.textContent = globalThis.readableEvidence ? readableEvidence(finding.documentEvidence) : finding.documentEvidence; details.append(summary, q); card.append(details); }
     if (isOpen(finding)) {
      const actions = document.createElement('div'); actions.className = 'doc-review-actions';
      const pending = isPendingApproval(finding);

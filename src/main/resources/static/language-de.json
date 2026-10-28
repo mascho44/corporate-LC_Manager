@@ -772,6 +772,7 @@
   "dr.next": "Nächstes Dokument",
   "dr.apply": "Erkannte Prüfdaten übernehmen",
   "dr.key.ok": "erfüllt",
+  "dr.details": "Regeldetails anzeigen",
   "dr.key.disc": "Abweichung",
   "dr.key.finding": "Befund",
   "dr.key.doc": "Dokument",

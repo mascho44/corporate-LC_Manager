@@ -2,6 +2,7 @@
 
 ## 0.7.1 – in Arbeit
 
+* Prüfmodus: Der Beleg zu einem Befund (Regelangaben, erfasste Prüfdaten, Prüfsumme) ist eingeklappt und erscheint erst auf Klick („Regeldetails anzeigen“).
 * Einrichtungsassistent: Im Cockpit startet unter „Erste Schritte“ der „Einrichtungsassistent“. Er fragt Schritt für Schritt Firma bzw. Bank, Kontakt und Register ab und speichert in den Firmenstammdaten. Corporate-Mandanten geben zusätzlich Steuernummer, Bankverbindung und Logo an und finden danach Dokumentvorlagen; Bank-Mandanten geben die BIC an und werden zu SLA-Regel und Korrespondenzbank geführt. Deutsch und Englisch.
 * Kopfzeile: Die TLS-Ampel ist ausgeblendet; die Verbindungsdetails bleiben im Menü unter „Verbindungssicherheit“ erreichbar.
 * Anleitungen: Drei neue Anleitungen unter `docs/` – allgemeiner Teil, Corporate (Dokumente erstellen und einreichen) und Bank (Dokumente prüfen).
