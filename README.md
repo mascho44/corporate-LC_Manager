@@ -6,6 +6,9 @@ Spring-Boot-MVP für Corporate-Akkreditivmanagement mit Web-Dashboard, MT700/MT7
 
 - [Fachliche Dokumentation](docs/fachliche-dokumentation.md)
 - [Erstinstallation: Leitfaden für Betrieb und erste Benutzer](docs/erstinstallation.md)
+- [Anleitung: Allgemeiner Teil](docs/anleitung-allgemein.md)
+- [Anleitung: Corporate, Dokumente erstellen und einreichen](docs/anleitung-corporate-dokumente-erstellen.md)
+- [Anleitung: Bank, Dokumente prüfen](docs/anleitung-bank-dokumente-pruefen.md)
 - [Technische Dokumentation und Betrieb](docs/technische-dokumentation.md)
 - [Versionierte Prüfgrundlagen](docs/versionierte-pruefregeln.md)
 - [Erweiterte Prüfengine: Dokumentvergleiche, Versicherung und Fristen](docs/rule-engine-v3.md)
