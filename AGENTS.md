@@ -10,8 +10,8 @@ mvn -o test                      # Java-Tests (Integrationstests gegen PostgreSQ
 node --test src/test/js/*.cjs    # JavaScript-Tests der Oberfläche
 ```
 
-Vor jedem Pull Request laufen beide Befehle. Die CI hat acht Prüfungen (CodeQL ×4, Build & tests, Dependency review, Tenant acceptance, Browser smoke test); alle müssen grün sein.
-Den Browser-Rauchtest (`scripts/browser-smoke.cjs`) gibt es nur in der CI. Für Layout-Prüfungen: `scripts/layout-stack.sh up|code|down` und `docs/layout-pruefung.md`.
+Vor jedem Pull Request laufen beide Befehle. Die CI hat sieben Prüfungen (CodeQL ×4, Build & tests, Dependency review, Tenant acceptance); alle müssen grün sein.
+Den Browser-Rauchtest (`scripts/test-browser-smoke.sh`) führt die CI nicht mehr aus; er lässt sich bei Bedarf lokal starten. Für Layout-Prüfungen: `scripts/layout-stack.sh up|code|down` und `docs/layout-pruefung.md`.
 
 ## Arbeitsweise
 
