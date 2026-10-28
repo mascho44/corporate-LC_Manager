@@ -2,6 +2,7 @@
 
 ## 0.7.1 – in Arbeit
 
+* Prüfabschluss mit Betragsgrenze: „Prüfung abschließen“ (Prüfmodus und Prüfungsassistent) schließt bis zu einer einstellbaren Grenze eine Person allein ab, darüber braucht es mehrere verschiedene Personen (eine beginnt, die anderen zeichnen mit; Zurückziehen nur durch die beginnende Person). Der Abschluss setzt die Akte auf den neuen Status „Prüfung abgeschlossen“ und schreibt den Vermerk mit allen Beteiligten. Die Grenzen je Währung stehen unter „Prüfabschluss“ in den Einstellungen (Recht „Einstellungen verwalten“). Migration V155.
 * Prüfmodus: Der Beleg zu einem Befund (Regelangaben, erfasste Prüfdaten, Prüfsumme) ist eingeklappt und erscheint erst auf Klick („Regeldetails anzeigen“).
 * Einrichtungsassistent: Im Cockpit startet unter „Erste Schritte“ der „Einrichtungsassistent“. Er fragt Schritt für Schritt Firma bzw. Bank, Kontakt und Register ab und speichert in den Firmenstammdaten. Corporate-Mandanten geben zusätzlich Steuernummer, Bankverbindung und Logo an und finden danach Dokumentvorlagen; Bank-Mandanten geben die BIC an und werden zu SLA-Regel und Korrespondenzbank geführt. Deutsch und Englisch.
 * Kopfzeile: Die TLS-Ampel ist ausgeblendet; die Verbindungsdetails bleiben im Menü unter „Verbindungssicherheit“ erreichbar.
