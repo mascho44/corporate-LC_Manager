@@ -2,6 +2,7 @@
 
 ## 0.7.1 – in Arbeit
 
+* Einrichtungsassistent: Im Cockpit startet unter „Erste Schritte“ der „Einrichtungsassistent“. Er fragt Schritt für Schritt Firma bzw. Bank, Kontakt und Register ab und speichert in den Firmenstammdaten. Corporate-Mandanten geben zusätzlich Steuernummer, Bankverbindung und Logo an und finden danach Dokumentvorlagen; Bank-Mandanten geben die BIC an und werden zu SLA-Regel und Korrespondenzbank geführt. Deutsch und Englisch.
 * Kopfzeile: Die TLS-Ampel ist ausgeblendet; die Verbindungsdetails bleiben im Menü unter „Verbindungssicherheit“ erreichbar.
 * Anleitungen: Drei neue Anleitungen unter `docs/` – allgemeiner Teil, Corporate (Dokumente erstellen und einreichen) und Bank (Dokumente prüfen).
 * Gespeicherte Ansichten: In der Aktenliste lassen sich Suche, Ampel, SLA, Zuständigkeit, Firma, Sortierung und der gewählte Schnellfilter unter einem Namen speichern („Ansicht speichern“), später mit einem Klick wieder aufrufen, mit „Aktualisieren“ auf den aktuellen Stand setzen und löschen. Die Ansichten liegen auf dem Server, sind also auf jedem Gerät da, und lassen sich mit allen im Mandanten teilen. Ändern kann nur, wer sie angelegt hat; geteilte Ansichten anderer darf, wer Einstellungen verwalten darf, löschen. Höchstens 30 je Person. Migration V154 (Mandantenlöschung räumt mit ab).
