@@ -2,7 +2,7 @@
 
 Dieser Leitfaden führt von einem leeren Server bis zum ersten Mandanten mit eigenen Benutzern und der ersten Akte. Teil A richtet sich an den technischen Betrieb, Teil B an die Person, die die Anwendung fachlich einrichtet. Er beschreibt die Produktivinstallation mit Docker Compose. Für lokale Entwicklung siehe das [README](../README.md).
 
-Die Angaben beziehen sich auf Version 0.7. Wo ein Wert vom Standard abweicht oder noch nicht eingerichtet ist, steht das ausdrücklich dabei.
+Die Angaben beziehen sich auf Version 0.7.1. Wo ein Wert vom Standard abweicht oder noch nicht eingerichtet ist, steht das ausdrücklich dabei.
 
 ---
 

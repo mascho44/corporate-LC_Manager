@@ -1,6 +1,8 @@
 # Änderungsprotokoll
 
-## 0.7.1 – in Arbeit
+## 0.7.1 – 28.10.2026
+
+Schwerpunkte: Prüfabschluss mit Betragsgrenze (eine Person allein oder mehrere gemeinsam, neuer Aktenstatus „Prüfung abgeschlossen“), Einrichtungsassistent für Corporate und Bank, gespeicherte Ansichten und CSV-Export der Aktenliste, dunkles Theme, Kalender-Abo und Fristen per E-Mail, drei Anleitungen (allgemein, Corporate, Bank). Neue Datenbankmigrationen bis V155; ein Update läuft über `./scripts/deploy-prod.sh`.
 
 * CI: Der „Browser smoke test“ läuft nicht mehr in der CI (Skripte bleiben, lokal startbar).
 * Prüfabschluss mit Betragsgrenze: „Prüfung abschließen“ (Prüfmodus und Prüfungsassistent) schließt bis zu einer einstellbaren Grenze eine Person allein ab, darüber braucht es mehrere verschiedene Personen (eine beginnt, die anderen zeichnen mit; Zurückziehen nur durch die beginnende Person). Der Abschluss setzt die Akte auf den neuen Status „Prüfung abgeschlossen“ und schreibt den Vermerk mit allen Beteiligten. Die Grenzen je Währung stehen unter „Prüfabschluss“ in den Einstellungen (Recht „Einstellungen verwalten“). Migration V155.

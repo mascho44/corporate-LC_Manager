@@ -5,7 +5,7 @@ Diese Anleitung gilt für alle, die mit dem Corporate LC Manager arbeiten. Danac
 - [Corporate: Dokumente erstellen und einreichen](anleitung-corporate-dokumente-erstellen.md)
 - [Bank: Dokumente prüfen](anleitung-bank-dokumente-pruefen.md)
 
-Stand: Version 0.7. Die Einrichtung (Server, Mandant, Benutzer) beschreibt der [Leitfaden zur Erstinstallation](erstinstallation.md).
+Stand: Version 0.7.1. Die Einrichtung (Server, Mandant, Benutzer) beschreibt der [Leitfaden zur Erstinstallation](erstinstallation.md).
 
 ## 1. Worum es geht
 
