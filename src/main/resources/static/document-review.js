@@ -138,16 +138,9 @@
    finishBox.classList.toggle('with-discrepancies', sum.discrepancies > 0); finishBox.append(head);
    const actions = document.createElement('div'); actions.className = 'doc-review-finish-actions';
    if (sum.discrepancies) { const notice = document.createElement('button'); notice.type = 'button'; notice.textContent = tr('dr.notice.create', 'Unstimmigkeitsmeldung erstellen'); notice.onclick = () => openNotice(lcId); actions.append(notice); }
-   if (can('LC_EDIT')) {
-    const close = document.createElement('button'); close.type = 'button'; close.className = sum.discrepancies ? 'secondary' : ''; close.disabled = finished;
-    close.textContent = finished ? tr('dr.closed', 'Abschluss vermerkt ✓') : tr('dr.close', 'Prüfung abschließen (Vermerk in der Akte)');
-    close.onclick = async () => {
-     const text = tr('dr.note', 'Dokumentenprüfung abgeschlossen: {docs} Dokument(e), {a} Befund(e) als erfüllt bestätigt, {disc}.', { docs: sum.docs, a: sum.accepted, disc: sum.discrepancies ? tr('dr.note.disc', '{d} Unstimmigkeit(en) bestätigt', { d: sum.discrepancies }) : tr('dr.note.none', 'keine Unstimmigkeiten') });
-     close.disabled = true;
-     try { await json(`/api/lcs/${lcId}/notes`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: text }) }); finished = true; renderFinish(summary(groups, missing)); }
-     catch (error) { close.disabled = false; alert(tr('dr.noteFailed', 'Vermerk konnte nicht gespeichert werden:') + ' ' + error.message); }
-    };
-    actions.append(close);
+   if (can('LC_EDIT') && globalThis.LcReviewClosure) {
+    const note = () => tr('dr.note', 'Dokumentenprüfung abgeschlossen: {docs} Dokument(e), {a} Befund(e) als erfüllt bestätigt, {disc}.', { docs: sum.docs, a: sum.accepted, disc: sum.discrepancies ? tr('dr.note.disc', '{d} Unstimmigkeit(en) bestätigt', { d: sum.discrepancies }) : tr('dr.note.none', 'keine Unstimmigkeiten') });
+    actions.append(LcReviewClosure.control(lcId, note, sum.discrepancies ? 'secondary' : ''));
    }
    if (can('AUDIT_VIEW')) { const dossier = document.createElement('a'); dossier.className = 'button-link secondary'; dossier.href = `/api/lcs/${lcId}/dossier`; dossier.textContent = 'Prüfakte exportieren'; actions.append(dossier); }
    finishBox.append(actions);
@@ -254,7 +247,7 @@
     if (finding.lcCondition) { const c = document.createElement('small'); c.textContent = 'LC-Bedingung: ' + finding.lcCondition; card.append(c); }
     if (finding.advice) { const a = document.createElement('p'); a.className = 'doc-review-advice'; a.textContent = english() ? 'How to fix: ' + (finding.adviceEn || finding.advice) : 'So beheben: ' + finding.advice; card.append(a); }
     if (finding.explanation) { const e = document.createElement('p'); e.className = 'doc-review-explanation'; e.textContent = 'Rechnung: ' + finding.explanation; card.append(e); }
-    if (finding.documentEvidence) { const q = document.createElement('blockquote'); q.textContent = globalThis.readableEvidence ? readableEvidence(finding.documentEvidence) : finding.documentEvidence; card.append(q); }
+    if (finding.documentEvidence) { const details = document.createElement('details'); details.className = 'doc-review-details'; const summary = document.createElement('summary'); summary.textContent = tr('dr.details', 'Regeldetails anzeigen'); const q = document.createElement('blockquote'); q.textContent = globalThis.readableEvidence ? readableEvidence(finding.documentEvidence) : finding.documentEvidence; details.append(summary, q); card.append(details); }
     if (isOpen(finding)) {
      const actions = document.createElement('div'); actions.className = 'doc-review-actions';
      const pending = isPendingApproval(finding);

@@ -31,6 +31,7 @@
   const panel = document.createElement('section'); panel.id = 'firstSteps'; panel.className = 'first-steps';
   const title = document.createElement('b'); title.textContent = tr('fs.title', 'Erste Schritte') + ' · ' + tr('fs.progress', '{done} von {total} erledigt', { done: list.length - open.length, total: list.length });
   panel.append(title);
+  if (globalThis.LcSetupWizard?.open) { const wizard = document.createElement('button'); wizard.type = 'button'; wizard.textContent = tr('fs.wizard', 'Einrichtungsassistent starten'); wizard.onclick = () => globalThis.LcSetupWizard.open(); panel.append(wizard); }
   for (const step of list) {
    const button = document.createElement('button'); button.type = 'button'; button.className = 'secondary' + (step.done ? ' done' : '');
    button.textContent = (step.done ? '✓ ' : '') + step.label; button.disabled = step.done;

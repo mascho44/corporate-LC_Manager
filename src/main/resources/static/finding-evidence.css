@@ -101,3 +101,5 @@
 .doc-review-advice,.submission-advice{margin:.25rem 0;color:var(--muted,var(--lc-fg-4b5563,#4b5563));overflow-wrap:anywhere}
 .doc-review-advice{border-left:3px solid var(--lc-bd-2f6db5,#2f6db5);padding-left:.5rem}
 .amendment-impact ul{margin:.4rem 0;padding-left:1.1rem}.amendment-impact li{margin:.3rem 0;overflow-wrap:anywhere}.impact-action{color:var(--lc-fg-9a3412,#9a3412)}.impact-warning{color:var(--lc-fg-854d0e,#854d0e)}
+
+.doc-review-details summary{cursor:pointer;font-size:12px;color:var(--lc-fg-667085,#667085)}.doc-review-details[open] summary{margin-bottom:4px}

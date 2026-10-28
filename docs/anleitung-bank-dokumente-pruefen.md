@@ -103,9 +103,10 @@ Beide Entwürfe sind änderbar und kopierbar. **Versendet wird nichts.** Ergänz
 ## 5. Prüfung abschließen und dokumentieren
 
 1. Sind alle Befunde entschieden und keine LC-Angaben offen, erscheint der **Abschlusskasten**: Ergebnis (N erfüllt, M bestätigte Unstimmigkeiten).
-2. **„Prüfung abschließen“** schreibt einen **Vermerk mit dem Ergebnis** in die Akte (Recht „LC bearbeiten“, im Audit protokolliert). Der **Status der Akte ändert sich dadurch nicht**; eine Freigabe oder Zahlung löst das nicht aus.
-3. **„Prüfakte exportieren“** (Recht Audit) erstellt den Prüfbericht als PDF. Bei Entscheidungen mit markierter Fundstelle enthält er den Bildausschnitt der Stelle.
-4. Alle Entscheidungen, übersprungenen Schritte, Begründungen und Freigaben stehen im **Audit-Protokoll**.
+2. **„Prüfung abschließen“** schreibt einen **Vermerk mit dem Ergebnis** in die Akte (Recht „LC bearbeiten“, im Audit protokolliert) und setzt die Akte auf den Status **„Prüfung abgeschlossen“**. Eine Freigabe oder Zahlung löst das nicht aus.
+3. **Betragsgrenze:** Bis zu einer vom Administrator festgelegten Grenze (Einstellungen, „Prüfabschluss“) schließt eine Person allein ab. Darüber merkt Ihr Klick den Abschluss nur vor („Abschluss vorgemerkt von …“); eine **andere Person** zeichnet ihn mit **„Abschluss mitzeichnen“**. Je nach Stufe sind bis zu fünf verschiedene Personen nötig. Wer begonnen hat, kann den offenen Abschluss zurückziehen.
+4. **„Prüfakte exportieren“** (Recht Audit) erstellt den Prüfbericht als PDF. Bei Entscheidungen mit markierter Fundstelle enthält er den Bildausschnitt der Stelle.
+5. Alle Entscheidungen, übersprungenen Schritte, Begründungen, Abschlüsse und Freigaben stehen im **Audit-Protokoll**.
 
 ## Nach einer Änderung
 
@@ -121,7 +122,7 @@ Beide Entwürfe sind änderbar und kopierbar. **Versendet wird nichts.** Ergänz
 - [ ] Querprüfung: Betrag, Menge, Ware, Parteien und Daten über alle Dokumente konsistent
 - [ ] Zusatzbedingungen, die die Software nicht prüft, manuell erledigt
 - [ ] Unstimmigkeitsmeldung erzeugt und über das SWIFT-System versendet (falls nötig)
-- [ ] Prüfung abgeschlossen, Prüfbericht exportiert
+- [ ] Prüfung abgeschlossen (bei hohen Beträgen mitgezeichnet), Prüfbericht exportiert
 
 ## Häufige Fragen
 
@@ -132,4 +133,5 @@ Beide Entwürfe sind änderbar und kopierbar. **Versendet wird nichts.** Ergänz
 | Dokument wurde falsch erkannt | Dokumenttyp, Datum, Original/Kopie im Dokument korrigieren |
 | Der Haken im PDF fehlt | Für den Befund wurde keine Stelle gefunden (zum Beispiel fehlendes Dokument); eigene Fundstelle markieren |
 | Eine Entscheidung ist plötzlich wieder offen | Der Befund hat sich geändert (neue Regelversion oder geänderte Akte); neu bestätigen |
-| Kann ich damit freigeben oder zahlen? | Nein. Der Abschlussvermerk ändert den Status nicht; Freigabe und Zahlung laufen außerhalb |
+| Kann ich damit freigeben oder zahlen? | Nein. Der Abschluss setzt nur den Status „Prüfung abgeschlossen“; Freigabe und Zahlung laufen außerhalb |
+| „Abschluss mitzeichnen“ fehlt | Sie haben selbst begonnen oder schon gezeichnet; eine andere Person mit dem Recht „LC bearbeiten“ muss mitzeichnen |
