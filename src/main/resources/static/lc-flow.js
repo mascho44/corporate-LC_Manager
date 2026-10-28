@@ -31,9 +31,10 @@
 
  function draftDialog(lcId, done) {
   const dialog = el('dialog', { className: 'wide-dialog' }); dialog.onclose = () => dialog.remove();
-  const text = el('textarea', { rows: 12, placeholder: ':20:...\n:32B:...' }), file = el('input', { type: 'file', accept: '.txt,.pdf,text/plain,application/pdf' }), error = el('div', { className: 'error', role: 'alert' });
+  const file = el('input', { type: 'file', accept: '.pdf,application/pdf' }), text = el('textarea', { rows: 10, placeholder: ':20:...\n:32B:...' }), error = el('div', { className: 'error', role: 'alert' });
   const save = el('button', { type: 'button', textContent: tr('lf.draft.save', 'Entwurf hinterlegen') });
   save.onclick = async () => {
+   if (!file.files[0] && !text.value.trim()) { error.textContent = tr('lf.draft.choose', 'Bitte das PDF des Entwurfs wählen.'); return; }
    save.disabled = true; error.textContent = '';
    try {
     if (file.files[0]) { const body = new FormData(); body.append('file', file.files[0]); await json(`/api/lcs/${lcId}/draft`, { method: 'PUT', body }); }
@@ -42,8 +43,9 @@
    } catch (e) { error.textContent = e.message; save.disabled = false; }
   };
   const close = el('button', { type: 'button', className: 'ghost', textContent: '×' }); close.onclick = () => dialog.close();
-  dialog.append(el('div', { className: 'dialoghead' }, el('div', {}, el('h2', { textContent: tr('lf.draft.title', 'Entwurf zur Akte hinterlegen') }), el('p', { textContent: tr('lf.draft.intro', 'MT700-Text des Entwurfs einfügen oder Datei wählen. Er wird mit der LC dieser Akte abgeglichen.') })), close),
-   el('label', {}, tr('ld.text', 'Entwurf als Text'), text), el('label', {}, tr('ld.file', 'oder als Datei (PDF oder Text)'), file), error, el('div', { className: 'actions' }, save));
+  const alternative = el('details', {}, el('summary', { textContent: tr('lf.draft.pasteText', 'Stattdessen Text einfügen') }), el('label', {}, tr('ld.text', 'Entwurf als Text'), text));
+  dialog.append(el('div', { className: 'dialoghead' }, el('div', {}, el('h2', { textContent: tr('lf.draft.title', 'Entwurf zur Akte hinterlegen') }), el('p', { textContent: tr('lf.draft.intro', 'PDF des Entwurfs wählen. Der Text wird gelesen und mit der LC dieser Akte abgeglichen.') })), close),
+   el('label', {}, tr('lf.draft.pdf', 'Entwurf als PDF'), file), alternative, error, el('div', { className: 'actions' }, save));
   document.body.append(dialog); dialog.showModal();
  }
 
