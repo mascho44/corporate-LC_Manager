@@ -738,6 +738,7 @@
   "dr.next": "Next document",
   "dr.apply": "Apply recognised check data",
   "dr.key.ok": "fulfilled",
+  "dr.details": "Show rule details",
   "dr.key.disc": "discrepancy",
   "dr.key.finding": "finding",
   "dr.key.doc": "document",

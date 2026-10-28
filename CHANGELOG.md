@@ -2,6 +2,7 @@
 
 ## 0.7.1 – in Arbeit
 
+* Prüfmodus: Der Beleg zu einem Befund (Regelangaben, erfasste Prüfdaten, Prüfsumme) ist eingeklappt und erscheint erst auf Klick („Regeldetails anzeigen“).
 * Kopfzeile: Die TLS-Ampel ist ausgeblendet; die Verbindungsdetails bleiben im Menü unter „Verbindungssicherheit“ erreichbar.
 * Anleitungen: Drei neue Anleitungen unter `docs/` – allgemeiner Teil, Corporate (Dokumente erstellen und einreichen) und Bank (Dokumente prüfen).
 * Gespeicherte Ansichten: In der Aktenliste lassen sich Suche, Ampel, SLA, Zuständigkeit, Firma, Sortierung und der gewählte Schnellfilter unter einem Namen speichern („Ansicht speichern“), später mit einem Klick wieder aufrufen, mit „Aktualisieren“ auf den aktuellen Stand setzen und löschen. Die Ansichten liegen auf dem Server, sind also auf jedem Gerät da, und lassen sich mit allen im Mandanten teilen. Ändern kann nur, wer sie angelegt hat; geteilte Ansichten anderer darf, wer Einstellungen verwalten darf, löschen. Höchstens 30 je Person. Migration V154 (Mandantenlöschung räumt mit ab).
