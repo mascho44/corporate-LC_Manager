@@ -1,5 +1,9 @@
 # Änderungsprotokoll
 
+## 0.7.2 – in Arbeit
+
+* LC-Entwurf prüfen: Neuer Menüpunkt „LC-Entwurf prüfen“. Der Entwurf eines Akkreditivs von Dritten (meist der eröffnenden Bank) wird als MT700-Text oder Datei vor der Eröffnung auf Pflichtangaben, Fristen und riskante Klauseln geprüft (Verfall vor Verladung, kurze Vorlagefrist, Bedingungen, die vom Auftraggeber abhängen, unbestimmte oder sehr kurze Fristen, Legalisation). Ohne Vertragsabgleich; der Entwurf wird nicht gespeichert.
+
 ## 0.7.1 – 28.10.2026
 
 Schwerpunkte: Prüfabschluss mit Betragsgrenze (eine Person allein oder mehrere gemeinsam, neuer Aktenstatus „Prüfung abgeschlossen“), Einrichtungsassistent für Corporate und Bank, gespeicherte Ansichten und CSV-Export der Aktenliste, dunkles Theme, Kalender-Abo und Fristen per E-Mail, drei Anleitungen (allgemein, Corporate, Bank). Neue Datenbankmigrationen bis V155; ein Update läuft über `./scripts/deploy-prod.sh`.
