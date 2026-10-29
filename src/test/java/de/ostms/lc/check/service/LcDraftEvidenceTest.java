@@ -35,6 +35,7 @@ class LcDraftEvidenceTest {
   assertThat(expiry.evidence().get(0).w()).isGreaterThan(0.1);
   assertThat(withEvidence.pages()).hasSize(1);
   assertThat(withEvidence.pages().get(0).image()).startsWith("data:image/jpeg;base64,");
+  assertThat(withEvidence.passed()).filteredOn(f -> f.code().equals("DRAFT_OK_20")).first().satisfies(f -> assertThat(f.evidence()).isNotEmpty());
   var clause = withEvidence.findings().stream().filter(f -> f.code().equals("DRAFT_APPLICANT_DEPENDENT")).findFirst().orElseThrow();
   assertThat(clause.evidence()).isNotEmpty();
   assertThat(clause.evidence().get(0).quote()).containsIgnoringCase("APPLICANT'S APPROVAL");

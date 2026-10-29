@@ -24,6 +24,7 @@ public class LcDraftReviewService {
  public record Result(String reference, String currency, java.math.BigDecimal amount, LocalDate expiryDate, LocalDate latestShipmentDate, int presentationDays,
                       long discrepancies, long warnings, List<Finding> findings, List<Finding> passed, List<PageImage> pages) {
   public Result withFindings(List<Finding> changed) { return new Result(reference, currency, amount, expiryDate, latestShipmentDate, presentationDays, discrepancies, warnings, changed, passed, pages); }
+  public Result withPassed(List<Finding> changed) { return new Result(reference, currency, amount, expiryDate, latestShipmentDate, presentationDays, discrepancies, warnings, findings, changed, pages); }
   public Result withPages(List<PageImage> shown) { return new Result(reference, currency, amount, expiryDate, latestShipmentDate, presentationDays, discrepancies, warnings, findings, passed, shown); }
  }
  static final int DEFAULT_PRESENTATION_DAYS = 21;
