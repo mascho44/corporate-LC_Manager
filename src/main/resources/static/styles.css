@@ -138,3 +138,4 @@ body.guarantee-file .payment-block,body.guarantee-file .lc-duplicates{display:no
 .ld-mark-box.ld-discrepancy{--mk:#c0392b;background:rgba(192,57,43,.22)}.ld-mark-box.ld-info{--mk:#2563eb;background:rgba(37,99,235,.18)}
 .ld-flash{animation:ldflash 1.4s ease-out}@keyframes ldflash{0%,40%{box-shadow:0 0 0 4px rgba(255,160,0,.9)}100%{box-shadow:0 0 0 0 rgba(255,160,0,0)}}
 @media (max-width:1000px){.ld-split{grid-template-columns:1fr}.ld-pdf{position:static;max-height:none}}
+.ld-mark-box.ld-ok{--mk:#2e7d46;background:rgba(46,125,70,.14)}.ld-jump-ok{opacity:.8}

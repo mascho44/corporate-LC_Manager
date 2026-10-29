@@ -26,7 +26,7 @@
   for (const page of pages) {
    const wrap = el('div', { className: 'ld-page', id: 'ldPage' + page.page }, el('img', { src: page.image, alt: tr('ld.pdf.pageAlt', 'Seite {p} des PDFs', { p: page.page }) }), el('span', { className: 'ld-pageno', textContent: tr('ld.pdf.pageNo', 'Seite {p}', { p: page.page }) }));
    rows.forEach((row, index) => (row.finding.evidence || []).filter(e => e.page === page.page).forEach(e => {
-    const mark = el('button', { type: 'button', className: 'ld-mark-box ld-' + String(row.finding.severity).toLowerCase(), title: e.quote, 'aria-label': String(index + 1) + ': ' + e.quote }); mark.dataset.n = String(index + 1);
+    const mark = el('button', { type: 'button', className: 'ld-mark-box ld-' + String(row.finding.severity).toLowerCase(), title: e.quote, 'aria-label': (row.finding.severity === 'OK' ? tr('ld.passed', 'Erfüllt') : String(index + 1)) + ': ' + e.quote }); mark.dataset.n = row.finding.severity === 'OK' ? '✓' : String(index + 1);
     Object.assign(mark.style, { left: e.x * 100 + '%', top: e.y * 100 + '%', width: e.w * 100 + '%', height: e.h * 100 + '%' });
     mark.onclick = () => onMark(index);
     wrap.append(mark); if (!marks.has(index)) marks.set(index, []); marks.get(index).push(mark);
@@ -59,7 +59,7 @@
    const advice = english() && f.adviceEn ? f.adviceEn : f.advice;
    if (advice) body.append(el('small', { className: 'check-source' }, el('strong', { textContent: tr('corp.fix', 'So beheben') }), document.createTextNode(advice)));
    const places = f.evidence || [];
-   if (places.length && pages.length) body.append(el('div', { className: 'ld-evidence' }, el('button', { type: 'button', className: 'ld-jump secondary', textContent: tr('ld.pdf.jump', '{n} · Im PDF, Seite {p} anzeigen', { n: index + 1, p: [...new Set(places.map(e => e.page))].join(', ') }), onclick: () => show(index) }), el('small', { textContent: ' ' + places[0].quote })));
+   if (places.length && pages.length) body.append(el('div', { className: 'ld-evidence' }, el('button', { type: 'button', className: 'ld-jump secondary' + (f.severity === 'OK' ? ' ld-jump-ok' : ''), textContent: tr('ld.pdf.jump', '{n} · Im PDF, Seite {p} anzeigen', { n: f.severity === 'OK' ? '✓' : index + 1, p: [...new Set(places.map(e => e.page))].join(', ') }), onclick: () => show(index) }), el('small', { textContent: ' ' + places[0].quote })));
    const node = el('div', { className: 'check ' + String(f.severity).toLowerCase() }, el('span', { textContent: MARK[f.severity] || '!' }), body);
    nodes[index] = node; list.append(node);
   });

@@ -31,18 +31,10 @@ public final class LcDraftEvidence {
    if (pdf.getNumberOfPages() > MAX_PAGES) return result;
    List<Line> lines = lines(pdf);
    var fields = LcFlowService.fields(text);
-   List<Finding> out = new ArrayList<>();
    SortedSet<Integer> marked = new TreeSet<>();
-   for (Finding f : result.findings()) {
-    List<Evidence> places = new ArrayList<>();
-    for (Anchor anchor : anchors(f, fields)) {
-     Line line = best(lines, anchor);
-     if (line == null) continue;
-     places.add(new Evidence(line.page(), shorten(line.text()), line.x(), line.y(), line.w(), line.h()));
-     marked.add(line.page());
-    }
-    out.add(places.isEmpty() ? f : f.withEvidence(places));
-   }
+   List<Finding> out = new ArrayList<>(), ticks = new ArrayList<>();
+   for (Finding f : result.findings()) out.add(locate(f, anchors(f, fields), lines, marked));
+   for (Finding f : result.passed()) ticks.add(locate(f, passedAnchors(f.code(), fields), lines, marked));
    // all pages when the PDF is short, otherwise only the pages that carry a marking
    List<Integer> show = new ArrayList<>();
    if (pdf.getNumberOfPages() <= MAX_IMAGES) for (int p = 1; p <= pdf.getNumberOfPages(); p++) show.add(p);
@@ -50,8 +42,41 @@ public final class LcDraftEvidence {
    var renderer = new PDFRenderer(pdf);
    List<PageImage> images = new ArrayList<>();
    for (int page : show) { String image = picture(renderer, page); if (image != null) images.add(new PageImage(page, image)); }
-   return result.withFindings(out).withPages(images);
+   return result.withFindings(out).withPassed(ticks).withPages(images);
   } catch (IOException | RuntimeException unreadable) { return result; }
+ }
+
+ private static Finding locate(Finding f, List<Anchor> anchors, List<Line> lines, SortedSet<Integer> marked) {
+  List<Evidence> places = new ArrayList<>();
+  for (Anchor anchor : anchors) {
+   Line line = best(lines, anchor);
+   if (line == null) continue;
+   places.add(new Evidence(line.page(), shorten(line.text()), line.x(), line.y(), line.w(), line.h()));
+   marked.add(line.page());
+  }
+  return places.isEmpty() ? f : f.withEvidence(places);
+ }
+
+ /** The field(s) a met check is about, so it can be ticked in the PDF. */
+ static List<Anchor> passedAnchors(String code, Map<String, String> fields) {
+  String[] tags = switch (code) {
+   case "DRAFT_OK_41" -> new String[] {fields.containsKey("41A") ? "41A" : "41D"};
+   case "DRAFT_OK_SHIPMENT" -> new String[] {fields.containsKey("44C") ? "44C" : "44D"};
+   case "DRAFT_OK_IRREVOCABLE" -> new String[] {"40A"};
+   case "DRAFT_OK_WINDOW" -> new String[] {"31D", "44C"};
+   case "DRAFT_OK_PRESENTATION" -> new String[] {"48"};
+   case "DRAFT_OK_APPLICANT", "DRAFT_OK_VAGUE" -> new String[] {"46A", "47A"};
+   default -> code.startsWith("DRAFT_OK_") ? new String[] {code.substring("DRAFT_OK_".length())} : new String[] {};
+  };
+  List<Anchor> out = new ArrayList<>();
+  for (String tag : tags) {
+   String value = fields.get(tag);
+   if (value == null) continue;
+   String first = "";
+   for (String l : value.split("\\R")) if (l.trim().length() >= 4) { first = l.trim(); break; }
+   out.add(new Anchor(first, tag));
+  }
+  return out;
  }
 
  /** What to look for in the PDF: the quoted clause of the message, or the field(s) the finding is about. */
