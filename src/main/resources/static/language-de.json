@@ -835,6 +835,8 @@
   "ld.pdf.pageAlt": "Seite {p} des PDFs",
   "ld.pdf.pageNo": "Seite {p}",
   "ld.pdf.jump": "{n} · Im PDF, Seite {p} anzeigen",
+  "ld.unplaced": "Im PDF nicht gefunden",
+  "ld.sumUnplaced": "{n} im PDF nicht gefunden",
   "ld.nav": "LC-Entwurf prüfen",
   "rc.close": "Prüfung abschließen",
   "rc.done": "Prüfung abgeschlossen ✓ ({names})",

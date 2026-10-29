@@ -16,7 +16,7 @@
 
  const el = (tag, props = {}, ...children) => { const node = Object.assign(document.createElement(tag), props); node.append(...children); return node; };
 
- const MARK = { OK: '✓', WARNING: '!', DISCREPANCY: '×', INFO: 'i' };
+ const MARK = { OK: '✓', WARNING: '!', DISCREPANCY: '×', INFO: 'i', UNPLACED: '○' };
 
  const flash = node => { node.classList.remove('ld-flash'); void node.offsetWidth; node.classList.add('ld-flash'); };
 
@@ -39,23 +39,27 @@
  /** Same look as the document check: counts as chips, then one row per check with a tick (met) or cross (wrong); beside it the original PDF with the findings marked. */
  function render(box, result) {
   box.replaceChildren();
-  const sum = summary(result), problems = result.findings || [], passed = result.passed || [], pages = result.pages || [];
+  const sum = summary(result), problems = result.findings || [], pages = result.pages || [];
+  // with a PDF a tick is only given where the place was found in it; otherwise the point is listed as not found in the PDF
+  const met = result.passed || [], passed = pages.length ? met.filter(f => f.evidence?.length) : met, unplaced = pages.length ? met.filter(f => !f.evidence?.length) : [];
   const report = el('div', { className: 'ld-report' });
   const facts = [[tr('ld.f.reference', 'Referenz'), result.reference], [tr('ld.f.amount', 'Betrag'), result.amount != null ? result.amount + ' ' + (result.currency || '') : null], [tr('ld.f.expiry', 'Verfall'), result.expiryDate], [tr('ld.f.shipment', 'Verladung bis'), result.latestShipmentDate]].filter(f => f[1]);
   if (facts.length) { const grid = el('dl', { className: 'ld-facts' }); for (const [k, v] of facts) grid.append(el('div', {}, el('dt', { textContent: k }), el('dd', { textContent: v }))); report.append(grid); }
   report.append(el('div', { className: 'review-summary', role: 'status', 'aria-label': sum.text },
    el('span', { className: 'summary discrepancy', textContent: tr('rv.sumDiscrepancies', '{n} Abweichungen', { n: result.discrepancies }) }),
    el('span', { className: 'summary warning', textContent: tr('ld.sumWarnings', '{n} Hinweise', { n: result.warnings }) }),
-   el('span', { className: 'summary passed', textContent: tr('rv.sumPassed', '{n} erfüllt', { n: passed.length }) })));
+   el('span', { className: 'summary passed', textContent: tr('rv.sumPassed', '{n} erfüllt', { n: passed.length }) }),
+   ...(unplaced.length ? [el('span', { className: 'summary unplaced', textContent: tr('ld.sumUnplaced', '{n} im PDF nicht gefunden', { n: unplaced.length }) })] : [])));
   report.append(el('p', { className: 'ld-verdict dc-' + (sum.level === 'bad' ? 'bad' : sum.level === 'ok' ? 'ok' : 'warning'), textContent: sum.text }));
-  const rank = { DISCREPANCY: 0, WARNING: 1, INFO: 2, OK: 3 };
-  const rows = [...problems, ...passed].sort((a, b) => (rank[a.severity] ?? 9) - (rank[b.severity] ?? 9)).map(finding => ({ finding }));
+  const rank = { DISCREPANCY: 0, WARNING: 1, INFO: 2, OK: 3, UNPLACED: 4 };
+  const rows = [...problems, ...passed, ...unplaced.map(f => ({ ...f, severity: 'UNPLACED' }))].sort((a, b) => (rank[a.severity] ?? 9) - (rank[b.severity] ?? 9)).map(finding => ({ finding }));
   const list = el('div', { className: 'check-list' }), nodes = [];
   let viewer = null;
   const show = index => { const marks = viewer?.marks.get(index); if (!marks?.length) return; marks[0].scrollIntoView({ block: 'center', behavior: 'smooth' }); marks.forEach(flash); };
   rows.forEach((row, index) => {
    const f = row.finding, [de, key] = LABEL[f.severity] || [f.severity, 'ld.warning'];
-   const body = el('div', {}, el('b', { textContent: (f.severity === 'OK' ? tr('ld.passed', 'Erfüllt') : tr(key, de)) + ' · ' + (english() && f.messageEn ? f.messageEn : f.message) }));
+   const unplacedRow = f.severity === 'UNPLACED';
+   const body = el('div', {}, el('b', { textContent: (f.severity === 'OK' ? tr('ld.passed', 'Erfüllt') : unplacedRow ? tr('ld.unplaced', 'Im PDF nicht gefunden') : tr(key, de)) + ' · ' + (english() && f.messageEn ? f.messageEn : f.message) }));
    const advice = english() && f.adviceEn ? f.adviceEn : f.advice;
    if (advice) body.append(el('small', { className: 'check-source' }, el('strong', { textContent: tr('corp.fix', 'So beheben') }), document.createTextNode(advice)));
    const places = f.evidence || [];

@@ -47,4 +47,17 @@ class LcDraftEvidenceTest {
   assertThat(LcDraftEvidence.attach(result, text, pdf("NOTHING RELATED HERE")).findings()).allSatisfy(f -> assertThat(f.evidence()).isEmpty());
   assertThat(LcDraftEvidence.attach(result, text, new byte[] {1, 2, 3})).isSameAs(result);
  }
+ @Test void scannedPagesAreMarkedFromTheOcrWords() throws Exception {
+  String text = LcDraftReviewServiceTest.draft("261215", "270115", "ALL DOCUMENTS IN ENGLISH");
+  var result = new LcDraftReviewService(new Mt700Parser()).check(text, LocalDate.of(2026, 10, 28));
+  byte[] blank;
+  try (var doc = new org.apache.pdfbox.pdmodel.PDDocument(); var out = new java.io.ByteArrayOutputStream()) { doc.addPage(new org.apache.pdfbox.pdmodel.PDPage()); doc.save(out); blank = out.toByteArray(); }
+  var words = java.util.List.of(new de.ostms.lc.document.service.OcrEvidence.Word(":20:LC-DRAFT-1", 0.9, 1, 200, 300, 400, 30), new de.ostms.lc.document.service.OcrEvidence.Word(":59:BEISPIEL", 0.9, 1, 200, 400, 300, 30));
+  var ocr = new de.ostms.lc.document.service.OcrEvidence("t", "OCR", 200, 0.5, words);
+  var marked = LcDraftEvidence.attach(result, text, blank, ocr);
+  var reference = marked.passed().stream().filter(f -> f.code().equals("DRAFT_OK_20")).findFirst().orElseThrow();
+  assertThat(reference.evidence()).hasSize(1);
+  assertThat(reference.evidence().get(0).y()).isBetween(0.12, 0.14);
+  assertThat(marked.passed().stream().filter(f -> f.code().equals("DRAFT_OK_59")).findFirst().orElseThrow().evidence()).isNotEmpty();
+ }
 }

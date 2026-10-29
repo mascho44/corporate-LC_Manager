@@ -31,7 +31,7 @@ public class LcDraftReviewController {
   String normalized=normalizer.normalize(result.text());
   String text=normalized.isBlank()?result.text():normalized;
   var checked=run(text,file.getOriginalFilename(),auth);
-  return LcDraftEvidence.attach(checked,text,file.getBytes());
+  return LcDraftEvidence.attach(checked,text,file.getBytes(),result.ocrEvidence());
  }
 
  private LcDraftReviewService.Result run(String text,String source,Authentication auth){

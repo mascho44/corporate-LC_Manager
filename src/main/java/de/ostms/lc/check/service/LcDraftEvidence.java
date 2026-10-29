@@ -3,6 +3,7 @@ package de.ostms.lc.check.service;
 import de.ostms.lc.check.service.LcDraftReviewService.Evidence;
 import de.ostms.lc.check.service.LcDraftReviewService.Finding;
 import de.ostms.lc.check.service.LcDraftReviewService.PageImage;
+import de.ostms.lc.document.service.OcrEvidence;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -26,10 +27,14 @@ public final class LcDraftEvidence {
  private static final Pattern QUOTED = Pattern.compile("„(.+?)“");
  private LcDraftEvidence() {}
 
- public static LcDraftReviewService.Result attach(LcDraftReviewService.Result result, String text, byte[] pdfBytes) {
+ public static LcDraftReviewService.Result attach(LcDraftReviewService.Result result, String text, byte[] pdfBytes) { return attach(result, text, pdfBytes, null); }
+
+ /** With the OCR words of a scanned PDF (pixels at the OCR resolution), the lines are taken from them as well as from the text layer. */
+ public static LcDraftReviewService.Result attach(LcDraftReviewService.Result result, String text, byte[] pdfBytes, OcrEvidence ocr) {
   try (PDDocument pdf = Loader.loadPDF(pdfBytes)) {
    if (pdf.getNumberOfPages() > MAX_PAGES) return result;
-   List<Line> lines = lines(pdf);
+   List<Line> lines = new ArrayList<>(lines(pdf));
+   lines.addAll(ocrLines(pdf, ocr));
    var fields = LcFlowService.fields(text);
    SortedSet<Integer> marked = new TreeSet<>();
    List<Finding> out = new ArrayList<>(), ticks = new ArrayList<>();
@@ -116,21 +121,56 @@ public final class LcDraftEvidence {
  /** The line that shares most words with the anchor (at least 70 %); failing that, the line that starts with the field tag. */
  static Line best(List<Line> lines, Anchor anchor) {
   if (anchor == null) return null;
-  Line best = null; double score = 0;
-  Set<String> want = tokens(anchor.text());
-  if (anchor.text().trim().length() >= 4 && !want.isEmpty()) {
-   for (Line l : lines) {
-    Set<String> have = tokens(l.text());
-    double s = (double) want.stream().filter(have::contains).count() / want.size();
-    if (s > score) { score = s; best = l; }
-   }
-   if (score >= 0.7) return best;
-  }
   if (anchor.tag() != null) {
-   Pattern start = Pattern.compile("^\\s*:?" + Pattern.quote(anchor.tag()) + ":?(\\s|$)", Pattern.CASE_INSENSITIVE);
+   Pattern start = Pattern.compile("^\\s*:?" + Pattern.quote(anchor.tag()) + "(:|\\s|$)", Pattern.CASE_INSENSITIVE);
    for (Line l : lines) if (start.matcher(l.text()).find()) return l;
   }
-  return null;
+  Set<String> want = tokens(anchor.text());
+  if (anchor.text().trim().length() < 4 || want.isEmpty()) return null;
+  Line best = null; double score = 0;
+  for (Line l : lines) {
+   Set<String> have = tokens(l.text());
+   double s = (double) want.stream().filter(have::contains).count() / want.size();
+   if (s > score) { score = s; best = l; }
+  }
+  return score >= 0.65 ? best : null;
+ }
+
+ /** Lines from the OCR words of scanned pages (not for pages the OCR had to straighten). */
+ private static List<Line> ocrLines(PDDocument pdf, OcrEvidence ocr) {
+  List<Line> out = new ArrayList<>();
+  if (ocr == null || ocr.words().isEmpty() || ocr.dpi() <= 0) return out;
+  Set<Integer> straightened = new HashSet<>();
+  if (ocr.pages() != null) for (var p : ocr.pages()) if (Math.abs(p.correctionDegrees()) > 0.01) straightened.add(p.page());
+  Map<Integer, List<OcrEvidence.Word>> byPage = new TreeMap<>();
+  for (var w : ocr.words()) if (!straightened.contains(w.page()) && w.page() >= 1 && w.page() <= pdf.getNumberOfPages()) byPage.computeIfAbsent(w.page(), k -> new ArrayList<>()).add(w);
+  double scale = ocr.dpi() / 72.0;
+  byPage.forEach((page, words) -> {
+   var box = pdf.getPage(page - 1).getCropBox();
+   double pw = box.getWidth() * scale, ph = box.getHeight() * scale;
+   words.sort(Comparator.comparingDouble(w -> w.top() + w.height() / 2.0));
+   List<OcrEvidence.Word> current = new ArrayList<>();
+   for (var w : words) {
+    if (!current.isEmpty()) {
+     var last = current.get(current.size() - 1);
+     if (Math.abs((w.top() + w.height() / 2.0) - (last.top() + last.height() / 2.0)) > Math.max(4, last.height() / 2.0)) { out.add(ocrLine(page, current, pw, ph)); current = new ArrayList<>(); }
+    }
+    current.add(w);
+   }
+   if (!current.isEmpty()) out.add(ocrLine(page, current, pw, ph));
+  });
+  return out;
+ }
+
+ private static Line ocrLine(int page, List<OcrEvidence.Word> words, double pw, double ph) {
+  int x0 = Integer.MAX_VALUE, y0 = Integer.MAX_VALUE, x1 = 0, y1 = 0; StringBuilder text = new StringBuilder();
+  for (var w : words.stream().sorted(Comparator.comparingInt(OcrEvidence.Word::left)).toList()) {
+   if (text.length() > 0) text.append(' ');
+   text.append(w.text());
+   x0 = Math.min(x0, w.left()); y0 = Math.min(y0, w.top()); x1 = Math.max(x1, w.left() + w.width()); y1 = Math.max(y1, w.top() + w.height());
+  }
+  double px = 0.006, py = 0.004, left = Math.max(0, x0 / pw - px), top = Math.max(0, y0 / ph - py);
+  return new Line(page, text.toString(), left, top, Math.min(1 - left, (x1 - x0) / pw + 2 * px), Math.min(1 - top, (y1 - y0) / ph + 2 * py));
  }
 
  private static String shorten(String s) { String t = s.replaceAll("\\s+", " ").trim(); return t.length() > 220 ? t.substring(0, 220) + " …" : t; }
