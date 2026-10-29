@@ -13,15 +13,18 @@ import java.util.regex.*;
  */
 @Service
 public class LcDraftReviewService {
- /** A place in the PDF of the draft: page, the line as printed and a small picture of it with a marking (data URI). */
- public record Evidence(int page, String quote, String image) {}
+ /** A place in the PDF of the draft: page, the line as printed and its box on the page (fractions 0..1, origin top left). */
+ public record Evidence(int page, String quote, double x, double y, double w, double h) {}
+ /** A page of the PDF as a picture (data URI), so the report can show the original with the findings marked in it. */
+ public record PageImage(int page, String image) {}
  public record Finding(String severity, String code, String message, String advice, String messageEn, String adviceEn, List<Evidence> evidence) {
   public Finding(String severity, String code, String message, String advice, String messageEn, String adviceEn) { this(severity, code, message, advice, messageEn, adviceEn, List.of()); }
   public Finding withEvidence(List<Evidence> places) { return new Finding(severity, code, message, advice, messageEn, adviceEn, places); }
  }
  public record Result(String reference, String currency, java.math.BigDecimal amount, LocalDate expiryDate, LocalDate latestShipmentDate, int presentationDays,
-                      long discrepancies, long warnings, List<Finding> findings, List<Finding> passed) {
-  public Result withFindings(List<Finding> changed) { return new Result(reference, currency, amount, expiryDate, latestShipmentDate, presentationDays, discrepancies, warnings, changed, passed); }
+                      long discrepancies, long warnings, List<Finding> findings, List<Finding> passed, List<PageImage> pages) {
+  public Result withFindings(List<Finding> changed) { return new Result(reference, currency, amount, expiryDate, latestShipmentDate, presentationDays, discrepancies, warnings, changed, passed, pages); }
+  public Result withPages(List<PageImage> shown) { return new Result(reference, currency, amount, expiryDate, latestShipmentDate, presentationDays, discrepancies, warnings, findings, passed, shown); }
  }
  static final int DEFAULT_PRESENTATION_DAYS = 21;
  private static final Pattern FIELD = Pattern.compile("(?m)^:(\\d{2}[A-Z]?):(.*?)(?=^:\\d{2}[A-Z]?:|\\z)", Pattern.DOTALL);
@@ -75,7 +78,7 @@ public class LcDraftReviewService {
   scan(out, "46A", fields.get("46A"));
   scan(out, "47A", fields.get("47A"));
   long d = out.stream().filter(f -> "DISCREPANCY".equals(f.severity())).count(), w = out.stream().filter(f -> "WARNING".equals(f.severity())).count();
-  return new Result(lc == null ? fields.get("20") : lc.getReference(), lc == null ? null : lc.getCurrency(), lc == null ? null : lc.getAmount(), lc == null ? null : lc.getExpiryDate(), lc == null ? null : lc.getLatestShipmentDate(), days, d, w, out, passed(out, fields, lc, days));
+  return new Result(lc == null ? fields.get("20") : lc.getReference(), lc == null ? null : lc.getCurrency(), lc == null ? null : lc.getAmount(), lc == null ? null : lc.getExpiryDate(), lc == null ? null : lc.getLatestShipmentDate(), days, d, w, out, passed(out, fields, lc, days), List.of());
  }
 
  private static void required(List<Finding> out, Map<String, String> fields, String tag, String de, String en) {
