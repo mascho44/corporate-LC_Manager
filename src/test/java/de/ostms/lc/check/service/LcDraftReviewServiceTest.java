@@ -19,6 +19,13 @@ class LcDraftReviewServiceTest {
   var r = service.check(draft("261215", "270115", "ALL DOCUMENTS IN ENGLISH"), today);
   assertThat(r.discrepancies()).isZero();assertThat(r.reference()).isEqualTo("LC-DRAFT-1");assertThat(r.presentationDays()).isEqualTo(21);
  }
+ @Test void checksWithoutProblemsAreListedAsMet() {
+  var clean = service.check(draft("261215", "270115", "ALL DOCUMENTS IN ENGLISH"), today);
+  assertThat(clean.passed()).extracting(LcDraftReviewService.Finding::code).contains("DRAFT_OK_20", "DRAFT_OK_59", "DRAFT_OK_WINDOW", "DRAFT_OK_APPLICANT").allMatch(c -> c.startsWith("DRAFT_OK_"));
+  assertThat(clean.passed()).allSatisfy(f -> { assertThat(f.severity()).isEqualTo("OK"); assertThat(f.messageEn()).isNotBlank(); });
+  var bad = service.check(draft("261215", "261201", "PAYMENT SUBJECT TO THE APPLICANT'S APPROVAL"), today);
+  assertThat(bad.passed()).extracting(LcDraftReviewService.Finding::code).doesNotContain("DRAFT_OK_WINDOW", "DRAFT_OK_APPLICANT").contains("DRAFT_OK_20");
+ }
  @Test void expiryBeforeShipmentAndPastDatesAreDiscrepancies() {
   var r = service.check(draft("261215", "261201", ""), today);
   assertThat(has(r, "DRAFT_EXPIRY_BEFORE_SHIPMENT")).isTrue();

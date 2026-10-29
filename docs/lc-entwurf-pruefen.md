@@ -2,7 +2,7 @@
 
 Der Menüpunkt **LC-Entwurf prüfen** (unter „SWIFT importieren“; Recht „LC bearbeiten“, „Dokumente prüfen“ oder „SWIFT importieren“) prüft den **Entwurf eines Akkreditivs**, den eine dritte Partei vor der Eröffnung schickt, meist die eröffnende Bank. Gedacht ist er für den Begünstigten, der Fehler vor der Eröffnung korrigieren lassen möchte, statt später eine Änderung zu beantragen.
 
-Eingabe: das PDF des Entwurfs; die Prüfung startet sofort nach der Auswahl, der Text wird wie beim SWIFT-Import gelesen. Ersatzweise lässt sich der MT700-Text einfügen („Stattdessen Text einfügen“). Das Ergebnis zeigt eine Zusammenfassung, die gelesenen Eckdaten (Referenz, Betrag, Verfall, Verladung) und die Befunde nach Schwere gruppiert. **Der Entwurf wird nicht gespeichert**; im Audit steht nur, dass geprüft wurde (`LC_DRAFT_CHECKED`).
+Eingabe: das PDF des Entwurfs; die Prüfung startet sofort nach der Auswahl, der Text wird wie beim SWIFT-Import gelesen. Ersatzweise lässt sich der MT700-Text einfügen („Stattdessen Text einfügen“). Das Ergebnis sieht aus wie die Dokumentenprüfung: oben die gelesenen Eckdaten (Referenz, Betrag, Verfall, Verladung) und Zähler für Abweichungen, Hinweise und erfüllte Punkte, darunter eine Zeile je Prüfpunkt mit Haken (erfüllt), Ausrufezeichen (Hinweis), Kreuz (Abweichung) oder „i“ (Information). **Der Entwurf wird nicht gespeichert**; im Audit steht nur, dass geprüft wurde (`LC_DRAFT_CHECKED`).
 
 ## Was geprüft wird
 Es gibt **keinen Vergleich mit einem Vertrag**; die Prüfung bezieht sich allein auf den Entwurf.

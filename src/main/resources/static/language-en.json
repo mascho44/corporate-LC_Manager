@@ -829,6 +829,8 @@
   "ld.group.discrepancy": "Discrepancies",
   "ld.group.warning": "Warnings",
   "ld.group.info": "Information",
+  "ld.passed": "Met",
+  "ld.sumWarnings": "{n} warnings",
   "ld.nav": "Check credit draft",
   "rc.close": "Complete examination",
   "rc.done": "Examination completed ✓ ({names})",

@@ -15,7 +15,7 @@ import java.util.regex.*;
 public class LcDraftReviewService {
  public record Finding(String severity, String code, String message, String advice, String messageEn, String adviceEn) {}
  public record Result(String reference, String currency, java.math.BigDecimal amount, LocalDate expiryDate, LocalDate latestShipmentDate, int presentationDays,
-                      long discrepancies, long warnings, List<Finding> findings) {}
+                      long discrepancies, long warnings, List<Finding> findings, List<Finding> passed) {}
  static final int DEFAULT_PRESENTATION_DAYS = 21;
  private static final Pattern FIELD = Pattern.compile("(?m)^:(\\d{2}[A-Z]?):(.*?)(?=^:\\d{2}[A-Z]?:|\\z)", Pattern.DOTALL);
  private static final Pattern ON_APPLICANT = Pattern.compile("(signed|issued|countersigned|approved|authori[sz]ed|released|confirmed|certified|stamped)\\s+by\\s+(the\\s+)?(applicant|buyer|importer)|(applicant|buyer|importer)'?s?\\s+(approval|signature|acceptance|release|inspection|authori[sz]ation)", Pattern.CASE_INSENSITIVE);
@@ -68,11 +68,30 @@ public class LcDraftReviewService {
   scan(out, "46A", fields.get("46A"));
   scan(out, "47A", fields.get("47A"));
   long d = out.stream().filter(f -> "DISCREPANCY".equals(f.severity())).count(), w = out.stream().filter(f -> "WARNING".equals(f.severity())).count();
-  return new Result(lc == null ? fields.get("20") : lc.getReference(), lc == null ? null : lc.getCurrency(), lc == null ? null : lc.getAmount(), lc == null ? null : lc.getExpiryDate(), lc == null ? null : lc.getLatestShipmentDate(), days, d, w, out);
+  return new Result(lc == null ? fields.get("20") : lc.getReference(), lc == null ? null : lc.getCurrency(), lc == null ? null : lc.getAmount(), lc == null ? null : lc.getExpiryDate(), lc == null ? null : lc.getLatestShipmentDate(), days, d, w, out, passed(out, fields, lc, days));
  }
 
  private static void required(List<Finding> out, Map<String, String> fields, String tag, String de, String en) {
   if (fields.get(tag) == null || fields.get(tag).isBlank()) out.add(finding("DISCREPANCY", "DRAFT_MISSING_" + tag, "Pflichtangabe fehlt: " + de + ".", "Von der Bank ergänzen lassen.", "Mandatory field missing: " + en + ".", "Ask the bank to add it."));
+ }
+ /** The checks that found nothing wrong, so the report can show a tick next to each of them (severity OK). */
+ private static List<Finding> passed(List<Finding> problems, Map<String, String> fields, LetterOfCredit lc, int days) {
+  Set<String> hit = new HashSet<>(); for (Finding f : problems) hit.add(f.code());
+  List<Finding> ok = new ArrayList<>();
+  String[][] mandatory = {{"20", "Referenz (:20:) ist angegeben", "Reference (:20:) is stated"}, {"40A", "Form des Akkreditivs (:40A:) ist angegeben", "Form of credit (:40A:) is stated"}, {"31D", "Verfalldatum und -ort (:31D:) sind angegeben", "Expiry date and place (:31D:) are stated"},
+   {"32B", "Währung und Betrag (:32B:) sind angegeben", "Currency and amount (:32B:) are stated"}, {"50", "Auftraggeber (:50:) ist angegeben", "Applicant (:50:) is stated"}, {"59", "Begünstigter (:59:) ist angegeben", "Beneficiary (:59:) is stated"},
+   {"45A", "Waren (:45A:) sind beschrieben", "Goods (:45A:) are described"}, {"46A", "Geforderte Dokumente (:46A:) sind aufgeführt", "Required documents (:46A:) are listed"}};
+  for (String[] m : mandatory) if (!hit.contains("DRAFT_MISSING_" + m[0])) ok.add(finding("OK", "DRAFT_OK_" + m[0], m[1], null, m[2], null));
+  if (!hit.contains("DRAFT_MISSING_41")) ok.add(finding("OK", "DRAFT_OK_41", "Benutzbar bei (:41a:) ist angegeben", null, "Available with (:41a:) is stated", null));
+  if (!hit.contains("DRAFT_NO_SHIPMENT_DATE")) ok.add(finding("OK", "DRAFT_OK_SHIPMENT", "Verladetag oder Verladezeitraum ist genannt", null, "Latest shipment date or period is stated", null));
+  if (fields.containsKey("40A") && !hit.contains("DRAFT_REVOCABLE")) ok.add(finding("OK", "DRAFT_OK_IRREVOCABLE", "Das Akkreditiv ist unwiderruflich", null, "The credit is irrevocable", null));
+  if (lc != null && lc.getExpiryDate() != null && lc.getLatestShipmentDate() != null && !hit.contains("DRAFT_EXPIRY_BEFORE_SHIPMENT") && !hit.contains("DRAFT_SHORT_WINDOW"))
+   ok.add(finding("OK", "DRAFT_OK_WINDOW", "Verfall und Verladetag passen zusammen, genug Zeit zur Vorlage", null, "Expiry and shipment date fit together with enough time to present", null));
+  if (fields.containsKey("48") && !hit.contains("DRAFT_SHORT_PRESENTATION")) ok.add(finding("OK", "DRAFT_OK_PRESENTATION", "Vorlagefrist von " + days + " Tagen ist ausreichend", null, "Presentation period of " + days + " days is sufficient", null));
+  boolean text = fields.containsKey("46A") || fields.containsKey("47A");
+  if (text && !hit.contains("DRAFT_APPLICANT_DEPENDENT")) ok.add(finding("OK", "DRAFT_OK_APPLICANT", "Keine Bedingung hängt vom Auftraggeber ab", null, "No condition depends on the applicant", null));
+  if (text && !hit.contains("DRAFT_VAGUE")) ok.add(finding("OK", "DRAFT_OK_VAGUE", "Keine unbestimmten Bedingungen", null, "No vague conditions", null));
+  return ok;
  }
  private static String oneLine(String s) { return s.replaceAll("\\s+", " ").trim(); }
  static int presentationDays(String field48) {
