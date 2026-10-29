@@ -118,3 +118,17 @@ body.guarantee-file .payment-block,body.guarantee-file .lc-duplicates{display:no
 
 /* TLS-Ampel in der Kopfzeile ausgeblendet; Details bleiben über das Menü (Verbindungssicherheit) erreichbar */
 .header-actions #tlsStatusBtn{display:none!important}
+
+/* LC-Entwurf prüfen: Ergebnis als Zusammenfassung, gelesene Eckdaten und Befunde nach Schwere */
+.ld-summary{display:flex;align-items:center;gap:.6rem;margin:1rem 0 .5rem;padding:.7rem .9rem;border-radius:8px;border:1px solid var(--line,#d0d7de)}
+.ld-summary .ld-mark{display:inline-grid;place-items:center;width:1.6rem;height:1.6rem;border-radius:50%;font-weight:700;color:#fff}
+.ld-summary.ld-ok{background:#e8f5ec;border-color:#9fd3ae}.ld-summary.ld-ok .ld-mark{background:#2e7d46}
+.ld-summary.ld-warn{background:#fff6e0;border-color:#e6c36a}.ld-summary.ld-warn .ld-mark{background:#b7791f}
+.ld-summary.ld-bad{background:#fdecea;border-color:#e59a94}.ld-summary.ld-bad .ld-mark{background:#c0392b}
+.ld-result h3{margin:1rem 0 .4rem;font-size:.95rem}
+.ld-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));gap:.5rem;margin:0}
+.ld-facts div{padding:.4rem .6rem;border:1px solid var(--line,#d0d7de);border-radius:6px}
+.ld-facts dt{font-size:.75rem;opacity:.7}.ld-facts dd{margin:0;font-weight:600;overflow-wrap:anywhere}
+.ld-finding{margin:.4rem 0;padding:.55rem .8rem;border:1px solid var(--line,#d0d7de);border-left-width:5px;border-radius:6px}
+.ld-finding p{margin:0}.ld-finding .ld-advice{margin-top:.3rem;font-size:.9rem;opacity:.85}
+.ld-finding.ld-discrepancy{border-left-color:#c0392b}.ld-finding.ld-warning{border-left-color:#d69e2e}.ld-finding.ld-info{border-left-color:#4a7fc1}
