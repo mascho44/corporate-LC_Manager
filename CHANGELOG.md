@@ -1,5 +1,9 @@
 # Änderungsprotokoll
 
+## 0.7.3 – in Arbeit
+
+* LC-Entwurf prüfen: Neben den Befunden steht das Original-PDF mit nummerierten Markierungen an den Stellen der Befunde; „Im PDF anzeigen“ springt dorthin. Ersetzt die kleinen Bildausschnitte unter den Befunden.
+
 ## 0.7.2 – 29.10.2026
 
 Schwerpunkte: „LC-Entwurf prüfen“ für Entwürfe von Dritten (PDF-Upload, Bericht wie die Dokumentenprüfung mit Haken und Kreuzen) und ein geführter Ablauf der Prüfung in Bank-Akten (Entwurf, Abgleich, LC-Prüfung, Dokumente).

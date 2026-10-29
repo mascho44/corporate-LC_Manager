@@ -32,7 +32,9 @@ class LcDraftEvidenceTest {
   assertThat(expiry.evidence()).isNotEmpty();
   assertThat(expiry.evidence().get(0).page()).isEqualTo(1);
   assertThat(expiry.evidence().get(0).quote()).contains("31D").contains("261201");
-  assertThat(expiry.evidence().get(0).image()).startsWith("data:image/png;base64,");
+  assertThat(expiry.evidence().get(0).w()).isGreaterThan(0.1);
+  assertThat(withEvidence.pages()).hasSize(1);
+  assertThat(withEvidence.pages().get(0).image()).startsWith("data:image/jpeg;base64,");
   var clause = withEvidence.findings().stream().filter(f -> f.code().equals("DRAFT_APPLICANT_DEPENDENT")).findFirst().orElseThrow();
   assertThat(clause.evidence()).isNotEmpty();
   assertThat(clause.evidence().get(0).quote()).containsIgnoringCase("APPLICANT'S APPROVAL");
