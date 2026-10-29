@@ -1,6 +1,8 @@
 # Änderungsprotokoll
 
-## 0.7.2 – in Arbeit
+## 0.7.2 – 29.10.2026
+
+Schwerpunkte: „LC-Entwurf prüfen“ für Entwürfe von Dritten (PDF-Upload, Bericht wie die Dokumentenprüfung mit Haken und Kreuzen) und ein geführter Ablauf der Prüfung in Bank-Akten (Entwurf, Abgleich, LC-Prüfung, Dokumente).
 
 * Ablauf der Prüfung (Bank): Oben in der Akte zeigt eine Karte die Reihenfolge 1. Entwurf prüfen (optional), 2. LC mit Entwurf abgleichen, 3. LC prüfen, 4. Dokumente prüfen (Prüfungsassistent) mit dem jeweiligen Stand. Der Entwurf wird als PDF hinterlegt (Text einfügen bleibt als Ausweg); der Abgleich zeigt Feld für Feld, was von der eingegangenen LC abweicht. Migration V156.
 * LC-Entwurf prüfen: Neuer Menüpunkt „LC-Entwurf prüfen“. Der Entwurf eines Akkreditivs von Dritten (meist der eröffnenden Bank) wird als PDF (Text einfügen als Ausweg) vor der Eröffnung auf Pflichtangaben, Fristen und riskante Klauseln geprüft (Verfall vor Verladung, kurze Vorlagefrist, Bedingungen, die vom Auftraggeber abhängen, unbestimmte oder sehr kurze Fristen, Legalisation). Ohne Vertragsabgleich; der Entwurf wird nicht gespeichert. Der Bericht verweist je Befund auf die Stelle im PDF (Seite, Zeile, Bildausschnitt mit Markierung).
