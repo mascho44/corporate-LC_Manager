@@ -16,41 +16,45 @@
 
  const el = (tag, props = {}, ...children) => { const node = Object.assign(document.createElement(tag), props); node.append(...children); return node; };
 
+ const SEVERITIES = [['DISCREPANCY', 'ld.group.discrepancy', 'Abweichungen'], ['WARNING', 'ld.group.warning', 'Hinweise'], ['INFO', 'ld.group.info', 'Informationen']];
+
  function render(box, result) {
   box.replaceChildren();
-  const sum = summary(result);
-  box.append(el('p', { className: 'dc-' + (sum.level === 'bad' ? 'bad' : sum.level === 'ok' ? 'ok' : 'warning'), textContent: (sum.level === 'ok' ? '✓ ' : sum.level === 'bad' ? '✗ ' : '! ') + sum.text }));
-  const read = [result.reference, result.amount != null ? result.amount + ' ' + (result.currency || '') : null, result.expiryDate ? tr('ld.expiry', 'Verfall {d}', { d: result.expiryDate }) : null, result.latestShipmentDate ? tr('ld.shipment', 'Verladung bis {d}', { d: result.latestShipmentDate }) : null].filter(Boolean).join(' · ');
-  if (read) box.append(el('p', { className: 'dc-read', textContent: tr('ld.read', 'Gelesen: {text}', { text: read }) }));
-  const list = el('ul', { className: 'dc-findings' });
-  for (const f of result.findings || []) {
-   const [de, key] = LABEL[f.severity] || [f.severity, 'ld.warning'];
-   const item = el('li', { className: 'dc-' + String(f.severity).toLowerCase() }, el('b', { textContent: tr(key, de) + ': ' }), document.createTextNode(english() && f.messageEn ? f.messageEn : f.message));
-   const advice = english() && f.adviceEn ? f.adviceEn : f.advice;
-   if (advice) item.append(el('br'), el('small', { textContent: tr('corp.fix', 'So beheben') + ': ' + advice }));
-   list.append(item);
+  const sum = summary(result), mark = sum.level === 'ok' ? '✓' : sum.level === 'bad' ? '✗' : '!';
+  box.append(el('div', { className: 'ld-summary ld-' + sum.level, role: 'status' }, el('span', { className: 'ld-mark', textContent: mark }), el('strong', { textContent: sum.text })));
+  const facts = [[tr('ld.f.reference', 'Referenz'), result.reference], [tr('ld.f.amount', 'Betrag'), result.amount != null ? result.amount + ' ' + (result.currency || '') : null], [tr('ld.f.expiry', 'Verfall'), result.expiryDate], [tr('ld.f.shipment', 'Verladung bis'), result.latestShipmentDate]].filter(f => f[1]);
+  if (facts.length) { const grid = el('dl', { className: 'ld-facts' }); for (const [k, v] of facts) grid.append(el('div', {}, el('dt', { textContent: k }), el('dd', { textContent: v }))); box.append(el('h3', { textContent: tr('ld.read.title', 'Aus dem Entwurf gelesen') }), grid); }
+  for (const [severity, key, de] of SEVERITIES) {
+   const items = (result.findings || []).filter(f => f.severity === severity);
+   if (!items.length) continue;
+   const group = el('section', { className: 'ld-group' }, el('h3', { textContent: `${tr(key, de)} (${items.length})` }));
+   for (const f of items) {
+    const card = el('article', { className: 'ld-finding ld-' + severity.toLowerCase() }, el('p', { className: 'ld-message', textContent: english() && f.messageEn ? f.messageEn : f.message }));
+    const advice = english() && f.adviceEn ? f.adviceEn : f.advice;
+    if (advice) card.append(el('p', { className: 'ld-advice' }, el('b', { textContent: tr('corp.fix', 'So beheben') + ': ' }), document.createTextNode(advice)));
+    group.append(card);
+   }
+   box.append(group);
   }
-  if (list.children.length) box.append(list);
   box.append(el('p', { className: 'dc-note' }, el('small', { textContent: tr('ld.note', 'Automatische Vorprüfung ohne Vergleich mit dem Vertrag. Der Entwurf wurde nicht gespeichert.') })));
  }
 
  function open() {
   const dialog = document.querySelector('#lcDraftDialog') || el('dialog', { id: 'lcDraftDialog', className: 'wide-dialog draft-check-dialog' });
   const close = el('button', { type: 'button', className: 'ghost', textContent: '×' }); close.onclick = () => dialog.close();
-  const text = el('textarea', { rows: 12, placeholder: ':20:...\n:31D:...\n:32B:...' }), file = el('input', { type: 'file', accept: '.txt,.pdf,text/plain,application/pdf' });
-  const error = el('div', { className: 'error', role: 'alert' }), box = el('div'), run = el('button', { type: 'button', textContent: tr('ld.run', 'Entwurf prüfen') });
-  run.onclick = async () => {
-   error.textContent = ''; box.replaceChildren(); run.disabled = true;
-   try {
-    let result;
-    if (file.files[0]) { const body = new FormData(); body.append('file', file.files[0]); result = await json('/api/lc-draft-check', { method: 'POST', body }); }
-    else result = await json('/api/lc-draft-check', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: text.value }) });
-    render(box, result);
-   } catch (e) { error.textContent = e.message; } finally { run.disabled = false; }
+  const file = el('input', { type: 'file', accept: '.pdf,application/pdf' }), text = el('textarea', { rows: 10, placeholder: ':20:...\n:31D:...\n:32B:...' });
+  const error = el('div', { className: 'error', role: 'alert' }), box = el('div', { className: 'ld-result' });
+  const send = async init => {
+   error.textContent = ''; box.replaceChildren(el('p', { className: 'dc-note', textContent: tr('ld.working', 'Entwurf wird gelesen und geprüft …') }));
+   try { render(box, await json('/api/lc-draft-check', init)); } catch (e) { box.replaceChildren(); error.textContent = e.message; }
   };
+  file.onchange = () => { if (!file.files[0]) return; const body = new FormData(); body.append('file', file.files[0]); send({ method: 'POST', body }); };
+  const run = el('button', { type: 'button', className: 'secondary', textContent: tr('ld.run', 'Text prüfen') });
+  run.onclick = () => { if (!text.value.trim()) { error.textContent = tr('ld.choose', 'Bitte das PDF des Entwurfs wählen.'); return; } send({ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: text.value }) }); };
+  const alternative = el('details', {}, el('summary', { textContent: tr('lf.draft.pasteText', 'Stattdessen Text einfügen') }), el('label', {}, tr('ld.text', 'Entwurf als Text'), text), el('div', { className: 'actions' }, run));
   dialog.replaceChildren(
-   el('div', { className: 'dialoghead' }, el('div', {}, el('h2', { textContent: tr('ld.title', 'LC-Entwurf prüfen') }), el('p', { textContent: tr('ld.intro', 'Den Entwurf des Akkreditivs (MT700-Text oder Datei) vor der Eröffnung auf Pflichtangaben, Fristen und riskante Klauseln prüfen.') })), close),
-   el('label', {}, tr('ld.text', 'Entwurf als Text'), text), el('label', {}, tr('ld.file', 'oder als Datei (PDF oder Text)'), file), el('div', { className: 'actions' }, run), error, box);
+   el('div', { className: 'dialoghead' }, el('div', {}, el('h2', { textContent: tr('ld.title', 'LC-Entwurf prüfen') }), el('p', { textContent: tr('ld.intro', 'PDF des Entwurfs wählen: Er wird sofort auf Pflichtangaben, Fristen und riskante Klauseln geprüft.') })), close),
+   el('label', {}, tr('lf.draft.pdf', 'Entwurf als PDF'), file), alternative, error, box);
   if (!dialog.isConnected) document.body.append(dialog);
   dialog.showModal();
  }
