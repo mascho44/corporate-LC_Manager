@@ -835,6 +835,8 @@
   "ld.pdf.pageAlt": "Page {p} of the PDF",
   "ld.pdf.pageNo": "Page {p}",
   "ld.pdf.jump": "{n} · Show on page {p} of the PDF",
+  "ld.unplaced": "Not found in the PDF",
+  "ld.sumUnplaced": "{n} not found in the PDF",
   "ld.nav": "Check credit draft",
   "rc.close": "Complete examination",
   "rc.done": "Examination completed ✓ ({names})",

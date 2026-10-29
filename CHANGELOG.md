@@ -2,7 +2,7 @@
 
 ## 0.7.3 – in Arbeit
 
-* LC-Entwurf prüfen: Neben den Befunden steht das Original-PDF mit nummerierten Markierungen an den Stellen der Befunde; „Im PDF anzeigen“ springt dorthin. Erfüllte Prüfpunkte sind im PDF grün umrahmt und mit einem Haken markiert. Ersetzt die kleinen Bildausschnitte unter den Befunden.
+* LC-Entwurf prüfen: Neben den Befunden steht das Original-PDF mit nummerierten Markierungen an den Stellen der Befunde; „Im PDF anzeigen“ springt dorthin. Erfüllte Prüfpunkte sind im PDF grün umrahmt und mit einem Haken markiert. Ein grüner Haken erscheint nur, wenn die Stelle im PDF gefunden wurde (sonst grau „Im PDF nicht gefunden“); eingescannte PDFs werden über die OCR-Positionen markiert. Ersetzt die kleinen Bildausschnitte unter den Befunden.
 
 ## 0.7.2 – 29.10.2026
 
