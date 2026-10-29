@@ -16,27 +16,29 @@
 
  const el = (tag, props = {}, ...children) => { const node = Object.assign(document.createElement(tag), props); node.append(...children); return node; };
 
- const SEVERITIES = [['DISCREPANCY', 'ld.group.discrepancy', 'Abweichungen'], ['WARNING', 'ld.group.warning', 'Hinweise'], ['INFO', 'ld.group.info', 'Informationen']];
+ const MARK = { OK: '✓', WARNING: '!', DISCREPANCY: '×', INFO: 'i' };
 
+ /** Same look as the document check: counts as chips, then one row per check with a tick (met) or cross (wrong). */
  function render(box, result) {
   box.replaceChildren();
-  const sum = summary(result), mark = sum.level === 'ok' ? '✓' : sum.level === 'bad' ? '✗' : '!';
-  box.append(el('div', { className: 'ld-summary ld-' + sum.level, role: 'status' }, el('span', { className: 'ld-mark', textContent: mark }), el('strong', { textContent: sum.text })));
+  const sum = summary(result), problems = result.findings || [], passed = result.passed || [];
   const facts = [[tr('ld.f.reference', 'Referenz'), result.reference], [tr('ld.f.amount', 'Betrag'), result.amount != null ? result.amount + ' ' + (result.currency || '') : null], [tr('ld.f.expiry', 'Verfall'), result.expiryDate], [tr('ld.f.shipment', 'Verladung bis'), result.latestShipmentDate]].filter(f => f[1]);
-  if (facts.length) { const grid = el('dl', { className: 'ld-facts' }); for (const [k, v] of facts) grid.append(el('div', {}, el('dt', { textContent: k }), el('dd', { textContent: v }))); box.append(el('h3', { textContent: tr('ld.read.title', 'Aus dem Entwurf gelesen') }), grid); }
-  for (const [severity, key, de] of SEVERITIES) {
-   const items = (result.findings || []).filter(f => f.severity === severity);
-   if (!items.length) continue;
-   const group = el('section', { className: 'ld-group' }, el('h3', { textContent: `${tr(key, de)} (${items.length})` }));
-   for (const f of items) {
-    const card = el('article', { className: 'ld-finding ld-' + severity.toLowerCase() }, el('p', { className: 'ld-message', textContent: english() && f.messageEn ? f.messageEn : f.message }));
-    const advice = english() && f.adviceEn ? f.adviceEn : f.advice;
-    if (advice) card.append(el('p', { className: 'ld-advice' }, el('b', { textContent: tr('corp.fix', 'So beheben') + ': ' }), document.createTextNode(advice)));
-    group.append(card);
-   }
-   box.append(group);
+  if (facts.length) { const grid = el('dl', { className: 'ld-facts' }); for (const [k, v] of facts) grid.append(el('div', {}, el('dt', { textContent: k }), el('dd', { textContent: v }))); box.append(grid); }
+  box.append(el('div', { className: 'review-summary', role: 'status', 'aria-label': sum.text },
+   el('span', { className: 'summary discrepancy', textContent: tr('rv.sumDiscrepancies', '{n} Abweichungen', { n: result.discrepancies }) }),
+   el('span', { className: 'summary warning', textContent: tr('ld.sumWarnings', '{n} Hinweise', { n: result.warnings }) }),
+   el('span', { className: 'summary passed', textContent: tr('rv.sumPassed', '{n} erfüllt', { n: passed.length }) })));
+  box.append(el('p', { className: 'ld-verdict dc-' + (sum.level === 'bad' ? 'bad' : sum.level === 'ok' ? 'ok' : 'warning'), textContent: sum.text }));
+  const rank = { DISCREPANCY: 0, WARNING: 1, INFO: 2, OK: 3 }, rows = [...problems, ...passed].sort((a, b) => (rank[a.severity] ?? 9) - (rank[b.severity] ?? 9));
+  const list = el('div', { className: 'check-list' });
+  for (const f of rows) {
+   const [de, key] = LABEL[f.severity] || [f.severity, 'ld.warning'];
+   const body = el('div', {}, el('b', { textContent: (f.severity === 'OK' ? tr('ld.passed', 'Erfüllt') : tr(key, de)) + ' · ' + (english() && f.messageEn ? f.messageEn : f.message) }));
+   const advice = english() && f.adviceEn ? f.adviceEn : f.advice;
+   if (advice) body.append(el('small', { className: 'check-source' }, el('strong', { textContent: tr('corp.fix', 'So beheben') }), document.createTextNode(advice)));
+   list.append(el('div', { className: 'check ' + String(f.severity).toLowerCase() }, el('span', { textContent: MARK[f.severity] || '!' }), body));
   }
-  box.append(el('p', { className: 'dc-note' }, el('small', { textContent: tr('ld.note', 'Automatische Vorprüfung ohne Vergleich mit dem Vertrag. Der Entwurf wurde nicht gespeichert.') })));
+  box.append(list, el('p', { className: 'dc-note' }, el('small', { textContent: tr('ld.note', 'Automatische Vorprüfung ohne Vergleich mit dem Vertrag. Der Entwurf wurde nicht gespeichert.') })));
  }
 
  function open() {
