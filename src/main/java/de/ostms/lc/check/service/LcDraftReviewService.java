@@ -13,9 +13,16 @@ import java.util.regex.*;
  */
 @Service
 public class LcDraftReviewService {
- public record Finding(String severity, String code, String message, String advice, String messageEn, String adviceEn) {}
+ /** A place in the PDF of the draft: page, the line as printed and a small picture of it with a marking (data URI). */
+ public record Evidence(int page, String quote, String image) {}
+ public record Finding(String severity, String code, String message, String advice, String messageEn, String adviceEn, List<Evidence> evidence) {
+  public Finding(String severity, String code, String message, String advice, String messageEn, String adviceEn) { this(severity, code, message, advice, messageEn, adviceEn, List.of()); }
+  public Finding withEvidence(List<Evidence> places) { return new Finding(severity, code, message, advice, messageEn, adviceEn, places); }
+ }
  public record Result(String reference, String currency, java.math.BigDecimal amount, LocalDate expiryDate, LocalDate latestShipmentDate, int presentationDays,
-                      long discrepancies, long warnings, List<Finding> findings, List<Finding> passed) {}
+                      long discrepancies, long warnings, List<Finding> findings, List<Finding> passed) {
+  public Result withFindings(List<Finding> changed) { return new Result(reference, currency, amount, expiryDate, latestShipmentDate, presentationDays, discrepancies, warnings, changed, passed); }
+ }
  static final int DEFAULT_PRESENTATION_DAYS = 21;
  private static final Pattern FIELD = Pattern.compile("(?m)^:(\\d{2}[A-Z]?):(.*?)(?=^:\\d{2}[A-Z]?:|\\z)", Pattern.DOTALL);
  private static final Pattern ON_APPLICANT = Pattern.compile("(signed|issued|countersigned|approved|authori[sz]ed|released|confirmed|certified|stamped)\\s+by\\s+(the\\s+)?(applicant|buyer|importer)|(applicant|buyer|importer)'?s?\\s+(approval|signature|acceptance|release|inspection|authori[sz]ation)", Pattern.CASE_INSENSITIVE);
