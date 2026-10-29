@@ -1,6 +1,7 @@
 package de.ostms.lc.check.api;
 
 import de.ostms.lc.audit.service.AuditService;
+import de.ostms.lc.check.service.LcDraftEvidence;
 import de.ostms.lc.check.service.LcDraftReviewService;
 import de.ostms.lc.document.service.DocumentExtractionService;
 import de.ostms.lc.swift.PrintedSwiftNormalizer;
@@ -28,7 +29,9 @@ public class LcDraftReviewController {
   var result=extraction.extractFile(file.getBytes(),file.getOriginalFilename(),file.getContentType());
   if(result.text()==null||result.text().isBlank())throw new IllegalArgumentException("Aus dem PDF konnte kein Text erkannt werden.");
   String normalized=normalizer.normalize(result.text());
-  return run(normalized.isBlank()?result.text():normalized,file.getOriginalFilename(),auth);
+  String text=normalized.isBlank()?result.text():normalized;
+  var checked=run(text,file.getOriginalFilename(),auth);
+  return LcDraftEvidence.attach(checked,text,file.getBytes());
  }
 
  private LcDraftReviewService.Result run(String text,String source,Authentication auth){

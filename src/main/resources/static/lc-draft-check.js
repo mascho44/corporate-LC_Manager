@@ -18,6 +18,13 @@
 
  const MARK = { OK: '✓', WARNING: '!', DISCREPANCY: '×', INFO: 'i' };
 
+ /** Where the finding stands in the PDF: page and line as printed, the picture of the line with its marking on click. */
+ function evidence(place) {
+  const box = el('div', { className: 'ld-evidence' }, el('small', {}, el('strong', { textContent: tr('ld.pdf.page', 'Im PDF, Seite {p}', { p: place.page }) + ': ' }), document.createTextNode(place.quote)));
+  if (place.image) box.append(el('details', {}, el('summary', { textContent: tr('ld.pdf.show', 'Stelle im PDF ansehen') }), el('img', { src: place.image, alt: tr('ld.pdf.alt', 'Ausschnitt des PDFs mit Markierung'), loading: 'lazy' })));
+  return box;
+ }
+
  /** Same look as the document check: counts as chips, then one row per check with a tick (met) or cross (wrong). */
  function render(box, result) {
   box.replaceChildren();
@@ -36,6 +43,7 @@
    const body = el('div', {}, el('b', { textContent: (f.severity === 'OK' ? tr('ld.passed', 'Erfüllt') : tr(key, de)) + ' · ' + (english() && f.messageEn ? f.messageEn : f.message) }));
    const advice = english() && f.adviceEn ? f.adviceEn : f.advice;
    if (advice) body.append(el('small', { className: 'check-source' }, el('strong', { textContent: tr('corp.fix', 'So beheben') }), document.createTextNode(advice)));
+   for (const place of f.evidence || []) body.append(evidence(place));
    list.append(el('div', { className: 'check ' + String(f.severity).toLowerCase() }, el('span', { textContent: MARK[f.severity] || '!' }), body));
   }
   box.append(list, el('p', { className: 'dc-note' }, el('small', { textContent: tr('ld.note', 'Automatische Vorprüfung ohne Vergleich mit dem Vertrag. Der Entwurf wurde nicht gespeichert.') })));
