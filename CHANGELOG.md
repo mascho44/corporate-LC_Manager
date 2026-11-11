@@ -2,6 +2,7 @@
 
 ## 0.7.3 – in Arbeit
 
+* Scans mit Kommentaren: Ein gescanntes PDF, auf das Prüfer Anmerkungen als Text gelegt haben (z. B. ein kommentierter LC-Entwurf), wurde bisher nur anhand der Anmerkungen gelesen, der Scan darunter blieb ungelesen. Jetzt gilt eine Seite mit seitengroßem Bild und kurzer Textebene (unter 800 Buchstaben und Ziffern) als Scan und geht durch die OCR. Durchsuchbare Scans mit langer Textebene behalten sie.
 * LC-Entwurf prüfen: Neben den Befunden steht das Original-PDF mit nummerierten Markierungen an den Stellen der Befunde; „Im PDF anzeigen“ springt dorthin. Erfüllte Prüfpunkte sind im PDF grün umrahmt und mit einem Haken markiert. Ein grüner Haken erscheint nur, wenn die Stelle im PDF gefunden wurde (sonst grau „Im PDF nicht gefunden“); eingescannte PDFs werden über die OCR-Positionen markiert. Ersetzt die kleinen Bildausschnitte unter den Befunden.
 
 ## 0.7.2 – 29.10.2026

@@ -43,13 +43,35 @@ class ScannedPageTest {
  }
 
  @Test void aScanWithOnlyAStampInItsTextLayerIsTreatedAsAScanButShortDigitalPagesKeepTheirText()throws Exception{
-  var content=pdf(new String[]{"1+2K","COMMERCIAL INVOICE",null,"Eine ganz normale digitale Seite mit genug Text darauf, um keine Texterkennung zu brauchen."},new boolean[]{true,false,true,true});
+  var content=pdf(new String[]{"1+2K","COMMERCIAL INVOICE",null,"Eine ganz normale digitale Seite mit genug Text darauf, um keine Texterkennung zu brauchen. ".repeat(20)},new boolean[]{true,false,true,true});
   var pages=DocumentExtractionService.readPdfPages(content);
   assertThat(pages.get(0)).isEmpty();                       // stamp only + big image: scan
   assertThat(pages.get(1)).contains("COMMERCIAL INVOICE");  // short but digital (no image)
   assertThat(pages.get(2)).isEmpty();                       // no text at all
   assertThat(pages.get(3)).contains("normale digitale Seite"); // enough text, even with an image
   assertThat(DocumentExtractionService.blankPageRanges(pages)).hasSize(2);
+ }
+
+ /** A 300 dpi A4 landscape scan (3507 x 2480) with reviewer comments as live text on top: the comments must not stop the recognition of the scan. */
+ @Test void aPageSizedScanWithCommentsAsTextIsStillRecognisedButASearchableScanKeepsItsLayer()throws Exception{
+  try(var document=new PDDocument();var out=new ByteArrayOutputStream()){
+   var font=new PDType1Font(Standard14Fonts.FontName.HELVETICA);
+   String comment="Laut TBT Tiefbohrtechnik handelt es sich lediglich um einen Draft. Wie haengen CMA und HIT zusammen?";
+   String layer=("ISSUE OF DOCUMENTARY CREDIT IRREVOCABLE APPLICANT BENEFICIARY ").repeat(20);
+   for(String text:new String[]{comment,layer}){
+    var page=new PDPage(new org.apache.pdfbox.pdmodel.common.PDRectangle(842,595));document.addPage(page);
+    try(var stream=new PDPageContentStream(document,page)){
+     stream.drawImage(LosslessFactory.createFromImage(document,new BufferedImage(3507,2480,BufferedImage.TYPE_BYTE_GRAY)),0,0,842,595);
+     stream.beginText();stream.setFont(font,6);stream.newLineAtOffset(20,580);
+     for(String line:text.split("(?<=\\G.{150})"))stream.showText(line.replace("\n"," ")); // one line is enough for the length
+     stream.endText();
+    }
+   }
+   document.save(out);
+   var pages=DocumentExtractionService.readPdfPages(out.toByteArray());
+   assertThat(pages.get(0)).isEmpty();            // comments only: scan
+   assertThat(pages.get(1)).contains("ISSUE OF DOCUMENTARY"); // long text layer of a searchable scan
+  }
  }
 
  @Test void splitUsesTheRecognisedTextOfAScanInsteadOfTheStrayLayerText()throws Exception{
