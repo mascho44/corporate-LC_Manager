@@ -171,11 +171,17 @@ public class DocumentExtractionService {
      * often leave only a stamp or page mark ("1+2K") as text, which must not stop the recognition of the image. Short digital pages (no image) keep their text.
      */
     static final int MIN_TEXT_LAYER_CHARS=25,MIN_SCAN_IMAGE_PIXELS=400;
+    /**
+     * A scan that carries comments, stamps or notes as live text (reviewer remarks on a draft): the page-sized image is the document, the short text on top of it only annotates it.
+     * Up to this many letters and digits such a page is still recognised; a longer text layer is taken as the searchable text of the scan itself.
+     */
+    static final int MAX_ANNOTATION_CHARS=800;
     static boolean scannedPage(org.apache.pdfbox.pdmodel.PDDocument pdf,int pageIndex,String text){
         if(text==null||text.isBlank())return true;
         // A text layer of control and replacement characters (fonts without a Unicode mapping) is no text; the rendered page is.
         if(unreadable(text))return true;
-        if(text.replaceAll("[^\\p{L}\\p{N}]","").length()>=MIN_TEXT_LAYER_CHARS)return false;
+        int letters=text.replaceAll("[^\\p{L}\\p{N}]","").length();
+        if(letters>=MIN_TEXT_LAYER_CHARS)return letters<MAX_ANNOTATION_CHARS&&hasPageSizedImage(pdf.getPage(pageIndex));
         return hasLargeImage(pdf.getPage(pageIndex))||hasUnmappedFont(pdf.getPage(pageIndex));
     }
     /** More than a third of the visible characters are control, replacement, private-use or unassigned characters. */
@@ -199,6 +205,20 @@ public class DocumentExtractionService {
                 if(font instanceof org.apache.pdfbox.pdmodel.font.PDType0Font&&!font.getCOSObject().containsKey(org.apache.pdfbox.cos.COSName.TO_UNICODE))return true;
             }
         }catch(IOException unreadable){/* an unreadable font is not evidence either way */}
+        return false;
+    }
+    /** An image of at least 1000 pixels each way whose shape is that of the page (either way round): a scan of the whole page, not a logo or a figure. */
+    private static boolean hasPageSizedImage(org.apache.pdfbox.pdmodel.PDPage page){
+        try{
+            var resources=page.getResources();if(resources==null)return false;
+            var box=page.getMediaBox();double pageRatio=box.getWidth()/box.getHeight();
+            for(var name:resources.getXObjectNames()){
+                if(resources.getXObject(name) instanceof org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject image&&image.getWidth()>=1000&&image.getHeight()>=1000){
+                    double ratio=(double)image.getWidth()/image.getHeight();
+                    if(Math.abs(ratio/pageRatio-1)<0.05||Math.abs(ratio*pageRatio-1)<0.05)return true;
+                }
+            }
+        }catch(IOException unreadable){/* an unreadable resource is not evidence of a scan */}
         return false;
     }
     private static boolean hasLargeImage(org.apache.pdfbox.pdmodel.PDPage page){
