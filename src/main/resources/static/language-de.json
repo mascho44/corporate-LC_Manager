@@ -3943,5 +3943,15 @@
   "mt.uploading": "{name} wird hochgeladen …",
   "mt.uploaded": "Hochgeladen. Öffnen Sie das Dokument und markieren Sie die Stellen.",
   "mt.upload": "Trainingsdokument hochladen (PDF)",
-  "mt.uploadHint": "Ohne LC-Akte, nur zum Markieren. Mehrere Dateien möglich, je bis 20 MB."
+  "mt.uploadHint": "Ohne LC-Akte, nur zum Markieren. Mehrere Dateien möglich, je bis 20 MB.",
+  "pm.reviewStart": "Vorschläge prüfen",
+  "pm.reviewGuess": "Ist die markierte Stelle ein {kind}? ({n} Vorschläge offen)",
+  "pm.reviewAsk": "Was ist die markierte Stelle? ({n} Vorschläge offen)",
+  "pm.yes": "Ja",
+  "pm.no": "Nein",
+  "pm.reviewNone": "Nichts davon",
+  "pm.skip": "Überspringen",
+  "pm.reviewStop": "Beenden",
+  "pm.reviewDone": "Alle Vorschläge geprüft.",
+  "pm.reviewNone2": "Keine Vorschläge für dieses Dokument."
 }
