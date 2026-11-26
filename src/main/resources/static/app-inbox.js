@@ -10,6 +10,24 @@ const labels={reference:'Aktenreferenz',ownBankReference:'Referenz eigene Bank',
         return `<details class="amendment-comparison" open><summary>${tx('ai.b63057','LC-Fassung vor / nach MT707 ·')} ${tx('ax.areas','{n} geänderte Bereiche',{n:rows.length})}</summary>${rows.length?`<div style="overflow-x:auto"><table class="diff-table"><thead><tr><th>${tx('ai.144d62','Feld')}</th><th>${tx('ai.0ce31e','LC vor Amendment')}</th><th>${tx('ai.a941eb','LC nach Amendment')}</th></tr></thead><tbody>${rows.map(key=>`<tr><th>${esc(labels[key])}</th>${diffCells(value(before[key]),value(after[key]))}</tr>`).join('')}</tbody></table></div>`:'<p>'+tx('ah.32e839','Keine Änderung an den unterstützten LC-Feldern. Bitte die ursprüngliche Änderungsanweisung unten fachlich prüfen.')+'</p>'}<p class="diff-legend">${tx('ah.ab6e43','Rot / durchgestrichen: entfernt · Grün / unterstrichen: ergänzt. Verglichen werden die gespeicherten LC-Fassungen, nicht eine automatische Auslegung der MT707-Anweisung.')}</p><details><summary>${tx('ah.b4f9db','Ursprüngliche SWIFT-Nachrichten gegenüberstellen')}</summary><div class="diff-originals"><section><h4>${tx('ah.83bf61','LC / MT700 vor Änderung')}</h4><pre>${esc(before.rawMessage||tx('am.noOriginal','Keine ursprüngliche Nachricht gespeichert.'))}</pre></section><section><h4>${tx('ah.14fa58','Änderungsanweisung MT707')}</h4><pre>${esc(amendment.rawMessage||tx('am.noOriginal','Keine ursprüngliche Nachricht gespeichert.'))}</pre></section></div></details></details>`;
     }catch(error){return '<p>'+tx('ah.0c3979','Gespeicherter Änderungsvergleich konnte nicht angezeigt werden.')+'</p>'}
 }
+/** A combined PDF is recognised on its own: the proposal is looked up once per file and shown as a notice with the proposed documents, so nobody has to know to open the split dialog. */
+const inboxSplitHints=new Map();
+function inboxSplitHint(item,article){
+    const key=item.id+'|'+item.extractionStatus;
+    const show=proposal=>{
+        const parts=proposal&&proposal.parts||[];
+        if(parts.length<2||!article.isConnected||article.querySelector('.inbox-split-hint'))return;
+        const box=document.createElement('div');box.className='inbox-split-hint';box.setAttribute('role','status');
+        const names=parts.map(part=>tx('inbox.type.'+part.documentType,part.documentType)+' ('+(part.fromPage===part.toPage?part.fromPage:part.fromPage+'–'+part.toPage)+')');
+        const text=document.createElement('p');
+        text.textContent=tx('inbox.splitHint','Dieses PDF besteht vermutlich aus {n} Dokumenten: {list}. Bitte Aufteilung prüfen und übernehmen.',{n:parts.length,list:names.join(', ')});
+        const button=document.createElement('button');button.type='button';button.textContent=tx('inbox.splitHintOpen','Aufteilung prüfen');button.onclick=()=>openInboxSplit(item);
+        box.append(text,button);article.querySelector('.inbox-item-head').after(box);
+    };
+    if(inboxSplitHints.has(key)){show(inboxSplitHints.get(key));return;}
+    json(`/api/inbox/${item.id}/split-proposal`).then(proposal=>{inboxSplitHints.set(key,proposal);show(proposal);}).catch(()=>{});
+}
+
 /** Prefill of the assignment form: the only suggested LC file and a recognised or confirmed document type. Nothing is saved before "Zuordnen". */
 function inboxPrefill(item){
     const candidates=item?.assignmentCandidates||[],c=item?.classification;
@@ -285,6 +303,7 @@ async function loadInbox(silent=false){
             if(item.sourceInboxId){const link=document.createElement('a');link.href=`/api/inbox/${item.sourceInboxId}/content#page=${item.sourceFromPage}`;link.target='_blank';link.rel='noopener';link.textContent=`Sammeloriginal ansehen · Seiten ${item.sourceFromPage}–${item.sourceToPage}`;article.querySelector('.inbox-item-head').after(link);}
             if(item.automaticallySplit){const note=document.createElement('p');note.textContent=inboxAutoText('origin','Automatically created from a combined PDF. Review the document type; original and page range are retained.');article.querySelector('.inbox-item-head').after(note);}
             if(item.contentType==='application/pdf'&&can('DOCUMENT_UPLOAD')&&!inboxPending(item)){const split=document.createElement('button');split.type='button';split.className='secondary inbox-split-action';split.textContent=inboxAutoText('button','Split …');split.onclick=()=>openInboxSplit(item);article.querySelector('.inbox-item-head').after(split);}
+            if(item.contentType==='application/pdf'&&!item.sourceInboxId&&can('DOCUMENT_UPLOAD')&&!inboxPending(item)&&['EXTRACTED','OCR_EXTRACTED'].includes(item.extractionStatus))inboxSplitHint(item,article);
             if(inboxPending(item))article.querySelectorAll('form input,form select,form button:not([data-inbox-delete])').forEach(control=>control.disabled=true);
         });
         bindInboxRetry(list);

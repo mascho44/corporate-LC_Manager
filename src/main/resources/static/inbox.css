@@ -50,3 +50,6 @@
 .inbox-bulk-row label{flex:1}
 .inbox-bulk-thumb{width:64px;height:auto;max-height:90px;object-fit:contain;border:1px solid var(--line,#d0d5dd);border-radius:4px;background:#fff}
 .inbox-bulk-open select{border-color:#b54708;box-shadow:0 0 0 2px rgba(181,71,8,.2)}
+
+.inbox-split-hint{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:10px 12px;margin:8px 0;border:2px solid #175cd3;border-radius:8px;background:rgba(23,92,211,.08)}
+.inbox-split-hint p{flex:1 1 320px;margin:0;font-weight:600}
