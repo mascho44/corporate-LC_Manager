@@ -3955,5 +3955,7 @@
   "pm.reviewDone": "Alle Vorschläge geprüft.",
   "pm.reviewNone2": "Keine Vorschläge für dieses Dokument.",
   "mt.export": "Trainingsdaten exportieren (ZIP)",
-  "mt.exportHint": "Markierte Seiten als Bilder mit Rahmen und Art, zum Trainieren eines Erkenners auf dem eigenen Rechner. Die Daten bleiben bei Ihnen."
+  "mt.exportHint": "Markierte Seiten als Bilder mit Rahmen und Art, zum Trainieren eines Erkenners auf dem eigenen Rechner. Die Daten bleiben bei Ihnen.",
+  "inbox.splitHint": "Dieses PDF besteht vermutlich aus {n} Dokumenten: {list}. Bitte Aufteilung prüfen und übernehmen.",
+  "inbox.splitHintOpen": "Aufteilung prüfen"
 }
