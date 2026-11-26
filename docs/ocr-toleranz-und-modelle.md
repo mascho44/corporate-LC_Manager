@@ -12,7 +12,7 @@ REST `GET/PUT /api/tenants/current/settings/ocr`, Audit `TENANT_OCR_TOLERANCE_UP
 
 ## Genauere Tesseract-Modelle im Image
 Das Docker-Image ersetzt die schnellen Modelle der Alpine-Pakete für `eng`, `deu` und `chi_sim` durch die genaueren Modelle aus `tesseract-ocr/tessdata_best` (fester Commit, SHA-256 geprüft, Abbruch des Builds bei Abweichung; `osd` bleibt aus dem Paket).
-Der Preis ist etwa die 2,5-fache OCR-Zeit je Seite; das Seitenlimit (`lc.ocr.page-timeout-seconds`, 120 s) bleibt.
+Der Preis ist etwa die 2,5-fache OCR-Zeit je Seite; das Seitenlimit (`lc.ocr.page-timeout-seconds`, 300 s) bleibt.
 
 ## Zuordnung von Beschriftung und Wert (Formularfelder in Scans)
 Scans von Formularen drucken die Beschriftung über dem Wert, mehrere Felder nebeneinander („Invoice No.: | Invoice Date: | Credit No." über „INV-1 | 05.12.2026 | LC-1"). Zeilenweise gelesen verlieren sie die Zuordnung.
