@@ -21,8 +21,8 @@ public class DocumentExtractionService {
     @org.springframework.beans.factory.annotation.Autowired(required=false) private OcrTolerance tolerance;
     /** Confidence threshold for the document's tenant (own setting, else the installation default). */
     private double thresholdFor(LcDocument document){return tolerance==null||document==null?ocrThreshold:tolerance.forTenant(document.getTenantId());}
-    @org.springframework.beans.factory.annotation.Value("${lc.ocr.page-timeout-seconds:120}")
-    private long ocrPageTimeoutSeconds=120;
+    @org.springframework.beans.factory.annotation.Value("${lc.ocr.page-timeout-seconds:300}")
+    private long ocrPageTimeoutSeconds=300;
     @org.springframework.beans.factory.annotation.Value("${lc.ocr.document-timeout-seconds:900}")
     private long ocrDocumentTimeoutSeconds=900;
     private static final int MAX_TEXT_LENGTH = 100_000;
@@ -313,6 +313,13 @@ public class DocumentExtractionService {
         }
     }
 
+    /** Zeit einer Seite im Log (Rendern, Erkennen, Wörter, Versuche); nur Zahlen, keine Inhalte. */
+    private static void logPage(int page,int pages,String status,long start,long rendered,int words,int attempts){
+        long end=System.nanoTime();
+        log.info("OCR page: page={}/{}, status={}, renderMillis={}, recognizeMillis={}, words={}, attempts={}",page,pages,status,
+            java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(rendered-start),java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(end-rendered),words,attempts);
+    }
+
     /** Ergebnis einer gescannten Seite: Text und Wörter (leer bei Fehlern) und der Seitenstatus. */
     private record PageOutcome(String text,List<OcrEvidence.Word> words,OcrEvidence.PageResult page){}
 
@@ -320,6 +327,8 @@ public class DocumentExtractionService {
     private PageOutcome ocrPage(int index,int pageCount,Path input,Path directory,ScanProfile profile,String languages,long documentBudget,long started,OcrEngine.StepRunner runner)throws Exception{
         int page=index+1;
         Path image=null;
+        final long pageStart=System.nanoTime();
+        long rendered=pageStart;
         try {
             long remaining=documentBudget-java.util.concurrent.TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()-started);
             if(remaining<=0)throw new BoundedProcess.TimeoutException("OCR");
@@ -327,6 +336,7 @@ public class DocumentExtractionService {
             runner.run(new ProcessBuilder("pdftoppm","-png","-r",String.valueOf(profile.renderDpi()),"-f",String.valueOf(page),"-l",String.valueOf(page),input.toString(),directory.resolve(prefix).toString()).redirectErrorStream(true),Math.min(60,remaining));
             try(var files=Files.list(directory)){image=files.filter(p->p.getFileName().toString().matches(Pattern.quote(prefix)+"-0*"+page+"\\.png")).findFirst().orElse(null);}
             if(image==null)throw new IOException("PDF renderer produced no page");
+            rendered=System.nanoTime();
             Path output = directory.resolve("ocr-" + index);
             remaining=documentBudget-java.util.concurrent.TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()-started);
             if(remaining<=0)throw new BoundedProcess.TimeoutException("OCR");
@@ -357,8 +367,10 @@ public class DocumentExtractionService {
                     Files.deleteIfExists(directory.resolve("corrected-"+index+".png"));
                 }
             }
+            logPage(page,pageCount,recognized.isBlank()?"NO_TEXT":"OCR_EXTRACTED",pageStart,rendered,pageWords.size(),attempts);
             return new PageOutcome(recognized,toEvidenceRaster(pageWords,profile.renderDpi()),new OcrEvidence.PageResult(page,recognized.isBlank()?"NO_TEXT":"OCR_EXTRACTED",attempts,correctionDegrees,limit(recognized)));
         } catch(BoundedProcess.TimeoutException failure){
+            logPage(page,pageCount,"OCR_TIMEOUT",pageStart,rendered,0,1);
             return new PageOutcome(null,List.of(),new OcrEvidence.PageResult(page,"OCR_TIMEOUT",1));
         } catch(BoundedProcess.UnavailableException failure){throw failure;
         } catch(IOException failure){
