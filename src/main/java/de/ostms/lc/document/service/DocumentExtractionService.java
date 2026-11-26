@@ -346,6 +346,8 @@ public class DocumentExtractionService {
         try {
             long remaining=documentBudget-java.util.concurrent.TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()-started);
             if(remaining<=0)throw new BoundedProcess.TimeoutException("OCR");
+            PageOutcome dense=skipDenseTerms(page,pageCount,input,directory,languages,remaining,runner,pageStart);
+            if(dense!=null)return dense;
             String prefix="page";
             runner.run(new ProcessBuilder("pdftoppm","-png","-r",String.valueOf(profile.renderDpi()),"-f",String.valueOf(page),"-l",String.valueOf(page),input.toString(),directory.resolve(prefix).toString()).redirectErrorStream(true),Math.min(60,remaining));
             try(var files=Files.list(directory)){image=files.filter(p->p.getFileName().toString().matches(Pattern.quote(prefix)+"-0*"+page+"\\.png")).findFirst().orElse(null);}
@@ -391,6 +393,55 @@ public class DocumentExtractionService {
             return new PageOutcome(null,List.of(),new OcrEvidence.PageResult(page,"FAILED",1));
         } finally {
             if(image!=null)Files.deleteIfExists(image);
+        }
+    }
+
+    @org.springframework.beans.factory.annotation.Value("${lc.ocr.dense-skip-cover:0.25}")
+    private double denseSkipCover=0.25;
+    static final int QUICK_DPI=120;
+
+    /** Anteil der Seitenfläche, den die erkannten Wortkästen bedecken (Kleingedrucktes liegt deutlich über normalem Text). */
+    static double textCover(List<OcrEvidence.Word> words,int width,int height){
+        if(width<=0||height<=0)return 0;
+        double area=0;for(var w:words)area+=(double)w.width()*w.height();
+        return area/((double)width*height);
+    }
+    private static int[] imageSize(Path image)throws IOException{
+        try(var in=javax.imageio.ImageIO.createImageInputStream(image.toFile())){
+            var readers=javax.imageio.ImageIO.getImageReaders(in);
+            if(!readers.hasNext())return new int[]{0,0};
+            var reader=readers.next();
+            try{reader.setInput(in);return new int[]{reader.getWidth(0),reader.getHeight(0)};}finally{reader.dispose();}
+        }
+    }
+
+    /**
+     * Seiten mit sehr dichtem Kleingedruckten (Versicherungs-, Shipping-Bedingungen) müssen für die Prüfung nicht im Wortlaut vorliegen.
+     * Eine schnelle Vorprüfung in niedriger Auflösung misst, welchen Anteil der Seite die erkannten Wörter bedecken (die Wortzahl taugt
+     * nicht: Kleingedrucktes wird bei 120 DPI kaum gelesen). Liegt der Anteil über der Schwelle, bleibt das grobe Ergebnis stehen und die
+     * teure Erkennung entfällt (attempts=0 kennzeichnet das). Fehler und Zeitüberschreitung der Vorprüfung führen nie zum Überspringen.
+     * Schwelle 0 schaltet die Vorprüfung ab. Im Log stehen nur Zahlen.
+     */
+    private PageOutcome skipDenseTerms(int page,int pageCount,Path input,Path directory,String languages,long remainingSeconds,OcrEngine.StepRunner runner,long pageStart)throws InterruptedException,BoundedProcess.UnavailableException{
+        if(denseSkipCover<=0||remainingSeconds<=5)return null;
+        Path quick=null;
+        try{
+            String prefix="quick";
+            runner.run(new ProcessBuilder("pdftoppm","-png","-r",String.valueOf(QUICK_DPI),"-f",String.valueOf(page),"-l",String.valueOf(page),input.toString(),directory.resolve(prefix).toString()).redirectErrorStream(true),Math.min(30,remainingSeconds));
+            try(var files=Files.list(directory)){quick=files.filter(p->p.getFileName().toString().matches(Pattern.quote(prefix)+"-0*"+page+"\\.png")).findFirst().orElse(null);}
+            if(quick==null)return null;
+            var size=imageSize(quick);
+            var rough=engine().recognize(quick,directory.resolve("quick-ocr-"+(page-1)),languages,ScanProfile.Binarization.NONE,page,runner,Math.min(40,remainingSeconds));
+            double cover=textCover(rough.words(),size[0],size[1]);
+            boolean dense=cover>=denseSkipCover;
+            log.info("OCR quick check: page={}/{}, words={}, cover={}, threshold={}, dense={}",page,pageCount,rough.words().size(),String.format(Locale.ROOT,"%.3f",cover),denseSkipCover,dense);
+            if(!dense)return null;
+            logPage(page,pageCount,"OCR_EXTRACTED",pageStart,System.nanoTime(),rough.words().size(),0);
+            return new PageOutcome(rough.text(),toEvidenceRaster(rough.words(),QUICK_DPI),new OcrEvidence.PageResult(page,"OCR_EXTRACTED",0,0,limit(rough.text())));
+        }catch(BoundedProcess.UnavailableException failure){throw failure;
+        }catch(IOException failure){return null;
+        }finally{
+            try{if(quick!=null)Files.deleteIfExists(quick);}catch(IOException ignored){}
         }
     }
 
