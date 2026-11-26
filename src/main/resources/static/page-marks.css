@@ -15,3 +15,11 @@
 .pm-mark{position:absolute;box-sizing:border-box;border:3px solid currentColor;background:color-mix(in srgb,currentColor 14%,transparent);border-radius:4px;padding:0;cursor:pointer}
 .pm-mark span{position:absolute;left:-3px;bottom:100%;background:currentColor;color:#fff;font-size:.72rem;line-height:1;padding:.18rem .35rem;border-radius:3px 3px 0 0;white-space:nowrap}
 .pm-rubber{position:absolute;box-sizing:border-box;border:2px solid #175cd3;background:rgba(23,92,211,.12);pointer-events:none}
+
+.mt-counts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:12px 0}
+.mt-count{display:flex;flex-direction:column;gap:4px;padding:12px;border:1px solid var(--line,#d0d5dd);border-radius:8px}
+.mt-count b{font-size:1.6rem}
+.mt-count progress{width:100%}
+.mt-docs{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.mt-doc{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line,#e4e7ec)}
+.mt-doc small{margin-left:auto;opacity:.7}
