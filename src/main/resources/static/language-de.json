@@ -3937,5 +3937,11 @@
   "mt.marks": "{n} Markierungen",
   "mt.open": "Öffnen",
   "mt.title": "Stempel- und Unterschriften-Training",
-  "mt.intro": "Hier sehen Sie, was das System über Stempel und Unterschriften Ihres Mandanten gelernt hat. Gelernt wird nur aus Ihren eigenen Entscheidungen; es verlassen keine Daten das System."
+  "mt.intro": "Hier sehen Sie, was das System über Stempel und Unterschriften Ihres Mandanten gelernt hat. Gelernt wird nur aus Ihren eigenen Entscheidungen; es verlassen keine Daten das System.",
+  "mt.remove": "Entfernen",
+  "mt.removeAsk": "Trainingsdokument „{name}“ mit allen Markierungen entfernen?",
+  "mt.uploading": "{name} wird hochgeladen …",
+  "mt.uploaded": "Hochgeladen. Öffnen Sie das Dokument und markieren Sie die Stellen.",
+  "mt.upload": "Trainingsdokument hochladen (PDF)",
+  "mt.uploadHint": "Ohne LC-Akte, nur zum Markieren. Mehrere Dateien möglich, je bis 20 MB."
 }

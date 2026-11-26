@@ -23,3 +23,6 @@
 .mt-docs{display:flex;flex-direction:column;gap:6px;margin-top:8px}
 .mt-doc{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line,#e4e7ec)}
 .mt-doc small{margin-left:auto;opacity:.7}
+
+.mt-drop{display:flex;flex-direction:column;gap:4px;padding:16px;margin:12px 0;border:2px dashed var(--line,#98a2b3);border-radius:8px;cursor:pointer}
+.mt-doc .danger{margin-left:8px}

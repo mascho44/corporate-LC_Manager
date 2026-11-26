@@ -3937,5 +3937,11 @@
   "mt.marks": "{n} marks",
   "mt.open": "Open",
   "mt.title": "Stamp and signature training",
-  "mt.intro": "Here you see what the system has learned about your tenant's stamps and signatures. It learns only from your own decisions; no data leaves the system."
+  "mt.intro": "Here you see what the system has learned about your tenant's stamps and signatures. It learns only from your own decisions; no data leaves the system.",
+  "mt.remove": "Remove",
+  "mt.removeAsk": "Remove training document \"{name}\" with all its marks?",
+  "mt.uploading": "Uploading {name} …",
+  "mt.uploaded": "Uploaded. Open the document and mark the spots.",
+  "mt.upload": "Upload training document (PDF)",
+  "mt.uploadHint": "Without an LC file, only for marking. Several files allowed, up to 20 MB each."
 }

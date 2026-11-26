@@ -11,7 +11,10 @@ public class DocumentMark extends TenantOwnedEntity {
  /** SIGNED_STAMP: a signature written across a stamp, one region that is both. */
  public enum Kind { STAMP, SIGNATURE, SIGNED_STAMP, NONE }
  @Id private UUID id=UUID.randomUUID();
- @Column(name="document_id",nullable=false) private UUID documentId;
+ @Column(name="document_id") private UUID documentId;
+ @Column(name="training_document_id") private UUID trainingDocumentId;
+ public UUID getTrainingDocumentId(){return trainingDocumentId;}
+ public static DocumentMark forTraining(UUID trainingDocumentId,int page,double x,double y,double w,double h,Kind kind,String markedBy){var m=new DocumentMark(null,page,x,y,w,h,kind,markedBy);m.trainingDocumentId=trainingDocumentId;return m;}
  @Column(nullable=false) private int page;
  @Column(name="box_x",nullable=false) private double x;
  @Column(name="box_y",nullable=false) private double y;
