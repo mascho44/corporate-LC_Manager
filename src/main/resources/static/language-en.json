@@ -3943,5 +3943,15 @@
   "mt.uploading": "Uploading {name} …",
   "mt.uploaded": "Uploaded. Open the document and mark the spots.",
   "mt.upload": "Upload training document (PDF)",
-  "mt.uploadHint": "Without an LC file, only for marking. Several files allowed, up to 20 MB each."
+  "mt.uploadHint": "Without an LC file, only for marking. Several files allowed, up to 20 MB each.",
+  "pm.reviewStart": "Review suggestions",
+  "pm.reviewGuess": "Is the marked spot a {kind}? ({n} suggestions left)",
+  "pm.reviewAsk": "What is the marked spot? ({n} suggestions left)",
+  "pm.yes": "Yes",
+  "pm.no": "No",
+  "pm.reviewNone": "None of these",
+  "pm.skip": "Skip",
+  "pm.reviewStop": "Stop",
+  "pm.reviewDone": "All suggestions reviewed.",
+  "pm.reviewNone2": "No suggestions for this document."
 }

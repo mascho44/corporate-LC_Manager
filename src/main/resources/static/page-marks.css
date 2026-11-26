@@ -26,3 +26,7 @@
 
 .mt-drop{display:flex;flex-direction:column;gap:4px;padding:16px;margin:12px 0;border:2px dashed var(--line,#98a2b3);border-radius:8px;cursor:pointer}
 .mt-doc .danger{margin-left:8px}
+
+.pm-review{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px;margin:8px 0;border:1px solid var(--line,#98a2b3);border-radius:8px;background:rgba(23,92,211,.06)}
+.pm-review p{flex:1 0 100%;margin:0;font-weight:600}
+.pm-candidate.pm-current{border:3px solid #175cd3;background:rgba(23,92,211,.22)}
