@@ -3929,5 +3929,13 @@
   "pm.remove": "Remove mark",
   "pm.loading": "Loading page {n} …",
   "pm.noPreview": "Page preview not available.",
-  "pm.open": "Stamps & signatures"
+  "pm.open": "Stamps & signatures",
+  "nav.markTraining": "Stamp training",
+  "mt.goal": "Guideline for a first model: {n} decisions per kind",
+  "mt.status": "{total} decisions in {docs} documents. Learning from these decisions comes in the next step; until then they are collected.",
+  "mt.empty": "No marks yet. In an LC file, open \"Stamps & signatures\" on a PDF and mark the spots.",
+  "mt.marks": "{n} marks",
+  "mt.open": "Open",
+  "mt.title": "Stamp and signature training",
+  "mt.intro": "Here you see what the system has learned about your tenant's stamps and signatures. It learns only from your own decisions; no data leaves the system."
 }

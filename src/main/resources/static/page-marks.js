@@ -79,6 +79,8 @@
   ]).then(([marks,candidates])=>{state.marks=Array.isArray(marks)?marks:[];state.candidates=Array.isArray(candidates)?candidates:[];loadPage(1);});
  }
 
+ globalThis.LcPageMarks={open};
+
  const base=typeof documentRow==='function'?documentRow:null;
  if(base){
   globalThis.documentRow=function(d){

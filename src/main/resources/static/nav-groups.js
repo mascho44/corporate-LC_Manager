@@ -1,7 +1,7 @@
 /* Menu structure: working entries (Arbeitsbereich) first, then Administration in three groups. Pages add their own entries at the end of the menu, so the order is put right here: whatever
    exists is arranged, whatever a user may not see stays hidden by its page. Idempotent; runs again whenever an entry is added or shown. */
 globalThis.LcNav = (() => {
- const WORK = ['sec:cockpit', 'appNavMyWork', 'appNavGroupInbox', 'sec:lcs', 'appNavCalendar', 'appNavLiquidity', 'appNavInbox', 'appNavImport', 'sec:imports', 'appNavTraining'];
+ const WORK = ['sec:cockpit', 'appNavMyWork', 'appNavGroupInbox', 'sec:lcs', 'appNavCalendar', 'appNavLiquidity', 'appNavInbox', 'appNavImport', 'sec:imports', 'appNavTraining', 'appNavMarkTraining'];
  const GUARANTEES = { id: 'guarantees', fallback: 'Garantien', items: ['appNavGuaranteeCockpit', 'appNavGuarantees', 'appNavCreditLines'] };
  const ADMIN = [
   { id: 'master', fallback: 'Stammdaten & Regeln', items: ['appNavCompany', 'appNavTemplates', 'appNavRulePacks', 'appNavCorrespondent', 'appNavApprovalPolicy', 'appNavSla'] },

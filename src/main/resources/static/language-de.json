@@ -3929,5 +3929,13 @@
   "pm.remove": "Markierung entfernen",
   "pm.loading": "Seite {n} wird geladen …",
   "pm.noPreview": "Seitenvorschau nicht verfügbar.",
-  "pm.open": "Stempel & Unterschriften"
+  "pm.open": "Stempel & Unterschriften",
+  "nav.markTraining": "Stempel-Training",
+  "mt.goal": "Richtwert für ein erstes Modell: {n} Entscheidungen je Art",
+  "mt.status": "{total} Entscheidungen in {docs} Dokumenten. Das Lernen aus diesen Entscheidungen folgt im nächsten Schritt; bis dahin werden sie gesammelt.",
+  "mt.empty": "Noch keine Markierungen. Öffnen Sie in einer LC-Akte bei einem PDF „Stempel & Unterschriften“ und markieren Sie die Stellen.",
+  "mt.marks": "{n} Markierungen",
+  "mt.open": "Öffnen",
+  "mt.title": "Stempel- und Unterschriften-Training",
+  "mt.intro": "Hier sehen Sie, was das System über Stempel und Unterschriften Ihres Mandanten gelernt hat. Gelernt wird nur aus Ihren eigenen Entscheidungen; es verlassen keine Daten das System."
 }
