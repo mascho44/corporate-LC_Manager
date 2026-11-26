@@ -265,6 +265,7 @@ public class DocumentExtractionService {
         int limit=Math.max(1,Math.min(200,maxOcrPages));
         if(requiredPages>limit){log.warn("OCR page limit: scannedPages={}, maxPages={}",requiredPages,limit);throw new PageLimitException();}
         long started=System.nanoTime();
+        stepTimes.set(new java.util.TreeMap<>());
         Path directory = Files.createTempDirectory("lc-ocr-");
         try {
             Path input = directory.resolve("input.pdf");
@@ -335,11 +336,13 @@ public class DocumentExtractionService {
                 document.setOcrEvidenceJson(new tools.jackson.databind.ObjectMapper().writeValueAsString(new OcrEvidence(engineVersion,engine().method()+profile.methodSuffix(),ScanProfile.EVIDENCE_DPI,thresholdFor(document),words,pages)));
                 checkpoint.accept(document);
             }
+            log.info("OCR steps: {}",stepTimes.get().entrySet().stream().map(e->e.getKey()+"="+java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(e.getValue()[0])+"ms/"+e.getValue()[1]+"x").collect(java.util.stream.Collectors.joining(", ")));
             log.info("OCR completed: pages={}, ocrPages={}, textPages={}, elapsedMillis={}",pageTexts.size(),requiredPages,pageTexts.size()-requiredPages,java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-started));
             if(!Double.isFinite(thresholdFor(document))||thresholdFor(document)<0||thresholdFor(document)>1)throw new IllegalArgumentException("Ungültige OCR-Konfidenzschwelle");
             document.setOcrEvidenceJson(new tools.jackson.databind.ObjectMapper().writeValueAsString(new OcrEvidence(engineVersion,engine().method()+profile.methodSuffix(),ScanProfile.EVIDENCE_DPI,thresholdFor(document),List.copyOf(words),pages)));
             return limit(result.toString());
         } finally {
+            stepTimes.remove();
             deleteDirectory(directory);
         }
     }
@@ -377,12 +380,28 @@ public class DocumentExtractionService {
         try (var paths = Files.walk(directory)) { paths.sorted(Comparator.reverseOrder()).forEach(path -> { try { Files.deleteIfExists(path); } catch (IOException ignored) {} }); }
         catch (IOException ignored) {}
     }
+    /** Je OCR-Lauf die Summe der Zeiten nach Schritt (Rendern, Tesseract, Ausrichtung, zweiter Lauf); nur zum Messen, enthält keine Inhalte. */
+    private final ThreadLocal<java.util.Map<String,long[]>> stepTimes=new ThreadLocal<>();
+
+    private static String stepName(ProcessBuilder builder){
+        var command=builder.command();
+        String tool=command.isEmpty()?"?":java.nio.file.Path.of(command.get(0)).getFileName().toString();
+        if(!"tesseract".equals(tool))return tool;
+        if(command.contains("osd"))return "tesseract-osd";
+        return command.contains("--psm")?"tesseract-psm":"tesseract";
+    }
+
     void runOcrStep(ProcessBuilder builder,long seconds)throws IOException,InterruptedException {
+        long begin=System.nanoTime();
         try { BoundedProcess.run(builder,seconds); }
         catch(IOException failure) {
             // BoundedProcess messages contain only fixed tool names and exit/timeout status.
             log.warn("OCR step failed: {}",failure.getMessage());
             throw failure;
+        }
+        finally {
+            var times=stepTimes.get();
+            if(times!=null){var entry=times.computeIfAbsent(stepName(builder),k->new long[2]);entry[0]+=System.nanoTime()-begin;entry[1]++;}
         }
     }
 
