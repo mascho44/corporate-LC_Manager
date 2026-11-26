@@ -118,6 +118,7 @@ public class DocumentInboxService {
             item.setSourceInboxId(id);item.setSourceFromPage(part.fromPage());item.setSourceToPage(part.toPage());
             item.setCopyNumber(part.copyNumber());
             if(details!=null){var detail=details.get(result.size());if(detail!=null){item.setManualDocumentDate(detail.documentDate());item.setSignatureConfirmed(detail.signed());}}
+            if(item.getManualDocumentDate()==null){var recognised=part.documentDate()!=null?part.documentDate():DocumentDateDetector.detect(output.text()).date();if(recognised!=null)item.setManualDocumentDate(recognised);}
             var document=new LcDocument();document.setOriginalFilename(item.getOriginalFilename());
             extraction.applyRecognizedText(document,output.text(),output.text().isBlank()?"QUEUED":output.evidence()!=null?"OCR_EXTRACTED":"EXTRACTED");
             item.setExtractedText(document.getExtractedText());item.setExtractionStatus(document.getExtractionStatus());

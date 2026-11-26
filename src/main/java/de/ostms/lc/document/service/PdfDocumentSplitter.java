@@ -9,8 +9,10 @@ import java.util.*;
 
 /** Page-boundary proposals, never an automatic destructive split. */
 public final class PdfDocumentSplitter {
-    public record Part(int fromPage,int toPage,DocumentType documentType,Integer copyNumber) {
-        public Part(int fromPage,int toPage,DocumentType type){this(fromPage,toPage,type,null);}
+    /** documentDate: the issue date recognised in the pages of the range (null when none is clear); the person confirms or corrects it. */
+    public record Part(int fromPage,int toPage,DocumentType documentType,Integer copyNumber,java.time.LocalDate documentDate) {
+        public Part(int fromPage,int toPage,DocumentType type,Integer copyNumber){this(fromPage,toPage,type,copyNumber,null);}
+        public Part(int fromPage,int toPage,DocumentType type){this(fromPage,toPage,type,null,null);}
         public Part {de.ostms.lc.document.domain.DocumentCopy.validate(copyNumber);}
     }
     /** `sample` is the beginning of the text read from the page (for the person to judge what the recognition delivered); null when nothing was read. */
@@ -106,7 +108,7 @@ public final class PdfDocumentSplitter {
                 if(!blankPage)previousNumber=number!=null||!(impliedByTotal&&continuation)?number:new int[]{previousNumber[0]+1,previousNumber[1]};if(nextReference!=null)reference=nextReference;
             }
             parts.add(new Part(start,texts.size(),current==null?DocumentType.OTHER:current));
-            var suggestedParts=parts.stream().map(part->new Part(part.fromPage(),part.toPage(),part.documentType(),DocumentCopyDetector.detect(String.join("\n",texts.subList(part.fromPage()-1,part.toPage()))).copyNumber())).toList();
+            var suggestedParts=parts.stream().map(part->new Part(part.fromPage(),part.toPage(),part.documentType(),DocumentCopyDetector.detect(String.join("\n",texts.subList(part.fromPage()-1,part.toPage()))).copyNumber(),DocumentDateDetector.detect(String.join("\n",texts.subList(part.fromPage()-1,part.toPage()))).date())).toList();
             return new Proposal(texts.size(),List.copyOf(pages),suggestedParts);
         }
     }
