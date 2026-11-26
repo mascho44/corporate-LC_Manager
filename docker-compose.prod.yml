@@ -12,8 +12,8 @@ services:
     cap_drop:
       - ALL
     # Tesseract läuft als Kindprozess im Container: je gleichzeitiger Seite etwa 0,5 bis 1 GB zusätzlich zur JVM (lc.ocr.parallelism)
-    mem_limit: 5g
-    cpus: 4
+    mem_limit: 6g
+    cpus: 6
     pids_limit: 256
     tmpfs:
       - /tmp:size=512m,mode=1777
