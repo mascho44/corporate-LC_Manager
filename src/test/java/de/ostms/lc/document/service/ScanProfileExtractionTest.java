@@ -24,13 +24,13 @@ class ScanProfileExtractionTest {
   var doc=new de.ostms.lc.document.domain.LcDocument();doc.setContentType("application/pdf");doc.setOriginalFilename("scan.pdf");doc.setContent(PdfDocumentSplitterTest.pdf(""));return doc;
  }
  private static FakeOcr withProfile(ScanProfile profile){
-  var service=new FakeOcr();org.springframework.test.util.ReflectionTestUtils.setField(service,"denseSkipCover",0.0);var profiles=Mockito.mock(ScanProfileService.class);Mockito.when(profiles.current()).thenReturn(profile);
+  var service=new FakeOcr();org.springframework.test.util.ReflectionTestUtils.setField(service,"denseSkipLines",0);var profiles=Mockito.mock(ScanProfileService.class);Mockito.when(profiles.current()).thenReturn(profile);
   ReflectionTestUtils.setField(service,"scanProfiles",profiles);return service;
  }
  private static String dpiOf(List<String> pdftoppm){return pdftoppm.get(pdftoppm.indexOf("-r")+1);}
 
  @Test void withoutAProfileServiceTheStandardBehaviourApplies()throws Exception{
-  var service=new FakeOcr();org.springframework.test.util.ReflectionTestUtils.setField(service,"denseSkipCover",0.0);var doc=document();service.extractInBackground(doc);
+  var service=new FakeOcr();org.springframework.test.util.ReflectionTestUtils.setField(service,"denseSkipLines",0);var doc=document();service.extractInBackground(doc);
   assertThat(dpiOf(service.commands.get(0))).isEqualTo("300");
   assertThat(service.commands.get(1)).contains("thresholding_method=2");
   var evidence=DocumentExtractionService.readEvidence(doc.getOcrEvidenceJson());
@@ -51,7 +51,7 @@ class ScanProfileExtractionTest {
   assertThat(evidence.method()).isEqualTo("TESSERACT_WORD_MIN_V2+SCHLECHTER_SCAN");
  }
  @Test void aBrokenProfileLookupFallsBackToStandardInsteadOfStoppingRecognition()throws Exception{
-  var service=new FakeOcr();org.springframework.test.util.ReflectionTestUtils.setField(service,"denseSkipCover",0.0);var profiles=Mockito.mock(ScanProfileService.class);Mockito.when(profiles.current()).thenThrow(new IllegalStateException("db down"));
+  var service=new FakeOcr();org.springframework.test.util.ReflectionTestUtils.setField(service,"denseSkipLines",0);var profiles=Mockito.mock(ScanProfileService.class);Mockito.when(profiles.current()).thenThrow(new IllegalStateException("db down"));
   ReflectionTestUtils.setField(service,"scanProfiles",profiles);var doc=document();service.extractInBackground(doc);
   assertThat(dpiOf(service.commands.get(0))).isEqualTo("300");assertThat(doc.getExtractionStatus()).isEqualTo("OCR_EXTRACTED");
  }
