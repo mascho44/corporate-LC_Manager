@@ -27,7 +27,7 @@ class ProcessingSafetyTest {
     }
     @Test void allowsSlowerOcrPagesButBoundsConfiguration()throws Exception{
         var service=new DocumentExtractionService();
-        assertThat(service.pageTimeoutSeconds()).isEqualTo(120);
+        assertThat(service.pageTimeoutSeconds()).isEqualTo(300);
         var field=DocumentExtractionService.class.getDeclaredField("ocrPageTimeoutSeconds");field.setAccessible(true);
         field.setLong(service,999);assertThat(service.pageTimeoutSeconds()).isEqualTo(300);
         field.setLong(service,-1);assertThat(service.pageTimeoutSeconds()).isEqualTo(1);
@@ -37,7 +37,7 @@ class ProcessingSafetyTest {
         var field=DocumentExtractionService.class.getDeclaredField("ocrDocumentTimeoutSeconds");field.setAccessible(true);
         field.setLong(service,99999);assertThat(service.documentTimeoutSeconds()).isEqualTo(1800);
         field.setLong(service,-1);assertThat(service.documentTimeoutSeconds()).isEqualTo(60);
-        assertThat(service.pageTimeoutSeconds()).isEqualTo(120);
+        assertThat(service.pageTimeoutSeconds()).isEqualTo(300);
     }
     @Test void ignoresLargeStandardOutputInsteadOfBlocking()throws Exception{
         BoundedProcess.run(new ProcessBuilder("sh","-c","i=0; while [ $i -lt 10000 ]; do printf 'abcdefghijklmnopqrstuvwxyz\\n'; i=$((i+1)); done"),5);

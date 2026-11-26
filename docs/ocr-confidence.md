@@ -35,7 +35,7 @@ OCR measurements. Server-side preservation prevents the client replacing scores.
 
 ## Configuration
 
-OCR processing permits 120 seconds per page by default, configurable via
+OCR processing permits 300 seconds per page by default, configurable via
 `lc.ocr.page-timeout-seconds` (bounded to 1–300 seconds). Each document has a
 900-second background processing budget including rendering, configurable through
 `lc.ocr.document-timeout-seconds` (bounded to 60–1800 seconds). Page limits remain
