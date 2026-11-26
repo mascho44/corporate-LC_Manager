@@ -430,10 +430,10 @@ public class DocumentExtractionService {
     @org.springframework.beans.factory.annotation.Value("${lc.ocr.parallelism:0}")
     private int ocrParallelism=0;
     private java.util.concurrent.ExecutorService ocrPool;
-    /** Gemeinsamer Pool für alle Dokumente: begrenzt die gleichzeitigen Tesseract-Läufe insgesamt (Standard: halbe Kernzahl, höchstens 4). */
+    /** Gemeinsamer Pool für alle Dokumente: begrenzt die gleichzeitigen Tesseract-Läufe insgesamt (Standard: Kernzahl des Containers, höchstens 4). */
     private synchronized java.util.concurrent.ExecutorService pool(){
         if(ocrPool==null){
-            int threads=ocrParallelism>0?Math.min(16,ocrParallelism):Math.max(1,Math.min(4,Runtime.getRuntime().availableProcessors()/2));
+            int threads=ocrParallelism>0?Math.min(16,ocrParallelism):Math.max(1,Math.min(4,Runtime.getRuntime().availableProcessors()));
             var counter=new java.util.concurrent.atomic.AtomicInteger();
             ocrPool=java.util.concurrent.Executors.newFixedThreadPool(threads,r->{var t=new Thread(r,"lc-ocr-"+counter.incrementAndGet());t.setDaemon(true);return t;});
         }
