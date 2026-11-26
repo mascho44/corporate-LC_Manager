@@ -3953,5 +3953,7 @@
   "pm.skip": "Überspringen",
   "pm.reviewStop": "Beenden",
   "pm.reviewDone": "Alle Vorschläge geprüft.",
-  "pm.reviewNone2": "Keine Vorschläge für dieses Dokument."
+  "pm.reviewNone2": "Keine Vorschläge für dieses Dokument.",
+  "mt.export": "Trainingsdaten exportieren (ZIP)",
+  "mt.exportHint": "Markierte Seiten als Bilder mit Rahmen und Art, zum Trainieren eines Erkenners auf dem eigenen Rechner. Die Daten bleiben bei Ihnen."
 }

@@ -101,4 +101,34 @@ public class MarkTrainingController {
   marks.delete(mark);
   audit.recordInTransaction(auth,"MARK_TRAINING_MARK_REMOVED","MARK_TRAINING_DOCUMENT",id,"Seite "+mark.getPage()+" · "+mark.getKind());
  }
+
+ static final int MAX_EXPORT_PAGES=400;
+ /** All marked pages of the tenant as images with their boxes (fractions of the page), to train a detector offline. */
+ @GetMapping("/export.zip") @Transactional(readOnly=true)
+ public ResponseEntity<byte[]> export(Authentication auth)throws Exception{
+  var all=marks.findAll();
+  Map<String,List<DocumentMark>> byPage=new TreeMap<>();
+  for(var m:all)byPage.computeIfAbsent((m.getTrainingDocumentId()!=null?"t-"+m.getTrainingDocumentId():"d-"+m.getDocumentId())+"|"+String.format("%04d",m.getPage()),k->new ArrayList<>()).add(m);
+  var out=new java.io.ByteArrayOutputStream();var labels=new StringBuilder("[");int n=0;
+  try(var zip=new java.util.zip.ZipOutputStream(out)){
+   for(var entry:byPage.entrySet()){
+    if(n>=MAX_EXPORT_PAGES)break;
+    var first=entry.getValue().get(0);int page=first.getPage();
+    byte[] content=first.getTrainingDocumentId()!=null?training.findById(first.getTrainingDocumentId()).map(MarkTrainingDocument::getContent).orElse(null):documents.findById(first.getDocumentId()).map(d->d.getContent()).orElse(null);
+    if(content==null)continue;
+    byte[] png;try{png=preview.render(content,page,true);}catch(Exception unreadable){continue;}
+    String name=String.format("images/%04d.png",++n);
+    zip.putNextEntry(new java.util.zip.ZipEntry(name));zip.write(png);zip.closeEntry();
+    if(n>1)labels.append(',');
+    labels.append("\n {\"image\":\"").append(name).append("\",\"boxes\":[");
+    boolean firstBox=true;
+    for(var m:entry.getValue()){if(!firstBox)labels.append(',');firstBox=false;labels.append(String.format(java.util.Locale.ROOT,"{\"x\":%.5f,\"y\":%.5f,\"w\":%.5f,\"h\":%.5f,\"kind\":\"%s\"}",m.getX(),m.getY(),m.getW(),m.getH(),m.getKind().name()));}
+    labels.append("]}");
+   }
+   labels.append("\n]\n");
+   zip.putNextEntry(new java.util.zip.ZipEntry("labels.json"));zip.write(labels.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8));zip.closeEntry();
+  }
+  audit.recordInTransaction(auth,"MARK_TRAINING_EXPORT","MARK_TRAINING_DOCUMENT",null,n+" Seiten");
+  return ResponseEntity.ok().contentType(MediaType.parseMediaType("application/zip")).header("Content-Disposition","attachment; filename=\"stempel-trainingsdaten.zip\"").header("X-Content-Type-Options","nosniff").body(out.toByteArray());
+ }
 }

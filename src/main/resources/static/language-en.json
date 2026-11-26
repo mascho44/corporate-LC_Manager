@@ -3953,5 +3953,7 @@
   "pm.skip": "Skip",
   "pm.reviewStop": "Stop",
   "pm.reviewDone": "All suggestions reviewed.",
-  "pm.reviewNone2": "No suggestions for this document."
+  "pm.reviewNone2": "No suggestions for this document.",
+  "mt.export": "Export training data (ZIP)",
+  "mt.exportHint": "Marked pages as images with boxes and kind, to train a detector on your own computer. The data stays with you."
 }

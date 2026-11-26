@@ -74,6 +74,10 @@
    ['dragover', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); if (ev === 'drop') upload([...e.dataTransfer.files].filter(f => /\.pdf$/i.test(f.name))); }));
    section.append(drop);
   }
+  if (typeof can === 'function' && can('TRAINING_MANAGE')) {
+   const exportLink = node('a', tx('mt.export', 'Trainingsdaten exportieren (ZIP)'), 'button secondary'); exportLink.href = '/api/mark-training/export.zip'; exportLink.download = 'stempel-trainingsdaten.zip';
+   section.append(exportLink, node('small', tx('mt.exportHint', 'Markierte Seiten als Bilder mit Rahmen und Art, zum Trainieren eines Erkenners auf dem eigenen Rechner. Die Daten bleiben bei Ihnen.')));
+  }
   section.append(message);
   body = node('div'); section.append(body);
   document.querySelector('main')?.append(section);
