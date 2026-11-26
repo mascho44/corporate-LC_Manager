@@ -3,6 +3,8 @@
   "Es ist kein KI-Dienst konfiguriert.": "No AI service is configured.",
   "KI-Vorschläge sind für diesen Mandanten nicht aktiviert.": "AI suggestions are not enabled for this tenant.",
   "Dokument gehört nicht zu dieser LC-Akte.": "The document does not belong to this LC file.",
+  "Ungültige Markierung.": "Invalid mark.",
+  "Zu viele Markierungen an diesem Dokument.": "Too many marks on this document.",
   "Die Adresse ist ungültig.": "The address is invalid.",
   "Die Adresse ist ungültig (kein Benutzername, keine Parameter).": "The address is invalid (no user name, no parameters).",
   "Lokale KI-Dienste sind in dieser Installation nicht erlaubt.": "Local AI services are not allowed in this installation.",

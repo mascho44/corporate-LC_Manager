@@ -3913,5 +3913,21 @@
   "gc.useTitle": "Auslastung der Linien",
   "nav.group.master": "Stammdaten & Regeln",
   "nav.group.access": "Zugriff & Schnittstellen",
-  "nav.group.ops": "Betrieb & Anbindung"
+  "nav.group.ops": "Betrieb & Anbindung",
+  "pm.kind.STAMP": "Stempel",
+  "pm.kind.SIGNATURE": "Unterschrift",
+  "pm.kind.SIGNED_STAMP": "Unterschriebener Stempel",
+  "pm.kind.NONE": "Weder noch",
+  "pm.title": "Stempel und Unterschriften",
+  "pm.close": "Schließen",
+  "pm.help": "Bereich anklicken oder mit der Maus aufziehen, vorher die Art wählen. Eine gesetzte Markierung entfernen Sie mit einem Klick darauf.",
+  "pm.helpReadonly": "Markierungen dieses Dokuments (nur Ansicht).",
+  "pm.prev": "Vorherige Seite",
+  "pm.next": "Nächste Seite",
+  "pm.pageOf": "Seite {n}",
+  "pm.candidate": "Mögliche Stelle – anklicken, um sie mit der gewählten Art zu markieren",
+  "pm.remove": "Markierung entfernen",
+  "pm.loading": "Seite {n} wird geladen …",
+  "pm.noPreview": "Seitenvorschau nicht verfügbar.",
+  "pm.open": "Stempel & Unterschriften"
 }

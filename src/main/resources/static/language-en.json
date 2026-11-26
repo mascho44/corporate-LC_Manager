@@ -3913,5 +3913,21 @@
   "gc.useTitle": "Use of the credit lines",
   "nav.group.master": "Master data & rules",
   "nav.group.access": "Access & interfaces",
-  "nav.group.ops": "Operations & connections"
+  "nav.group.ops": "Operations & connections",
+  "pm.kind.STAMP": "Stamp",
+  "pm.kind.SIGNATURE": "Signature",
+  "pm.kind.SIGNED_STAMP": "Signed stamp",
+  "pm.kind.NONE": "Neither",
+  "pm.title": "Stamps and signatures",
+  "pm.close": "Close",
+  "pm.help": "Click a region or drag one with the mouse after choosing the kind. Remove a mark by clicking it.",
+  "pm.helpReadonly": "Marks on this document (view only).",
+  "pm.prev": "Previous page",
+  "pm.next": "Next page",
+  "pm.pageOf": "Page {n}",
+  "pm.candidate": "Possible spot – click to mark it with the chosen kind",
+  "pm.remove": "Remove mark",
+  "pm.loading": "Loading page {n} …",
+  "pm.noPreview": "Page preview not available.",
+  "pm.open": "Stamps & signatures"
 }

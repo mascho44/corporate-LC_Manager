@@ -87,6 +87,8 @@ import de.ostms.lc.user.service.AppUserDetailsService; import jakarta.servlet.ht
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/lcs/*/document-set").hasAuthority("PERM_DOCUMENT_GENERATE")
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/lcs/*/submission-package").hasAuthority("PERM_DOCUMENT_GENERATE")
    .requestMatchers("/api/lcs/*/emails","/api/lcs/*/emails/**").hasAuthority("PERM_EMAIL_SEND")
+   .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/documents/*/marks").hasAuthority("PERM_DOCUMENT_REVIEW")
+   .requestMatchers(org.springframework.http.HttpMethod.DELETE,"/api/documents/*/marks/*").hasAuthority("PERM_DOCUMENT_REVIEW")
    .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/lcs/*/document-checks/decisions").hasAuthority("PERM_DOCUMENT_REVIEW")
    .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/lcs/*/review-steps/*").hasAuthority("PERM_DOCUMENT_REVIEW")
    .requestMatchers(org.springframework.http.HttpMethod.DELETE,"/api/lcs/*/review-steps/*").hasAuthority("PERM_DOCUMENT_REVIEW")
