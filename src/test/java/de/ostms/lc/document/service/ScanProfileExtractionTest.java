@@ -30,7 +30,7 @@ class ScanProfileExtractionTest {
  private static String dpiOf(List<String> pdftoppm){return pdftoppm.get(pdftoppm.indexOf("-r")+1);}
 
  @Test void withoutAProfileServiceTheStandardBehaviourApplies()throws Exception{
-  var service=new FakeOcr();var doc=document();service.extractInBackground(doc);
+  var service=new FakeOcr();org.springframework.test.util.ReflectionTestUtils.setField(service,"denseSkipWords",0);var doc=document();service.extractInBackground(doc);
   assertThat(dpiOf(service.commands.get(0))).isEqualTo("300");
   assertThat(service.commands.get(1)).contains("thresholding_method=2");
   var evidence=DocumentExtractionService.readEvidence(doc.getOcrEvidenceJson());
