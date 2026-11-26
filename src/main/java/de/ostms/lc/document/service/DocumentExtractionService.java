@@ -346,6 +346,8 @@ public class DocumentExtractionService {
         try {
             long remaining=documentBudget-java.util.concurrent.TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()-started);
             if(remaining<=0)throw new BoundedProcess.TimeoutException("OCR");
+            PageOutcome dense=skipDenseTerms(page,pageCount,input,directory,languages,remaining,runner,pageStart);
+            if(dense!=null)return dense;
             String prefix="page";
             runner.run(new ProcessBuilder("pdftoppm","-png","-r",String.valueOf(profile.renderDpi()),"-f",String.valueOf(page),"-l",String.valueOf(page),input.toString(),directory.resolve(prefix).toString()).redirectErrorStream(true),Math.min(60,remaining));
             try(var files=Files.list(directory)){image=files.filter(p->p.getFileName().toString().matches(Pattern.quote(prefix)+"-0*"+page+"\\.png")).findFirst().orElse(null);}
@@ -391,6 +393,36 @@ public class DocumentExtractionService {
             return new PageOutcome(null,List.of(),new OcrEvidence.PageResult(page,"FAILED",1));
         } finally {
             if(image!=null)Files.deleteIfExists(image);
+        }
+    }
+
+    @org.springframework.beans.factory.annotation.Value("${lc.ocr.dense-skip-words:2000}")
+    private int denseSkipWords=2000;
+    static final int QUICK_DPI=120;
+
+    /**
+     * Seiten mit sehr vielen Wörtern (Versicherungs-, Shipping-Bedingungen im Kleingedruckten) müssen für die Prüfung nicht im Wortlaut
+     * vorliegen. Eine schnelle Vorprüfung in niedriger Auflösung zählt die Wörter; liegt sie über der Schwelle, bleibt das grobe Ergebnis
+     * stehen und die teure Erkennung entfällt (attempts=0 kennzeichnet das). Fehler und Zeitüberschreitung der Vorprüfung führen nie zum
+     * Überspringen. Schwelle 0 schaltet die Vorprüfung ab. Im Log stehen nur Zahlen.
+     */
+    private PageOutcome skipDenseTerms(int page,int pageCount,Path input,Path directory,String languages,long remainingSeconds,OcrEngine.StepRunner runner,long pageStart)throws InterruptedException,BoundedProcess.UnavailableException{
+        if(denseSkipWords<=0||remainingSeconds<=5)return null;
+        Path quick=null;
+        try{
+            String prefix="quick";
+            runner.run(new ProcessBuilder("pdftoppm","-png","-r",String.valueOf(QUICK_DPI),"-f",String.valueOf(page),"-l",String.valueOf(page),input.toString(),directory.resolve(prefix).toString()).redirectErrorStream(true),Math.min(30,remainingSeconds));
+            try(var files=Files.list(directory)){quick=files.filter(p->p.getFileName().toString().matches(Pattern.quote(prefix)+"-0*"+page+"\\.png")).findFirst().orElse(null);}
+            if(quick==null)return null;
+            var rough=engine().recognize(quick,directory.resolve("quick-ocr-"+(page-1)),languages,ScanProfile.Binarization.NONE,page,runner,Math.min(40,remainingSeconds));
+            log.info("OCR quick check: page={}/{}, words={}, threshold={}, dense={}",page,pageCount,rough.words().size(),denseSkipWords,rough.words().size()>=denseSkipWords);
+            if(rough.words().size()<denseSkipWords)return null;
+            logPage(page,pageCount,"OCR_EXTRACTED",pageStart,System.nanoTime(),rough.words().size(),0);
+            return new PageOutcome(rough.text(),toEvidenceRaster(rough.words(),QUICK_DPI),new OcrEvidence.PageResult(page,"OCR_EXTRACTED",0,0,limit(rough.text())));
+        }catch(BoundedProcess.UnavailableException failure){throw failure;
+        }catch(IOException failure){return null;
+        }finally{
+            try{if(quick!=null)Files.deleteIfExists(quick);}catch(IOException ignored){}
         }
     }
 

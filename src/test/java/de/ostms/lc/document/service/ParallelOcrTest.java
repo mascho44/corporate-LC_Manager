@@ -8,7 +8,8 @@ import static org.assertj.core.api.Assertions.*;
 class ParallelOcrTest {
  static class FakeOcr extends DocumentExtractionService {
   final AtomicInteger running=new AtomicInteger(),peak=new AtomicInteger();
-  volatile int timeoutPage=-1;
+  volatile int timeoutPage=-1,densePage=-1;
+  final java.util.Set<Integer> fullRuns=java.util.concurrent.ConcurrentHashMap.newKeySet();
   @Override void runOcrStep(ProcessBuilder builder,long seconds)throws java.io.IOException,InterruptedException{
    var args=builder.command();
    if(args.get(0).equals("pdftoppm")){
@@ -20,8 +21,11 @@ class ParallelOcrTest {
    try{
     Thread.sleep((6-page)*80L); // frühe Seiten sind langsamer: fertig werden die späten zuerst
     if(page==timeoutPage)throw new BoundedProcess.TimeoutException("OCR");
+    boolean quick=java.nio.file.Path.of(args.get(1)).getFileName().toString().startsWith("quick");
+    if(!quick)fullRuns.add(page);
+    int count=quick&&page==densePage?5:1;
     java.nio.file.Files.writeString(java.nio.file.Path.of(args.get(2)+".txt"),"Seite "+page);
-    java.nio.file.Files.writeString(java.nio.file.Path.of(args.get(2)+".tsv"),"5\t1\t1\t1\t1\t1\t400\t800\t200\t40\t99\tSeite"+page+"\n");
+    java.nio.file.Files.writeString(java.nio.file.Path.of(args.get(2)+".tsv"),("5\t1\t1\t1\t1\t1\t400\t800\t200\t40\t99\tSeite"+page+"\n").repeat(count));
    }finally{running.decrementAndGet();}
   }
  }
@@ -61,5 +65,19 @@ class ParallelOcrTest {
   assertThat(evidence.pages()).extracting(p->p.status()).containsExactly("OCR_EXTRACTED","OCR_EXTRACTED","OCR_TIMEOUT","OCR_EXTRACTED","OCR_EXTRACTED");
   assertThat(doc.getExtractedText()).contains("Seite 2","Seite 4").doesNotContain("Seite 3");
   assertThat(doc.getExtractionStatus()).isEqualTo("OCR_PARTIAL");
+ }
+ @Test void aVeryDensePageIsNotRecognisedInFull()throws Exception{
+  var service=new FakeOcr();ReflectionTestUtils.setField(service,"ocrParallelism",4);ReflectionTestUtils.setField(service,"denseSkipWords",3);service.densePage=2;
+  var doc=document(3);service.extractInBackground(doc);
+  assertThat(service.fullRuns).containsExactlyInAnyOrder(1,3);
+  var evidence=DocumentExtractionService.readEvidence(doc.getOcrEvidenceJson());
+  assertThat(evidence.pages()).extracting(p->p.attempts()).containsExactly(2,0,2);
+  assertThat(evidence.pages()).extracting(p->p.status()).containsOnly("OCR_EXTRACTED");
+  assertThat(doc.getExtractionStatus()).isEqualTo("OCR_EXTRACTED");
+ }
+ @Test void theQuickCheckCanBeSwitchedOff()throws Exception{
+  var service=new FakeOcr();ReflectionTestUtils.setField(service,"denseSkipWords",0);service.densePage=2;
+  var doc=document(3);service.extractInBackground(doc);
+  assertThat(service.fullRuns).containsExactlyInAnyOrder(1,2,3);
  }
 }
