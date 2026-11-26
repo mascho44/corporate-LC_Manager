@@ -279,30 +279,44 @@ public class DocumentExtractionService {
             final String languages=ocrLanguages();
             String engineVersion=engine().version(directory);
             final OcrEngine.StepRunner timed=(builder,seconds)->{long begin=System.nanoTime();try{runOcrStep(builder,seconds);}finally{record(times,builder,begin);}};
-            // Alle gescannten Seiten gleichzeitig (begrenzt durch den gemeinsamen Pool) erkennen; zusammengeführt wird in Seitenreihenfolge.
-            var futures=new java.util.HashMap<Integer,java.util.concurrent.Future<PageOutcome>>();
-            try{
+            // Alle gescannten Seiten gleichzeitig (begrenzt durch den gemeinsamen Pool) erkennen. Ergebnisse werden in der Reihenfolge der
+            // Fertigstellung übernommen, damit der Fortschritt stimmt; Text und Wörter werden jeweils in Seitenreihenfolge neu zusammengesetzt.
+            var completion=new java.util.concurrent.ExecutorCompletionService<PageOutcome>(pool());
+            var futures=new java.util.ArrayList<java.util.concurrent.Future<PageOutcome>>();
+            var done=new PageOutcome[pageTexts.size()];
+            final int baseWords=words.size();
             for(int index=0;index<pageTexts.size();index++){
-                if(!pageTexts.get(index).isBlank())continue;
+                if(!pageTexts.get(index).isBlank()){
+                    int number=index+1;var previous=digital==null?null:digital.pages().stream().filter(q->q.page()==number&&"OCR_EXTRACTED".equals(q.status())).findFirst().orElse(null);
+                    pages.set(index,previous==null?new OcrEvidence.PageResult(number,"EXTRACTED",0):previous);
+                    continue;
+                }
                 final int at=index;
-                futures.put(index,pool().submit(()->ocrPage(at,pageTexts.size(),input,directory,profile,languages,documentBudget,started,timed)));
+                futures.add(completion.submit(()->ocrPage(at,pageTexts.size(),input,directory,profile,languages,documentBudget,started,timed)));
             }
-            for (int index = 0; index < pageTexts.size(); index++) {
-                if(!pageTexts.get(index).isBlank()){if(result.length()<MAX_TEXT_LENGTH)result.append(pageTexts.get(index)).append('\n');int number=index+1;var previous=digital==null?null:digital.pages().stream().filter(p->p.page()==number&&"OCR_EXTRACTED".equals(p.status())).findFirst().orElse(null);pages.set(index,previous==null?new OcrEvidence.PageResult(number,"EXTRACTED",0):previous);continue;}
+            try{
+            for(int n=0;n<futures.size();n++){
                 PageOutcome outcome;
-                try{outcome=futures.get(index).get();}
+                try{outcome=completion.take().get();}
                 catch(java.util.concurrent.ExecutionException failure){
                     if(failure.getCause() instanceof Exception cause)throw cause;
                     throw failure;
                 }
-                if(outcome.text()!=null&&result.length()<MAX_TEXT_LENGTH)result.append(outcome.text()).append('\n');
-                words.addAll(outcome.words());
-                pages.set(index,outcome.page());
+                int at=outcome.page().page()-1;
+                done[at]=outcome;
+                pages.set(at,outcome.page());
+                result.setLength(0);
+                while(words.size()>baseWords)words.remove(words.size()-1);
+                for(int index=0;index<pageTexts.size();index++){
+                    String text=!pageTexts.get(index).isBlank()?pageTexts.get(index):done[index]==null?null:done[index].text();
+                    if(text!=null&&result.length()<MAX_TEXT_LENGTH)result.append(text).append('\n');
+                    if(done[index]!=null)words.addAll(done[index].words());
+                }
                 document.setExtractedText(limit(result.toString()));
                 document.setOcrEvidenceJson(new tools.jackson.databind.ObjectMapper().writeValueAsString(new OcrEvidence(engineVersion,engine().method()+profile.methodSuffix(),ScanProfile.EVIDENCE_DPI,thresholdFor(document),words,pages)));
                 checkpoint.accept(document);
             }
-            }finally{for(var future:futures.values())future.cancel(true);}
+            }finally{for(var future:futures)future.cancel(true);}
             log.info("OCR steps: {}",java.util.Map.copyOf(times).entrySet().stream().sorted(java.util.Map.Entry.comparingByKey()).map(e->e.getKey()+"="+java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(e.getValue()[0])+"ms/"+e.getValue()[1]+"x").collect(java.util.stream.Collectors.joining(", ")));
             log.info("OCR completed: pages={}, ocrPages={}, textPages={}, elapsedMillis={}",pageTexts.size(),requiredPages,pageTexts.size()-requiredPages,java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-started));
             if(!Double.isFinite(thresholdFor(document))||thresholdFor(document)<0||thresholdFor(document)>1)throw new IllegalArgumentException("Ungültige OCR-Konfidenzschwelle");
