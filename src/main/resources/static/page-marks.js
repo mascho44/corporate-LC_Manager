@@ -42,7 +42,7 @@
   function render(){
    layer.replaceChildren();
    const marks=state.marks.filter(m=>m.page===state.page);
-   state.candidates.filter(c=>c.page===state.page&&!marks.some(m=>overlaps(m,c))).forEach(c=>{
+   state.candidates.filter(c=>c.page===state.page&&c.w<=0.6&&c.h<=0.4&&c.w*c.h<=0.15&&!marks.some(m=>overlaps(m,c))).forEach(c=>{
     const el=document.createElement('button');el.type='button';el.className='pm-candidate';el.title=tx('pm.candidate','Mögliche Stelle – anklicken, um sie mit der gewählten Art zu markieren');place(el,c);
     el.disabled=!editable;el.onclick=event=>{event.stopPropagation();save({x:c.x,y:c.y,w:c.w,h:c.h});};layer.append(el);
    });
@@ -54,11 +54,11 @@
   }
   // Drawing a new region with the mouse.
   if(editable){
-   let start=null,rubber=null;
+   let start=null,rubber=null,from=null;
    const point=event=>{const r=layer.getBoundingClientRect();return {x:Math.min(1,Math.max(0,(event.clientX-r.left)/r.width)),y:Math.min(1,Math.max(0,(event.clientY-r.top)/r.height))};};
-   layer.addEventListener('pointerdown',event=>{if(event.target!==layer)return;start=point(event);rubber=document.createElement('div');rubber.className='pm-rubber';layer.append(rubber);layer.setPointerCapture(event.pointerId);});
+   layer.addEventListener('pointerdown',event=>{if(event.target!==layer&&!event.target.classList.contains('pm-candidate'))return;from=event.target;start=point(event);rubber=document.createElement('div');rubber.className='pm-rubber';layer.append(rubber);layer.setPointerCapture(event.pointerId);});
    layer.addEventListener('pointermove',event=>{if(!start)return;const p=point(event);place(rubber,{x:Math.min(start.x,p.x),y:Math.min(start.y,p.y),w:Math.abs(p.x-start.x),h:Math.abs(p.y-start.y)});});
-   const finish=event=>{if(!start)return;const p=point(event),box={x:Math.min(start.x,p.x),y:Math.min(start.y,p.y),w:Math.abs(p.x-start.x),h:Math.abs(p.y-start.y)};start=null;rubber?.remove();rubber=null;if(box.w>=0.01&&box.h>=0.01&&box.x<1&&box.y<1)save(box);};
+   const finish=event=>{if(!start)return;const p=point(event),box={x:Math.min(start.x,p.x),y:Math.min(start.y,p.y),w:Math.abs(p.x-start.x),h:Math.abs(p.y-start.y)};start=null;rubber?.remove();rubber=null;if(box.w>=0.01&&box.h>=0.01&&box.x<1&&box.y<1)save(box);else if(from&&from.classList.contains('pm-candidate'))from.click();from=null;};
    layer.addEventListener('pointerup',finish);layer.addEventListener('pointercancel',()=>{start=null;rubber?.remove();rubber=null;});
   }
   async function loadPage(number){
