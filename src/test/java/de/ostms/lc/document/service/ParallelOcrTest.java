@@ -41,6 +41,19 @@ class ParallelOcrTest {
   assertThat(evidence.pages()).extracting(p->p.status()).containsOnly("OCR_EXTRACTED");
   assertThat(evidence.words()).extracting(w->w.page()).containsExactly(1,2,3,4,5);
  }
+ @Test void progressFollowsCompletionNotPageOrder()throws Exception{
+  var service=new FakeOcr();ReflectionTestUtils.setField(service,"ocrParallelism",5);
+  var doc=document(5);var snapshots=new java.util.ArrayList<String>();
+  service.extractInBackground(doc,d->snapshots.add(d.getOcrEvidenceJson()));
+  assertThat(snapshots).hasSize(5);
+  var first=DocumentExtractionService.readEvidence(snapshots.get(0));
+  assertThat(first.pages().get(0).status()).as("die langsame Seite 1 ist noch offen").isEqualTo("QUEUED");
+  assertThat(first.pages().stream().filter(p->"OCR_EXTRACTED".equals(p.status())).count()).as("fertig ist schon eine spätere Seite").isEqualTo(1);
+  for(int i=0;i<5;i++){
+   var snapshot=DocumentExtractionService.readEvidence(snapshots.get(i));
+   assertThat(snapshot.pages().stream().filter(p->"OCR_EXTRACTED".equals(p.status())).count()).as("Fortschritt nach "+(i+1)+" Seiten").isEqualTo(i+1);
+  }
+ }
  @Test void aTimeoutOnOnePageLeavesTheOthersIntact()throws Exception{
   var service=new FakeOcr();ReflectionTestUtils.setField(service,"ocrParallelism",4);service.timeoutPage=3;
   var doc=document(5);service.extractInBackground(doc);
