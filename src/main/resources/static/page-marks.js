@@ -10,7 +10,8 @@
  const headers={'Content-Type':'application/json'};
  let dialog=null;
 
- function open(documentId,name){
+ function open(documentId,name,basePath){
+  const base=basePath||`/api/documents/${encodeURIComponent(documentId)}`;
   if(dialog)dialog.close();
   const editable=typeof can==='function'&&can('DOCUMENT_REVIEW');
   const state={page:1,pageCount:null,marks:[],candidates:[],kind:'STAMP',imageUrl:null,version:0};
@@ -31,11 +32,11 @@
   const place=(el,b)=>{el.style.left=b.x*100+'%';el.style.top=b.y*100+'%';el.style.width=b.w*100+'%';el.style.height=b.h*100+'%';};
   const overlaps=(a,b)=>{const w=Math.min(a.x+a.w,b.x+b.w)-Math.max(a.x,b.x),h=Math.min(a.y+a.h,b.y+b.h)-Math.max(a.y,b.y);return w>0&&h>0&&w*h>0.5*Math.min(a.w*a.h,b.w*b.h);};
   async function save(box){
-   try{const mark=await json(`/api/documents/${encodeURIComponent(documentId)}/marks`,{method:'POST',headers,body:JSON.stringify({page:state.page,...box,kind:state.kind})});state.marks.push(mark);render();}
+   try{const mark=await json(`${base}/marks`,{method:'POST',headers,body:JSON.stringify({page:state.page,...box,kind:state.kind})});state.marks.push(mark);render();}
    catch(error){status.textContent=error.message;}
   }
   async function remove(mark){
-   try{await json(`/api/documents/${encodeURIComponent(documentId)}/marks/${encodeURIComponent(mark.id)}`,{method:'DELETE'});state.marks=state.marks.filter(m=>m.id!==mark.id);render();}
+   try{await json(`${base}/marks/${encodeURIComponent(mark.id)}`,{method:'DELETE'});state.marks=state.marks.filter(m=>m.id!==mark.id);render();}
    catch(error){status.textContent=error.message;}
   }
   function render(){
@@ -63,7 +64,7 @@
   async function loadPage(number){
    const request=++state.version;state.page=number;controls();wrap.hidden=true;status.textContent=tx('pm.loading','Seite {n} wird geladen …',{n:number});
    try{
-    const response=await fetch(`/api/documents/${encodeURIComponent(documentId)}/pages/${number}/preview`);
+    const response=await fetch(`${base}/pages/${number}/preview`);
     if(!response.ok||!response.headers.get('Content-Type')?.startsWith('image/png'))throw Error(tx('pm.noPreview','Seitenvorschau nicht verfügbar.'));
     const blob=await response.blob();if(request!==state.version||!dialog?.open)return;
     const count=Number(response.headers.get('X-Page-Count'));if(Number.isInteger(count)&&count>=number)state.pageCount=count;
@@ -74,8 +75,8 @@
   prev.onclick=()=>loadPage(state.page-1);next.onclick=()=>loadPage(state.page+1);
   dialog.showModal();controls();
   Promise.all([
-   json(`/api/documents/${encodeURIComponent(documentId)}/marks`).catch(()=>[]),
-   editable?json(`/api/documents/${encodeURIComponent(documentId)}/mark-candidates`).catch(()=>[]):Promise.resolve([])
+   json(`${base}/marks`).catch(()=>[]),
+   editable?json(`${base}/mark-candidates`).catch(()=>[]):Promise.resolve([])
   ]).then(([marks,candidates])=>{state.marks=Array.isArray(marks)?marks:[];state.candidates=Array.isArray(candidates)?candidates:[];loadPage(1);});
  }
 

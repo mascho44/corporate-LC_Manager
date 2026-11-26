@@ -15,4 +15,6 @@ public interface DocumentMarkRepository extends TenantScopedRepository<DocumentM
  List<DocumentMark> findAll();
  @Query("select e from DocumentMark e where e.documentId=:documentId and "+OWNED+" order by e.page, e.y, e.x")
  List<DocumentMark> forDocument(@Param("documentId") UUID documentId);
+ @Query("select e from DocumentMark e where e.trainingDocumentId=:id and "+OWNED+" order by e.page, e.y, e.x")
+ List<DocumentMark> forTrainingDocument(@Param("id") UUID id);
 }

@@ -670,5 +670,9 @@
    "de": "Es sind bereits {} Ansichten gespeichert. Bitte nicht mehr benötigte löschen.",
    "en": "There are already {1} views saved. Please delete those no longer needed."
   }
- ]
+ ],
+  "Bitte eine PDF-Datei bis 20 MB wählen.": "Please choose a PDF file up to 20 MB.",
+  "Zu viele Trainingsdokumente.": "Too many training documents.",
+  "Die PDF-Datei konnte nicht gelesen werden.": "The PDF file could not be read.",
+  "Die PDF-Datei hat zu viele Seiten.": "The PDF file has too many pages."
 }

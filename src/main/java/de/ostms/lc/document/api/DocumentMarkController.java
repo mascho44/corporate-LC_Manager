@@ -24,7 +24,7 @@ public class DocumentMarkController {
  public record MarkInput(int page,double x,double y,double w,double h,String kind){}
  public record Candidate(int page,double x,double y,double w,double h){}
 
- private static MarkView view(DocumentMark m){return new MarkView(m.getId(),m.getPage(),m.getX(),m.getY(),m.getW(),m.getH(),m.getKind().name(),m.getMarkedBy());}
+ static MarkView view(DocumentMark m){return new MarkView(m.getId(),m.getPage(),m.getX(),m.getY(),m.getW(),m.getH(),m.getKind().name(),m.getMarkedBy());}
  private de.ostms.lc.document.domain.LcDocument document(UUID id){return documents.findById(id).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND));}
 
  /** Checks a mark before it is stored; returns the kind. */
